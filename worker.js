@@ -3,7 +3,8 @@
  *   wrangler secret put TMDB_KEY          # tmdb v3 api key
  *   wrangler secret put IGDB_CLIENT_ID    # twitch developer app
  *   wrangler secret put IGDB_CLIENT_SECRET
- *   wrangler secret put ORIGIN            # optional: https://you.github.io
+ *   wrangler secret put ORIGIN            # required: https://you.github.io
+ *                                         # comma-separate to allow several
  *
  * routes
  *   /3/*            → tmdb, key added server-side          (film, tv)
@@ -19,16 +20,26 @@ const CACHE = { tmdb: 60 * 60 * 24, ol: 60 * 60 * 24, igdb: 60 * 60 * 12 };
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
-    const origin = env.ORIGIN || "*";
+
+    /* fail closed. an unrestricted worker is an open proxy: anyone who finds the
+       url spends this worker's TMDB key and IGDB credentials. so a missing ORIGIN
+       serves nothing, and a request that does not name an allowed origin — one
+       with no Origin header included — never reaches the upstreams. */
+    const allowed = (env.ORIGIN || "").split(",").map(s => s.trim()).filter(Boolean);
+    if (!allowed.length)
+      return json({ error: "worker not configured: wrangler secret put ORIGIN" }, 503);
+
+    const from = request.headers.get("Origin");
+    if (!from || !allowed.includes(from))
+      return json({ error: "not this origin" }, 403);
+
     const cors = {
-      "Access-Control-Allow-Origin": origin,
+      "Access-Control-Allow-Origin": from,
       "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
       "Access-Control-Allow-Headers": "Content-Type",
       "Vary": "Origin"
     };
     if (request.method === "OPTIONS") return new Response(null, { headers: cors });
-    if (env.ORIGIN && request.headers.get("Origin") && request.headers.get("Origin") !== env.ORIGIN)
-      return json({ error: "not this origin" }, 403, cors);
 
     try {
       if (url.pathname.startsWith("/3/")) return await tmdb(url, env, ctx, cors);

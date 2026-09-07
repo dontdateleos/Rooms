@@ -23,6 +23,19 @@ Hosted on GitHub Pages: push this repo, then Settings → Pages → deploy from 
 A TMDB key never goes in this repo — it lives in the browser's localStorage.
 TMDB's free tier is non-commercial; charging for Rooms would need their commercial licence.
 
+The worker holds real credentials, so it refuses to run without knowing who may
+call it. Set `ORIGIN` to the site that serves the app, comma-separating any
+others (a custom domain, `http://localhost:8080` for development):
+
+```
+wrangler secret put ORIGIN     # https://you.github.io
+```
+
+Unset, every request gets a 503. Set, anything that doesn't come from a listed
+origin gets a 403 and never reaches TMDB or IGDB — so a stranger who finds the
+worker URL can't spend your API quota. Debugging with curl means naming an
+origin yourself: `curl -H "Origin: https://you.github.io" ...`.
+
 ## The backend, when you want rooms
 
 1. Make a Supabase project.
