@@ -1,0 +1,7 @@
+# nothing secret lives here, but keep exports and local scratch out
+*.local
+.env
+.env.*
+rooms-*.json
+.DS_Store
+node_modules/

@@ -1,0 +1,8 @@
+{ "name": "Rooms", "short_name": "Rooms", "description": "one log for film, tv, books and games",
+  "start_url": ".", "display": "standalone", "background_color": "#FFF7EC", "theme_color": "#FFF7EC",
+  "icons": [
+    { "src": "icons/rooms-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/rooms-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/rooms-mask-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/rooms-mask-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ] }
