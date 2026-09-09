@@ -78,3 +78,14 @@ sorts ahead of what's still coming. A work's own page has the same switch as a b
 - Motion marks the moment it belongs to: a log floods the screen in the medium's colour,
   a tick draws itself, the nav pill travels, scores roll a digit at a time. All of it is
   off under `prefers-reduced-motion`.
+
+## Using it
+
+Copyright © 2026 dontdateleos. All rights reserved.
+
+This code is published to be read, not taken. No licence is granted to copy, modify,
+distribute or run it, in whole or in part. If you want to do something with it, ask.
+
+Film and TV data is from TMDB, used under their non-commercial terms; this product uses
+the TMDB API but is not endorsed or certified by TMDB. Books are from Open Library,
+games from IGDB. None of those are covered by the above.
