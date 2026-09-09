@@ -145,6 +145,8 @@ textarea{min-height:76px;resize:none;line-height:1.45}
 .grid .cell.dragging{position:relative;z-index:5}
 .grid .cell.dragging .po{animation:none;transform:scale(1.07);box-shadow:0 18px 30px -14px rgba(21,19,32,.55)}
 @keyframes jiggle{from{transform:rotate(-1.2deg)}to{transform:rotate(1.2deg)}}
+@keyframes cellOut{to{transform:scale(.55);opacity:0}}
+.cell.going{animation:cellOut .2s cubic-bezier(.4,0,.9,.35) forwards;pointer-events:none}
 @media (prefers-reduced-motion:reduce){.grid.editing .po{animation:none;outline:2px dashed var(--ink);outline-offset:2px}}
 .po .soon-tag{position:absolute;bottom:6px;left:6px;right:6px;z-index:2;background:rgba(255,247,236,.94);color:var(--ink);
   font-family:var(--head);font-weight:800;font-size:10px;letter-spacing:.03em;text-transform:uppercase;padding:4px 6px;border-radius:8px;text-align:center}
@@ -258,7 +260,8 @@ nav .gap{pointer-events:none}
 nav button{background:none;border:0;padding:12px 4px;border-radius:99px;font-family:var(--head);font-weight:800;font-size:13px;
   letter-spacing:-.01em;color:var(--mute);cursor:pointer;white-space:nowrap;transition:background .18s,color .18s,transform .14s}
 nav button i{display:none}
-nav button.on{background:var(--ink);color:var(--cream)}
+nav button.on{background:var(--ink);color:var(--cream);animation:tabPop .34s cubic-bezier(.3,1.5,.5,1)}
+@keyframes tabPop{0%{transform:scale(.92)}55%{transform:scale(1.05)}100%{transform:scale(1)}}
 nav button:active{transform:scale(.95)}
 #add{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom));z-index:8;
   width:64px;height:64px;border-radius:50%;border:0;background:var(--ink);color:var(--cream);cursor:pointer;display:none;
@@ -297,8 +300,10 @@ nav button:active{transform:scale(.95)}
 .auth p{color:var(--mute);font-weight:500;line-height:1.55;margin-top:14px;font-size:15px}
 /* ---- motion: only where it explains something ---- */
 @keyframes sheetUp{from{transform:translateY(26px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes sheetDown{from{transform:translateY(0);opacity:1}to{transform:translateY(30px);opacity:0}}
+@keyframes fadeOut{from{opacity:1}to{opacity:0}}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
-@keyframes rise{from{transform:translateY(10px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes rise{from{transform:translate(var(--slide,0px),10px);opacity:0}to{transform:none;opacity:1}}
 @keyframes pop{0%{transform:scale(1)}40%{transform:scale(1.28)}100%{transform:scale(1)}}
 @keyframes chipPop{0%{transform:scale(1)}45%{transform:scale(1.1)}100%{transform:scale(1)}}
 @keyframes grow{from{width:0}}
@@ -306,16 +311,28 @@ nav button:active{transform:scale(.95)}
 @keyframes saved{0%{transform:translateY(-8px) scale(.9);opacity:0}25%{transform:translateY(0) scale(1);opacity:1}80%{opacity:1}100%{opacity:1}}
 .sheet.on{animation:fadeIn .18s ease}
 .sheet.on .panel{animation:sheetUp .26s cubic-bezier(.2,.9,.25,1)}
+/* on its way out it stops taking taps, so the next thing you touch is the page */
+.sheet.out{animation:fadeOut .2s ease both;pointer-events:none}
+.sheet.out .panel{animation:sheetDown .2s cubic-bezier(.4,0,.9,.35) both}
 section.on > div > *{animation:rise .26s cubic-bezier(.2,.9,.25,1) both}
 /* cards that arrive as you scroll: they lift into place once, then stay put */
 .reveal{opacity:0;transform:translateX(30px) rotate(1.2deg);
   transition:opacity .46s cubic-bezier(.2,.9,.25,1),transform .52s cubic-bezier(.2,.9,.25,1);will-change:transform,opacity}
 .reveal.in{opacity:1;transform:none;will-change:auto}
-.reveal.in .stars i{animation:fadeIn .5s ease both;animation-delay:.12s}
+@keyframes starIn{from{transform:scale(.35) rotate(-20deg);opacity:0}to{transform:none;opacity:1}}
+.reveal.in .stars i{animation:starIn .36s cubic-bezier(.3,1.5,.5,1) both;animation-delay:.1s}
+.reveal.in .stars i:nth-child(2){animation-delay:.15s}
+.reveal.in .stars i:nth-child(3){animation-delay:.2s}
+.reveal.in .stars i:nth-child(4){animation-delay:.25s}
+.reveal.in .stars i:nth-child(5){animation-delay:.3s}
 section.on > div > *:nth-child(2){animation-delay:.03s}
 section.on > div > *:nth-child(3){animation-delay:.06s}
 section.on > div > *:nth-child(4){animation-delay:.09s}
 section.on > div > *:nth-child(n+5){animation-delay:.12s}
+/* covers load at their own pace, so they fade up as each one lands */
+img.co,.po img,.slot.full img,.ttl img{opacity:0;transform:scale(1.03);
+  transition:opacity .42s ease,transform .55s cubic-bezier(.2,.9,.25,1)}
+img.ok{opacity:1;transform:none}
 .rate button.pop svg{animation:pop .32s cubic-bezier(.3,1.4,.5,1)}
 .chip.bump{animation:chipPop .22s cubic-bezier(.3,1.4,.5,1)}
 .bar .tr i{animation:grow .5s cubic-bezier(.2,.9,.25,1) both}
@@ -366,7 +383,9 @@ nav button .dot{position:absolute;top:-2px;right:0;min-width:16px;height:16px;bo
 .wheelwrap.landed{animation:thump .34s cubic-bezier(.3,1.3,.5,1)}
 .savedchip{animation:saved 1.6s ease both}
 @media(prefers-reduced-motion:reduce){#wheelG{transition-duration:.5s}
-  .sheet.on,.sheet.on .panel,section.on > div > *,.rate button.pop svg,.chip.bump,.bar .tr i,.savedchip{animation:none}
+  .sheet.on,.sheet.on .panel,.sheet.out,.sheet.out .panel,section.on > div > *,.rate button.pop svg,.chip.bump,
+  .bar .tr i,.savedchip,nav button.on,.reveal.in .stars i,.cell.going{animation:none}
+  img.co,.po img,.slot.full img,.ttl img{opacity:1;transform:none;transition:none}
   .tile,.po,.club,.slip,.btn{transition:none}
   .reveal{opacity:1;transform:none;transition:none}}
 </style>
@@ -855,13 +874,24 @@ function together(e, all) {
 
 /* ============ shell ============ */
 const RENDER = { doors:renderDoors, shelf:renderShelf, taste:renderTaste, clubs:renderClubs };
-function switchTab(n) { shelfEdit = false; $$("nav button").forEach(b => b.classList.toggle("on", b.dataset.tab === n)); $$("main section").forEach(s => s.classList.toggle("on", s.id === "tab-"+n)); scrollTo(0,0); RENDER[n]?.();
+const TAB_ORDER = ["doors", "shelf", "taste", "clubs"];
+function switchTab(n) { shelfEdit = false;
+  /* the new tab enters from the side you came from, so the row of tabs reads as a row */
+  const was = TAB_ORDER.indexOf(currentTab()), now = TAB_ORDER.indexOf(n);
+  document.documentElement.style.setProperty("--slide", was < 0 || now < 0 || was === now ? "0px" : (now > was ? "22px" : "-22px"));
+  $$("nav button").forEach(b => b.classList.toggle("on", b.dataset.tab === n)); $$("main section").forEach(s => s.classList.toggle("on", s.id === "tab-"+n)); scrollTo(0,0); RENDER[n]?.();
   if (n === "doors") setTimeout(markSeen, 1200); else paintDot(); }
 $$("nav button").forEach(b => b.onclick = () => switchTab(b.dataset.tab));
 const currentTab = () => $$("main section").find(s => s.classList.contains("on"))?.id.replace("tab-","");
 const refresh = () => RENDER[currentTab()]?.();
-function openSheet(html) { $("#sheetBody").innerHTML = `<div class="grab"></div>` + html; $("#sheet").classList.add("on"); $(".panel").scrollTop = 0; }
-function closeSheet() { $("#sheet").classList.remove("on"); }
+let sheetGoing = null;
+function openSheet(html) { clearTimeout(sheetGoing); sheetGoing = null;
+  $("#sheetBody").innerHTML = `<div class="grab"></div>` + html;
+  $("#sheet").classList.remove("out"); $("#sheet").classList.add("on"); $(".panel").scrollTop = 0; }
+function closeSheet() { const sh = $("#sheet"); if (!sh.classList.contains("on")) return;
+  if (REDUCED) { sh.classList.remove("on", "out"); return; }
+  sh.classList.add("out"); clearTimeout(sheetGoing);
+  sheetGoing = setTimeout(() => { sh.classList.remove("on", "out"); sheetGoing = null; }, 200); }
 $("#sheet").onclick = e => { if (e.target === $("#sheet")) closeSheet(); };
 
 /* ============ auth ============ */
@@ -1168,6 +1198,8 @@ async function ensureWork(hit) { if (works[hit.id]?.credits) return works[hit.id
 async function addToShelf(id) { const L = activeList(), hit = window.__hits?.[id] || works[id]; if (!L || !hit) return; const m = $("#msg"); if (m) m.textContent = "Adding";
   try { const w = await ensureWork(hit); if (!L.items.includes(w.id)) { await q(sb.from("list_items").insert({ list_id:L.id, work_id:w.id })); L.items.push(w.id); } if ($("#search")) $("#search").value = ""; if (currentTab() === "shelf") renderShelf(); } catch (e) { if (m) m.textContent = e.message; } }
 async function removeFromShelf(id) { const L = activeList(); if (!L || !L.items.includes(id)) return;
+  const cell = $(`[data-cell="${CSS.escape(id)}"]`);
+  if (cell && !REDUCED) { cell.classList.add("going"); await new Promise(r => setTimeout(r, 190)); }
   const back = L.items.slice(); L.items = L.items.filter(x => x !== id);
   try { await q(sb.from("list_items").delete().eq("list_id", L.id).eq("work_id", id)); }
   catch (e) { L.items = back; const m = $("#msg"); if (m) m.textContent = e.message; }
