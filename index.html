@@ -868,9 +868,18 @@ function tasteMatch(a, b) { const va = {}, vb = {}; a.craft.forEach(([k,v]) => v
   if (!na || !nb) return null; return Math.round(100 * dot / Math.sqrt(na*nb)); }
 const tagCache = {};
 async function tagStats(workId) { if (tagCache[workId]) return tagCache[workId];
-  let rows = []; try { rows = await q(sb.from("entries").select("loved").eq("work_id", workId).limit(400)); } catch {}
-  const n = rows.length, counts = {}; for (const r of rows) for (const k of (r.loved||[])) counts[k] = (counts[k]||0)+1;
-  return (tagCache[workId] = { n, counts, share: k => n ? Math.round((counts[k]||0)/n*100) : 0 }); }
+  let rows = []; try { rows = await q(sb.from("entries").select("loved,user_id").eq("work_id", workId).limit(400)); } catch {}
+  /* by person, not by entry — a rewatch shouldn't let one person outvote the room */
+  const by = {}, people = new Set();
+  for (const r of rows) { people.add(r.user_id);
+    for (const k of new Set(r.loved || [])) (by[k] = by[k] || new Set()).add(r.user_id); }
+  const n = people.size, counts = {};
+  for (const k in by) counts[k] = by[k].size;
+  const share = k => n ? Math.round((counts[k]||0)/n*100) : 0;
+  /* share alone can't tell agreement from a small sample: on one entry every tag reads 100%.
+     so a tag counts as popular only on a work people have actually turned up to. */
+  const hot = k => n >= 5 && (counts[k]||0) >= 3 && share(k) >= 25;
+  return (tagCache[workId] = { n, counts, share, hot }); }
 function myCustomTags(kind) { const known = new Set(K(kind).craft), counts = {};
   for (const e of myEntries) for (const k of (e.loved||[])) if (!k.startsWith("person:") && !known.has(k)) counts[k] = (counts[k]||0)+1;
   return Object.entries(counts).sort((a,b)=>b[1]-a[1]).map(x=>x[0]).slice(0,8); }
@@ -2288,10 +2297,10 @@ async function openWork(id) { let w = works[id]; if (!w) { try { const rows = aw
   const wf = $("#wFirst"); if (wf) wf.onclick = () => openLog(w);
   const wc = $("#wCard"); if (wc) wc.onclick = () => openCuts("work", { w, avg:avg(es), n:es.length, agree, top:top.map(([k]) => [k, st.share(k)]) }, "Share " + w.title);
   if ($("#wLoved")) $("#wLoved").innerHTML = top.length
-    ? top.map(([k,c]) => `<div class="bar"><span class="n">${esc(k.startsWith("person:")?lc(k.slice(7)):k)}</span><span class="tr"><i style="width:${st.share(k)}%;background:${cfg.colour}"></i></span><span class="p">${st.share(k)}%</span></div>`).join("")
+    ? top.map(([k,c]) => `<div class="bar"><span class="n">${esc(k.startsWith("person:")?lc(k.slice(7)):k)}</span><span class="tr"><i style="width:${st.share(k)}%;background:${cfg.colour}"></i></span><span class="p">${st.hot(k) ? st.share(k) + "%" : c + " of " + st.n}</span></div>`).join("")
     : blank(cfg.colour, "1", es.length ? "Nobody's said why yet" : "Nobody's logged this", es.length
-        ? "Ratings without tags. Log it and say what you'd single out — yours will be the first."
-        : `Be the first. What you single out sets the vocabulary everyone else sees.`, [["wFirst", cfg.verb.replace(/^./,c=>c.toUpperCase()) + " it"]]);
+        ? "Ratings without tags. Log it and say what you loved — yours will be the first."
+        : `Be the first. What you tap here becomes the vocabulary everyone else sees.`, [["wFirst", cfg.verb.replace(/^./,c=>c.toUpperCase()) + " it"]]);
   const others = es.filter(e => e.user_id !== me.id);
   const myTaste = tasteOf(myEntries);
   P.entrySort = P.entrySort || "popular";
@@ -2356,10 +2365,10 @@ function openLog(w, edit = null) { const cfg = K(w.kind); const loved = edit?.lo
     <div class="stack"><button class="btn" id="wSave" ${edit?"":"disabled"}>${edit?"Save changes":"Save the entry"}</button><button class="btn quiet" id="wCancel">Not now</button></div><p class="msg" id="wMsg"></p>`);
   const drawTicks = () => { $("#tickRow").innerHTML = cfg.ticks.flatMap(([key,a,b]) => [`<button class="tk ${ctx[key]===a?"on":""}" data-tk="${key}|${a}">${a}</button>`,`<button class="tk ${ctx[key]===b?"on":""}" data-tk="${key}|${b}">${b}</button>`]).join("") + `<button class="tk ${ctx.with?"on":""}" data-tk="with|">${ctx.with?"With "+esc(ctx.with):"With…"}</button>`;
     $$("[data-tk]").forEach(b => b.onclick = () => { const [key,val] = b.dataset.tk.split("|"); if (key === "with") ctx.with = (prompt("Who with?", ctx.with||"")||"").trim(); else ctx[key] = ctx[key] === val ? null : val; drawTicks(); }); }; drawTicks();
-  let stats = { n:0, counts:{}, share:() => 0 };
-  const chip = (key, label, cls = "") => { const pc = stats.share(key); return `<button class="chip ${cls} ${loved.includes(key)?"on":""}" data-lv="${esc(key)}">${esc(label)}${pc>=15?`<u>${pc}%</u>`:""}</button>`; };
+  let stats = { n:0, counts:{}, share:() => 0, hot:() => false };
+  const chip = (key, label, cls = "") => `<button class="chip ${cls} ${loved.includes(key)?"on":""}" data-lv="${esc(key)}">${esc(label)}${stats.hot(key)?`<u>${stats.share(key)}%</u>`:""}</button>`;
   const paintLoved = () => { const el = $("#lovedWrap"); if (!el) return; const people = peopleOf(w);
-    const pop = Object.entries(stats.counts).sort((a,b)=>b[1]-a[1]).map(x=>x[0]).filter(k => stats.share(k) >= 15).slice(0,6); const popSet = new Set(pop);
+    const pop = Object.entries(stats.counts).sort((a,b)=>b[1]-a[1]).map(x=>x[0]).filter(stats.hot).slice(0,5); const popSet = new Set(pop);
     const crafts = cfg.craft.filter(c => !popSet.has(c)), persons = people.filter(([n]) => !popSet.has("person:"+n)), mine = myCustomTags(w.kind).filter(t => !popSet.has(t) && !cfg.craft.includes(t));
     const extras = loved.filter(k => !k.startsWith("person:") && !cfg.craft.includes(k) && !mine.includes(k) && !popSet.has(k));
     el.innerHTML = (pop.length ? `<div class="tagrow"><span class="lbl">Loved most often</span><span class="cnt">${stats.n} ${stats.n===1?"entry":"entries"}</span></div><div class="chips">${pop.map(k => chip(k, k.startsWith("person:")?lc(k.slice(7)):k, k.startsWith("person:")?"who":"")).join("")}</div>` : "")

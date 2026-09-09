@@ -75,6 +75,10 @@ sorts ahead of what's still coming. A work's own page has the same switch as a b
 - Work ids are namespaced: `film:496243`, `tv:1396`, `book:OL27448W`, `game:1942`.
 - Scores are half-stars, 1–10, displayed out of five. A tap is a whole star; a hold is a half.
 - Agreement is the mean absolute deviation from the median, as a percentage.
+- A tag is promoted to the top of the log sheet once five people have logged the work,
+  three of them picked it, and it's on a quarter of them. Five at most, built-in and
+  custom ranked together. Below that nobody's share is shown, because it wouldn't mean
+  anything.
 - Every shareable thing has three **cuts** — see `CUTS` in `index.html`.
 - Motion marks the moment it belongs to: a log floods the screen in the medium's colour,
   a tick draws itself, the nav pill travels, scores roll a digit at a time. All of it is
