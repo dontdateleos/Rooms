@@ -200,6 +200,42 @@ textarea{min-height:76px;resize:none;line-height:1.45}
 
 /* 13 — a profile's avatar builds itself piece by piece */
 @keyframes asm{0%{transform:scale(0) rotate(-62deg);opacity:0}100%{transform:none;opacity:1}}
+/* a face you have not seen this session assembles once, then settles into idling */
+.av.new svg > g > *{transform-origin:50% 54%;animation:asm .42s cubic-bezier(.3,1.5,.5,1) both}
+.av.new svg > g > *:nth-child(2){animation-delay:.08s}
+.av.new svg > g > *:nth-child(3){animation-delay:.15s}
+.av.new .eyes{animation:asm .42s cubic-bezier(.3,1.5,.5,1) both, avBlink 6.4s ease-in-out infinite;
+  animation-delay:.15s, calc(2.4s + var(--bd,0s))}
+
+/* blinking, on each person's own clock */
+.av .eyes{transform-box:fill-box;transform-origin:50% 50%;
+  animation:avBlink 6.4s ease-in-out infinite;animation-delay:calc(2s + var(--bd,0s))}
+@keyframes avBlink{0%,93%,100%{transform:scaleY(1)}96%{transform:scaleY(.08)}}
+
+/* the shape decides the temperament. the idle waits out the card's own arrival first. */
+.av:not(#meAv) svg{transform-origin:50% 62%;animation-delay:calc(1.4s + var(--id,0s));
+  animation-iteration-count:infinite;animation-timing-function:ease-in-out}
+.av:not(#meAv) svg[data-shape="ball"]{animation-name:avBreathe;animation-duration:4.4s}
+.av:not(#meAv) svg[data-shape="box"]{animation-name:avNod;animation-duration:5.2s}
+.av:not(#meAv) svg[data-shape="cube"]{animation-name:avSettle;animation-duration:6.8s}
+.av:not(#meAv) svg[data-shape="can"]{animation-name:avSway;animation-duration:5.6s}
+.av:not(#meAv) svg[data-shape="cone"]{animation-name:avTeeter;animation-duration:3.9s}
+.av:not(#meAv) svg[data-shape="pill"]{animation-name:avBob;animation-duration:4.1s}
+.av:not(#meAv) svg[data-shape="arch"]{animation-name:avSway;animation-duration:7.4s}
+.av:not(#meAv) svg[data-shape="step"]{animation-name:avShift;animation-duration:6.1s;animation-timing-function:steps(2,end)}
+@keyframes avBreathe{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+@keyframes avNod{0%,100%{transform:translateY(0)}50%{transform:translateY(4%)}}
+@keyframes avSettle{0%,100%{transform:rotate(0)}40%{transform:rotate(2deg)}72%{transform:rotate(-1.4deg)}}
+@keyframes avSway{0%,100%{transform:rotate(-2.4deg)}50%{transform:rotate(2.4deg)}}
+@keyframes avTeeter{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(4deg)}}
+@keyframes avBob{0%,100%{transform:translateY(0)}42%{transform:translateY(-6%)}68%{transform:translateY(2%)}}
+@keyframes avShift{0%,48%{transform:translateX(-2%)}52%,100%{transform:translateX(2%)}}
+/* the eyes keep their own pace per shape too */
+.av svg[data-shape="cone"] .eyes{animation-duration:4.2s}
+.av svg[data-shape="ball"] .eyes{animation-duration:5.1s}
+.av svg[data-shape="cube"] .eyes{animation-duration:8.3s}
+.av svg[data-shape="step"] .eyes{animation-duration:9.1s}
+
 .sheet.on .av.meet svg > g > *,.sheet.on .av.big svg > g > *{transform-origin:50% 54%;
   animation:asm .46s cubic-bezier(.3,1.5,.5,1) both}
 .sheet.on .av.meet svg > g > *:nth-child(2),.sheet.on .av.big svg > g > *:nth-child(2){animation-delay:.1s}
@@ -481,9 +517,10 @@ nav button .dot{position:absolute;top:-2px;right:0;min-width:16px;height:16px;bo
   img.co,.po img,.slot.full img,.ttl img{opacity:1;transform:none;transition:none}
   .wash,.sheet.on .cuts button,.cell.dealt,.po .tick.swept,.po .tick.swept:after,.cell.landed .po,
   .cell.shoved .po,.tiles .tile,[data-same].popped,[data-same].popped:before,
-  .sheet.on .av.meet svg > g > *,.sheet.on .av.big svg > g > *,
+  .sheet.on .av.meet svg > g > *,.sheet.on .av.big svg > g > *,.av.new svg > g > *,.av.new .eyes,.av .eyes,
   .newline,.newline:before,.newline:after{animation:none}
   .navpill,.odo .reel .strip,.trio .agree .ring .val{transition:none}
+  .av:not(#meAv) svg[data-shape]{animation:none}
   .tile,.po,.club,.slip,.btn{transition:none}
   .reveal{opacity:1;transform:none;transition:none}}
 </style>
@@ -591,9 +628,16 @@ function avSVG(a) {
   const base = AV_COLS[a.col] || AV_COLS[0], dark = base === "#151320";
   const c = { base, light: dark ? "#3A3650" : avShade(base, .30), dark: dark ? "#0B0A12" : avShade(base, -.18) };
   const eyes = AV_EYES[a.eyes] || AV_EYES.pair;
-  return `<svg viewBox="0 0 100 100" aria-hidden="true"><g transform="rotate(${a.tilt||0} 50 54)">${AV_SHAPES[a.shape](c)}
-    <g fill="${dark ? "#FFF7EC" : "#151320"}">${eyes}</g></g></svg>`; }
-const avatar = (p, cls = "") => `<span class="av ${cls}">${avSVG(avFor(p))}</span>`;
+  return `<svg viewBox="0 0 100 100" data-shape="${a.shape}" aria-hidden="true"><g transform="rotate(${a.tilt||0} 50 54)">${AV_SHAPES[a.shape](c)}
+    <g class="eyes" fill="${dark ? "#FFF7EC" : "#151320"}">${eyes}</g></g></svg>`; }
+/* a face is new until you've seen it this session; the seed keeps two people
+   who share a shape from blinking in lockstep */
+const metFaces = new Set();
+const avSeed = who => { let h = 0; for (let i = 0; i < who.length; i++) h = (h * 31 + who.charCodeAt(i)) | 0; return Math.abs(h); };
+const avatar = (p, cls = "") => { const who = String(p?.id || p?.handle || "");
+  const fresh = who && !metFaces.has(who); if (fresh) metFaces.add(who);
+  const n = avSeed(who);
+  return `<span class="av ${cls}${fresh ? " new" : ""}" style="--bd:${(n % 61) / 10}s;--id:${(n % 37) / 10}s">${avSVG(avFor(p))}</span>`; };
 
 /* ============ the four rooms ============ */
 const KINDS = {

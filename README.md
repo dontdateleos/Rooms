@@ -80,6 +80,9 @@ sorts ahead of what's still coming. A work's own page has the same switch as a b
   custom ranked together. Below that nobody's share is shown, because it wouldn't mean
   anything.
 - Every shareable thing has three **cuts** — see `CUTS` in `index.html`.
+- Avatars idle by shape — a ball breathes, a cone teeters, a step shifts — and blink on a
+  clock seeded from the handle, so two people never blink together. A face you haven't seen
+  this session assembles once, then settles.
 - Motion marks the moment it belongs to: a log floods the screen in the medium's colour,
   a tick draws itself, the nav pill travels, scores roll a digit at a time. All of it is
   off under `prefers-reduced-motion`.
