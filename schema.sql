@@ -350,3 +350,7 @@ create policy club_votes_read on club_votes for select to authenticated using (
 
 -- ---------- v9: avatars ----------
 alter table profiles add column if not exists avatar jsonb;
+
+-- ---------- v10: a shelf you can arrange ----------
+-- null means never dragged; those fall in behind the placed ones, oldest first
+alter table list_items add column if not exists position int;

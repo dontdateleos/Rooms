@@ -136,6 +136,16 @@ textarea{min-height:76px;resize:none;line-height:1.45}
 .po .tick.done:after{content:"";position:absolute;left:8px;top:4px;width:6px;height:11px;border-right:2px solid #fff;border-bottom:2px solid #fff;transform:rotate(40deg)}
 .po.done{opacity:.45}
 .po.soon{opacity:.72}
+.po{-webkit-touch-callout:none}
+.po .rm{position:absolute;top:6px;left:6px;width:26px;height:26px;border-radius:50%;border:0;background:var(--ink);color:#fff;font-size:18px;line-height:1;padding:0;z-index:4;cursor:pointer;display:grid;place-items:center;box-shadow:0 2px 8px -2px rgba(21,19,32,.5)}
+.grid.editing .po{animation:jiggle .34s ease-in-out infinite alternate}
+.grid.editing .cell:nth-child(3n+2) .po{animation-duration:.3s}
+.grid.editing .cell:nth-child(3n+3) .po{animation-duration:.38s}
+.grid.editing .po .tick,.grid.editing .po .tag{display:none}
+.grid .cell.dragging{position:relative;z-index:5}
+.grid .cell.dragging .po{animation:none;transform:scale(1.07);box-shadow:0 18px 30px -14px rgba(21,19,32,.55)}
+@keyframes jiggle{from{transform:rotate(-1.2deg)}to{transform:rotate(1.2deg)}}
+@media (prefers-reduced-motion:reduce){.grid.editing .po{animation:none;outline:2px dashed var(--ink);outline-offset:2px}}
 .po .soon-tag{position:absolute;bottom:6px;left:6px;right:6px;z-index:2;background:rgba(255,247,236,.94);color:var(--ink);
   font-family:var(--head);font-weight:800;font-size:10px;letter-spacing:.03em;text-transform:uppercase;padding:4px 6px;border-radius:8px;text-align:center}
 .shelfbar{display:flex;gap:8px;align-items:center;margin-top:12px}
@@ -619,8 +629,12 @@ const remember = w => { if (w?.id) works[w.id] = Object.assign(works[w.id]||{}, 
 const logged = id => loggedIds.has(id);
 const ENTRY_SEL = "id,user_id,work_id,rated_on,score,note,loved,breakdown,context,created_at,profiles(id,handle,bio,avatar),works(*),reactions(user_id),replies(id,user_id,body,created_at,profiles(handle,avatar))";
 
-async function loadLists() { const rows = await q(sb.from("lists").select("id,name,created_at,list_items(work_id,added_at,works(*))").order("created_at"));
-  lists = rows.map(l => ({ id:l.id, name:l.name, items:(l.list_items||[]).sort((a,b)=>String(a.added_at||"").localeCompare(String(b.added_at||""))).map(i => { remember(i.works); return i.work_id; }) }));
+async function loadLists() { const rows = await q(sb.from("lists").select("id,name,created_at,list_items(work_id,added_at,position,works(*))").order("created_at"));
+  /* a hand-placed item keeps its slot; anything never dragged falls in behind, oldest first */
+  const byHand = (a,b) => a.position != null && b.position != null ? a.position - b.position
+    : a.position != null ? -1 : b.position != null ? 1 : String(a.added_at||"").localeCompare(String(b.added_at||""));
+  lists = rows.map(l => ({ id:l.id, name:l.name, arranged:(l.list_items||[]).some(i => i.position != null),
+    items:(l.list_items||[]).slice().sort(byHand).map(i => { remember(i.works); return i.work_id; }) }));
   if (!lists.length) { const l = await q(sb.from("lists").insert({ owner:me.id, name:"the shelf" }).select().single()); lists = [{ id:l.id, name:l.name, items:[] }]; }
   if (!lists.find(l => l.id === P.activeList)) { P.activeList = lists[0].id; saveP(); } }
 async function loadMine() { myEntries = await q(sb.from("entries").select("*,works(*)").eq("user_id", me.id).order("rated_on",{ascending:false}).order("created_at",{ascending:false}));
@@ -707,6 +721,7 @@ async function clubProgress(club) {
   return per; }
 async function loadFollows() { try { follows = await q(sb.from("follows").select("followee,profiles(id,handle,bio,avatar)").eq("follower", me.id)); } catch { follows = []; } }
 const activeList = () => lists.find(l => l.id === P.activeList) || lists[0];
+let shelfEdit = false, shelfOff = null;
 const activeRoom = () => rooms.find(r => r.id === P.activeRoom) || rooms[0];
 const isFollowing = id => follows.some(f => f.followee === id);
 
@@ -840,7 +855,7 @@ function together(e, all) {
 
 /* ============ shell ============ */
 const RENDER = { doors:renderDoors, shelf:renderShelf, taste:renderTaste, clubs:renderClubs };
-function switchTab(n) { $$("nav button").forEach(b => b.classList.toggle("on", b.dataset.tab === n)); $$("main section").forEach(s => s.classList.toggle("on", s.id === "tab-"+n)); scrollTo(0,0); RENDER[n]?.();
+function switchTab(n) { shelfEdit = false; $$("nav button").forEach(b => b.classList.toggle("on", b.dataset.tab === n)); $$("main section").forEach(s => s.classList.toggle("on", s.id === "tab-"+n)); scrollTo(0,0); RENDER[n]?.();
   if (n === "doors") setTimeout(markSeen, 1200); else paintDot(); }
 $$("nav button").forEach(b => b.onclick = () => switchTab(b.dataset.tab));
 const currentTab = () => $$("main section").find(s => s.classList.contains("on"))?.id.replace("tab-","");
@@ -1062,8 +1077,9 @@ async function renderEveryoneFeed(fb) {
 let wheelItems = [], rot = 0, spinning = false, upcoming = null;
 const isSoon = w => !!(w?.release && w.release > today());
 function renderShelf() { const L = activeList(); const all = L ? L.items.map(id => works[id]).filter(Boolean) : [];
-  const rows = all.filter(w => (!P.shelfFilter || w.kind === P.shelfFilter) && (P.when === "soon" ? isSoon(w) : P.when === "out" ? !isSoon(w) : true))
-    .sort((a,b) => (isSoon(a)?1:0) - (isSoon(b)?1:0) || String(a.release||"").localeCompare(String(b.release||"")));
+  const rows = all.filter(w => (!P.shelfFilter || w.kind === P.shelfFilter) && (P.when === "soon" ? isSoon(w) : P.when === "out" ? !isSoon(w) : true));
+  /* once you've dragged one, the shelf is yours to order; until then what's out comes before what's coming */
+  if (!L?.arranged) rows.sort((a,b) => (isSoon(a)?1:0) - (isSoon(b)?1:0) || String(a.release||"").localeCompare(String(b.release||"")));
   const left = rows.filter(w => !logged(w.id) && !isSoon(w)); const counts = {}; all.forEach(w => counts[w.kind] = (counts[w.kind]||0)+1);
   const soonCount = all.filter(isSoon).length;
   $("#shelfBody").innerHTML = `<h2>The <span class="hl" style="background:var(--mint)">shelf</span></h2><p class="sub">${all.length ? `${left.length} to go · ${all.length-left.length} done` : "Everything you meant to get to."}</p>
@@ -1072,10 +1088,11 @@ function renderShelf() { const L = activeList(); const all = L ? L.items.map(id 
     <div class="msg" id="msg"></div><div id="results"></div>
     ${all.length ? `<div class="chips" style="margin-top:12px">${[["","Everything"],...Object.keys(KINDS).filter(k=>counts[k]).map(k=>[k,K(k).plural+" · "+counts[k]])].map(([k,l]) => `<button class="chip ${P.shelfFilter===k?"on":""}" data-kf="${k}">${l}</button>`).join("")}</div>
       ${soonCount ? `<div class="chips">${[["","All"],["out","Out now"],["soon",`Coming · ${soonCount}`]].map(([k,l]) => `<button class="chip ${(P.when||"")===k?"on":""}" data-wf="${k}">${l}</button>`).join("")}</div>` : ""}
-      <div class="shelfbar">${left.length >= 2 ? `<button class="btn soft" id="spinOpen">Can't decide? Spin ${left.length}</button>` : ""}</div>
+      <div class="shelfbar">${shelfEdit ? `<button class="btn" id="shelfDone">Done</button>`
+        : left.length >= 2 ? `<button class="btn soft" id="spinOpen">Can't decide? Spin ${left.length}</button>` : ""}</div>
       <div id="resultArea"></div>
-      <div class="grid">${rows.map(w => { const soon = isSoon(w);
-        return `<div><div class="po ${logged(w.id)?"done":""} ${soon?"soon":""}" data-w="${esc(w.id)}">${cover(w,"")}<b>${esc(w.title)}</b>${tag(w.kind)}
+      <div class="grid" id="shelfGrid">${rows.map(w => { const soon = isSoon(w);
+        return `<div class="cell" data-cell="${esc(w.id)}"><div class="po ${logged(w.id)?"done":""} ${soon?"soon":""}" data-w="${esc(w.id)}">${cover(w,"")}<b>${esc(w.title)}</b>${tag(w.kind)}
           ${soon ? `<span class="soon-tag">${when(w.release)}</span>` : `<button class="tick ${logged(w.id)?"done":""}" data-t="${esc(w.id)}" aria-label="log it"></button>`}</div>
           <div class="cap"><span>${soon ? "Coming" : esc(w.year||"")}</span><span>${!soon && w.length ? w.length+K(w.kind).unit : ""}</span></div></div>`; }).join("")}</div>`
       : `<div class="tiles" style="margin-top:16px">${Object.keys(KINDS).map((k,i) => `<div class="tile" style="background:${K(k).colour};--r:${[-2,1.5,1,-1.5][i]}deg" data-kt="${k}"><small>Search</small><b>${K(k).plural}</b></div>`).join("")}</div>${blank("var(--mint)","+","An empty shelf","Everything you meant to get to, in one place — out now or still coming. Pick a medium above, or search.",[["shelfFocus","Search for something"]])}`}
@@ -1088,7 +1105,10 @@ function renderShelf() { const L = activeList(); const all = L ? L.items.map(id 
   $$("[data-wf]").forEach(b => b.onclick = () => { P.when = b.dataset.wf; saveP(); renderShelf(); });
   const so = $("#spinOpen"); if (so) so.onclick = openWheel;
   $$("[data-t]").forEach(b => b.onclick = e => { e.stopPropagation(); openLog(works[b.dataset.t]); });
-  $$("[data-w]").forEach(t => t.onclick = () => openWork(t.dataset.w));
+  $$("[data-w]").forEach(t => t.onclick = () => { if (!shelfEdit) openWork(t.dataset.w); });
+  const dn = $("#shelfDone"); if (dn) dn.onclick = () => { shelfEdit = false; renderShelf(); };
+  if (!rows.length) shelfEdit = false;
+  wireShelf(); if (shelfEdit) paintEdit();
   wireSearch(); wireLog("shelfLog", 8);
   if (P.picked && !logged(P.picked) && works[P.picked]) showResult(works[P.picked]); renderWaiting(); }
 function candidates() { const L = activeList(); if (!L) return []; return L.items.filter(id => !logged(id)).map(id => works[id]).filter(Boolean)
@@ -1147,6 +1167,68 @@ async function ensureWork(hit) { if (works[hit.id]?.credits) return works[hit.id
   if (hit.release) w.release = hit.release; await q(sb.from("works").upsert(w)); works[hit.id] = w; return w; }
 async function addToShelf(id) { const L = activeList(), hit = window.__hits?.[id] || works[id]; if (!L || !hit) return; const m = $("#msg"); if (m) m.textContent = "Adding";
   try { const w = await ensureWork(hit); if (!L.items.includes(w.id)) { await q(sb.from("list_items").insert({ list_id:L.id, work_id:w.id })); L.items.push(w.id); } if ($("#search")) $("#search").value = ""; if (currentTab() === "shelf") renderShelf(); } catch (e) { if (m) m.textContent = e.message; } }
+async function removeFromShelf(id) { const L = activeList(); if (!L || !L.items.includes(id)) return;
+  const back = L.items.slice(); L.items = L.items.filter(x => x !== id);
+  try { await q(sb.from("list_items").delete().eq("list_id", L.id).eq("work_id", id)); }
+  catch (e) { L.items = back; const m = $("#msg"); if (m) m.textContent = e.message; }
+  if (currentTab() === "shelf") renderShelf(); }
+
+/* the shelf, arranged: hold a tile to pick it up, drag to move it, \u00d7 to take it off */
+function paintEdit() { const grid = $("#shelfGrid"); if (!grid) return;
+  grid.classList.add("editing");
+  $$("[data-cell]", grid).forEach(c => { const po = $(".po", c); if (!po || $(".rm", po)) return;
+    const b = document.createElement("button"); b.type = "button"; b.className = "rm"; b.textContent = "\u00d7";
+    b.setAttribute("aria-label", "Take it off the shelf");
+    b.onclick = ev => { ev.stopPropagation(); removeFromShelf(c.dataset.cell); };
+    po.appendChild(b); });
+  const bar = $(".shelfbar"); if (bar && !$("#shelfDone")) {
+    bar.innerHTML = `<button class="btn" id="shelfDone">Done</button>`;
+    $("#shelfDone").onclick = () => { shelfEdit = false; renderShelf(); }; } }
+
+function wireShelf() { const grid = $("#shelfGrid"); if (!grid) return;
+  let timer = null, drag = null, moved = false, x0 = 0, y0 = 0;
+  const stop = () => { if (timer) { clearTimeout(timer); timer = null; } };
+  const pickUp = cell => { if (!shelfEdit) { shelfEdit = true; paintEdit(); }
+    drag = cell; moved = false; cell.classList.add("dragging"); navigator.vibrate?.(8); };
+
+  grid.addEventListener("contextmenu", e => { if (shelfEdit || timer) e.preventDefault(); });
+  /* the pick-up follows a still finger, so this first move is what stops the scroll */
+  grid.addEventListener("touchmove", e => { if (drag) e.preventDefault(); }, { passive:false });
+
+  grid.addEventListener("pointerdown", e => { if (e.button) return;
+    const cell = e.target.closest("[data-cell]"); if (!cell || e.target.closest(".rm")) return;
+    x0 = e.clientX; y0 = e.clientY; stop();
+    timer = setTimeout(() => { timer = null; pickUp(cell); }, 450); });
+
+  const onMove = e => {
+    if (timer && Math.hypot(e.clientX - x0, e.clientY - y0) > 10) stop();
+    if (!drag) return;
+    if (!moved && Math.hypot(e.clientX - x0, e.clientY - y0) < 8) return;
+    moved = true;
+    const over = document.elementFromPoint(e.clientX, e.clientY)?.closest("[data-cell]");
+    if (over && over !== drag && over.parentElement === grid) {
+      const cells = [...grid.children];
+      grid.insertBefore(drag, cells.indexOf(drag) < cells.indexOf(over) ? over.nextSibling : over); } };
+
+  const onUp = () => { stop(); if (!drag) return;
+    const d = drag; drag = null; d.classList.remove("dragging"); if (moved) saveOrder(); };
+
+  if (shelfOff) shelfOff();
+  window.addEventListener("pointermove", onMove); window.addEventListener("pointerup", onUp);
+  window.addEventListener("pointercancel", onUp);
+  shelfOff = () => { window.removeEventListener("pointermove", onMove); window.removeEventListener("pointerup", onUp);
+    window.removeEventListener("pointercancel", onUp); }; }
+
+/* the visible tiles keep the slots they already held, so a filtered drag leaves the rest alone */
+async function saveOrder() { const L = activeList(), grid = $("#shelfGrid"); if (!L || !grid) return;
+  const shown = [...grid.children].map(c => c.dataset.cell), inView = new Set(shown);
+  const slots = []; L.items.forEach((id, i) => { if (inView.has(id)) slots.push(i); });
+  const next = L.items.slice(); slots.forEach((slot, k) => next[slot] = shown[k]);
+  const changed = next.map((id, i) => [id, i]).filter(([id, i]) => !L.arranged || L.items[i] !== id);
+  L.items = next; L.arranged = true;
+  try { await Promise.all(changed.map(([id, i]) => q(sb.from("list_items").update({ position:i }).eq("list_id", L.id).eq("work_id", id)))); }
+  catch (e) { const m = $("#msg"); if (m) m.textContent = e.message; } }
+
 async function renderWaiting() { const el = $("#waitBody"); if (!el) return;
   if (!upcoming) { const jobs = [];
     if (P.kinds.includes("film")) jobs.push(tmdb("movie/upcoming",{ region:"AU", page:"1" }).then(d => (d.results||[]).map(r => ({ id:"film:"+r.id, kind:"film", title:r.title, year:(r.release_date||"").slice(0,4), release:r.release_date, date:r.release_date, cover:TMDB_IMG(r.poster_path) }))).catch(()=>[]));
@@ -1926,10 +2008,13 @@ async function openWork(id) { let w = works[id]; if (!w) { try { const rows = aw
     <div class="card"><div class="h"><span>Everyone</span><span class="tag dim" id="wCount">—</span></div><div class="trio" id="wTrio"><div><b>—</b><span>Score</span></div><div><b>—</b><span>Logged it</span></div><div><b>—</b><span>Agree</span></div></div>
       <div class="lbl">What people singled out</div><div id="wLoved">${skeleton(2)}</div></div>
     ${isSoon(w) ? `<p class="sub" style="margin-top:12px">Out ${when(w.release)}. It's on your shelf until then.</p>` : ""}
-    <div class="stack"><button class="btn ${isSoon(w)?"ghost":""}" id="wLog">${logged(w.id)?"Log it again":isSoon(w)?"Log it anyway":cfg.verb.replace(/^./,c=>c.toUpperCase())+" it"}</button><button class="btn ghost" id="wShelf">${lists.some(l=>l.items.includes(w.id))?"On your shelf":"Put it on the shelf"}</button></div>
+    <div class="stack"><button class="btn ${isSoon(w)?"ghost":""}" id="wLog">${logged(w.id)?"Log it again":isSoon(w)?"Log it anyway":cfg.verb.replace(/^./,c=>c.toUpperCase())+" it"}</button><button class="btn ghost" id="wShelf">${activeList()?.items.includes(w.id)?"Take it off the shelf":"Put it on the shelf"}</button></div>
     <div class="card"><div class="h"><span>Details</span></div>${Object.entries(w.credits||{}).filter(([k,v]) => v).map(([r,n]) => `<div class="kv"><span>${r === "dp" ? "cinematography" : r}</span>${esc(n)}</div>`).join("")}${w.meta?.genres?.length?`<div class="kv"><span>genres</span>${esc(w.meta.genres.join(", "))}</div>`:""}</div>
     <div id="wEntries"></div><div class="stack"><button class="btn soft" id="wCard">Save the card</button><button class="btn quiet" id="wClose">Close</button></div>`);
-  $("#wClose").onclick = closeSheet; $("#wLog").onclick = () => openLog(w); $("#wShelf").onclick = () => addToShelf(w.id).then(() => { $("#wShelf").textContent = "On your shelf"; });
+  $("#wClose").onclick = closeSheet; $("#wLog").onclick = () => openLog(w); $("#wShelf").onclick = async () => { const b = $("#wShelf"); b.disabled = true;
+    const on = activeList()?.items.includes(w.id);
+    try { if (on) await removeFromShelf(w.id); else await addToShelf(w.id); } finally {
+      b.textContent = activeList()?.items.includes(w.id) ? "Take it off the shelf" : "Put it on the shelf"; b.disabled = false; } };
   let es = []; try { es = await q(sb.from("entries").select(ENTRY_SEL).eq("work_id", w.id).order("created_at",{ascending:false}).limit(200)); } catch {}
   const mine = es.filter(e => e.user_id === me.id), room = activeRoom() ? es.filter(e => activeRoom().members.some(m => m.id === e.user_id)) : [], fol = es.filter(e => isFollowing(e.user_id));
   const avg = list => { const best = {}; list.forEach(r => { if (!best[r.user_id] || r.rated_on > best[r.user_id].rated_on) best[r.user_id] = r; }); const v = Object.values(best); return v.length ? (v.reduce((a,r)=>a+r.score,0)/v.length/2).toFixed(1) : "—"; };

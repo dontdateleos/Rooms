@@ -56,7 +56,7 @@ The service-role key must never go near this repo.
 |---|---|
 | `index.html` | the whole app — markup, styles, logic, the card renderer, the avatar generator |
 | `site.html` | the marketing page |
-| `schema.sql` | Postgres tables, policies and RPCs, v1 through v9 |
+| `schema.sql` | Postgres tables, policies and RPCs, v1 through v10 |
 | `worker.js` | Cloudflare Worker: TMDB proxy, Open Library proxy, IGDB OAuth |
 | `manifest.webmanifest`, `sw.js`, `icons/` | what makes it installable |
 
@@ -64,6 +64,10 @@ The service-role key must never go near this repo.
 
 Four tabs — **Doors** (your room · following · everyone) · **Shelf** · **Taste** · **Clubs** —
 with a floating **+** for logging. Tap any title for its work page; tap any handle for a profile.
+
+Hold a tile on the shelf to arrange it: the grid starts jiggling, drag to reorder, **×** takes
+something off, **Done** finishes. Arranging once makes the order yours — until then what's out
+sorts ahead of what's still coming. A work's own page has the same switch as a button.
 
 ## Conventions
 
