@@ -16,11 +16,12 @@ Hosted on GitHub Pages: push this repo, then Settings → Pages → deploy from 
 
 | Medium | Source | Needs |
 |---|---|---|
-| Film, TV | TMDB | a free API key, pasted into the app under your name → Edit |
+| Film, TV | TMDB | nothing — the worker holds the key |
 | Books | Open Library | nothing |
-| Games | IGDB | `worker.js` deployed to Cloudflare Workers |
+| Games | IGDB | the worker's IGDB secrets |
 
-A TMDB key never goes in this repo — it lives in the browser's localStorage.
+All four go through the deployed worker, named by `WORKER` in `index.html`. The key in
+Settings is only a fallback for running without one; a TMDB key never goes in this repo.
 TMDB's free tier is non-commercial; charging for Rooms would need their commercial licence.
 
 The worker holds real credentials, so it refuses to run without knowing who may

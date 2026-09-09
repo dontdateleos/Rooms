@@ -628,18 +628,20 @@ const tag = k => `<span class="tag ${k}">${K(k).label}</span>`;
 const cover = (w, cls = "co") => w?.cover ? `<img class="${cls}" src="${esc(w.cover)}" alt="" onload="this.classList.add('ok')" onerror="this.remove()">` : `<div class="${cls}"></div>`;
 
 /* ============ prefs + sources ============ */
+const WORKER = "https://rooms.jordandf1.workers.dev";
+const proxy = () => (P.workerUrl || WORKER).replace(/\/+$/, "");
 const P = Object.assign({ workerUrl:"", tmdbKey:"", activeList:null, activeRoom:null, picked:null, kinds:["film","tv","book","game"], shelfFilter:"", feed:"room" },
   JSON.parse(localStorage.getItem("rooms.prefs") || "{}"));
 const saveP = () => localStorage.setItem("rooms.prefs", JSON.stringify(P));
 async function tmdb(path, params = {}) {
-  const direct = !P.workerUrl; if (direct && !P.tmdbKey) throw new Error("needs a TMDB key or the worker");
-  const u = new URL((direct ? "https://api.themoviedb.org" : P.workerUrl.replace(/\/+$/,"")) + "/3/" + path);
+  const direct = !proxy(); if (direct && !P.tmdbKey) throw new Error("needs a TMDB key or the worker");
+  const u = new URL((direct ? "https://api.themoviedb.org" : proxy()) + "/3/" + path);
   Object.entries(params).forEach(([k,v]) => u.searchParams.set(k,v)); if (direct) u.searchParams.set("api_key", P.tmdbKey);
   const r = await fetch(u); if (!r.ok) throw new Error("TMDB " + r.status); return r.json(); }
-async function igdb(endpoint, body) { if (!P.workerUrl) throw new Error("games need the worker");
-  const r = await fetch(P.workerUrl.replace(/\/+$/,"") + "/igdb/" + endpoint, { method:"POST", headers:{ "Content-Type":"text/plain" }, body });
+async function igdb(endpoint, body) { if (!proxy()) throw new Error("games need the worker");
+  const r = await fetch(proxy() + "/igdb/" + endpoint, { method:"POST", headers:{ "Content-Type":"text/plain" }, body });
   if (!r.ok) throw new Error("IGDB " + r.status); return r.json(); }
-async function ol(path, params = {}) { const base = P.workerUrl ? P.workerUrl.replace(/\/+$/,"") + "/ol" : "https://openlibrary.org";
+async function ol(path, params = {}) { const base = proxy() ? proxy() + "/ol" : "https://openlibrary.org";
   const u = new URL(base + path); Object.entries(params).forEach(([k,v]) => u.searchParams.set(k,v));
   const r = await fetch(u); if (!r.ok) throw new Error("Open Library " + r.status); return r.json(); }
 const TMDB_IMG = p => p ? "https://image.tmdb.org/t/p/w342" + p : "";
@@ -2462,7 +2464,7 @@ async function openYou() { let top = { items:[] }; try { top = await ensureMyTop
     <div class="stack"><button class="btn" id="ySave">Save</button></div><p class="msg" id="yMsg"></p>
     <div class="lbl">Cards</div><div class="chips">${[["","Auto"],["day","Day"],["night","Night"]].map(([k,l]) => `<button class="chip ${(P.cardTheme||"")===k?"on":""}" data-ct="${k}">${l}</button>`).join("")}</div>
     <p class="sub" style="margin-top:4px">Auto goes dark in the evening. The medium tints the light either way.</p>
-    <div class="lbl">Settings</div><div class="card" style="margin-top:0"><div class="lbl" style="margin-top:0">Worker URL · needed for games</div><input id="workerUrl" placeholder="https://your-worker.workers.dev" value="${esc(P.workerUrl)}"><div class="lbl">Or a TMDB key for film and TV</div><input id="tmdbKey" value="${esc(P.tmdbKey)}" autocomplete="off">
+    <div class="lbl">Settings</div><div class="card" style="margin-top:0"><div class="lbl" style="margin-top:0">Worker URL · leave empty unless you run your own</div><input id="workerUrl" placeholder="${esc(WORKER)}" value="${esc(P.workerUrl)}"><div class="lbl">Or a TMDB key for film and TV</div><input id="tmdbKey" value="${esc(P.tmdbKey)}" autocomplete="off">
       <p class="sub" style="margin-top:8px">Film and TV data from <a href="https://www.themoviedb.org" target="_blank" rel="noopener">TMDB</a>.
       This product uses the TMDB API but is not endorsed or certified by TMDB. Books from Open Library, games from IGDB.</p></div>
     <div class="stack"><button class="btn ghost" id="importBtn">Import from Letterboxd, Goodreads, Steam</button>
