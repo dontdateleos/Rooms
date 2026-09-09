@@ -75,3 +75,6 @@ sorts ahead of what's still coming. A work's own page has the same switch as a b
 - Scores are half-stars, 1–10, displayed out of five.
 - Agreement is the mean absolute deviation from the median, as a percentage.
 - Every shareable thing has three **cuts** — see `CUTS` in `index.html`.
+- Motion marks the moment it belongs to: a log floods the screen in the medium's colour,
+  a tick draws itself, the nav pill travels, scores roll a digit at a time. All of it is
+  off under `prefers-reduced-motion`.

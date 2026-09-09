@@ -147,6 +147,102 @@ textarea{min-height:76px;resize:none;line-height:1.45}
 @keyframes jiggle{from{transform:rotate(-1.2deg)}to{transform:rotate(1.2deg)}}
 @keyframes cellOut{to{transform:scale(.55);opacity:0}}
 .cell.going{animation:cellOut .2s cubic-bezier(.4,0,.9,.35) forwards;pointer-events:none}
+
+/* 03 — the medium's colour floods the screen once, then clears */
+.wash{position:fixed;inset:0;z-index:11;pointer-events:none;background:var(--k,var(--mint));
+  animation:washOver .85s cubic-bezier(.4,.85,.3,1) both}
+@keyframes washOver{0%{clip-path:circle(0% at 50% 88%);opacity:.92}
+  52%{clip-path:circle(150% at 50% 88%);opacity:.92}100%{clip-path:circle(150% at 50% 88%);opacity:0}}
+
+/* 05 — the cuts tip down into place, like cards set on a table */
+.cuts button{transform-origin:50% 100%}
+.sheet.on .cuts button{animation:seal .58s cubic-bezier(.25,1.2,.4,1) both}
+.sheet.on .cuts button:nth-child(2){animation-delay:.08s}
+.sheet.on .cuts button:nth-child(3){animation-delay:.16s}
+@keyframes seal{0%{transform:perspective(700px) rotateX(68deg) translateY(-18px);opacity:0}
+  62%{transform:perspective(700px) rotateX(-6deg) translateY(0);opacity:1}100%{transform:none;opacity:1}}
+
+/* 06 — a newly added title deals onto the shelf */
+@keyframes dealIn{0%{transform:translate(-70px,58px) rotate(-22deg) scale(.82);opacity:0}100%{transform:none;opacity:1}}
+.cell.dealt{animation:dealIn .56s cubic-bezier(.2,1.15,.35,1) both}
+
+/* 07 — the check draws itself when something is logged off the shelf */
+@keyframes tickThump{0%{transform:scale(.7)}52%{transform:scale(1.2)}100%{transform:none}}
+@keyframes tickDraw{0%{width:0;height:0;opacity:0}34%{width:6px;height:0;opacity:1}100%{width:6px;height:11px;opacity:1}}
+.po .tick.swept{animation:tickThump .44s cubic-bezier(.3,1.5,.5,1)}
+.po .tick.swept:after{animation:tickDraw .4s cubic-bezier(.5,0,.2,1) .06s both}
+
+/* 08 — a dropped tile lands with weight and its neighbours flinch */
+@keyframes landed{0%{transform:translateY(-11px) scale(1.11)}56%{transform:scale(.97)}100%{transform:none}}
+@keyframes shoved{0%,14%{transform:none}46%{transform:translateX(var(--sh,5px))}100%{transform:none}}
+.cell.landed .po{animation:landed .5s cubic-bezier(.3,1.5,.45,1)}
+.cell.shoved .po{animation:shoved .45s cubic-bezier(.3,1.3,.45,1)}
+
+/* 10 — an empty shelf fans its four mediums out on arrival */
+@keyframes bloom{0%{transform:translateY(16px) rotate(0) scale(.72);opacity:0}
+  100%{transform:rotate(var(--r,0deg)) scale(1);opacity:1}}
+.tiles .tile{animation:bloom .58s cubic-bezier(.25,1.4,.4,1) both}
+.tiles .tile:nth-child(2){animation-delay:.07s}
+.tiles .tile:nth-child(3){animation-delay:.14s}
+.tiles .tile:nth-child(4){animation-delay:.21s}
+
+/* 12 — the reaction squashes, springs, and throws a halo */
+@keyframes heartPop{0%{transform:scale(1)}28%{transform:scale(.82)}62%{transform:scale(1.3)}100%{transform:none}}
+@keyframes halo{0%{transform:translate(-50%,-50%) scale(.5);opacity:.4}
+  100%{transform:translate(-50%,-50%) scale(2.1);opacity:0}}
+[data-same].popped{animation:heartPop .5s cubic-bezier(.3,1.7,.5,1);position:relative}
+[data-same].popped:before{content:"";position:absolute;left:50%;top:50%;width:34px;height:34px;border-radius:50%;
+  background:var(--bad);animation:halo .5s ease-out both;pointer-events:none}
+
+/* 13 — a profile's avatar builds itself piece by piece */
+@keyframes asm{0%{transform:scale(0) rotate(-62deg);opacity:0}100%{transform:none;opacity:1}}
+.sheet.on .av.meet svg > g > *,.sheet.on .av.big svg > g > *{transform-origin:50% 54%;
+  animation:asm .46s cubic-bezier(.3,1.5,.5,1) both}
+.sheet.on .av.meet svg > g > *:nth-child(2),.sheet.on .av.big svg > g > *:nth-child(2){animation-delay:.1s}
+.sheet.on .av.meet svg > g > *:nth-child(3),.sheet.on .av.big svg > g > *:nth-child(3){animation-delay:.18s}
+
+/* 14 — the line between old and new draws outward from its label */
+@keyframes sweepIn{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes labelUp{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+.newline{animation:labelUp .4s cubic-bezier(.3,1.4,.5,1) .14s both}
+.newline:before{transform-origin:right;animation:sweepIn .5s cubic-bezier(.3,.9,.3,1) both}
+.newline:after{transform-origin:left;animation:sweepIn .5s cubic-bezier(.3,.9,.3,1) both}
+
+/* 16 — scores roll into place a digit at a time */
+.trio b.odo,b.odo,.odo{--oh:1.25em;display:inline-flex;align-items:flex-start;line-height:var(--oh)}
+/* the reels are spans inside .trio, where `.trio span` is the small caps label style */
+.odo .reel,.odo .fix,.odo .strip{font:inherit;letter-spacing:inherit;text-transform:none;color:inherit;margin:0}
+.odo .reel{height:var(--oh);overflow:hidden;display:inline-block}
+.odo .reel .strip{display:block;transition:transform .8s cubic-bezier(.22,.9,.24,1)}
+.odo .reel .strip b{display:flex;align-items:center;justify-content:center;height:var(--oh);line-height:1;
+  font-weight:inherit;font-variant-numeric:tabular-nums}
+.odo .fix{display:flex;align-items:center;height:var(--oh);line-height:1}
+
+/* 17 — agreement sweeps around an arc rather than sitting flat */
+.trio > div{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;min-height:76px}
+.trio .gauge{position:relative;display:grid;place-items:center;width:58px;height:58px;margin:0}
+.trio .agree .ring{position:absolute;inset:0;width:58px;height:58px;transform:rotate(-90deg)}
+.trio .agree .ring circle{fill:none;stroke-width:4.5;stroke-linecap:round}
+.trio .agree .ring .track{stroke:var(--cream2)}
+.trio .agree .ring .val{stroke:var(--good);stroke-dasharray:113;stroke-dashoffset:113;
+  transition:stroke-dashoffset 1s cubic-bezier(.2,.9,.25,1)}
+.trio .agree.low .ring .val{stroke:var(--bad)}
+.trio .agree b{position:relative;z-index:2;font-size:19px;color:var(--ink)}
+
+/* 18 — your ten grow in rank order */
+.bar:nth-child(2) .tr i{animation-delay:.07s}
+.bar:nth-child(3) .tr i{animation-delay:.14s}
+.bar:nth-child(4) .tr i{animation-delay:.21s}
+.bar:nth-child(5) .tr i{animation-delay:.28s}
+.bar:nth-child(n+6) .tr i{animation-delay:.35s}
+
+/* 19 — the active pill travels between tabs */
+nav .in{position:relative}
+.navpill{position:absolute;top:9px;bottom:9px;border-radius:99px;background:var(--ink);z-index:0;
+  left:0;width:0;opacity:0;transition:left .34s cubic-bezier(.3,1.25,.4,1),width .34s cubic-bezier(.3,1.25,.4,1)}
+.navpill.set{opacity:1}
+nav button{z-index:1}
+nav .in:has(.navpill.set) button.on{background:none}
 @media (prefers-reduced-motion:reduce){.grid.editing .po{animation:none;outline:2px dashed var(--ink);outline-offset:2px}}
 .po .soon-tag{position:absolute;bottom:6px;left:6px;right:6px;z-index:2;background:rgba(255,247,236,.94);color:var(--ink);
   font-family:var(--head);font-weight:800;font-size:10px;letter-spacing:.03em;text-transform:uppercase;padding:4px 6px;border-radius:8px;text-align:center}
@@ -260,7 +356,7 @@ nav .gap{pointer-events:none}
 nav button{background:none;border:0;padding:12px 4px;border-radius:99px;font-family:var(--head);font-weight:800;font-size:13px;
   letter-spacing:-.01em;color:var(--mute);cursor:pointer;white-space:nowrap;transition:background .18s,color .18s,transform .14s}
 nav button i{display:none}
-nav button.on{background:var(--ink);color:var(--cream);animation:tabPop .34s cubic-bezier(.3,1.5,.5,1)}
+nav button.on{background:var(--ink);color:var(--cream)}
 @keyframes tabPop{0%{transform:scale(.92)}55%{transform:scale(1.05)}100%{transform:scale(1)}}
 nav button:active{transform:scale(.95)}
 #add{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom));z-index:8;
@@ -333,7 +429,8 @@ section.on > div > *:nth-child(n+5){animation-delay:.12s}
 img.co,.po img,.slot.full img,.ttl img{opacity:0;transform:scale(1.03);
   transition:opacity .42s ease,transform .55s cubic-bezier(.2,.9,.25,1)}
 img.ok{opacity:1;transform:none}
-.rate button.pop svg{animation:pop .32s cubic-bezier(.3,1.4,.5,1)}
+@keyframes starLand{0%{transform:scale(.5) rotate(-26deg)}55%{transform:scale(1.3) rotate(7deg)}100%{transform:none}}
+.rate button.pop svg{animation:starLand .4s cubic-bezier(.3,1.6,.5,1)}
 .chip.bump{animation:chipPop .22s cubic-bezier(.3,1.4,.5,1)}
 .bar .tr i{animation:grow .5s cubic-bezier(.2,.9,.25,1) both}
 .tile,.po,.club,.slip{transition:transform .18s cubic-bezier(.2,.9,.25,1)}
@@ -386,6 +483,11 @@ nav button .dot{position:absolute;top:-2px;right:0;min-width:16px;height:16px;bo
   .sheet.on,.sheet.on .panel,.sheet.out,.sheet.out .panel,section.on > div > *,.rate button.pop svg,.chip.bump,
   .bar .tr i,.savedchip,nav button.on,.reveal.in .stars i,.cell.going{animation:none}
   img.co,.po img,.slot.full img,.ttl img{opacity:1;transform:none;transition:none}
+  .wash,.sheet.on .cuts button,.cell.dealt,.po .tick.swept,.po .tick.swept:after,.cell.landed .po,
+  .cell.shoved .po,.tiles .tile,[data-same].popped,[data-same].popped:before,
+  .sheet.on .av.meet svg > g > *,.sheet.on .av.big svg > g > *,
+  .newline,.newline:before,.newline:after{animation:none}
+  .navpill,.odo .reel .strip,.trio .agree .ring .val{transition:none}
   .tile,.po,.club,.slip,.btn{transition:none}
   .reveal{opacity:1;transform:none;transition:none}}
 </style>
@@ -405,7 +507,7 @@ nav button .dot{position:absolute;top:-2px;right:0;min-width:16px;height:16px;bo
   <section id="tab-clubs"><div id="clubsBody"></div></section>
 </main>
 
-<nav id="nav"><div class="in">
+<nav id="nav"><div class="in"><span class="navpill" id="navPill"></span>
   <button data-tab="doors">Doors</button>
   <button data-tab="shelf">Shelf</button>
   <span class="gap"></span>
@@ -741,6 +843,8 @@ async function clubProgress(club) {
 async function loadFollows() { try { follows = await q(sb.from("follows").select("followee,profiles(id,handle,bio,avatar)").eq("follower", me.id)); } catch { follows = []; } }
 const activeList = () => lists.find(l => l.id === P.activeList) || lists[0];
 let shelfEdit = false, shelfOff = null;
+/* set by the thing that just happened, read once by the next render, then cleared */
+let justDealt = null, justSwept = null;
 const activeRoom = () => rooms.find(r => r.id === P.activeRoom) || rooms[0];
 const isFollowing = id => follows.some(f => f.followee === id);
 
@@ -874,17 +978,32 @@ function together(e, all) {
 
 /* ============ shell ============ */
 const RENDER = { doors:renderDoors, shelf:renderShelf, taste:renderTaste, clubs:renderClubs };
+/* 19 — the pill follows the tab you land on */
+function movePill(instant) { const p = $("#navPill"), on = $("nav button.on");
+  if (!p || !on || !on.offsetWidth) return;
+  if (instant) p.style.transition = "none";
+  p.style.left = on.offsetLeft + "px"; p.style.width = on.offsetWidth + "px";
+  p.classList.add("set");
+  if (instant) { void p.offsetWidth; p.style.transition = ""; } }
+addEventListener("resize", () => movePill(true));
+
 const TAB_ORDER = ["doors", "shelf", "taste", "clubs"];
 function switchTab(n) { shelfEdit = false;
   /* the new tab enters from the side you came from, so the row of tabs reads as a row */
   const was = TAB_ORDER.indexOf(currentTab()), now = TAB_ORDER.indexOf(n);
   document.documentElement.style.setProperty("--slide", was < 0 || now < 0 || was === now ? "0px" : (now > was ? "22px" : "-22px"));
-  $$("nav button").forEach(b => b.classList.toggle("on", b.dataset.tab === n)); $$("main section").forEach(s => s.classList.toggle("on", s.id === "tab-"+n)); scrollTo(0,0); RENDER[n]?.();
+  $$("nav button").forEach(b => b.classList.toggle("on", b.dataset.tab === n)); $$("main section").forEach(s => s.classList.toggle("on", s.id === "tab-"+n)); movePill(); scrollTo(0,0); RENDER[n]?.();
   if (n === "doors") setTimeout(markSeen, 1200); else paintDot(); }
 $$("nav button").forEach(b => b.onclick = () => switchTab(b.dataset.tab));
 const currentTab = () => $$("main section").find(s => s.classList.contains("on"))?.id.replace("tab-","");
 const refresh = () => RENDER[currentTab()]?.();
 let sheetGoing = null;
+/* 03 — a flood of the medium's colour, once, on the way out of a save */
+function inkWash(kind) { if (REDUCED) return;
+  const el = document.createElement("span"); el.className = "wash";
+  el.style.setProperty("--k", `var(--${kind || "mint"})`);
+  document.body.appendChild(el); setTimeout(() => el.remove(), 900); }
+
 function openSheet(html) { clearTimeout(sheetGoing); sheetGoing = null;
   $("#sheetBody").innerHTML = `<div class="grab"></div>` + html;
   $("#sheet").classList.remove("out"); $("#sheet").classList.add("on"); $(".panel").scrollTop = 0; }
@@ -918,7 +1037,7 @@ async function enter() {
   $("#meBtn").hidden = false; $("#meName").textContent = me.handle; paintMeAv();
   $("#nav").classList.add("on"); $("#add").classList.add("on");
   await Promise.all([loadLists(), loadMine(), loadRooms(), loadFollows()]); await loadClubs();
-  switchTab("doors"); checkNew();
+  switchTab("doors"); movePill(true); checkNew();
   if (!P.onboarded && !myEntries.length) setTimeout(openOnboarding, 400);
 }
 function paintMeAv() { const el = $("#meAv"); if (el) el.innerHTML = avSVG(avFor(me)); }
@@ -1013,7 +1132,10 @@ function wireSlips(el, es) { const by = Object.fromEntries(es.map(e => [e.id, e]
   $$("[data-prof]", el).forEach(x => x.onclick = () => openProfile(x.dataset.prof));
   $$("[data-bd]", el).forEach(b => b.onclick = () => openEntry(by[b.dataset.bd]));
   $$("[data-same]", el).forEach(b => b.onclick = async () => { const e = by[b.dataset.same], has = (e.reactions||[]).some(r => r.user_id === me.id);
-    try { if (has) await q(sb.from("reactions").delete().eq("entry_id",e.id).eq("user_id",me.id)); else await q(sb.from("reactions").insert({ entry_id:e.id, user_id:me.id })); renderDoors(); } catch {} });
+    try { if (has) await q(sb.from("reactions").delete().eq("entry_id",e.id).eq("user_id",me.id)); else await q(sb.from("reactions").insert({ entry_id:e.id, user_id:me.id })); renderDoors();
+      if (!has && !REDUCED) requestAnimationFrame(() => { const nb = $(`[data-same="${CSS.escape(e.id)}"]`);
+        if (nb) { nb.classList.add("popped"); setTimeout(() => nb.classList.remove("popped"), 520); } });
+    } catch {} });
   $$("[data-reply]", el).forEach(b => b.onclick = () => { const box = $("#rb-"+b.dataset.reply); if (box.innerHTML) { box.innerHTML = ""; return; }
     box.innerHTML = `<input maxlength="600" placeholder="Say it" style="margin-top:10px">`; const i = $("input", box); i.focus();
     i.onkeydown = async ev => { if (ev.key !== "Enter" || !i.value.trim()) return; try { await q(sb.from("replies").insert({ entry_id:b.dataset.reply, user_id:me.id, body:i.value.trim() })); renderDoors(); } catch {} }; }); }
@@ -1138,6 +1260,13 @@ function renderShelf() { const L = activeList(); const all = L ? L.items.map(id 
   $$("[data-w]").forEach(t => t.onclick = () => { if (!shelfEdit) openWork(t.dataset.w); });
   const dn = $("#shelfDone"); if (dn) dn.onclick = () => { shelfEdit = false; renderShelf(); };
   if (!rows.length) shelfEdit = false;
+  if (!REDUCED) {
+    const dealt = justDealt && $(`[data-cell="${CSS.escape(justDealt)}"]`);
+    if (dealt) { dealt.classList.add("dealt"); setTimeout(() => dealt.classList.remove("dealt"), 620); }
+    const swept = justSwept && $(`[data-cell="${CSS.escape(justSwept)}"] .tick.done`);
+    if (swept) { swept.classList.add("swept"); setTimeout(() => swept.classList.remove("swept"), 520); }
+  }
+  justDealt = justSwept = null;
   wireShelf(); if (shelfEdit) paintEdit();
   wireSearch(); wireLog("shelfLog", 8);
   if (P.picked && !logged(P.picked) && works[P.picked]) showResult(works[P.picked]); renderWaiting(); }
@@ -1196,7 +1325,7 @@ async function ensureWork(hit) { if (works[hit.id]?.credits) return works[hit.id
   const w = Object.assign({ id:hit.id, kind:hit.kind, title:hit.title, year:hit.year, cover:hit.cover, creator:hit.creator||"", length:hit.length||0 }, extra);
   if (hit.release) w.release = hit.release; await q(sb.from("works").upsert(w)); works[hit.id] = w; return w; }
 async function addToShelf(id) { const L = activeList(), hit = window.__hits?.[id] || works[id]; if (!L || !hit) return; const m = $("#msg"); if (m) m.textContent = "Adding";
-  try { const w = await ensureWork(hit); if (!L.items.includes(w.id)) { await q(sb.from("list_items").insert({ list_id:L.id, work_id:w.id })); L.items.push(w.id); } if ($("#search")) $("#search").value = ""; if (currentTab() === "shelf") renderShelf(); } catch (e) { if (m) m.textContent = e.message; } }
+  try { const w = await ensureWork(hit); if (!L.items.includes(w.id)) { await q(sb.from("list_items").insert({ list_id:L.id, work_id:w.id })); L.items.push(w.id); justDealt = w.id; } if ($("#search")) $("#search").value = ""; if (currentTab() === "shelf") renderShelf(); } catch (e) { if (m) m.textContent = e.message; } }
 async function removeFromShelf(id) { const L = activeList(); if (!L || !L.items.includes(id)) return;
   const cell = $(`[data-cell="${CSS.escape(id)}"]`);
   if (cell && !REDUCED) { cell.classList.add("going"); await new Promise(r => setTimeout(r, 190)); }
@@ -1243,7 +1372,14 @@ function wireShelf() { const grid = $("#shelfGrid"); if (!grid) return;
       grid.insertBefore(drag, cells.indexOf(drag) < cells.indexOf(over) ? over.nextSibling : over); } };
 
   const onUp = () => { stop(); if (!drag) return;
-    const d = drag; drag = null; d.classList.remove("dragging"); if (moved) saveOrder(); };
+    const d = drag; drag = null; d.classList.remove("dragging");
+    if (!moved) return;
+    if (!REDUCED) { d.classList.add("landed");
+      [[d.previousElementSibling, "-5px"], [d.nextElementSibling, "5px"]].forEach(([n, sh]) => {
+        if (!n) return; n.style.setProperty("--sh", sh); n.classList.add("shoved");
+        setTimeout(() => n.classList.remove("shoved"), 470); });
+      setTimeout(() => d.classList.remove("landed"), 520); }
+    saveOrder(); };
 
   if (shelfOff) shelfOff();
   window.addEventListener("pointermove", onMove); window.addEventListener("pointerup", onUp);
@@ -2023,6 +2159,22 @@ function openClubEditor(existing = null, scope = "room") { const c = existing
       await loadClubs(); closeSheet(); renderClubs(); } catch (e) { $("#cMsg").textContent = e.message; } }; }
 
 /* numbers that mean a quantity count up to it */
+/* 16 — each digit rolls up to its value; the strip reads down from the target */
+function odometer(el, to, suffix = "") { if (!el) return;
+  if (to === "—" || to === null || to === undefined) { el.textContent = "—"; return; }
+  const text = String(to) + suffix;
+  if (REDUCED) { el.textContent = text; return; }
+  el.textContent = ""; el.classList.add("odo");
+  const strips = [];
+  for (const ch of text) {
+    if (!/[0-9]/.test(ch)) { const f = document.createElement("span"); f.className = "fix"; f.textContent = ch; el.appendChild(f); continue; }
+    const d = +ch, reel = document.createElement("span"), strip = document.createElement("span");
+    reel.className = "reel"; strip.className = "strip";
+    for (let i = 0; i < 10; i++) { const b = document.createElement("b"); b.textContent = String((d - i + 10) % 10); strip.appendChild(b); }
+    strip.style.transform = "translateY(calc(-7 * var(--oh)))"; reel.appendChild(strip); el.appendChild(reel); strips.push(strip); }
+  requestAnimationFrame(() => strips.forEach(st => { st.style.transform = "translateY(0)"; }));
+}
+
 function countUp(el, to, suffix = "", ms = 600) {
   if (!el || to === "—" || to === null || to === undefined) { if (el) el.textContent = to ?? "—"; return; }
   if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) { el.textContent = to + suffix; return; }
@@ -2054,8 +2206,16 @@ async function openWork(id) { let w = works[id]; if (!w) { try { const rows = aw
   if ($("#wNumbers")) { const vals = [["You",mine.length?(mine[0].score/2).toFixed(1):"—"],["Your room",avg(room)],["Following",avg(fol)],["Everyone",avg(es)]];
     $("#wNumbers").innerHTML = vals.map(([l]) => `<div><b>—</b><span>${l}</span></div>`).join("");
     $$("#wNumbers b").forEach((b,i) => countUp(b, vals[i][1])); }
-  if ($("#wTrio")) { $("#wTrio").innerHTML = `<div><b id="tScore">—</b><span>Score</span></div><div><b id="tCount">—</b><span>Logged it</span></div><div><b id="tAgree" class="${agree!==null?(agree>=70?"good":"bad"):""}">—</b><span>Agree</span></div>`;
-    countUp($("#tScore"), avg(es)); countUp($("#tCount"), String(es.length)); countUp($("#tAgree"), agree === null ? "—" : String(agree), "%"); }
+  if ($("#wTrio")) { $("#wTrio").innerHTML = `<div><b id="tScore">—</b><span>Score</span></div><div><b id="tCount">—</b><span>Logged it</span></div>
+      <div class="agree ${agree !== null && agree < 70 ? "low" : ""}"><span class="gauge">
+        <svg class="ring" viewBox="0 0 44 44" aria-hidden="true">
+          <circle class="track" cx="22" cy="22" r="18"></circle><circle class="val" id="tRing" cx="22" cy="22" r="18"></circle></svg>
+        <b id="tAgree" class="${agree!==null?(agree>=70?"good":"bad"):""}">—</b></span><span>Agree</span></div>`;
+    odometer($("#tScore"), avg(es)); odometer($("#tCount"), String(es.length));
+    countUp($("#tAgree"), agree === null ? "—" : String(agree));
+    /* 17 — the arc sweeps to the same number the label counts to */
+    const ring = $("#tRing");
+    if (ring && agree !== null) requestAnimationFrame(() => { ring.style.strokeDashoffset = String(113 * (1 - agree / 100)); }); }
   if ($("#wCount")) $("#wCount").textContent = `${es.length} ${es.length===1?"entry":"entries"}`;
   const st = await tagStats(w.id); const top = Object.entries(st.counts).sort((a,b)=>b[1]-a[1]).slice(0,5);
   const wf = $("#wFirst"); if (wf) wf.onclick = () => openLog(w);
@@ -2088,7 +2248,7 @@ async function openProfile(userId) { const self = userId === me.id;
   const theirTens = {}; for (const [k] of TENS) { if (k === "all time") continue; try { const l = await loadTop(userId, k); if (l?.items.length) theirTens[k] = l.items; } catch {} }
   let fc = 0, fg = 0; try { fc = (await q(sb.from("follows").select("follower").eq("followee", userId))).length; fg = (await q(sb.from("follows").select("followee").eq("follower", userId))).length; } catch {}
   const shared = mine.craft.slice(0,5).map(c=>c[0]).filter(k => t.craft.slice(0,5).some(c => c[0] === k));
-  openSheet(`<div style="display:flex;align-items:center;gap:12px">${avatar(p)}<div style="flex:1"><h3>${esc(p.handle)}${self?` <span class="tag dim">you</span>`:""}</h3>${p.bio?`<p class="sub" style="margin-top:2px">${esc(p.bio)}</p>`:""}</div>${!self && match!==null?`<span class="ring">${match} match</span>`:""}</div>
+  openSheet(`<div style="display:flex;align-items:center;gap:12px">${avatar(p, "meet")}<div style="flex:1"><h3>${esc(p.handle)}${self?` <span class="tag dim">you</span>`:""}</h3>${p.bio?`<p class="sub" style="margin-top:2px">${esc(p.bio)}</p>`:""}</div>${!self && match!==null?`<span class="ring">${match} match</span>`:""}</div>
     <div class="tally">${Object.keys(KINDS).filter(k=>t.kinds[k]).map(k => `<span><b>${t.kinds[k]}</b>${K(k).label.toLowerCase()}</span>`).join("")}
       <button class="chip" id="showFollowers" style="padding:5px 10px"><b style="margin-right:4px">${fc}</b>followers</button><button class="chip" id="showFollowing" style="padding:5px 10px"><b style="margin-right:4px">${fg}</b>following</button></div>
     <div class="stack">${self ? `<button class="btn ghost" id="editMe">Edit profile &amp; settings</button>` : `<button class="btn ${isFollowing(p.id)?"ghost":"blue"}" id="followBtn">${isFollowing(p.id)?"Following":"Follow"}</button>`}</div>
@@ -2155,7 +2315,8 @@ function openLog(w, edit = null) { const cfg = K(w.kind); const loved = edit?.lo
   wireStars(); drawLoved(); drawBd(); $("#wCancel").onclick = closeSheet;
   $("#wSave").onclick = async () => { if (!score) return; const e = { user_id:me.id, work_id:w.id, rated_on:$("#wDate").value || today(), score, note:$("#wNote").value.trim() || null, loved:loved.length?loved.slice():null, context:Object.keys(ctx).length?ctx:null, breakdown:null };
     const rs = $$("[data-bd]"); if (score >= 8 && (rs.some(r => r.dataset.touched) || $("#wAbout")?.value.trim())) { e.breakdown = {}; rs.forEach(r => e.breakdown[r.dataset.bd] = +r.value); e.breakdown.about = $("#wAbout").value.trim(); }
-    $("#wSave").disabled = true; try { await saveEntry(e, edit?.id); await loadMine(); recs = null; delete tagCache[w.id]; if (P.picked === w.id) { P.picked = null; saveP(); } closeSheet(); refresh();
+    $("#wSave").disabled = true; try { await saveEntry(e, edit?.id); await loadMine();
+      justSwept = w.id; inkWash(w.kind); recs = null; delete tagCache[w.id]; if (P.picked === w.id) { P.picked = null; saveP(); } closeSheet(); refresh();
       const saved = (edit ? myEntries.find(x => x.id === edit.id) : myEntries.find(x => x.work_id === w.id)) || e; openEntry(saved, true); } catch (err) { $("#wMsg").textContent = err.message; $("#wSave").disabled = false; } }; }
 
 /* ============ ENTRY PAGE ============ */
