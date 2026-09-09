@@ -1039,9 +1039,26 @@ function renderAuth() {
   $("#send").onclick = async () => { const email = $("#email").value.trim(); if (!email) return; $("#authMsg").textContent = "sending";
     try { await q(sb.auth.signInWithOtp({ email, options:{ emailRedirectTo: location.origin + location.pathname } })); $("#authMsg").textContent = "Sent. Open the link on this device."; } catch (e) { $("#authMsg").textContent = e.message; } };
 }
-async function loadMe() { const { data:{ session } } = await sb.auth.getSession(); if (!session) { me = null; return null; }
+/* signed in, but no profile row yet — the id waiting for a handle */
+let pendingUser = null;
+function renderClaim() { const b = $("#authBody");
+  b.innerHTML = `<h1>One more<br><span>thing.</span></h1>
+    <p>Pick the handle your room will know you by. Lowercase, no spaces.</p>
+    <div class="lbl">Handle</div><input id="handle" maxlength="24" autocapitalize="none" autocorrect="off" placeholder="handle">
+    <div class="stack"><button class="btn blue" id="claim">Open my rooms</button></div><p class="msg" id="authMsg"></p>`;
+  const claim = async () => { const h = lc($("#handle").value.trim());
+    if (!/^[a-z0-9_]{2,24}$/.test(h)) { $("#authMsg").textContent = "two to twenty-four, lowercase, no spaces"; return; }
+    $("#claim").disabled = true; $("#authMsg").textContent = "";
+    try { await q(sb.from("profiles").insert({ id:pendingUser, handle:h })); if (await loadMe()) enter(); }
+    catch (e) { $("#authMsg").textContent = /duplicate|unique/i.test(e.message) ? "someone already has that one" : e.message;
+      $("#claim").disabled = false; } };
+  $("#claim").onclick = claim;
+  $("#handle").onkeydown = e => { if (e.key === "Enter") claim(); }; }
+
+async function loadMe() { const { data:{ session } } = await sb.auth.getSession(); if (!session) { me = null; pendingUser = null; return null; }
   if (sb.__local) { me = { id:sb.__db.profile.id, handle:sb.__db.profile.handle, bio:sb.__db.profile.bio||"", avatar:sb.__db.profile.avatar||null }; return me; }
-  const rows = await q(sb.from("profiles").select("id,handle,bio,avatar").eq("id", session.user.id).limit(1)); me = rows[0] || null; return me; }
+  const rows = await q(sb.from("profiles").select("id,handle,bio,avatar").eq("id", session.user.id).limit(1));
+  me = rows[0] || null; pendingUser = me ? null : session.user.id; return me; }
 async function enter() {
   $("#meBtn").hidden = false; $("#meName").textContent = me.handle; paintMeAv();
   $("#nav").classList.add("on"); $("#add").classList.add("on");
@@ -2445,7 +2462,9 @@ async function openYou() { let top = { items:[] }; try { top = await ensureMyTop
     <div class="stack"><button class="btn" id="ySave">Save</button></div><p class="msg" id="yMsg"></p>
     <div class="lbl">Cards</div><div class="chips">${[["","Auto"],["day","Day"],["night","Night"]].map(([k,l]) => `<button class="chip ${(P.cardTheme||"")===k?"on":""}" data-ct="${k}">${l}</button>`).join("")}</div>
     <p class="sub" style="margin-top:4px">Auto goes dark in the evening. The medium tints the light either way.</p>
-    <div class="lbl">Settings</div><div class="card" style="margin-top:0"><div class="lbl" style="margin-top:0">Worker URL · needed for games</div><input id="workerUrl" placeholder="https://your-worker.workers.dev" value="${esc(P.workerUrl)}"><div class="lbl">Or a TMDB key for film and TV</div><input id="tmdbKey" value="${esc(P.tmdbKey)}" autocomplete="off"></div>
+    <div class="lbl">Settings</div><div class="card" style="margin-top:0"><div class="lbl" style="margin-top:0">Worker URL · needed for games</div><input id="workerUrl" placeholder="https://your-worker.workers.dev" value="${esc(P.workerUrl)}"><div class="lbl">Or a TMDB key for film and TV</div><input id="tmdbKey" value="${esc(P.tmdbKey)}" autocomplete="off">
+      <p class="sub" style="margin-top:8px">Film and TV data from <a href="https://www.themoviedb.org" target="_blank" rel="noopener">TMDB</a>.
+      This product uses the TMDB API but is not endorsed or certified by TMDB. Books from Open Library, games from IGDB.</p></div>
     <div class="stack"><button class="btn ghost" id="importBtn">Import from Letterboxd, Goodreads, Steam</button>
       ${sb.__local?`<button class="btn ghost" id="backup">Back up the log</button><button class="btn quiet" id="restore">Restore from a backup</button><input type="file" id="restoreFile" accept="application/json" hidden>`:""}<button class="btn quiet" id="signOut">${sb.__local?"Close the log":"Sign out"}</button><button class="btn quiet" id="sClose">Done</button></div><p class="msg" id="sMsg"></p>`);
   /* the shape picker */
@@ -2488,8 +2507,9 @@ window.__rooms = { paintLog, wireLog, openWholeLog, AV_SHAPES, AV_EYES, AV_COLS,
 
 /* ============ boot ============ */
 if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("./sw.js", { scope: "./" }).catch(() => {});
-renderAuth(); sb.auth.onAuthStateChange?.(async ev => { if (ev === "SIGNED_IN" && !me) { if (await loadMe()) enter(); } });
-if (await loadMe()) enter();
+renderAuth(); sb.auth.onAuthStateChange?.(async ev => {
+  if (ev === "SIGNED_IN" && !me) { if (await loadMe()) enter(); else if (pendingUser) renderClaim(); } });
+if (await loadMe()) enter(); else if (pendingUser) renderClaim();
 </script>
 </body>
 </html>

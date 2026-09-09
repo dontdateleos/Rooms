@@ -1,0 +1,9 @@
+# deploy with: wrangler deploy
+# then the four secrets, ORIGIN included or the worker serves 503 to everything:
+#   wrangler secret put TMDB_KEY
+#   wrangler secret put IGDB_CLIENT_ID
+#   wrangler secret put IGDB_CLIENT_SECRET
+#   wrangler secret put ORIGIN          # https://dontdateleos.github.io
+name = "rooms"
+main = "worker.js"
+compatibility_date = "2026-09-01"
