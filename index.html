@@ -2515,6 +2515,10 @@ async function openYou() { let top = { items:[] }; try { top = await ensureMyTop
     <div class="lbl">Settings</div><div class="card" style="margin-top:0"><div class="lbl" style="margin-top:0">Worker URL · leave empty unless you run your own</div><input id="workerUrl" placeholder="${esc(WORKER)}" value="${esc(P.workerUrl)}"><div class="lbl">Or a TMDB key for film and TV</div><input id="tmdbKey" value="${esc(P.tmdbKey)}" autocomplete="off">
       <p class="sub" style="margin-top:8px">Film and TV data from <a href="https://www.themoviedb.org" target="_blank" rel="noopener">TMDB</a>.
       This product uses the TMDB API but is not endorsed or certified by TMDB. Books from Open Library, games from IGDB.</p></div>
+    ${sb.__local ? "" : `<div class="lbl">Password</div><div class="card" style="margin-top:0">
+      <div class="lbl" style="margin-top:0">Set one, and you can sign in without waiting for an email</div>
+      <input id="newPw" type="password" autocomplete="new-password" placeholder="at least eight characters">
+      <div class="stack"><button class="btn" id="savePw">Save the password</button></div><p class="msg" id="pwMsg"></p></div>`}
     <div class="stack"><button class="btn ghost" id="importBtn">Import from Letterboxd, Goodreads, Steam</button>
       ${sb.__local?`<button class="btn ghost" id="backup">Back up the log</button><button class="btn quiet" id="restore">Restore from a backup</button><input type="file" id="restoreFile" accept="application/json" hidden>`:""}<button class="btn quiet" id="signOut">${sb.__local?"Close the log":"Sign out"}</button><button class="btn quiet" id="sClose">Done</button></div><p class="msg" id="sMsg"></p>`);
   /* the shape picker */
@@ -2544,6 +2548,13 @@ async function openYou() { let top = { items:[] }; try { top = await ensureMyTop
       else await q(sb.from("profiles").update({ handle:h, bio:bio||null, avatar:av }).eq("id", me.id));
       me.handle = h; me.bio = bio; me.avatar = av; $("#meName").textContent = h; paintMeAv();
       $("#yMsg").textContent = "Saved"; refresh(); } catch (e) { $("#yMsg").textContent = e.message; } };
+  const sp = $("#savePw"); if (sp) sp.onclick = async () => { const pw = $("#newPw").value;
+    if (pw.length < 8) { $("#pwMsg").textContent = "at least eight characters"; return; }
+    sp.disabled = true; $("#pwMsg").textContent = "saving";
+    try { await q(sb.auth.updateUser({ password:pw }));
+      $("#newPw").value = ""; $("#pwMsg").textContent = "Saved. That's your password on this email now."; }
+    catch (e) { $("#pwMsg").textContent = e.message; }
+    finally { sp.disabled = false; } };
   $("#workerUrl").onchange = e => { P.workerUrl = e.target.value.trim(); saveP(); upcoming = null; }; $("#tmdbKey").onchange = e => { P.tmdbKey = e.target.value.trim(); saveP(); upcoming = null; };
   $$("[data-ct]").forEach(b => b.onclick = () => { P.cardTheme = b.dataset.ct; saveP(); $$("[data-ct]").forEach(x => x.classList.toggle("on", x === b)); });
   $("#importBtn").onclick = openImport;
