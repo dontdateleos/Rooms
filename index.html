@@ -1036,10 +1036,35 @@ function renderAuth() {
     const go = h => { sb.auth._localStart(h); loadMe().then(m => m && enter()); };
     if (prev) $("#cont").onclick = () => go(prev.handle); else $("#startLocal").onclick = () => { const h = lc($("#handle").value.trim());
       if (!/^[a-z0-9_]{2,24}$/.test(h)) { $("#authMsg").textContent = "two to twenty-four, lowercase, no spaces"; return; } go(h); }; return; }
-  b.innerHTML = `<h1>Every room<br>you've <span>been in.</span></h1><p>Sign in with a link. No password.</p>
-    <div class="lbl">Email</div><input id="email" type="email" placeholder="you@somewhere"><div class="stack"><button class="btn blue" id="send">Send me a link</button></div><p class="msg" id="authMsg"></p>`;
-  $("#send").onclick = async () => { const email = $("#email").value.trim(); if (!email) return; $("#authMsg").textContent = "sending";
-    try { await q(sb.auth.signInWithOtp({ email, options:{ emailRedirectTo: location.origin + location.pathname } })); $("#authMsg").textContent = "Sent. Open the link on this device."; } catch (e) { $("#authMsg").textContent = e.message; } };
+  b.innerHTML = `<h1>Every room<br>you've <span>been in.</span></h1><p>Sign in with a code. No password.</p>
+    <div class="lbl">Email</div><input id="email" type="email" inputmode="email" autocapitalize="none" autocorrect="off" placeholder="you@somewhere">
+    <div class="stack"><button class="btn blue" id="send">Send me a code</button></div>
+    <div id="codeStep"></div><p class="msg" id="authMsg"></p>`;
+
+  /* the code matters on a home screen app: a link opens in the browser, which keeps its own
+     storage, so the session would land somewhere the installed app can never read */
+  const askCode = email => { $("#codeStep").innerHTML = `<div class="lbl">The six digits we emailed you</div>
+      <input id="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000">
+      <div class="stack"><button class="btn blue" id="verify">Sign in</button><button class="btn quiet" id="again">Send another</button></div>`;
+    const go = async () => { const token = $("#code").value.replace(/\D/g, "");
+      if (token.length !== 6) { $("#authMsg").textContent = "six digits"; return; }
+      $("#verify").disabled = true; $("#authMsg").textContent = "checking";
+      try { await q(sb.auth.verifyOtp({ email, token, type:"email" }));
+        $("#authMsg").textContent = ""; if (await loadMe()) enter(); else if (pendingUser) renderClaim(); }
+      catch (e) { $("#authMsg").textContent = /expired|invalid/i.test(e.message) ? "that code didn't work — try another" : e.message;
+        $("#verify").disabled = false; } };
+    $("#verify").onclick = go;
+    $("#code").onkeydown = e => { if (e.key === "Enter") go(); };
+    $("#again").onclick = () => { $("#codeStep").innerHTML = ""; $("#send").click(); };
+    $("#code").focus(); };
+
+  $("#send").onclick = async () => { const email = $("#email").value.trim(); if (!email) return;
+    $("#send").disabled = true; $("#authMsg").textContent = "sending";
+    try { await q(sb.auth.signInWithOtp({ email, options:{ emailRedirectTo: location.origin + location.pathname } }));
+      $("#authMsg").textContent = "Sent. Enter the code below, or tap the link if you're in a browser.";
+      askCode(email); }
+    catch (e) { $("#authMsg").textContent = e.message; }
+    finally { $("#send").disabled = false; } };
 }
 /* signed in, but no profile row yet — the id waiting for a handle */
 let pendingUser = null;
