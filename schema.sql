@@ -309,7 +309,7 @@ alter table club_members enable row level security;
 
 drop policy if exists clubs_read on clubs;
 create policy clubs_read on clubs for select to authenticated
-  using (scope = 'open' or (room_id is not null and shares_room_id(room_id)));
+  using (scope = 'open' or (room_id is not null and room_id in (select my_room_ids())));
 drop policy if exists clubs_write on clubs;
 create policy clubs_write on clubs for all to authenticated
   using (created_by = auth.uid()) with check (created_by = auth.uid());
