@@ -73,7 +73,7 @@ sorts ahead of what's still coming. A work's own page has the same switch as a b
 ## Conventions
 
 - Work ids are namespaced: `film:496243`, `tv:1396`, `book:OL27448W`, `game:1942`.
-- Scores are half-stars, 1–10, displayed out of five.
+- Scores are half-stars, 1–10, displayed out of five. A tap is a whole star; a hold is a half.
 - Agreement is the mean absolute deviation from the median, as a percentage.
 - Every shareable thing has three **cuts** — see `CUTS` in `index.html`.
 - Motion marks the moment it belongs to: a log floods the screen in the medium's colour,
