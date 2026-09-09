@@ -747,7 +747,7 @@ addEventListener("online", flushQueue);
 let me = null; const works = {}; let lists = [], rooms = [], clubs = [], myEntries = [], follows = [], loggedIds = new Set();
 const remember = w => { if (w?.id) works[w.id] = Object.assign(works[w.id]||{}, w); return w?.id ? works[w.id] : null; };
 const logged = id => loggedIds.has(id);
-const ENTRY_SEL = "id,user_id,work_id,rated_on,score,note,loved,breakdown,context,created_at,profiles(id,handle,bio,avatar),works(*),reactions(user_id),replies(id,user_id,body,created_at,profiles(handle,avatar))";
+const ENTRY_SEL = "id,user_id,work_id,rated_on,score,note,loved,breakdown,context,created_at,profiles!entries_user_id_fkey(id,handle,bio,avatar),works(*),reactions(user_id),replies(id,user_id,body,created_at,profiles(handle,avatar))";
 
 async function loadLists() { const rows = await q(sb.from("lists").select("id,name,created_at,list_items(work_id,added_at,position,works(*))").order("created_at"));
   /* a hand-placed item keeps its slot; anything never dragged falls in behind, oldest first */
@@ -839,9 +839,9 @@ async function clubProgress(club) {
   let es = []; try { es = await q(sb.from("entries").select("user_id,work_id").in("work_id", club.items || [])); } catch {}
   const per = {}; for (const e of es) { if (!ids.includes(e.user_id)) continue; (per[e.user_id] ||= new Set()).add(e.work_id); }
   return per; }
-async function loadFollows() { try { follows = await q(sb.from("follows").select("followee,profiles(id,handle,bio,avatar)").eq("follower", me.id)); } catch { follows = []; } }
+async function loadFollows() { try { follows = await q(sb.from("follows").select("followee,profiles!follows_followee_fkey(id,handle,bio,avatar)").eq("follower", me.id)); } catch { follows = []; } }
 const activeList = () => lists.find(l => l.id === P.activeList) || lists[0];
-let shelfEdit = false, shelfOff = null;
+let shelfEdit = false, shelfOff = null, shelfStale = false;
 /* set by the thing that just happened, read once by the next render, then cleared */
 let justDealt = null, justSwept = null;
 const activeRoom = () => rooms.find(r => r.id === P.activeRoom) || rooms[0];
@@ -955,7 +955,7 @@ async function checkNew() {
   const since = lastSeen(); const R = activeRoom();
   try {
     if (R) { const ids = R.members.map(m => m.id).filter(i => i !== me.id);
-      if (ids.length) { const es = await q(sb.from("entries").select("id,user_id,created_at,work_id,profiles(handle)").in("user_id", ids).limit(100));
+      if (ids.length) { const es = await q(sb.from("entries").select("id,user_id,created_at,work_id,profiles!entries_user_id_fkey(handle)").in("user_id", ids).limit(100));
         unseen.entries = es.filter(e => String(e.created_at) > since); } }
     const mineIds = new Set(myEntries.map(e => e.id));
     const reps = await q(sb.from("replies").select("id,entry_id,user_id,created_at,profiles(handle)").limit(200));
@@ -1394,8 +1394,9 @@ function showResult(w) { const el = $("#resultArea"); if (!el) return;
     <div class="stack"><button class="btn" id="pickedBtn">${K(w.kind).verb} it</button><button class="btn quiet" id="againBtn">Again</button></div></div>`;
   $("#pickedBtn").onclick = () => openLog(w); $("#againBtn").onclick = () => { P.picked = null; saveP(); if (wheelItems.length >= 3) spin(); else drawWheel(); }; }
 /* the pick follows you back to the shelf and into the room */
-let searchT; function wireSearch() { const el = $("#search"); if (!el) return; el.oninput = e => { clearTimeout(searchT); const v = e.target.value.trim(); if (!v) { $("#results").innerHTML = ""; $("#msg").textContent = ""; return; } searchT = setTimeout(() => doSearch(v, r => addToShelf(r.dataset.add), $("#results"), $("#msg")), 400); }; }
-async function doSearch(term, onPick, resEl, msgEl) { msgEl.textContent = "Searching " + P.kinds.map(k => K(k).label.toLowerCase()).join(", ");
+let searchT; function wireSearch() { const el = $("#search"); if (!el) return; el.oninput = e => { clearTimeout(searchT); const v = e.target.value.trim(); if (!v) { $("#results").innerHTML = ""; $("#msg").textContent = "";
+      if (shelfStale) { shelfStale = false; if (currentTab() === "shelf") renderShelf(); } return; } searchT = setTimeout(() => doSearch(v, r => addToShelf(r.dataset.add), $("#results"), $("#msg"), el), 400); }; }
+async function doSearch(term, onPick, resEl, msgEl, box) { msgEl.textContent = "Searching " + P.kinds.map(k => K(k).label.toLowerCase()).join(", ");
   const done = await Promise.all(P.kinds.map(k => SOURCES[k](term).then(r => ({ k, r })).catch(e => ({ k, err:e.message })))); const hits = done.flatMap(d => d.r || []); const errs = done.filter(d => d.err).map(d => `${K(d.k).label}: ${d.err}`);
   msgEl.textContent = hits.length ? errs.join(" · ") : "";
   if (!hits.length) { resEl.innerHTML = errs.length
@@ -1403,12 +1404,23 @@ async function doSearch(term, onPick, resEl, msgEl) { msgEl.textContent = "Searc
     : blank("var(--cream2)","?", `Nothing for “${esc(term)}”`, `Try fewer words, or turn on another medium above. Some things simply aren't in TMDB, Open Library or IGDB.`, []);
     return; } window.__hits = Object.assign(window.__hits||{}, Object.fromEntries(hits.map(h => [h.id, h])));
   resEl.innerHTML = hits.map(h => `<div class="row" data-add="${esc(h.id)}">${cover(h)}<div class="t"><b>${esc(h.title)}</b><small>${tag(h.kind)} ${isSoon(h)?`Coming ${when(h.release)}`:esc(h.year||"")}${h.creator?" · "+esc(h.creator):""}</small></div><span class="chip">Add</span></div>`).join("");
-  $$("[data-add]", resEl).forEach(r => r.onclick = () => onPick(r)); }
+  $$("[data-add]", resEl).forEach(r => {
+    r.addEventListener("mousedown", e => e.preventDefault());
+    r.onclick = () => { onPick(r); box?.focus(); }; }); }
 async function ensureWork(hit) { if (works[hit.id]?.credits) return works[hit.id]; const raw = hit.id.split(":")[1]; const extra = await DETAIL[hit.kind](raw).catch(() => ({}));
   const w = Object.assign({ id:hit.id, kind:hit.kind, title:hit.title, year:hit.year, cover:hit.cover, creator:hit.creator||"", length:hit.length||0 }, extra);
   if (hit.release) w.release = hit.release; await q(sb.from("works").upsert(w)); works[hit.id] = w; return w; }
 async function addToShelf(id) { const L = activeList(), hit = window.__hits?.[id] || works[id]; if (!L || !hit) return; const m = $("#msg"); if (m) m.textContent = "Adding";
-  try { const w = await ensureWork(hit); if (!L.items.includes(w.id)) { await q(sb.from("list_items").insert({ list_id:L.id, work_id:w.id })); L.items.push(w.id); justDealt = w.id; } if ($("#search")) $("#search").value = ""; if (currentTab() === "shelf") renderShelf(); } catch (e) { if (m) m.textContent = e.message; } }
+  try { const w = await ensureWork(hit); if (!L.items.includes(w.id)) { await q(sb.from("list_items").insert({ list_id:L.id, work_id:w.id })); L.items.push(w.id); justDealt = w.id; }
+    /* re-rendering the tab would take the field, the results and the keyboard with it,
+       so while a search is open the shelf waits and the row says it landed */
+    const box = $("#search"), open = box && box.value.trim();
+    const row = $(`[data-add="${CSS.escape(id)}"]`);
+    if (row) { row.classList.add("done"); const c = $(".chip", row); if (c) c.textContent = "On the shelf"; }
+    if (m) m.textContent = "";
+    if (open) shelfStale = true;
+    else if (currentTab() === "shelf") renderShelf();
+  } catch (e) { if (m) m.textContent = e.message; } }
 async function removeFromShelf(id) { const L = activeList(); if (!L || !L.items.includes(id)) return;
   const cell = $(`[data-cell="${CSS.escape(id)}"]`);
   if (cell && !REDUCED) { cell.classList.add("going"); await new Promise(r => setTimeout(r, 190)); }
@@ -2223,7 +2235,10 @@ function openClubEditor(existing = null, scope = "room") { const c = existing
     $("#dueWrap").style.display = season ? "" : "none"; if (!season) $("#cDue").value = "";
     $("#modeNote").textContent = season ? "A season: it closes on the date and everyone votes."
       : "Standing: no deadline. Finish it whenever, vote when you do, and run it again if you like."; });
-  let t; $("#cSearch").oninput = e => { clearTimeout(t); const v = e.target.value.trim(); if (!v) { $("#cResults").innerHTML = ""; return; } t = setTimeout(() => doSearch(v, async r => { try { const w = await ensureWork(window.__hits[r.dataset.add]); if (!c.items.includes(w.id)) c.items.push(w.id); $("#cSearch").value = ""; $("#cResults").innerHTML = ""; draw(); } catch (err) { $("#cMsg").textContent = err.message; } }, $("#cResults"), $("#cMsg")), 400); };
+  let t; $("#cSearch").oninput = e => { clearTimeout(t); const v = e.target.value.trim(); if (!v) { $("#cResults").innerHTML = ""; return; } t = setTimeout(() => doSearch(v, async r => { try { const w = await ensureWork(window.__hits[r.dataset.add]); if (!c.items.includes(w.id)) c.items.push(w.id);
+        const row = $(`[data-add="${CSS.escape(w.id)}"]`, $("#cResults"));
+        if (row) { row.classList.add("done"); const ch = $(".chip", row); if (ch) ch.textContent = "In the club"; }
+        draw(); } catch (err) { $("#cMsg").textContent = err.message; } }, $("#cResults"), $("#cMsg"), $("#cSearch")), 400); };
   $("#cCancel").onclick = closeSheet;
   $("#cSave").onclick = async () => { c.name = $("#cName").value.trim(); c.due = $("#cDue").value || null; if (!c.name) { $("#cMsg").textContent = "It needs a name"; return; }
     try {
