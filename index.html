@@ -606,20 +606,20 @@ const avatar = (p, cls = "") => `<span class="av ${cls}">${avSVG(avFor(p))}</spa
 /* ============ the four rooms ============ */
 const KINDS = {
   film: { label:"Film", room:"Film", plural:"Films", colour:"var(--film)", verb:"watched", creatorLabel:"Directed by", lengthLabel:"Runtime", unit:" min",
-    craft:["direction","writing","performances","the look","the cut","the score","the design","the ending","the atmosphere","the pacing","the dialogue"],
-    breakdown:[["screenplay","writer"],["direction","director"],["performances","cast"],["cinematography","dp"],["editing","editor"],["score","composer"],["design","design"]],
-    ticks:[["first","First watch","Rewatch"],["where","In theatre","At home"]] },
+    craft:["the directing","the writing","the acting","the look","the editing","the music","the sets","the ending","the atmosphere","the pacing","the dialogue"],
+    breakdown:[["writing","writer"],["directing","director"],["acting","cast"],["camerawork","dp"],["editing","editor"],["music","composer"],["sets","design"]],
+    ticks:[["first","First watch","Rewatch"],["where","At the cinema","At home"]] },
   tv: { label:"TV", room:"TV", plural:"TV", colour:"var(--tv)", verb:"watched", creatorLabel:"Made by", lengthLabel:"Episodes", unit:" eps",
-    craft:["writing","performances","the look","the season arc","the cast","the score","the ending","the world","the pacing","the dialogue"],
-    breakdown:[["writing","writer"],["direction","director"],["performances","cast"],["cinematography","dp"],["the season","creator"],["score","composer"]],
+    craft:["the writing","the acting","the look","the season","the cast","the music","the ending","the world","the pacing","the dialogue"],
+    breakdown:[["writing","writer"],["directing","director"],["acting","cast"],["camerawork","dp"],["the season","creator"],["music","composer"]],
     ticks:[["first","First watch","Rewatch"],["where","Finished it","Part way"]] },
   book: { label:"Book", room:"Books", plural:"Books", colour:"var(--book)", verb:"read", creatorLabel:"Written by", lengthLabel:"Pages", unit:" pp",
-    craft:["the prose","the structure","the characters","the ideas","the voice","the world","the ending","the pacing","the dialogue"],
-    breakdown:[["prose","author"],["structure","author"],["characters","author"],["ideas","author"],["ending","author"]],
+    craft:["the writing","the structure","the characters","the ideas","the voice","the world","the ending","the pacing","the dialogue"],
+    breakdown:[["writing","author"],["structure","author"],["characters","author"],["ideas","author"],["ending","author"]],
     ticks:[["first","First read","Reread"],["where","Paper","Audio"]] },
   game: { label:"Game", room:"Games", plural:"Games", colour:"var(--game)", verb:"played", creatorLabel:"Made by", lengthLabel:"Hours", unit:" h",
-    craft:["the mechanics","the feel","the art","the sound","the story","the world","the level design","the ending","the pacing"],
-    breakdown:[["mechanics","studio"],["art direction","studio"],["sound","composer"],["narrative","writer"],["level design","studio"],["feel","studio"]],
+    craft:["how it plays","the controls","the art","the sound","the story","the world","the levels","the ending","the pacing"],
+    breakdown:[["how it plays","studio"],["art","studio"],["sound","composer"],["story","writer"],["levels","studio"],["controls","studio"]],
     ticks:[["first","First play","Replay"],["where","Finished it","Dropped it"]] }
 };
 const K = k => KINDS[k] || KINDS.film;
@@ -1299,7 +1299,7 @@ async function renderEveryoneFeed(fb) {
   let es = []; try { es = await q(sb.from("entries").select(ENTRY_SEL).order("created_at",{ascending:false}).limit(300)); } catch (e) { fb.innerHTML = `<p class="empty">${esc(e.message)}</p>`; return; }
   es.forEach(e => remember(e.works));
   if (!es.length) { fb.innerHTML = `<h2>The <span class="hl" style="background:var(--sky)">hall</span></h2>` +
-    blank("var(--sky)","◎","Nothing here yet","The hall fills up as people log things — everyone's scores, how much they agree, and what they singled out. Be the first.",[["hallAdd","Log something"]]);
+    blank("var(--sky)","◎","Nothing here yet","The hall fills up as people log things — everyone's scores, how much they agree, and what they loved. Be the first.",[["hallAdd","Log something"]]);
     $("#hallAdd").onclick = openAdd; return; }
   const weekAgo = new Date(Date.now() - 7*864e5).toISOString().slice(0,10); const recent = es.filter(e => e.rated_on >= weekAgo);
   const pool = recent.length >= 5 ? recent : es; const comp = competition(pool, 40);
@@ -1521,7 +1521,7 @@ $("#add").onclick = () => { const b = $("#add"); b.classList.remove("busy"); voi
 
 /* ============ TASTE (your profile) ============ */
 function tasteHTML(t, opts = {}) { if (t.tagged < 3) return blank("var(--butter)","◔","Your taste is still forming",
-  `Single out what you loved on a few entries — the look, the prose, the mechanics — and the profile builds itself. ${t.tagged} of 3 so far.`,
+  `Say what you loved on a few entries — the look, the writing, how it plays — and the profile builds itself. ${t.tagged} of 3 so far.`,
   opts.third ? [] : [["tasteBlankAdd","Log something"]]);
   const max = t.craft[0][1].total, top = t.craft.slice(0,3).map(c => c[0]); const carries = t.craft.filter(([,v]) => Object.keys(v.by).length > 1).slice(0,3);
   return `<div class="say">${opts.third ? "Goes" : "You go"} for <span class="hl" style="background:var(--butter)">${esc(top[0])}</span>${top[1]?`, ${esc(top[1])}`:""}${top[2]?` and ${esc(top[2])}`:""}.</div>
@@ -1866,7 +1866,7 @@ const CUTS = {
           x.fillStyle = i === 2 && d.agree !== null ? (d.agree >= 70 ? "#9EF0C9" : "#FFB36B") : "#fff";
           x.font = "900 72px Outfit, sans-serif"; x.fillText(v, cx + 26, y + 106);
           x.fillStyle = x.__pale; x.font = "700 22px Inter, sans-serif"; x.fillText(l, cx + 26, y + 150); });
-        y += 250; kicker(x, "what people singled out", y); y += 60;
+        y += 250; kicker(x, "what people loved", y); y += 60;
         for (const [k,pc] of d.top.slice(0,4)) { x.fillStyle = "#fff"; x.font = "700 36px Inter, sans-serif";
           x.fillText(k.startsWith("person:") ? lc(k.slice(7)) : k, CARD.M, y);
           const bx = CARD.M + 420, bw = CARD.W - CARD.M - bx - 90;
@@ -1885,7 +1885,7 @@ const CUTS = {
         cardFoot(x, "rooms", lc(me.handle)); return c; }],
       ["Loved", async (d) => { const { c, x } = cardBase("work", K(d.w.kind).plural, d.w.kind);
         cardWrap(x, d.w.title, CARD.M, 260, CARD.W - CARD.M*2, 80, "900 70px Outfit, sans-serif", "#fff");
-        kicker(x, "what people singled out", 420);
+        kicker(x, "what people loved", 420);
         let y = 520; for (const [k,pc] of d.top.slice(0,5)) { x.fillStyle = "#FFE86A"; x.font = "900 62px Outfit, sans-serif";
           x.fillText(k.startsWith("person:") ? lc(k.slice(7)) : k, CARD.M, y);
           x.textAlign = "right"; x.fillStyle = x.__pale; x.font = "900 44px Outfit, sans-serif";
@@ -2277,10 +2277,10 @@ async function openWork(id) { let w = works[id]; if (!w) { try { const rows = aw
   openSheet(`<div class="head">${cover(w)}<div class="hh"><h3>${esc(w.title)}</h3><p class="sub">${tag(w.kind)} ${esc(w.year||"")}${w.creator?" · "+esc(w.creator):""}${w.length?` · ${w.length}${cfg.unit}`:""}</p></div></div>
     <div class="numbers" id="wNumbers"><div><b>—</b><span>You</span></div><div><b>—</b><span>Your room</span></div><div><b>—</b><span>Following</span></div><div><b>—</b><span>Everyone</span></div></div>
     <div class="card"><div class="h"><span>Everyone</span><span class="tag dim" id="wCount">—</span></div><div class="trio" id="wTrio"><div><b>—</b><span>Score</span></div><div><b>—</b><span>Logged it</span></div><div><b>—</b><span>Agree</span></div></div>
-      <div class="lbl">What people singled out</div><div id="wLoved">${skeleton(2)}</div></div>
+      <div class="lbl">What people loved</div><div id="wLoved">${skeleton(2)}</div></div>
     ${isSoon(w) ? `<p class="sub" style="margin-top:12px">Out ${when(w.release)}. It's on your shelf until then.</p>` : ""}
     <div class="stack"><button class="btn ${isSoon(w)?"ghost":""}" id="wLog">${logged(w.id)?"Log it again":isSoon(w)?"Log it anyway":cfg.verb.replace(/^./,c=>c.toUpperCase())+" it"}</button><button class="btn ghost" id="wShelf">${activeList()?.items.includes(w.id)?"Take it off the shelf":"Put it on the shelf"}</button></div>
-    <div class="card"><div class="h"><span>Details</span></div>${Object.entries(w.credits||{}).filter(([k,v]) => v).map(([r,n]) => `<div class="kv"><span>${r === "dp" ? "cinematography" : r}</span>${esc(n)}</div>`).join("")}${w.meta?.genres?.length?`<div class="kv"><span>genres</span>${esc(w.meta.genres.join(", "))}</div>`:""}</div>
+    <div class="card"><div class="h"><span>Details</span></div>${Object.entries(w.credits||{}).filter(([k,v]) => v).map(([r,n]) => `<div class="kv"><span>${r === "dp" ? "camerawork" : r}</span>${esc(n)}</div>`).join("")}${w.meta?.genres?.length?`<div class="kv"><span>genres</span>${esc(w.meta.genres.join(", "))}</div>`:""}</div>
     <div id="wEntries"></div><div class="stack"><button class="btn soft" id="wCard">Save the card</button><button class="btn quiet" id="wClose">Close</button></div>`);
   $("#wClose").onclick = closeSheet; $("#wLog").onclick = () => openLog(w); $("#wShelf").onclick = async () => { const b = $("#wShelf"); b.disabled = true;
     const on = activeList()?.items.includes(w.id);
@@ -2369,10 +2369,10 @@ async function openPeople(p, which) {
 
 /* ============ THE LOG SHEET ============ */
 function openLog(w, edit = null) { const cfg = K(w.kind); const loved = edit?.loved ? edit.loved.slice() : []; const ctx = Object.assign({}, edit?.context); let score = edit ? edit.score : 0;
-  const starRow = () => `<div class="rate">${[0,1,2,3,4].map(i => `<button data-i="${i}" aria-label="${i+1} stars"><svg viewBox="0 0 24 24">${starPath(Math.max(0,Math.min(1,score/2-i)))}</svg></button>`).join("")}</div><div class="hint">Tap for a half · hold for a full</div>`;
+  const starRow = () => `<div class="rate">${[0,1,2,3,4].map(i => `<button data-i="${i}" aria-label="${i+1} stars"><svg viewBox="0 0 24 24">${starPath(Math.max(0,Math.min(1,score/2-i)))}</svg></button>`).join("")}</div><div class="hint">Tap for half a star, hold for a whole one</div>`;
   openSheet(`<div class="head">${cover(w)}<div class="hh"><h3>${esc(w.title)}</h3><p class="sub">${tag(w.kind)} ${esc(w.year||"")}${w.creator?" · "+esc(w.creator):""}</p></div></div>
     <div class="lbl">Date ${cfg.verb}</div><input type="date" id="wDate" value="${edit?esc(edit.rated_on):today()}"><div class="lbl">Your rating</div><div id="rateWrap">${starRow()}</div><div class="ticks" id="tickRow"></div><div id="lovedWrap"></div><div id="bdWrap"></div>
-    <div class="lbl">A line for the room</div><textarea id="wNote" placeholder="One line. Optional.">${edit?.note?esc(edit.note):""}</textarea>
+    <div class="lbl">Add a note</div><textarea id="wNote" placeholder="One line, if you want">${edit?.note?esc(edit.note):""}</textarea>
     <div class="stack"><button class="btn" id="wSave" ${edit?"":"disabled"}>${edit?"Save changes":"Save the entry"}</button><button class="btn quiet" id="wCancel">Not now</button></div><p class="msg" id="wMsg"></p>`);
   const drawTicks = () => { $("#tickRow").innerHTML = cfg.ticks.flatMap(([key,a,b]) => [`<button class="tk ${ctx[key]===a?"on":""}" data-tk="${key}|${a}">${a}</button>`,`<button class="tk ${ctx[key]===b?"on":""}" data-tk="${key}|${b}">${b}</button>`]).join("") + `<button class="tk ${ctx.with?"on":""}" data-tk="with|">${ctx.with?"With "+esc(ctx.with):"With…"}</button>`;
     $$("[data-tk]").forEach(b => b.onclick = () => { const [key,val] = b.dataset.tk.split("|"); if (key === "with") ctx.with = (prompt("Who with?", ctx.with||"")||"").trim(); else ctx[key] = ctx[key] === val ? null : val; drawTicks(); }); }; drawTicks();
@@ -2382,16 +2382,16 @@ function openLog(w, edit = null) { const cfg = K(w.kind); const loved = edit?.lo
     const pop = Object.entries(stats.counts).sort((a,b)=>b[1]-a[1]).map(x=>x[0]).filter(k => stats.share(k) >= 15).slice(0,6); const popSet = new Set(pop);
     const crafts = cfg.craft.filter(c => !popSet.has(c)), persons = people.filter(([n]) => !popSet.has("person:"+n)), mine = myCustomTags(w.kind).filter(t => !popSet.has(t) && !cfg.craft.includes(t));
     const extras = loved.filter(k => !k.startsWith("person:") && !cfg.craft.includes(k) && !mine.includes(k) && !popSet.has(k));
-    el.innerHTML = (pop.length ? `<div class="tagrow"><span class="lbl">Most singled out</span><span class="cnt">${stats.n} ${stats.n===1?"entry":"entries"}</span></div><div class="chips">${pop.map(k => chip(k, k.startsWith("person:")?lc(k.slice(7)):k, k.startsWith("person:")?"who":"")).join("")}</div>` : "")
+    el.innerHTML = (pop.length ? `<div class="tagrow"><span class="lbl">Loved most often</span><span class="cnt">${stats.n} ${stats.n===1?"entry":"entries"}</span></div><div class="chips">${pop.map(k => chip(k, k.startsWith("person:")?lc(k.slice(7)):k, k.startsWith("person:")?"who":"")).join("")}</div>` : "")
       + `<div class="lbl">${pop.length ? "Everything else" : "What would you single out?"}</div><div class="chips">${crafts.map(c => chip(c,c)).join("")}</div>`
       + (persons.length ? `<div class="lbl">${w.kind === "book" ? "Who wrote it" : "Who made it"}</div><div class="chips">${persons.map(([n]) => chip("person:"+n, n, "who")).join("")}</div>` : "")
-      + ((mine.length || extras.length) ? `<div class="lbl">Yours</div><div class="chips">${[...extras, ...mine].map(t => chip(t,t)).join("")}</div>` : "")
+      + ((mine.length || extras.length) ? `<div class="lbl">Your own</div><div class="chips">${[...extras, ...mine].map(t => chip(t,t)).join("")}</div>` : "")
       + `<div class="custom"><input id="lvNew" maxlength="28" placeholder="Add your own" autocapitalize="none"><button id="lvAdd">Add</button></div>`;
     $$("[data-lv]", el).forEach(b => b.onclick = () => { const k = b.dataset.lv, i = loved.indexOf(k); if (i >= 0) loved.splice(i,1); else loved.push(k); b.classList.toggle("on");
       b.classList.remove("bump"); void b.offsetWidth; b.classList.add("bump"); if (navigator.vibrate) navigator.vibrate(5); });
     const add = () => { const t = lc($("#lvNew").value.trim()).replace(/\s+/g," "); if (!t || t.length < 2) return; if (!loved.includes(t)) loved.push(t); $("#lvNew").value = ""; paintLoved(); }; $("#lvAdd").onclick = add; $("#lvNew").onkeydown = e => { if (e.key === "Enter") { e.preventDefault(); add(); } }; };
   const drawLoved = () => { const el = $("#lovedWrap"); if (!score) { el.innerHTML = ""; return; } if (el.dataset.drawn) return; el.dataset.drawn = "1"; paintLoved(); tagStats(w.id).then(s => { stats = s; if ($("#lovedWrap")?.dataset.drawn) paintLoved(); }).catch(()=>{}); };
-  const drawBd = () => { const bw = $("#bdWrap"); if (score >= 8 && !bw.innerHTML) { bw.innerHTML = `<div class="bd"><span class="cap">Breakdown · four stars and up</span>` + cfg.breakdown.map(([k,role]) => `<div class="l"><span class="nm">${k}</span><span class="who">${esc(lc((w.credits||{})[role]||""))}</span><b class="num" id="v-${k.replace(/\s/g,"-")}">–</b></div><input type="range" min="1" max="10" value="${edit?.breakdown?.[k]||5}" data-bd="${k}">`).join("") + `<div class="lbl" style="margin-top:12px">What it's actually about</div><textarea id="wAbout">${edit?.breakdown?.about?esc(edit.breakdown.about):""}</textarea></div>`;
+  const drawBd = () => { const bw = $("#bdWrap"); if (score >= 8 && !bw.innerHTML) { bw.innerHTML = `<div class="bd"><span class="cap">Score the parts · four stars and up</span>` + cfg.breakdown.map(([k,role]) => `<div class="l"><span class="nm">${k}</span><span class="who">${esc(lc((w.credits||{})[role]||""))}</span><b class="num" id="v-${k.replace(/\s/g,"-")}">–</b></div><input type="range" min="1" max="10" value="${edit?.breakdown?.[k]||5}" data-bd="${k}">`).join("") + `<div class="lbl" style="margin-top:12px">What's it really about?</div><textarea id="wAbout">${edit?.breakdown?.about?esc(edit.breakdown.about):""}</textarea></div>`;
       $$("[data-bd]").forEach(r => { if (edit?.breakdown?.[r.dataset.bd] !== undefined) { r.dataset.touched = "1"; $("#v-"+r.dataset.bd.replace(/\s/g,"-")).textContent = r.value; } r.oninput = () => { r.dataset.touched = "1"; $("#v-"+r.dataset.bd.replace(/\s/g,"-")).textContent = r.value; }; }); } if (score < 8) bw.innerHTML = ""; };
   const wireStars = () => $$("#rateWrap [data-i]").forEach(b => { let timer = null, fired = false; const set = half => { fired = true; score = half; $("#rateWrap").innerHTML = starRow(); wireStars(); $("#wSave").disabled = false; if (navigator.vibrate) navigator.vibrate(8);
       $$("#rateWrap button").slice(0, Math.ceil(half/2)).forEach((sb2, n) => setTimeout(() => { sb2.classList.add("pop"); setTimeout(() => sb2.classList.remove("pop"), 340); }, n*45));
