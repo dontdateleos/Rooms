@@ -56,7 +56,7 @@ The service-role key must never go near this repo.
 |---|---|
 | `index.html` | the whole app — markup, styles, logic, the card renderer, the avatar generator |
 | `site.html` | the marketing page |
-| `schema.sql` | Postgres tables, policies and RPCs, v1 through v10 |
+| `schema.sql` | Postgres tables, policies and RPCs, v1 through v11 |
 | `worker.js` | Cloudflare Worker: TMDB proxy, Open Library proxy, IGDB OAuth |
 | `manifest.webmanifest`, `sw.js`, `icons/` | what makes it installable |
 

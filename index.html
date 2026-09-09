@@ -119,6 +119,10 @@ textarea{min-height:76px;resize:none;line-height:1.45}
 .acts button.on{color:var(--bad)}
 .reply{margin-top:9px;padding-left:10px;border-left:3px solid var(--pink);font-size:14px;color:#4E4A60}
 .reply b{color:var(--ink)}
+.reply{position:relative;padding-right:22px}
+.unreply{position:absolute;right:0;top:-1px;background:none;border:0;padding:0 4px;cursor:pointer;
+  font-size:16px;line-height:1;color:var(--line)}
+.unreply:hover,.unreply:focus-visible{color:var(--bad)}
 
 /* tiles + grid */
 .tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
@@ -718,6 +722,11 @@ function makeLocalSb(seed) {
     rpc: (name, args) => {
       if (name === "create_room") { const r = { id:uid(), name:args.p_name, code:Math.random().toString(36).slice(2,8), created_at:now() }; db.rooms.push(r); db.room_members.push({ room_id:r.id, user_id:db.profile.id }); save(); return Promise.resolve({ data:r, error:null }); }
       if (name === "join_room") return Promise.resolve({ data:null, error:new Error("joining a room needs the hosted setup") });
+      if (name === "leave_room") { db.room_members = db.room_members.filter(m => !(m.room_id === args.p_room_id && m.user_id === db.profile.id));
+        if (!db.room_members.some(m => m.room_id === args.p_room_id)) {
+          db.rooms = db.rooms.filter(r => r.id !== args.p_room_id);
+          db.clubs = db.clubs.filter(c => c.room_id !== args.p_room_id); }
+        save(); return Promise.resolve({ data:null, error:null }); }
       return Promise.resolve({ data:null, error:new Error("unknown call") }); },
     auth: { getSession: async () => ({ data:{ session: db.profile && !db.signedOut ? { user:{ id:db.profile.id } } : null } }),
       getUser: async () => ({ data:{ user:{ id:db.profile?.id || "local" } } }), onAuthStateChange: () => {}, signOut: async () => { db.signedOut = true; save(); },
@@ -1124,7 +1133,9 @@ function slipHTML(e, opts = {}) { const w = remember(e.works) || works[e.work_id
     ${(() => { const t = together(e); return t ? `<div class="loved" style="margin-top:10px"><span class="together">◆ ${t}</span></div>` : ""; })()}
     ${e.loved?.length?`<div class="loved">${e.loved.slice(0,4).map(k => `<span>${esc(k.startsWith("person:")?lc(k.slice(7)):k)}</span>`).join("")}</div>`:""}
     <div class="foot"><div class="acts">${opts.talk ? `<button data-same="${e.id}" class="${same?"on":""}" ${mine?"disabled":""}>Same${n?" · "+n:""}</button><button data-reply="${e.id}">Reply</button>` : ""}${e.breakdown?`<button data-bd="${e.id}">Breakdown</button>`:""}</div>${stars(e.score,"sm")}</div>
-    ${reps.map(r => `<div class="reply"><b>${esc(r.profiles?.handle)}</b> ${esc(r.body)}</div>`).join("")}<div id="rb-${e.id}"></div></div>`; }
+    ${reps.map(r => `<div class="reply"><b>${esc(r.profiles?.handle)}</b> ${esc(r.body)}${
+      r.user_id === me.id ? `<button class="unreply" data-unreply="${esc(r.id)}" aria-label="Delete your reply">\u00d7</button>` : ""
+    }</div>`).join("")}<div id="rb-${e.id}"></div></div>`; }
 function wireSlips(el, es) { const by = Object.fromEntries(es.map(e => [e.id, e]));
   $$("[data-more]", el).forEach(b => b.onclick = ev => { ev.stopPropagation();
     const qd = b.previousElementSibling; qd.classList.toggle("clip"); b.textContent = qd.classList.contains("clip") ? "More" : "Less"; });
@@ -1136,6 +1147,10 @@ function wireSlips(el, es) { const by = Object.fromEntries(es.map(e => [e.id, e]
       if (!has && !REDUCED) requestAnimationFrame(() => { const nb = $(`[data-same="${CSS.escape(e.id)}"]`);
         if (nb) { nb.classList.add("popped"); setTimeout(() => nb.classList.remove("popped"), 520); } });
     } catch {} });
+  $$("[data-unreply]", el).forEach(b => b.onclick = async () => {
+    if (!confirm("Delete this reply?")) return;
+    try { await q(sb.from("replies").delete().eq("id", b.dataset.unreply).eq("user_id", me.id)); renderDoors(); }
+    catch (err) { alert(err.message); } });
   $$("[data-reply]", el).forEach(b => b.onclick = () => { const box = $("#rb-"+b.dataset.reply); if (box.innerHTML) { box.innerHTML = ""; return; }
     box.innerHTML = `<input maxlength="600" placeholder="Say it" style="margin-top:10px">`; const i = $("input", box); i.focus();
     i.onkeydown = async ev => { if (ev.key !== "Enter" || !i.value.trim()) return; try { await q(sb.from("replies").insert({ entry_id:b.dataset.reply, user_id:me.id, body:i.value.trim() })); renderDoors(); } catch {} }; }); }
@@ -1151,7 +1166,7 @@ async function renderRoomFeed(fb, R) {
   es.forEach(e => remember(e.works)); const comp = competition(es, 6);
   const pick = P.picked && !logged(P.picked) && works[P.picked];
   fb.innerHTML = `<div class="card"><div class="h"><span>${esc(R.name)}</span><span class="tag dim">${R.members.length} in here · ${esc(R.code)}</span></div>
-      <div class="chips" style="margin-top:8px">${R.members.map(m => `<span class="chip ${m.id===me.id?"on":""}" data-prof="${esc(m.id)}">${esc(m.handle)}</span>`).join("")}<button class="chip" id="invite">+ bring someone in</button></div>
+      <div class="chips" style="margin-top:8px">${R.members.map(m => `<span class="chip ${m.id===me.id?"on":""}" data-prof="${esc(m.id)}">${esc(m.handle)}</span>`).join("")}<button class="chip" id="invite">+ bring someone in</button><button class="chip" id="leaveRoom">Leave</button></div>
       ${rooms.length>1?`<div class="chips">${rooms.map(r => `<button class="chip ${r.id===R.id?"on":""}" data-rc="${r.id}">${esc(r.name)}</button>`).join("")}</div>`:""}</div>
     ${pick ? `<div class="result"><small>Tonight's pick</small><b>${esc(pick.title)}</b><div class="stack" style="margin-top:10px"><button class="btn" id="pickLog">${K(pick.kind).verb} it</button></div></div>` : ""}
     <div class="card"><div class="h"><span>In competition</span><span class="tag dim">weighted</span></div>${comp.length ? compRows(comp) : blank("var(--butter)","%","No scores yet","Once two of you have rated the same thing, the agreement number appears here.",[["compAdd","Log something"]])}</div>
@@ -1178,6 +1193,11 @@ async function renderRoomFeed(fb, R) {
   $$(".card [data-prof]", fb).forEach(x => x.onclick = () => openProfile(x.dataset.prof));
   $$("[data-rc]", fb).forEach(b => b.onclick = async () => { P.activeRoom = b.dataset.rc; saveP(); await loadClubs(); renderDoors(); });
   const pl = $("#pickLog"); if (pl) pl.onclick = () => openLog(works[P.picked]);
+  const lv = $("#leaveRoom"); if (lv) lv.onclick = async () => {
+    const last = R.members.length <= 1;
+    if (!confirm(last ? `You're the last one in ${R.name}. Leaving closes the room for good.` : `Leave ${R.name}?`)) return;
+    try { await q(sb.rpc("leave_room", { p_room_id:R.id })); await loadRooms(); await loadClubs(); renderDoors(); }
+    catch (e) { const m = $("#roomMsg"); if (m) m.textContent = e.message; else alert(e.message); } };
   const inv = $("#invite"); if (inv) inv.onclick = async () => { const text = `Come into ${R.name} on Rooms. The code is ${R.code}. ${location.origin}${location.pathname}`;
     if (navigator.share) { try { await navigator.share({ text }); return; } catch {} } try { await navigator.clipboard.writeText(text); inv.textContent = "copied"; } catch { prompt("The code", R.code); } };
 }

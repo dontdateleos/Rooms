@@ -354,3 +354,15 @@ alter table profiles add column if not exists avatar jsonb;
 -- ---------- v10: a shelf you can arrange ----------
 -- null means never dragged; those fall in behind the placed ones, oldest first
 alter table list_items add column if not exists position int;
+
+-- ---------- v11: a room you can leave ----------
+-- membership is protected by the room's own policies, so leaving goes through a
+-- function the same way joining does
+create or replace function leave_room(p_room_id uuid)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  delete from room_members where room_id = p_room_id and user_id = auth.uid();
+  -- the last one out closes the room behind them; its clubs cascade with it
+  delete from rooms r where r.id = p_room_id
+    and not exists (select 1 from room_members m where m.room_id = r.id);
+end $$;
