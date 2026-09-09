@@ -465,6 +465,10 @@ section.on > div > *{animation:rise .38s cubic-bezier(.2,1.2,.38,1) both}
 .here .face:first-child{margin-left:0}
 .here .face .av svg{width:28px;height:28px;display:block}
 .here small{font-size:11.5px;font-weight:700;color:var(--mute)}
+.alone{margin-top:12px;background:var(--cream2);border-radius:16px;padding:14px 15px;display:grid;gap:7px}
+.alone b{font-family:var(--head);font-weight:800;font-size:14.5px}
+.alone span{font-size:13px;line-height:1.5;color:var(--mute)}
+.alone .btn{margin-top:4px}
 .here .dot{width:7px;height:7px;border-radius:50%;background:var(--good);flex:none;
   animation:hereBeat 2.6s ease-in-out infinite}
 @keyframes hereBeat{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(.82)}}
@@ -537,6 +541,14 @@ nav button .dot{position:absolute;top:-2px;right:0;min-width:16px;height:16px;bo
 .offline{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(96px + env(safe-area-inset-bottom));z-index:9;display:none;
   background:var(--ink);color:var(--cream);font-weight:700;font-size:13px;padding:10px 16px;border-radius:999px}
 .offline.on{display:block}
+.toast{position:fixed;left:50%;transform:translateX(-50%) translateY(8px);z-index:12;
+  bottom:calc(96px + env(safe-area-inset-bottom));max-width:min(88vw,420px);
+  background:var(--ink);color:var(--cream);font-size:13.5px;font-weight:600;line-height:1.35;
+  padding:11px 16px;border-radius:14px;box-shadow:0 14px 34px -14px rgba(21,19,32,.6);
+  opacity:0;pointer-events:none;transition:opacity .22s ease,transform .3s cubic-bezier(.2,1.2,.4,1)}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.bad{background:var(--bad)}
+.toast.good{background:var(--good)}
 .searchlog{margin-top:10px}
 .slip .q.clip{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
 .more{background:none;border:0;padding:4px 0 0;font-family:var(--head);font-weight:800;font-size:13px;color:var(--mute);cursor:pointer}
@@ -582,10 +594,11 @@ nav button .dot{position:absolute;top:-2px;right:0;min-width:16px;height:16px;bo
   <button data-tab="taste">Taste</button>
   <button data-tab="clubs">Clubs</button>
 </div></nav>
-<div class="offline" id="offline"></div>
+<div class="offline" id="offline" role="status" aria-live="polite"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 <button id="add" aria-label="Log something"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
 
-<div class="sheet" id="sheet"><div class="panel"><div class="in" id="sheetBody"></div></div></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-hidden="true"><div class="panel"><div class="in" id="sheetBody"></div></div></div>
 
 <script type="module">
 /* ============ Rooms — one log for film, tv, books and games ============
@@ -810,6 +823,27 @@ const q = async p => { const { data, error } = await p; if (error) throw error; 
 const QKEY = "rooms.queue";
 const queued = () => { try { return JSON.parse(localStorage.getItem(QKEY) || "[]"); } catch { return []; } };
 const setQueue = a => localStorage.setItem(QKEY, JSON.stringify(a));
+/* every failure used to vanish into an empty catch. They come out here now:
+   one line, said plainly, and read aloud by a screen reader because the bar is a live region. */
+let toastT = null;
+function say(msg, kind = "") {
+  const el = document.getElementById("toast"); if (!el) return;
+  clearTimeout(toastT);
+  if (!msg) { el.className = "toast"; return; }
+  el.textContent = msg; el.className = "toast on " + kind;
+  toastT = setTimeout(() => { el.className = "toast"; }, kind === "bad" ? 5200 : 3000);
+}
+/* what the user was trying to do, then why it didn't happen */
+function oops(e, what) {
+  const why = e?.message ? String(e.message).replace(/^(JSON object|Error:)\s*/i, "") : "";
+  console.warn(what, e);
+  say(why && why.length < 90 ? `${what} — ${why}` : what, "bad");
+}
+/* anything that reports its own state should be announced, not just drawn */
+function markLive(root = document) {
+  root.querySelectorAll(".msg:not([role]), .offline:not([role])").forEach(el => {
+    el.setAttribute("role", "status"); el.setAttribute("aria-live", "polite"); });
+}
 function showOffline(msg) { const el = document.getElementById("offline"); if (!el) return;
   if (!msg) { el.classList.remove("on"); return; } el.textContent = msg; el.classList.add("on"); }
 async function saveEntry(row, editId) {
@@ -918,7 +952,8 @@ async function clubProgress(club) {
   let es = []; try { es = await q(sb.from("entries").select("user_id,work_id").in("work_id", club.items || [])); } catch {}
   const per = {}; for (const e of es) { if (!ids.includes(e.user_id)) continue; (per[e.user_id] ||= new Set()).add(e.work_id); }
   return per; }
-async function loadFollows() { try { follows = await q(sb.from("follows").select("followee,profiles!follows_followee_fkey(id,handle,bio,avatar)").eq("follower", me.id)); } catch { follows = []; } }
+async function loadFollows() { try { follows = await q(sb.from("follows").select("followee,profiles!follows_followee_fkey(id,handle,bio,avatar)").eq("follower", me.id)); }
+  catch (err) { follows = []; oops(err, "Couldn't load who you follow"); } }
 const activeList = () => lists.find(l => l.id === P.activeList) || lists[0];
 let shelfEdit = false, shelfOff = null, shelfStale = false;
 /* set by the thing that just happened, read once by the next render, then cleared */
@@ -947,7 +982,8 @@ function tasteMatch(a, b) { const va = {}, vb = {}; a.craft.forEach(([k,v]) => v
   if (!na || !nb) return null; return Math.round(100 * dot / Math.sqrt(na*nb)); }
 const tagCache = {};
 async function tagStats(workId) { if (tagCache[workId]) return tagCache[workId];
-  let rows = []; try { rows = await q(sb.from("entries").select("loved,user_id").eq("work_id", workId).limit(400)); } catch {}
+  let rows = []; try { rows = await q(sb.from("entries").select("loved,user_id").eq("work_id", workId).limit(400)); }
+  catch (err) { oops(err, "Couldn't load the tags"); }
   /* by person, not by entry — a rewatch shouldn't let one person outvote the room */
   const by = {}, people = new Set();
   for (const r of rows) { people.add(r.user_id);
@@ -1025,6 +1061,33 @@ function revealIn(root) {
   });
   setTimeout(sweep, 60); keepSweeping();
   setTimeout(() => { for (const el of [...watching]) { el.classList.add("in"); revealObs?.unobserve(el); watching.delete(el); } }, 6000);
+}
+
+/* ---------- an invite you can tap ----------
+   the code still works, but a link is what people actually send each other. The code
+   is held through sign-up, because a new person has to make an account before there
+   is anyone to put in a room. */
+const INVITE_KEY = "rooms.invite";
+function takeInvite() {                       /* read it off the URL once, then tidy up */
+  const m = /[#?&]join=([A-Za-z0-9]{4,12})/.exec(location.hash + location.search);
+  if (m) { try { localStorage.setItem(INVITE_KEY, m[1].toUpperCase()); } catch {}
+    history.replaceState(null, "", location.pathname + location.search.replace(/[?&]join=[^&]*/, "")); }
+  try { return localStorage.getItem(INVITE_KEY); } catch { return null; }
+}
+const dropInvite = () => { try { localStorage.removeItem(INVITE_KEY); } catch {} };
+const inviteLink = code => `${location.origin}${location.pathname}#join=${code}`;
+/* called once you are through the door, whether that took ten seconds or a sign-up */
+async function useInvite() {
+  const code = takeInvite(); if (!code || sb.__local) return false;
+  if (rooms.some(r => r.code === code)) { dropInvite(); return false; }
+  try {
+    const r = await q(sb.rpc("join_room", { p_code:code }));
+    dropInvite(); await loadRooms();
+    if (r?.id) { P.activeRoom = r.id; P.feed = "room"; saveP(); }
+    await loadClubs();
+    say(`You're in ${rooms.find(x => x.id === r?.id)?.name || "the room"}`, "good");
+    return true;
+  } catch (e) { dropInvite(); oops(e, "That invite didn't work"); return false; }
 }
 
 /* ---------- the day moves through it ----------
@@ -1142,9 +1205,11 @@ function switchTab(n) { shelfEdit = false;
   /* the new tab enters from the side you came from, so the row of tabs reads as a row */
   const was = TAB_ORDER.indexOf(currentTab()), now = TAB_ORDER.indexOf(n);
   document.documentElement.style.setProperty("--slide", was < 0 || now < 0 || was === now ? "0px" : (now > was ? "22px" : "-22px"));
-  $$("nav button").forEach(b => b.classList.toggle("on", b.dataset.tab === n)); $$("main section").forEach(s => s.classList.toggle("on", s.id === "tab-"+n)); movePill(); scrollTo(0,0); RENDER[n]?.();
+  $$("nav button").forEach(b => { const on = b.dataset.tab === n;
+    b.classList.toggle("on", on); if (on) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current"); }); $$("main section").forEach(s => s.classList.toggle("on", s.id === "tab-"+n)); movePill(); scrollTo(0,0); RENDER[n]?.();
   if (n === "doors") setTimeout(markSeen, 1200); else paintDot(); }
 $$("nav button").forEach(b => b.onclick = () => switchTab(b.dataset.tab));
+markLive();
 const currentTab = () => $$("main section").find(s => s.classList.contains("on"))?.id.replace("tab-","");
 const refresh = () => RENDER[currentTab()]?.();
 let sheetGoing = null;
@@ -1155,9 +1220,11 @@ function inkWash(kind) { if (REDUCED) return;
   document.body.appendChild(el); setTimeout(() => el.remove(), 900); }
 
 function openSheet(html) { clearTimeout(sheetGoing); sheetGoing = null;
+  $("#sheet").setAttribute("aria-hidden", "false");
   $("#sheetBody").innerHTML = `<div class="grab"></div>` + html;
   $("#sheet").classList.remove("out"); $("#sheet").classList.add("on"); $(".panel").scrollTop = 0; }
 function closeSheet() { const sh = $("#sheet"); if (!sh.classList.contains("on")) return;
+  sh.setAttribute("aria-hidden", "true");
   if (REDUCED) { sh.classList.remove("on", "out"); return; }
   sh.classList.add("out"); clearTimeout(sheetGoing);
   sheetGoing = setTimeout(() => { sh.classList.remove("on", "out"); sheetGoing = null; }, 200); }
@@ -1175,7 +1242,10 @@ function renderAuth() {
     const go = h => { sb.auth._localStart(h); loadMe().then(m => m && enter()); };
     if (prev) $("#cont").onclick = () => go(prev.handle); else $("#startLocal").onclick = () => { const h = lc($("#handle").value.trim());
       if (!/^[a-z0-9_]{2,24}$/.test(h)) { $("#authMsg").textContent = "two to twenty-four, lowercase, no spaces"; return; } go(h); }; return; }
-  b.innerHTML = `<h1>Every room<br>you've <span>been in.</span></h1><p>Sign in, or make an account.</p>
+  const invited = takeInvite();
+  b.innerHTML = `<h1>Every room<br>you've <span>been in.</span></h1>
+    ${invited ? `<p><b>Someone's put you on the list.</b> Make an account and you'll go straight into their room — the invite waits for you.</p>`
+              : `<p>Sign in, or make an account.</p>`}
     <div class="lbl">Email</div><input id="email" type="email" inputmode="email" autocapitalize="none" autocorrect="off" placeholder="you@somewhere">
     <div class="lbl">Password</div><input id="pw" type="password" autocomplete="current-password" placeholder="at least eight characters">
     <div class="stack"><button class="btn blue" id="signIn">Sign in</button><button class="btn ghost" id="signUp">Make an account</button></div>
@@ -1252,6 +1322,7 @@ async function enter() {
   $("#meBtn").hidden = false; $("#meName").textContent = me.handle; paintMeAv();
   $("#nav").classList.add("on"); $("#add").classList.add("on");
   await Promise.all([loadLists(), loadMine(), loadRooms(), loadFollows()]); await loadClubs();
+  await useInvite();
   switchTab("doors"); movePill(true); checkNew();
   if (!P.onboarded && !myEntries.length) setTimeout(openOnboarding, 400);
 }
@@ -1352,14 +1423,17 @@ function wireSlips(el, es) { const by = Object.fromEntries(es.map(e => [e.id, e]
     try { if (has) await q(sb.from("reactions").delete().eq("entry_id",e.id).eq("user_id",me.id)); else await q(sb.from("reactions").insert({ entry_id:e.id, user_id:me.id })); renderDoors();
       if (!has && !REDUCED) requestAnimationFrame(() => { const nb = $(`[data-same="${CSS.escape(e.id)}"]`);
         if (nb) { nb.classList.add("popped"); setTimeout(() => nb.classList.remove("popped"), 520); } });
-    } catch {} });
+    } catch (err) { oops(err, has ? "Couldn't take that back" : "Couldn't agree with that"); } });
   $$("[data-unreply]", el).forEach(b => b.onclick = async () => {
     if (!confirm("Delete this reply?")) return;
     try { await q(sb.from("replies").delete().eq("id", b.dataset.unreply).eq("user_id", me.id)); renderDoors(); }
-    catch (err) { alert(err.message); } });
+    catch (err) { oops(err, "Couldn't delete that reply"); } });
   $$("[data-reply]", el).forEach(b => b.onclick = () => { const box = $("#rb-"+b.dataset.reply); if (box.innerHTML) { box.innerHTML = ""; return; }
     box.innerHTML = `<input maxlength="600" placeholder="Say it" style="margin-top:10px">`; const i = $("input", box); i.focus();
-    i.onkeydown = async ev => { if (ev.key !== "Enter" || !i.value.trim()) return; try { await q(sb.from("replies").insert({ entry_id:b.dataset.reply, user_id:me.id, body:i.value.trim() })); renderDoors(); } catch {} }; }); }
+    i.onkeydown = async ev => { if (ev.key !== "Enter" || !i.value.trim()) return;
+      i.disabled = true;
+      try { await q(sb.from("replies").insert({ entry_id:b.dataset.reply, user_id:me.id, body:i.value.trim() })); renderDoors(); }
+      catch (err) { i.disabled = false; oops(err, "Reply didn't send"); } }; }); }
 function compRows(rows, onOpen) { return rows.map((f,i) => { const w = works[f.id] || {};
   return `<div class="row" data-cw="${esc(f.id)}"><span class="rk">${i+1}</span><div class="t"><b>${esc(w.title||f.id)}</b>
     <small>${tag(kindOf(f.id))} ${f.agree === null ? (f.hi.user_id === me.id ? "only you" : "just " + esc(f.hi.profiles?.handle||"one")) : `<span class="${f.agree>=70?"good":"bad"}">${f.agree}% agree</span> · ${f.n} of you${f.split?` · ${esc(f.hi.profiles?.handle||"")} ${f.hi.score/2}, ${esc(f.lo.profiles?.handle||"")} ${f.lo.score/2}`:""}`}</small></div>
@@ -1373,7 +1447,11 @@ async function renderRoomFeed(fb, R) {
   const pick = P.picked && !logged(P.picked) && works[P.picked];
   fb.innerHTML = `<div class="card"><div class="h"><span>${esc(R.name)}</span><span class="tag dim">${R.members.length} in here · ${esc(R.code)}</span></div>
       <div class="chips" style="margin-top:8px">${R.members.map(m => `<span class="chip ${m.id===me.id?"on":""}" data-prof="${esc(m.id)}">${esc(m.handle)}</span>`).join("")}<button class="chip" id="invite">+ bring someone in</button><button class="chip" id="leaveRoom">Leave</button></div>
-      <div class="here" id="hereRow"><small>Nobody else in here right now</small></div>
+      <div class="here" id="hereRow" aria-live="polite"><small>Nobody else in here right now</small></div>
+      ${R.members.length < 2 ? `<div class="alone"><b>It's just you in here.</b>
+        <span>Rooms only does anything with other people in it — agreement, the year, the arguments.
+        Send one person the link and the whole thing switches on.</span>
+        <button class="btn blue" id="aloneInvite">Send the invite link</button></div>` : ""}
       ${rooms.length>1?`<div class="chips">${rooms.map(r => `<button class="chip ${r.id===R.id?"on":""}" data-rc="${r.id}">${esc(r.name)}</button>`).join("")}</div>`:""}</div>
     ${pick ? `<div class="result"><small>Tonight's pick</small><b>${esc(pick.title)}</b><div class="stack" style="margin-top:10px"><button class="btn" id="pickLog">${K(pick.kind).verb} it</button></div></div>` : ""}
     <div class="card"><div class="h"><span>In competition</span><span class="tag dim">weighted</span></div>${comp.length ? compRows(comp) : blank("var(--butter)","%","No scores yet","Once two of you have rated the same thing, the agreement number appears here.",[["compAdd","Log something"]])}</div>
@@ -1405,15 +1483,21 @@ async function renderRoomFeed(fb, R) {
     if (!confirm(last ? `You're the last one in ${R.name}. Leaving closes the room for good.` : `Leave ${R.name}?`)) return;
     try { await q(sb.rpc("leave_room", { p_room_id:R.id })); await loadRooms(); await loadClubs(); renderDoors(); }
     catch (e) { const m = $("#roomMsg"); if (m) m.textContent = e.message; else alert(e.message); } };
-  const inv = $("#invite"); if (inv) inv.onclick = async () => { const text = `Come into ${R.name} on Rooms. The code is ${R.code}. ${location.origin}${location.pathname}`;
-    if (navigator.share) { try { await navigator.share({ text }); return; } catch {} } try { await navigator.clipboard.writeText(text); inv.textContent = "copied"; } catch { prompt("The code", R.code); } };
+  const ai = $("#aloneInvite"); if (ai) ai.onclick = () => $("#invite")?.click();
+  const inv = $("#invite"); if (inv) inv.onclick = async () => {
+    const text = `Come into ${R.name} on Rooms — this link takes you straight in.\n${inviteLink(R.code)}\n\n(Or join with the code ${R.code}.)`;
+    if (navigator.share) { try { await navigator.share({ text }); return; } catch {} }
+    try { await navigator.clipboard.writeText(text); inv.textContent = "link copied"; say("Invite link copied", "good");
+      setTimeout(() => { inv.textContent = "+ bring someone in"; }, 2600); }
+    catch { prompt("Send them this", inviteLink(R.code)); } };
 }
 function wireRoomButtons() { const nr = $("#newRoom"), jr = $("#joinRoom");
   if (nr) nr.onclick = async () => { const name = (prompt("Name the room") || "").trim(); if (!name) return; try { const r = await q(sb.rpc("create_room", { p_name:name })); await loadRooms(); if (r?.id) P.activeRoom = r.id; saveP(); await loadClubs(); renderDoors(); } catch (e) { $("#roomMsg").textContent = e.message; } };
   if (jr) jr.onclick = async () => { const code = (prompt("The six-character code") || "").trim(); if (!code) return; try { const r = await q(sb.rpc("join_room", { p_code:code })); await loadRooms(); if (r?.id) P.activeRoom = r.id; saveP(); await loadClubs(); renderDoors(); } catch (e) { $("#roomMsg").textContent = e.message; } }; }
 async function renderFollowingFeed(fb) {
   const ids = follows.map(f => f.followee); let es = [];
-  if (ids.length) { try { es = await q(sb.from("entries").select(ENTRY_SEL).in("user_id", ids).order("created_at",{ascending:false}).limit(60)); } catch {} }
+  if (ids.length) { try { es = await q(sb.from("entries").select(ENTRY_SEL).in("user_id", ids).order("created_at",{ascending:false}).limit(60)); }
+    catch (err) { oops(err, "Couldn't load the following feed"); } }
   es.forEach(e => remember(e.works));
   const twins = await tasteTwins(6);
   fb.innerHTML = (ids.length ? `<div class="chips" style="margin-top:6px">${follows.map(f => `<button class="chip" data-prof="${esc(f.followee)}">${esc(f.profiles?.handle||"")}</button>`).join("")}</div>` : "")
@@ -2269,9 +2353,9 @@ async function openClub(c) {
   const cf = $("#clubFill"); if (cf) cf.onclick = () => openClubEditor(c);
   const pc = $("#pickClub"); if (pc) pc.onclick = () => { const w = left[Math.floor(Math.random()*left.length)]; openLog(w); };
   const ec = $("#editClub"); if (ec) ec.onclick = () => openClubEditor(c);
-  const dc = $("#delClub"); if (dc) dc.onclick = async () => { if (!confirm("Delete this club? Entries stay.")) return; try { await q(sb.from("clubs").delete().eq("id", c.id)); await loadClubs(); closeSheet(); renderClubs(); } catch {} };
+  const dc = $("#delClub"); if (dc) dc.onclick = async () => { if (!confirm("Delete this club? Entries stay.")) return; try { await q(sb.from("clubs").delete().eq("id", c.id)); await loadClubs(); closeSheet(); renderClubs(); } catch (err) { oops(err, "Couldn't delete the club"); } };
   const jc = $("#joinClub"); if (jc) jc.onclick = async () => { try { await q(sb.from("club_members").insert({ club_id:c.id, user_id:me.id })); await loadClubs(); closeSheet(); renderClubs(); } catch (e) { alert(e.message); } };
-  const lc2 = $("#leaveClub"); if (lc2) lc2.onclick = async () => { try { await q(sb.from("club_members").delete().eq("club_id", c.id).eq("user_id", me.id)); await loadClubs(); closeSheet(); renderClubs(); } catch {} };
+  const lc2 = $("#leaveClub"); if (lc2) lc2.onclick = async () => { try { await q(sb.from("club_members").delete().eq("club_id", c.id).eq("user_id", me.id)); await loadClubs(); closeSheet(); renderClubs(); } catch (err) { oops(err, "Couldn't leave the club"); } };
   const ra = $("#runAgain"); if (ra) ra.onclick = async () => {
     if (!confirm("Start this club again? Your entries stay; the progress bar resets from today.")) return;
     try { await q(sb.from("club_members").update({ started_at:new Date().toISOString(), finished_at:null }).eq("club_id", c.id).eq("user_id", me.id));
@@ -2389,7 +2473,7 @@ function openClubEditor(existing = null, scope = "room") { const c = existing
       if (existing) await q(sb.from("clubs").update({ name:c.name, label:c.label, due:c.due, items:c.items, scope:c.scope, room_id: c.scope === "open" ? null : (activeRoom()?.id || null) }).eq("id", existing.id));
       else { const row = await q(sb.from("clubs").insert({ room_id: c.scope === "open" ? null : (activeRoom()?.id || null), scope:c.scope,
           name:c.name, label:c.label, due:c.due, items:c.items, created_by:me.id }).select().single());
-        if (c.scope === "open" && row?.id) { try { await q(sb.from("club_members").insert({ club_id:row.id, user_id:me.id })); } catch {} } }
+        if (c.scope === "open" && row?.id) { try { await q(sb.from("club_members").insert({ club_id:row.id, user_id:me.id })); } catch (err) { oops(err, "Couldn't join the club"); } } }
       P.clubTab = "yours"; saveP();   /* you're in whatever you just made */
       await loadClubs(); closeSheet(); renderClubs(); } catch (e) { $("#cMsg").textContent = e.message; } }; }
 
@@ -2434,7 +2518,8 @@ async function openWork(id) { let w = works[id]; if (!w) { try { const rows = aw
     const on = activeList()?.items.includes(w.id);
     try { if (on) await removeFromShelf(w.id); else await addToShelf(w.id); } finally {
       b.textContent = activeList()?.items.includes(w.id) ? "Take it off the shelf" : "Put it on the shelf"; b.disabled = false; } };
-  let es = []; try { es = await q(sb.from("entries").select(ENTRY_SEL).eq("work_id", w.id).order("created_at",{ascending:false}).limit(200)); } catch {}
+  let es = []; try { es = await q(sb.from("entries").select(ENTRY_SEL).eq("work_id", w.id).order("created_at",{ascending:false}).limit(200)); }
+  catch (err) { oops(err, "Couldn't load what people said"); }
   const mine = es.filter(e => e.user_id === me.id), room = activeRoom() ? es.filter(e => activeRoom().members.some(m => m.id === e.user_id)) : [], fol = es.filter(e => isFollowing(e.user_id));
   const avg = list => { const best = {}; list.forEach(r => { if (!best[r.user_id] || r.rated_on > best[r.user_id].rated_on) best[r.user_id] = r; }); const v = Object.values(best); return v.length ? (v.reduce((a,r)=>a+r.score,0)/v.length/2).toFixed(1) : "—"; };
   const agree = agreement(es.map(e => e.score));
@@ -2574,7 +2659,7 @@ function openEntry(e, justSaved = false) { const w = works[e.work_id] || e.works
     <div class="stack"><button class="btn soft" id="eCard">Save the card</button><button class="btn ghost" id="eWork">Open ${esc(w.title)}</button>${mine && e.id?`<button class="btn quiet" id="eEdit">Edit</button><button class="btn quiet" id="eDel">Delete</button>`:""}<button class="btn quiet" id="eClose">Close</button></div>`);
   $("#eCard").onclick = () => openCuts("review", e, "Share this review");
   $("#eClose").onclick = closeSheet; $("#eWork").onclick = () => openWork(e.work_id); const ed = $("#eEdit"); if (ed) ed.onclick = () => openLog(w, e);
-  const d = $("#eDel"); if (d) d.onclick = async () => { if (!confirm("Delete this entry?")) return; try { await q(sb.from("entries").delete().eq("id", e.id)); await loadMine(); closeSheet(); refresh(); } catch {} }; }
+  const d = $("#eDel"); if (d) d.onclick = async () => { if (!confirm("Delete this entry?")) return; try { await q(sb.from("entries").delete().eq("id", e.id)); await loadMine(); closeSheet(); refresh(); say("Entry deleted"); } catch (err) { oops(err, "Couldn't delete that entry"); } }; }
 
 /* ---------- import ----------
    letterboxd: Date,Name,Year,Letterboxd URI,Rating   · goodreads: Title,Author,My Rating,Date Read
@@ -2678,7 +2763,7 @@ async function openYou() { let top = { items:[] }; try { top = await ensureMyTop
       <input id="newPw" type="password" autocomplete="new-password" placeholder="at least eight characters">
       <div class="stack"><button class="btn" id="savePw">Save the password</button></div><p class="msg" id="pwMsg"></p></div>`}
     <div class="stack"><button class="btn ghost" id="importBtn">Import from Letterboxd, Goodreads, Steam</button>
-      ${sb.__local?`<button class="btn ghost" id="backup">Back up the log</button><button class="btn quiet" id="restore">Restore from a backup</button><input type="file" id="restoreFile" accept="application/json" hidden>`:""}<button class="btn quiet" id="signOut">${sb.__local?"Close the log":"Sign out"}</button><button class="btn quiet" id="sClose">Done</button></div><p class="msg" id="sMsg"></p>`);
+      ${sb.__local?``:`<button class="btn ghost" id="takeout">Download everything</button>`}${sb.__local?`<button class="btn ghost" id="backup">Back up the log</button><button class="btn quiet" id="restore">Restore from a backup</button><input type="file" id="restoreFile" accept="application/json" hidden>`:""}<button class="btn quiet" id="signOut">${sb.__local?"Close the log":"Sign out"}</button><button class="btn quiet" id="sClose">Done</button></div><p class="msg" id="sMsg"></p>`);
   /* the shape picker */
   let av = Object.assign({}, avFor(me));
   const paintAv = () => {
@@ -2698,7 +2783,8 @@ async function openYou() { let top = { items:[] }; try { top = await ensureMyTop
     col:Math.floor(Math.random()*AV_COLS.length), eyes:AV_EYE_NAMES[Math.floor(Math.random()*AV_EYE_NAMES.length)],
     tilt:Math.floor(Math.random()*9)-4 }; paintAv(); };
   $("#avReset").onclick = async () => { me.avatar = null; av = Object.assign({}, avFor(me));
-    try { if (sb.__local) { sb.__db.profile.avatar = null; sb.__save(); } else await q(sb.from("profiles").update({ avatar:null }).eq("id", me.id)); } catch {}
+    try { if (sb.__local) { sb.__db.profile.avatar = null; sb.__save(); } else await q(sb.from("profiles").update({ avatar:null }).eq("id", me.id)); }
+    catch (err) { oops(err, "Couldn't reset your shape"); }
     paintAv(); paintMeAv(); refresh(); };
 
   $("#ySave").onclick = async () => { const h = lc($("#yHandle").value.trim()), bio = $("#yBio").value.trim(); if (!/^[a-z0-9_]{2,24}$/.test(h)) { $("#yMsg").textContent = "two to twenty-four, lowercase, no spaces"; return; }
@@ -2717,13 +2803,57 @@ async function openYou() { let top = { items:[] }; try { top = await ensureMyTop
   $$("[data-ct]").forEach(b => b.onclick = () => { P.cardTheme = b.dataset.ct; saveP(); $$("[data-ct]").forEach(x => x.classList.toggle("on", x === b)); });
   $("#importBtn").onclick = openImport;
   $("#sClose").onclick = closeSheet; $("#signOut").onclick = async () => { await sb.auth.signOut(); location.reload(); };
+  const tk = $("#takeout"); if (tk) tk.onclick = async () => { tk.disabled = true; const was = tk.textContent; tk.textContent = "Gathering…";
+    try { const all = await exportEverything();
+      downloadJSON(all, `rooms-${me.handle}-${today()}.json`);
+      say(`${all.entries.length} ${all.entries.length === 1 ? "entry" : "entries"} downloaded`, "good"); }
+    catch (e) { oops(e, "Couldn't build the file"); }
+    finally { tk.textContent = was; tk.disabled = false; } };
   const bk = $("#backup"); if (bk) bk.onclick = () => { const blob = new Blob([localStorage.getItem("rooms.db")||"{}"], { type:"application/json" }); const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `rooms-${me.handle}-${today()}.json`; a.click(); };
   const rs = $("#restore"); if (rs) rs.onclick = () => $("#restoreFile").click(); const rf = $("#restoreFile"); if (rf) rf.onchange = async () => { const f = rf.files[0]; if (!f) return; try { const j = JSON.parse(await f.text()); if (!j.entries || !j.works) throw new Error("That isn't a Rooms backup"); if (!confirm(`Replace this log with the backup? ${j.entries.length} entries.`)) return; localStorage.setItem("rooms.db", JSON.stringify(j)); location.reload(); } catch (e) { $("#sMsg").textContent = e.message; } }; }
+
+/* ---------- everything you have ever put in, in one file ----------
+   backup was gated to local mode, so a hosted account had no way out at all. This
+   builds the same shape the local store uses, which means the file you download
+   restores into an offline log — the data is yours in a form that opens. */
+async function exportEverything() {
+  const grab = async (t, sel, col) => { try { return await q(sb.from(t).select(sel).eq(col, me.id)); } catch { return []; } };
+  const [entries, myReplies, myReactions, myFollows] = await Promise.all([
+    grab("entries", "*", "user_id"),
+    grab("replies", "*", "user_id"),
+    grab("reactions", "*", "user_id"),
+    grab("follows", "*", "follower"),
+  ]);
+  const usedWorks = {};
+  for (const id of new Set([...entries.map(e => e.work_id), ...lists.flatMap(l => l.items)]))
+    if (works[id]) usedWorks[id] = works[id];
+  return {
+    exported_at: new Date().toISOString(), from: location.origin + location.pathname,
+    profile: { id:me.id, handle:me.handle, bio:me.bio || "", avatar:me.avatar || null },
+    signedOut: false, profiles: [],
+    works: usedWorks,
+    entries: entries.map(e => { const { works:_w, profiles:_p, ...row } = e; return row; }),
+    lists: lists.map(l => ({ id:l.id, owner:me.id, name:l.name, created_at:null })),
+    list_items: lists.flatMap(l => l.items.map((id, i) => ({ list_id:l.id, work_id:id, added_at:null, position:l.arranged ? i : null }))),
+    rooms: rooms.map(r => ({ id:r.id, name:r.name, code:r.code })),
+    room_members: rooms.flatMap(r => r.members.map(m => ({ room_id:r.id, user_id:m.id }))),
+    clubs: [], club_members: [], club_votes: [],
+    reactions: myReactions, replies: myReplies,
+    top_lists: [], top_list_items: [],
+    follows: myFollows,
+  };
+}
+function downloadJSON(obj, name) {
+  const url = URL.createObjectURL(new Blob([JSON.stringify(obj, null, 1)], { type:"application/json" }));
+  const a = document.createElement("a"); a.href = url; a.download = name; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
 
 /* a small hook so the card renderers can be exercised by the test harness */
 window.__rooms = { paintLog, wireLog, openWholeLog, AV_SHAPES, AV_EYES, AV_COLS, avSVG, avFor, get me(){return me}, get entries(){return myEntries}, get works(){return works}, get rooms(){return rooms},
   CUTS, openCuts, spanData, tasteOf, reviewData, yearOf, roomPalmares, tagStats, agreement, activeRoom, q, sb: () => sb, remember,
-  joinRoomChannel, leaveRoomChannel, paintHere, onLiveEntry, paintDay, get hereNow(){return hereNow} };
+  joinRoomChannel, leaveRoomChannel, paintHere, onLiveEntry, paintDay, get hereNow(){return hereNow},
+  say, oops, markLive, takeInvite, dropInvite, inviteLink, useInvite, exportEverything };
 
 /* ============ boot ============ */
 if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("./sw.js", { scope: "./" }).catch(() => {});
