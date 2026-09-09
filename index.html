@@ -1036,9 +1036,11 @@ function renderAuth() {
     const go = h => { sb.auth._localStart(h); loadMe().then(m => m && enter()); };
     if (prev) $("#cont").onclick = () => go(prev.handle); else $("#startLocal").onclick = () => { const h = lc($("#handle").value.trim());
       if (!/^[a-z0-9_]{2,24}$/.test(h)) { $("#authMsg").textContent = "two to twenty-four, lowercase, no spaces"; return; } go(h); }; return; }
-  b.innerHTML = `<h1>Every room<br>you've <span>been in.</span></h1><p>Sign in with a code. No password.</p>
+  b.innerHTML = `<h1>Every room<br>you've <span>been in.</span></h1><p>Sign in, or make an account.</p>
     <div class="lbl">Email</div><input id="email" type="email" inputmode="email" autocapitalize="none" autocorrect="off" placeholder="you@somewhere">
-    <div class="stack"><button class="btn blue" id="send">Send me a code</button></div>
+    <div class="lbl">Password</div><input id="pw" type="password" autocomplete="current-password" placeholder="at least eight characters">
+    <div class="stack"><button class="btn blue" id="signIn">Sign in</button><button class="btn ghost" id="signUp">Make an account</button></div>
+    <div class="stack"><button class="btn quiet" id="send">Email me a code instead</button></div>
     <div id="codeStep"></div><p class="msg" id="authMsg"></p>`;
 
   /* the code matters on a home screen app: a link opens in the browser, which keeps its own
@@ -1050,13 +1052,34 @@ function renderAuth() {
       if (token.length !== 6) { $("#authMsg").textContent = "six digits"; return; }
       $("#verify").disabled = true; $("#authMsg").textContent = "checking";
       try { await q(sb.auth.verifyOtp({ email, token, type:"email" }));
-        $("#authMsg").textContent = ""; if (await loadMe()) enter(); else if (pendingUser) renderClaim(); }
+        $("#authMsg").textContent = ""; await landed(); }
       catch (e) { $("#authMsg").textContent = /expired|invalid/i.test(e.message) ? "that code didn't work — try another" : e.message;
         $("#verify").disabled = false; } };
     $("#verify").onclick = go;
     $("#code").onkeydown = e => { if (e.key === "Enter") go(); };
     $("#again").onclick = () => { $("#codeStep").innerHTML = ""; $("#send").click(); };
     $("#code").focus(); };
+
+  const landed = async () => { if (await loadMe()) enter(); else if (pendingUser) renderClaim(); };
+  const said = e => /invalid login/i.test(e.message) ? "that email and password don't match"
+    : /already registered/i.test(e.message) ? "there's already an account on that email — sign in instead"
+    : /not confirmed/i.test(e.message) ? "confirm the account from your email first"
+    : e.message;
+
+  const withPassword = async make => { const email = $("#email").value.trim(), password = $("#pw").value;
+    if (!email) { $("#authMsg").textContent = "your email first"; return; }
+    if (password.length < 8) { $("#authMsg").textContent = "at least eight characters"; return; }
+    $("#signIn").disabled = $("#signUp").disabled = true; $("#authMsg").textContent = make ? "making it" : "signing in";
+    try { const r = await q(make ? sb.auth.signUp({ email, password }) : sb.auth.signInWithPassword({ email, password }));
+      /* signUp returns no session while Supabase is set to confirm addresses by email */
+      if (make && !r?.session) { $("#authMsg").textContent = "Check your email to confirm the account, then sign in."; return; }
+      $("#authMsg").textContent = ""; await landed(); }
+    catch (e) { $("#authMsg").textContent = said(e); }
+    finally { const a = $("#signIn"), b = $("#signUp"); if (a) a.disabled = false; if (b) b.disabled = false; } };
+
+  $("#signIn").onclick = () => withPassword(false);
+  $("#signUp").onclick = () => withPassword(true);
+  $("#pw").onkeydown = e => { if (e.key === "Enter") withPassword(false); };
 
   $("#send").onclick = async () => { const email = $("#email").value.trim(); if (!email) return;
     $("#send").disabled = true; $("#authMsg").textContent = "sending";
