@@ -19,6 +19,16 @@
   --apricot:#FFB36B;--pink:#F5A3C7;--butter:#FFE86A;--mint:#9EF0C9;--sky:#8FD3FF;--lilac:#B9A6FF;--good:#1E9E6A;--bad:#E0407F;
   --film:var(--apricot);--tv:var(--pink);--book:var(--butter);--game:var(--mint);
   --head:Outfit,sans-serif;--body:Inter,system-ui,sans-serif}
+/* the ground warms and dims across the day, so seven in the morning and ten at
+   night are not the same room. Only the ground moves — cards stay white, ink stays ink. */
+html[data-day="early"]    {--cream:#F6F1E8;--cream2:#EDE6DA;--line:#E7DFD2}
+html[data-day="morning"]  {--cream:#FFF7EC;--cream2:#FDEFDD;--line:#EFE6D8}
+html[data-day="afternoon"]{--cream:#FFFCF6;--cream2:#FCF2E6;--line:#F1EADE}
+html[data-day="evening"]  {--cream:#FFEEDA;--cream2:#FBE3CA;--line:#EEDFC9}
+html[data-day="late"]     {--cream:#F7E5D2;--cream2:#F0D9C2;--line:#E6D2BC}
+html[data-day="night"]    {--cream:#EDE2D6;--cream2:#E4D4C5;--line:#DCCBBB}
+html{transition:background-color 2.4s linear}
+body{transition:background-color 2.4s linear}
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{background:var(--cream);color:var(--ink);font-family:var(--body);font-size:16px;-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}
 body{min-height:100dvh;padding-bottom:calc(84px + env(safe-area-inset-bottom));overflow-x:clip}
@@ -431,7 +441,8 @@ nav button:active{transform:scale(.95)}
 @keyframes sheetDown{from{transform:translateY(0);opacity:1}to{transform:translateY(30px);opacity:0}}
 @keyframes fadeOut{from{opacity:1}to{opacity:0}}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
-@keyframes rise{from{transform:translate(var(--slide,0px),10px);opacity:0}to{transform:none;opacity:1}}
+@keyframes rise{from{transform:translate(var(--slide,0px),12px) scale(.985);opacity:0}
+  62%{transform:translate(0,-2px) scale(1.004);opacity:1}to{transform:none;opacity:1}}
 @keyframes pop{0%{transform:scale(1)}40%{transform:scale(1.28)}100%{transform:scale(1)}}
 @keyframes chipPop{0%{transform:scale(1)}45%{transform:scale(1.1)}100%{transform:scale(1)}}
 @keyframes grow{from{width:0}}
@@ -442,11 +453,33 @@ nav button:active{transform:scale(.95)}
 /* on its way out it stops taking taps, so the next thing you touch is the page */
 .sheet.out{animation:fadeOut .2s ease both;pointer-events:none}
 .sheet.out .panel{animation:sheetDown .2s cubic-bezier(.4,0,.9,.35) both}
-section.on > div > *{animation:rise .26s cubic-bezier(.2,.9,.25,1) both}
+section.on > div > *{animation:rise .38s cubic-bezier(.2,1.2,.38,1) both}
 /* cards that arrive as you scroll: they lift into place once, then stay put */
-.reveal{opacity:0;transform:translateX(30px) rotate(1.2deg);
-  transition:opacity .46s cubic-bezier(.2,.9,.25,1),transform .52s cubic-bezier(.2,.9,.25,1);will-change:transform,opacity}
+.reveal{opacity:0;transform:translateX(30px) scale(.965) rotate(1.2deg);
+  transition:opacity .34s cubic-bezier(.2,.9,.25,1),transform .58s cubic-bezier(.2,1.22,.36,1);will-change:transform,opacity}
 .reveal.in{opacity:1;transform:none;will-change:auto}
+/* who is in the room right now */
+.here{display:flex;align-items:center;gap:8px;margin-top:10px;min-height:30px}
+.here .faces{display:flex}
+.here .face{margin-left:-7px;border-radius:50%;background:var(--card);box-shadow:0 0 0 2.5px var(--card);line-height:0}
+.here .face:first-child{margin-left:0}
+.here .face .av svg{width:28px;height:28px;display:block}
+.here small{font-size:11.5px;font-weight:700;color:var(--mute)}
+.here .dot{width:7px;height:7px;border-radius:50%;background:var(--good);flex:none;
+  animation:hereBeat 2.6s ease-in-out infinite}
+@keyframes hereBeat{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(.82)}}
+@keyframes faceIn{0%{transform:scale(0) translateY(6px);opacity:0}62%{transform:scale(1.18)}100%{transform:none;opacity:1}}
+.here .face.came{animation:faceIn .52s cubic-bezier(.2,1.4,.4,1) both}
+.here .face.went{animation:faceIn .24s cubic-bezier(.4,0,.9,.4) reverse both}
+/* an entry that landed while you were looking, warm until it cools */
+.slip.landedNow{animation:landIn .44s cubic-bezier(.2,.9,.25,1) both}
+@keyframes landIn{from{opacity:0;transform:translateY(-10px) scale(.96)}to{opacity:1;transform:none}}
+.slip.warm{background:#FFF1D6;border-color:#F3D9A8;transition:background 2.4s ease,border-color 2.4s ease}
+/* what your rating did to the room */
+.conseq{display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;color:var(--mute);
+  padding:9px 0 2px;animation:rise .42s cubic-bezier(.2,1.2,.38,1) both}
+.conseq b{font-family:var(--head);font-weight:800;color:var(--ink);font-variant-numeric:tabular-nums}
+.conseq .up{color:var(--good)}.conseq .down{color:var(--bad)}
 @keyframes starIn{from{transform:scale(.35) rotate(-20deg);opacity:0}to{transform:none;opacity:1}}
 .reveal.in .stars i{animation:starIn .36s cubic-bezier(.3,1.5,.5,1) both;animation-delay:.1s}
 .reveal.in .stars i:nth-child(2){animation-delay:.15s}
@@ -513,7 +546,9 @@ nav button .dot{position:absolute;top:-2px;right:0;min-width:16px;height:16px;bo
 .savedchip{animation:saved 1.6s ease both}
 @media(prefers-reduced-motion:reduce){#wheelG{transition-duration:.5s}
   .sheet.on,.sheet.on .panel,.sheet.out,.sheet.out .panel,section.on > div > *,.rate button.pop svg,.chip.bump,
-  .bar .tr i,.savedchip,nav button.on,.reveal.in .stars i,.cell.going{animation:none}
+  .bar .tr i,.savedchip,nav button.on,.reveal.in .stars i,.cell.going,
+  .here .dot,.here .face.came,.here .face.went,.slip.landedNow,.conseq{animation:none}
+  html,body{transition:none}
   img.co,.po img,.slot.full img,.ttl img{opacity:1;transform:none;transition:none}
   .wash,.sheet.on .cuts button,.cell.dealt,.po .tick.swept,.po .tick.swept:after,.cell.landed .po,
   .cell.shoved .po,.tiles .tile,[data-same].popped,[data-same].popped:before,
@@ -992,6 +1027,68 @@ function revealIn(root) {
   setTimeout(() => { for (const el of [...watching]) { el.classList.add("in"); revealObs?.unobserve(el); watching.delete(el); } }, 6000);
 }
 
+/* ---------- the day moves through it ----------
+   one clock, six grounds. Re-checked every ten minutes and whenever the tab
+   comes back, so a phone left open overnight is not still showing the morning. */
+const DAY_BANDS = [[5,"early"],[7,"morning"],[12,"afternoon"],[17,"evening"],[20,"late"],[23,"night"]];
+function paintDay() {
+  const h = new Date().getHours();
+  let band = "night"; for (const [from, name] of DAY_BANDS) if (h >= from) band = name;
+  if (document.documentElement.dataset.day !== band) document.documentElement.dataset.day = band;
+}
+paintDay(); setInterval(paintDay, 6e5);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) paintDay(); });
+
+/* ---------- who is in the room, and what lands while you are looking ----------
+   one channel per room carries both: presence for the faces, postgres_changes for
+   the entries. Opened when the room feed renders, closed when you leave it. */
+let roomCh = null, roomChId = null, hereNow = [];
+function leaveRoomChannel() { if (roomCh) { try { sb.removeChannel(roomCh); } catch {} }
+  roomCh = null; roomChId = null; hereNow = []; }
+function paintHere() {
+  const el = $("#hereRow"); if (!el) return;
+  const others = hereNow.filter(p => p.id !== me.id);
+  const seen = new Set([...el.querySelectorAll(".face")].map(f => f.dataset.who));
+  el.innerHTML = others.length
+    ? `<span class="dot"></span><span class="faces">${others.map(p =>
+        `<span class="face${seen.size && !seen.has(p.id) ? " came" : ""}" data-who="${esc(p.id)}"
+          data-prof="${esc(p.id)}" style="cursor:pointer" title="${esc(p.handle)}">${avatar(p)}</span>`).join("")}</span>
+       <small>${others.length === 1 ? esc(others[0].handle) + " is in here now" : others.length + " in here now"}</small>`
+    : `<small>Nobody else in here right now</small>`;
+  $$("[data-prof]", el).forEach(x => x.onclick = () => openProfile(x.dataset.prof));
+}
+function joinRoomChannel(R) {
+  if (!R || sb.__local || !sb.channel) return;          /* local mode has no sockets */
+  if (roomChId === R.id && roomCh) { paintHere(); return; }
+  leaveRoomChannel(); roomChId = R.id;
+  const memberIds = new Set(R.members.map(m => m.id));
+  const ch = sb.channel(`room:${R.id}`, { config: { presence: { key: me.id } } });
+  ch.on("presence", { event: "sync" }, () => {
+    const st = ch.presenceState(); const out = [];
+    for (const k in st) { const m = st[k][0]; if (m) out.push({ id: m.id || k, handle: m.handle, avatar: m.avatar }); }
+    hereNow = out; paintHere();
+  });
+  ch.on("postgres_changes", { event: "INSERT", schema: "public", table: "entries" },
+    p => onLiveEntry(p.new, memberIds));
+  ch.subscribe(st => { if (st === "SUBSCRIBED")
+    ch.track({ id: me.id, handle: me.handle, avatar: me.avatar }).catch(() => {}); });
+  roomCh = ch;
+}
+/* an entry someone in this room just made, dropped in above the talk */
+async function onLiveEntry(row, memberIds) {
+  if (!row || row.user_id === me.id || !memberIds.has(row.user_id)) return;
+  if ($(`[data-slip="${CSS.escape(row.id)}"]`)) return;   /* already on screen */
+  let full; try { full = (await q(sb.from("entries").select(ENTRY_SEL).eq("id", row.id).limit(1)))[0]; } catch { return; }
+  if (!full) return;
+  const anchor = $("#talkTop"); if (!anchor) return;
+  remember(full.works);
+  const node = document.createElement("div"); node.innerHTML = slipHTML(full, { talk:true });
+  const slip = node.firstElementChild; if (!slip) return;
+  slip.classList.add("landedNow", "warm"); slip.dataset.revealed = "1";
+  anchor.after(slip); wireSlips(slip, [full]);
+  setTimeout(() => slip.classList.remove("warm"), 2600);
+}
+
 /* ---------- what's happened since you were last here ---------- */
 let unseen = { entries:[], replies:[], followers:0 };
 const lastSeen = () => P.lastSeen || new Date(Date.now() - 3*864e5).toISOString();
@@ -1041,6 +1138,7 @@ addEventListener("resize", () => movePill(true));
 
 const TAB_ORDER = ["doors", "shelf", "taste", "clubs"];
 function switchTab(n) { shelfEdit = false;
+  if (n !== "doors") leaveRoomChannel();
   /* the new tab enters from the side you came from, so the row of tabs reads as a row */
   const was = TAB_ORDER.indexOf(currentTab()), now = TAB_ORDER.indexOf(n);
   document.documentElement.style.setProperty("--slide", was < 0 || now < 0 || was === now ? "0px" : (now > was ? "22px" : "-22px"));
@@ -1228,6 +1326,7 @@ async function renderDoors() {
   $$("[data-feed]", body).forEach(b => b.onclick = () => { P.feed = b.dataset.feed; saveP(); renderDoors(); });
   const fb = $("#feedBody");
   if (P.feed === "room") return renderRoomFeed(fb, R);
+  leaveRoomChannel();
   if (P.feed === "following") return renderFollowingFeed(fb);
   return renderEveryoneFeed(fb);
 }
@@ -1266,7 +1365,7 @@ function compRows(rows, onOpen) { return rows.map((f,i) => { const w = works[f.i
     <small>${tag(kindOf(f.id))} ${f.agree === null ? (f.hi.user_id === me.id ? "only you" : "just " + esc(f.hi.profiles?.handle||"one")) : `<span class="${f.agree>=70?"good":"bad"}">${f.agree}% agree</span> · ${f.n} of you${f.split?` · ${esc(f.hi.profiles?.handle||"")} ${f.hi.score/2}, ${esc(f.lo.profiles?.handle||"")} ${f.lo.score/2}`:""}`}</small></div>
     <span class="n ${f.split?"bad":""}">${(f.avg/2).toFixed(1)}<small>of five</small></span></div>`; }).join(""); }
 async function renderRoomFeed(fb, R) {
-  if (!R) { fb.innerHTML = `<h2>Your <span class="hl" style="background:var(--pink)">room</span></h2><p class="empty">A room is five to twenty friends and a six-character code. It shows what everyone rated, how much you agree, and the talk underneath. ${sb.__local ? "Rooms need the hosted setup — everything else works now." : ""}</p>
+  if (!R) { leaveRoomChannel(); fb.innerHTML = `<h2>Your <span class="hl" style="background:var(--pink)">room</span></h2><p class="empty">A room is five to twenty friends and a six-character code. It shows what everyone rated, how much you agree, and the talk underneath. ${sb.__local ? "Rooms need the hosted setup — everything else works now." : ""}</p>
       <div class="stack"><button class="btn blue" id="newRoom">Open a room</button><button class="btn ghost" id="joinRoom">Join with a code</button></div><p class="msg" id="roomMsg"></p>`; wireRoomButtons(); return; }
   const ids = R.members.map(m => m.id); let es = [];
   try { es = await q(sb.from("entries").select(ENTRY_SEL).in("user_id", ids).order("created_at",{ascending:false}).limit(60)); } catch (e) { fb.innerHTML = `<p class="empty">${esc(e.message)}</p>`; return; }
@@ -1274,6 +1373,7 @@ async function renderRoomFeed(fb, R) {
   const pick = P.picked && !logged(P.picked) && works[P.picked];
   fb.innerHTML = `<div class="card"><div class="h"><span>${esc(R.name)}</span><span class="tag dim">${R.members.length} in here · ${esc(R.code)}</span></div>
       <div class="chips" style="margin-top:8px">${R.members.map(m => `<span class="chip ${m.id===me.id?"on":""}" data-prof="${esc(m.id)}">${esc(m.handle)}</span>`).join("")}<button class="chip" id="invite">+ bring someone in</button><button class="chip" id="leaveRoom">Leave</button></div>
+      <div class="here" id="hereRow"><small>Nobody else in here right now</small></div>
       ${rooms.length>1?`<div class="chips">${rooms.map(r => `<button class="chip ${r.id===R.id?"on":""}" data-rc="${r.id}">${esc(r.name)}</button>`).join("")}</div>`:""}</div>
     ${pick ? `<div class="result"><small>Tonight's pick</small><b>${esc(pick.title)}</b><div class="stack" style="margin-top:10px"><button class="btn" id="pickLog">${K(pick.kind).verb} it</button></div></div>` : ""}
     <div class="card"><div class="h"><span>In competition</span><span class="tag dim">weighted</span></div>${comp.length ? compRows(comp) : blank("var(--butter)","%","No scores yet","Once two of you have rated the same thing, the agreement number appears here.",[["compAdd","Log something"]])}</div>
@@ -1286,13 +1386,13 @@ async function renderRoomFeed(fb, R) {
         ${pal.split && pal.split.id !== pal.agreed?.id ? `<div class="row" data-cw="${esc(pal.split.id)}"><span class="rk">≠</span><div class="t"><b>${t(pal.split.id)}</b><small><span class="bad">${pal.split.agree}% agree</span> · the fight of the year</small></div></div>` : ""}
         <div class="stack"><button class="btn soft" id="roomYearCard">Save the card</button></div>
       </div>`; })()}
-    <div class="lbl">The talk</div>${(() => { if (!es.length) return blank("var(--pink)","“","Nothing said yet","Log something and it lands here for the room to argue with.",[["talkAdd","Log something"]]);
+    <div class="lbl" id="talkTop">The talk</div>${(() => { if (!es.length) return blank("var(--pink)","“","Nothing said yet","Log something and it lands here for the room to argue with.",[["talkAdd","Log something"]]);
       const since = lastSeen(); let shown = false;
       return es.map(e => { const isNew = e.user_id !== me.id && String(e.created_at) > since; let head = "";
         if (isNew && !shown) { shown = true; head = `<div class="newline">New since you were here</div>`; }
         return head + slipHTML(e, { talk:true }); }).join(""); })()}
     <div class="stack"><button class="btn quiet" id="newRoom">Open another room</button><button class="btn quiet" id="joinRoom">Join with a code</button></div><p class="msg" id="roomMsg"></p>`;
-  wireSlips(fb, es); revealIn(fb); wireRoomButtons();
+  wireSlips(fb, es); revealIn(fb); wireRoomButtons(); joinRoomChannel(R);
   ["talkAdd","compAdd"].forEach(id => { const el = $("#"+id); if (el) el.onclick = openAdd; });
   const ryc = $("#roomYearCard"); if (ryc) ryc.onclick = () => { const pal = roomPalmares(es);
     if (pal) openCuts("roomyear", { room:R, pal, year:String(new Date().getFullYear()) }, "Share the room's year"); };
@@ -2352,6 +2452,20 @@ async function openWork(id) { let w = works[id]; if (!w) { try { const rows = aw
     const ring = $("#tRing");
     if (ring && agree !== null) requestAnimationFrame(() => { ring.style.strokeDashoffset = String(113 * (1 - agree / 100)); }); }
   if ($("#wCount")) $("#wCount").textContent = `${es.length} ${es.length===1?"entry":"entries"}`;
+  /* what your score did to the room's average — no backend, both numbers are already here */
+  const trio = $("#wTrio");
+  if (trio && mine.length) {
+    const without = avg(es.filter(e => e.user_id !== me.id)), withMe = avg(es), yours = (mine[0].score/2).toFixed(1);
+    if (without !== "—" && withMe !== "—") {
+      const d = (+withMe - +without), moved = Math.abs(d) >= 0.05;
+      const line = document.createElement("p"); line.className = "conseq";
+      line.innerHTML = moved
+        ? `<span>Your <b>${yours}</b> took everyone from <b>${without}</b> to
+           <b class="${d > 0 ? "up" : "down"}">${withMe}</b></span>`
+        : `<span>Your <b>${yours}</b> is exactly where everyone else landed</span>`;
+      trio.after(line);
+    }
+  }
   const st = await tagStats(w.id); const top = Object.entries(st.counts).sort((a,b)=>b[1]-a[1]).slice(0,5);
   const wf = $("#wFirst"); if (wf) wf.onclick = () => openLog(w);
   const wc = $("#wCard"); if (wc) wc.onclick = () => openCuts("work", { w, avg:avg(es), n:es.length, agree, top:top.map(([k]) => [k, st.share(k)]) }, "Share " + w.title);
@@ -2608,7 +2722,8 @@ async function openYou() { let top = { items:[] }; try { top = await ensureMyTop
 
 /* a small hook so the card renderers can be exercised by the test harness */
 window.__rooms = { paintLog, wireLog, openWholeLog, AV_SHAPES, AV_EYES, AV_COLS, avSVG, avFor, get me(){return me}, get entries(){return myEntries}, get works(){return works}, get rooms(){return rooms},
-  CUTS, openCuts, spanData, tasteOf, reviewData, yearOf, roomPalmares, tagStats, agreement, activeRoom, q, sb: () => sb, remember };
+  CUTS, openCuts, spanData, tasteOf, reviewData, yearOf, roomPalmares, tagStats, agreement, activeRoom, q, sb: () => sb, remember,
+  joinRoomChannel, leaveRoomChannel, paintHere, onLiveEntry, paintDay, get hereNow(){return hereNow} };
 
 /* ============ boot ============ */
 if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("./sw.js", { scope: "./" }).catch(() => {});

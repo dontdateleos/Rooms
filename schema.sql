@@ -366,3 +366,19 @@ begin
   delete from rooms r where r.id = p_room_id
     and not exists (select 1 from room_members m where m.room_id = r.id);
 end $$;
+
+/* ---------- v12: let the room see itself ----------
+   Presence rides on the realtime socket and needs nothing here, but the live
+   arrival of an entry does: postgres_changes only fires for tables in the
+   publication. RLS still applies, so a client is only ever told about rows it
+   was already allowed to read. Safe to re-run. */
+do $$ begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'entries')
+  then execute 'alter publication supabase_realtime add table public.entries'; end if;
+end $$;
+
+/* the payload of an update/delete carries only the primary key unless we ask for
+   the whole row; inserts are complete either way, and full is what the client wants. */
+alter table public.entries replica identity full;
