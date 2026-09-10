@@ -679,7 +679,7 @@ function avShade(hex, amt) { const n = parseInt(hex.slice(1), 16); let r = n >> 
 function avHash(s) { let h = 2166136261; for (const ch of String(s || "?")) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return Math.abs(h); }
 function avFor(p) {
   const a = p?.avatar;
-  const founder = !!p?.founder;
+  const founder = !!p?.founder || founderIds.has(p?.id);
   if (a && AV_SHAPES[a.shape] && AV_COLS[a.col] !== undefined)
     return { shape:a.shape, col:a.col, eyes:AV_EYES[a.eyes] ? a.eyes : "pair", tilt:a.tilt ?? 0, founder };
   const h = avHash(p?.handle);
@@ -909,7 +909,7 @@ addEventListener("online", flushQueue);
 let me = null; const works = {}; let lists = [], rooms = [], clubs = [], myEntries = [], follows = [], loggedIds = new Set();
 const remember = w => { if (w?.id) works[w.id] = Object.assign(works[w.id]||{}, w); return w?.id ? works[w.id] : null; };
 const logged = id => loggedIds.has(id);
-const ENTRY_SEL = "id,user_id,work_id,rated_on,score,note,loved,breakdown,context,created_at,profiles!entries_user_id_fkey(id,handle,bio,avatar,founder),works(*),reactions(user_id),replies(id,user_id,body,created_at,profiles(handle,avatar))";
+const ENTRY_SEL = "id,user_id,work_id,rated_on,score,note,loved,breakdown,context,created_at,profiles!entries_user_id_fkey(id,handle,bio,avatar),works(*),reactions(user_id),replies(id,user_id,body,created_at,profiles(handle,avatar))";
 
 async function loadLists() { const rows = await q(sb.from("lists").select("id,name,created_at,list_items(work_id,added_at,position,works(*))").order("created_at"));
   /* a hand-placed item keeps its slot; anything never dragged falls in behind, oldest first */
@@ -921,9 +921,15 @@ async function loadLists() { const rows = await q(sb.from("lists").select("id,na
   if (!lists.find(l => l.id === P.activeList)) { P.activeList = lists[0].id; saveP(); } }
 async function loadMine() { myEntries = await q(sb.from("entries").select("*,works(*)").eq("user_id", me.id).order("rated_on",{ascending:false}).order("created_at",{ascending:false}));
   myEntries.forEach(e => remember(e.works)); loggedIds = new Set(myEntries.map(e => e.work_id)); }
-async function loadRooms() { const rs = await q(sb.from("rooms").select("id,name,code,room_members(user_id,profiles(id,handle,bio,avatar,founder))").order("created_at"));
+async function loadRooms() { const rs = await q(sb.from("rooms").select("id,name,code,room_members(user_id,profiles(id,handle,bio,avatar))").order("created_at"));
   rooms = rs.map(r => ({ id:r.id, name:r.name, code:r.code, members:(r.room_members||[]).map(m => m.profiles).filter(Boolean).sort((a,b)=>a.handle.localeCompare(b.handle)) }));
   if (!rooms.find(r => r.id === P.activeRoom)) { P.activeRoom = rooms[0]?.id || null; saveP(); } }
+let founderIds = new Set();
+async function loadFounders() {
+  try { const rows = await q(sb.from("profiles").select("id").eq("founder", true));
+    founderIds = new Set(rows.map(r => r.id)); }
+  catch { founderIds = new Set(); }        /* no column yet, or no permission: no rings */
+}
 let openClubs = [], myClubIds = new Set();
 async function loadClubs() {
   clubs = [];
@@ -993,7 +999,7 @@ function palmares(votes, items) {
   const ranked = Object.entries(pts).sort((a,b) => b[1] - a[1]).map(([id, p]) => ({ id, p }));
   return { ranked, voters: voters.size, max: ranked[0]?.p || 1 }; }
 
-async function clubMembers(id) { try { const rows = await q(sb.from("club_members").select("user_id,profiles(id,handle,bio,avatar,founder)").eq("club_id", id));
+async function clubMembers(id) { try { const rows = await q(sb.from("club_members").select("user_id,profiles(id,handle,bio,avatar)").eq("club_id", id));
   return rows.map(r => r.profiles).filter(Boolean); } catch { return []; } }
 async function clubProgress(club) {
   /* how far everyone in it has got */
@@ -1001,7 +1007,7 @@ async function clubProgress(club) {
   let es = []; try { es = await q(sb.from("entries").select("user_id,work_id").in("work_id", club.items || [])); } catch {}
   const per = {}; for (const e of es) { if (!ids.includes(e.user_id)) continue; (per[e.user_id] ||= new Set()).add(e.work_id); }
   return per; }
-async function loadFollows() { try { follows = await q(sb.from("follows").select("followee,profiles!follows_followee_fkey(id,handle,bio,avatar,founder)").eq("follower", me.id)); }
+async function loadFollows() { try { follows = await q(sb.from("follows").select("followee,profiles!follows_followee_fkey(id,handle,bio,avatar)").eq("follower", me.id)); }
   catch (err) { follows = []; oops(err, "Couldn't load who you follow"); } }
 const activeList = () => lists.find(l => l.id === P.activeList) || lists[0];
 let shelfEdit = false, shelfOff = null, shelfStale = false;
@@ -1365,12 +1371,12 @@ function renderClaim() { const b = $("#authBody");
 
 async function loadMe() { const { data:{ session } } = await sb.auth.getSession(); if (!session) { me = null; pendingUser = null; return null; }
   if (sb.__local) { me = { id:sb.__db.profile.id, handle:sb.__db.profile.handle, bio:sb.__db.profile.bio||"", avatar:sb.__db.profile.avatar||null }; return me; }
-  const rows = await q(sb.from("profiles").select("id,handle,bio,avatar,founder").eq("id", session.user.id).limit(1));
+  const rows = await q(sb.from("profiles").select("id,handle,bio,avatar").eq("id", session.user.id).limit(1));
   me = rows[0] || null; pendingUser = me ? null : session.user.id; return me; }
 async function enter() {
   $("#meBtn").hidden = false; $("#meName").textContent = me.handle; paintMeAv();
   $("#nav").classList.add("on"); $("#add").classList.add("on");
-  await Promise.all([loadLists(), loadMine(), loadRooms(), loadFollows()]); await loadClubs();
+  await Promise.all([loadLists(), loadMine(), loadRooms(), loadFollows(), loadFounders()]); await loadClubs();
   await useInvite();
   switchTab("doors"); movePill(true); checkNew();
   if (!P.onboarded && !myEntries.length) setTimeout(openOnboarding, 400);
@@ -1558,7 +1564,7 @@ async function renderFollowingFeed(fb) {
   wireSlips(fb, es); revealIn(fb); $$("[data-prof]", fb).forEach(x => x.onclick = () => openProfile(x.dataset.prof));
   const tw = $("#twinAdd"); if (tw) tw.onclick = openAdd;
 }
-async function tasteTwins(limit) { let ps = []; try { ps = await q(sb.from("profiles").select("id,handle,bio,avatar,founder").neq("id", me.id).limit(200)); } catch { return []; }
+async function tasteTwins(limit) { let ps = []; try { ps = await q(sb.from("profiles").select("id,handle,bio,avatar").neq("id", me.id).limit(200)); } catch { return []; }
   const mine = tasteOf(myEntries); if (mine.tagged < 3) return []; const out = [];
   for (const p of ps) { if (isFollowing(p.id)) continue; let es = []; try { es = await q(sb.from("entries").select("work_id,score,loved").eq("user_id", p.id).limit(200)); } catch { continue; }
     const t = tasteOf(es); const m = tasteMatch(mine, t); if (m === null || t.tagged < 2) continue; out.push({ p, match:m, top:t.craft.slice(0,3).map(c => c[0]) }); }
@@ -2710,7 +2716,7 @@ const marksHTML = ms => !ms.length ? "" :
 
 /* ============ PROFILE PAGE ============ */
 async function openProfile(userId) { const self = userId === me.id;
-  let p = self ? me : null; if (!p) { try { const rows = await q(sb.from("profiles").select("id,handle,bio,avatar,founder").eq("id", userId).limit(1)); p = rows[0]; } catch {} } if (!p) return;
+  let p = self ? me : null; if (!p) { try { const rows = await q(sb.from("profiles").select("id,handle,bio,avatar").eq("id", userId).limit(1)); p = rows[0]; } catch {} } if (!p) return;
   let es = []; try { es = await q(sb.from("entries").select(ENTRY_SEL).eq("user_id", userId).order("created_at",{ascending:false}).limit(200)); } catch {} es.forEach(e => remember(e.works));
   const t = tasteOf(es), mine = tasteOf(myEntries), match = tasteMatch(mine, t);
   let top = null; try { top = await loadTop(userId); } catch {}
@@ -2742,7 +2748,7 @@ async function openPeople(p, which) {
   let rows = []; try { rows = which === "followers"
     ? await q(sb.from("follows").select("follower").eq("followee", p.id)) : await q(sb.from("follows").select("followee").eq("follower", p.id)); } catch {}
   const ids = rows.map(r => which === "followers" ? r.follower : r.followee); let people = [];
-  if (ids.length) { try { people = await q(sb.from("profiles").select("id,handle,bio,avatar,founder").in("id", ids)); } catch {} }
+  if (ids.length) { try { people = await q(sb.from("profiles").select("id,handle,bio,avatar").in("id", ids)); } catch {} }
   openSheet(`<h3>${esc(p.id === me.id ? "Your" : p.handle + "'s")} ${which}</h3><p class="sub">${people.length} ${people.length === 1 ? "person" : "people"}</p>
     <div class="card">${people.length ? people.map(x => `<div class="twin" data-prof="${esc(x.id)}">${avatar(x)}<div class="t"><b>${esc(x.handle)}</b><small>${esc(x.bio||"")}</small></div>${x.id !== me.id ? `<button class="chip ${isFollowing(x.id)?"on":""}" data-fol="${esc(x.id)}">${isFollowing(x.id)?"Following":"Follow"}</button>` : `<span class="tag dim">you</span>`}</div>`).join("") : `<p class="empty">Nobody yet.</p>`}</div>
     <div class="stack"><button class="btn quiet" id="plBack">Back to ${esc(p.handle)}</button></div>`);
@@ -2993,7 +2999,7 @@ window.__rooms = { paintLog, wireLog, openWholeLog, AV_SHAPES, AV_EYES, AV_COLS,
   CUTS, openCuts, spanData, tasteOf, reviewData, yearOf, roomPalmares, tagStats, agreement, activeRoom, q, sb: () => sb, remember,
   joinRoomChannel, leaveRoomChannel, paintHere, onLiveEntry, paintDay, get hereNow(){return hereNow},
   say, oops, markLive, takeInvite, dropInvite, inviteLink, useInvite, exportEverything,
-  marksFor, openPaid, COMET };
+  marksFor, openPaid, COMET, loadFounders, get founderIds(){return founderIds} };
 
 /* ============ boot ============ */
 if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("./sw.js", { scope: "./" }).catch(() => {});
