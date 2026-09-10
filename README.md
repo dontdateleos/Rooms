@@ -57,7 +57,7 @@ The service-role key must never go near this repo.
 |---|---|
 | `index.html` | the whole app — markup, styles, logic, the card renderer, the avatar generator |
 | `site.html` | the marketing page |
-| `schema.sql` | Postgres tables, policies and RPCs, v1 through v11 |
+| `schema.sql` | Postgres tables, policies and RPCs, v1 through v14 |
 | `worker.js` | Cloudflare Worker: TMDB proxy, Open Library proxy, IGDB OAuth |
 | `manifest.webmanifest`, `sw.js`, `icons/` | what makes it installable |
 
@@ -69,6 +69,16 @@ with a floating **+** for logging. Tap any title for its work page; tap any hand
 Hold a tile on the shelf to arrange it: the grid starts jiggling, drag to reorder, **×** takes
 something off, **Done** finishes. Arranging once makes the order yours — until then what's out
 sorts ahead of what's still coming. A work's own page has the same switch as a button.
+
+Logging something takes it off the shelf on its own — it moves down into **Off the shelf**
+under the grid rather than sitting there with a tick. Correcting an entry you already made
+isn't finishing anything, so that leaves the shelf where it is.
+
+**Can't decide?** opens the two ways of being told what to do tonight: **Deal them** turns
+the shelf over one card at a time, **Spin for it** puts the lot on a wheel, and each wedge
+wears its own poster with the title over the top. Both read the same pool, so the medium
+chips and the **In the mood for** chips — the genres and directors covering two or more of
+what's left — narrow whichever one you're using.
 
 ## Conventions
 

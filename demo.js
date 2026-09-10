@@ -49,10 +49,21 @@ const COMING = [
   ["game:20","game","Ghost of Yotei","2026","Sucker Punch",0,"#8FD3FF","#5B9AC6", soon(72)],
 ];
 
+/* "something tense", "something by him" — genre and director are how the pick chips
+   narrow a shelf, so the demo carries them or the chips have nothing to offer */
+const GENRES = {
+  "film:1":["Crime","Thriller"], "film:2":["Crime","Drama"], "film:3":["Thriller","Crime"],
+  "film:4":["Drama","Thriller"], "film:5":["Crime","Comedy"], "film:6":["Drama","History"],
+  "film:7":["Drama","Romance"], "film:8":["Drama"], "film:9":["Thriller","Drama"],
+  "tv:1":["Crime","Drama"], "tv:2":["Drama","Mystery"], "tv:3":["Thriller","Comedy"],
+  "book:1":["Science fiction"], "book:2":["Drama","History"], "book:3":["Drama","History"],
+  "game:1":["Adventure","Mystery"], "game:2":["Role-playing","Mystery"],
+  "film:20":["Horror","Romance"], "game:20":["Adventure","Action"],
+};
 const works = {};
 for (const [id,kind,title,year,creator,length,a,b,release] of [...WORKS, ...COMING]) {
   works[id] = { id, kind, title, year, creator, length, cover:poster(title, a, b),
-    meta:{}, credits:{ director:creator }, ...(release ? { release } : {}) };
+    meta:{ genres:GENRES[id] || [] }, credits:{ director:creator }, ...(release ? { release } : {}) };
 }
 
 const PEOPLE = [
