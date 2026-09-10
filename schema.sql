@@ -407,3 +407,11 @@ end $$;
 drop trigger if exists profiles_guard_founder on profiles;
 create trigger profiles_guard_founder before insert or update on profiles
   for each row execute function guard_founder();
+
+/* ---------- v14: things that haven't come out yet ----------
+   The app has always sent a release date when it had one — every upcoming title
+   carries one — but works had nowhere to put it, so PostgREST rejected the whole
+   row and nothing dated could be added to a shelf at all. Text rather than date
+   because the client compares it as a string ("2026-11-04" > today()) and an odd
+   value from a source should not be able to fail an insert. Safe to re-run. */
+alter table works add column if not exists release text;

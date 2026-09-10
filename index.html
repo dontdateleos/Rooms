@@ -1629,6 +1629,8 @@ function renderShelf() { const L = activeList(); const all = L ? L.items.map(id 
           <div class="cap"><span>${soon ? "Coming" : esc(w.year||"")}</span><span>${!soon && w.length ? w.length+K(w.kind).unit : ""}</span></div></div>`; }).join("")}</div>`
       : `<div class="tiles" style="margin-top:16px">${Object.keys(KINDS).map((k,i) => `<div class="tile" style="background:${K(k).colour};--r:${[-2,1.5,1,-1.5][i]}deg" data-kt="${k}"><small>Search</small><b>${K(k).plural}</b></div>`).join("")}</div>${blank("var(--mint)","+","An empty shelf","Everything you meant to get to, in one place — out now or still coming. Pick a medium above, or search.",[["shelfFocus","Search for something"]])}`}
     <div class="lbl">Coming soon · add to the shelf</div><div id="waitBody"><p class="msg">Loading what's coming</p></div>
+    <p class="sub" style="margin-top:6px;font-size:12px">Films, shows and games with a date on them.
+      Books don't appear here — no book source publishes a forthcoming list.</p>
     ${logBlock("shelfLog", { label:`Off the shelf · ${myEntries.length} logged` })}`;
   $$("[data-sk]").forEach(b => b.onclick = () => { const k = b.dataset.sk; if (P.kinds.includes(k)) { if (P.kinds.length > 1) P.kinds = P.kinds.filter(x => x !== k); } else P.kinds = [...P.kinds, k]; saveP(); renderShelf(); });
   const sf = $("#shelfFocus"); if (sf) sf.onclick = () => $("#search")?.focus();
@@ -1757,12 +1759,12 @@ async function addToShelf(id) { const L = activeList(), hit = window.__hits?.[id
     /* re-rendering the tab would take the field, the results and the keyboard with it,
        so while a search is open the shelf waits and the row says it landed */
     const box = $("#search"), open = box && box.value.trim();
-    const row = $(`[data-add="${CSS.escape(id)}"]`);
+    const row = $(`[data-add="${CSS.escape(id)}"], [data-up="${CSS.escape(id)}"]`);
     if (row) { row.classList.add("done"); const c = $(".chip", row); if (c) c.textContent = "On the shelf"; }
     if (m) m.textContent = "";
     if (open) shelfStale = true;
     else if (currentTab() === "shelf") renderShelf();
-  } catch (e) { if (m) m.textContent = e.message; } }
+  } catch (e) { if (m) m.textContent = ""; oops(e, "Couldn't add that to the shelf"); } }
 async function removeFromShelf(id) { const L = activeList(); if (!L || !L.items.includes(id)) return;
   const cell = $(`[data-cell="${CSS.escape(id)}"]`);
   if (cell && !REDUCED) { cell.classList.add("going"); await new Promise(r => setTimeout(r, 190)); }
@@ -1837,7 +1839,7 @@ async function saveOrder() { const L = activeList(), grid = $("#shelfGrid"); if 
 async function renderWaiting() { const el = $("#waitBody"); if (!el) return;
   if (!upcoming) { const jobs = [];
     if (P.kinds.includes("film")) jobs.push(tmdb("movie/upcoming",{ region:"AU", page:"1" }).then(d => (d.results||[]).map(r => ({ id:"film:"+r.id, kind:"film", title:r.title, year:(r.release_date||"").slice(0,4), release:r.release_date, date:r.release_date, cover:TMDB_IMG(r.poster_path) }))).catch(()=>[]));
-    if (P.kinds.includes("tv")) jobs.push(tmdb("tv/on_the_air",{ page:"1" }).then(d => (d.results||[]).map(r => ({ id:"tv:"+r.id, kind:"tv", title:r.name, year:(r.first_air_date||"").slice(0,4), release:r.first_air_date, date:r.first_air_date, cover:TMDB_IMG(r.poster_path) }))).catch(()=>[]));
+    if (P.kinds.includes("tv")) jobs.push(tmdb("discover/tv",{ "first_air_date.gte":today(), sort_by:"popularity.desc", page:"1" }).then(d => (d.results||[]).map(r => ({ id:"tv:"+r.id, kind:"tv", title:r.name, year:(r.first_air_date||"").slice(0,4), release:r.first_air_date, date:r.first_air_date, cover:TMDB_IMG(r.poster_path) }))).catch(()=>[]));
     if (P.kinds.includes("game")) jobs.push(igdb("games", `where first_release_date > ${Math.floor(Date.now()/1000)}; sort first_release_date asc; fields name,first_release_date,cover.image_id; limit 6;`).then(g => g.map(x => { const d = new Date(x.first_release_date*1000).toISOString().slice(0,10);
       return { id:"game:"+x.id, kind:"game", title:x.name, year:d.slice(0,4), release:d, date:d, cover:x.cover?.image_id?`https://images.igdb.com/igdb/image/upload/t_cover_big/${x.cover.image_id}.jpg`:"" }; })).catch(()=>[]));
     const res = await Promise.all(jobs); upcoming = res.flat().filter(x => x.date && x.date >= today()).sort((a,b) => a.date.localeCompare(b.date)).slice(0,8); }
@@ -3059,6 +3061,7 @@ window.__rooms = { paintLog, wireLog, openWholeLog, AV_SHAPES, AV_EYES, AV_COLS,
   joinRoomChannel, leaveRoomChannel, paintHere, onLiveEntry, paintDay, get hereNow(){return hereNow},
   say, oops, markLive, takeInvite, dropInvite, inviteLink, useInvite, exportEverything,
   drawDeck, resetDeck, pickMode, candidates, get deckItems(){return deckItems},
+  addToShelf, __isSoon:isSoon, __list:activeList,
   marksFor, openPaid, COMET, loadFounders, get founderIds(){return founderIds} };
 
 /* ============ boot ============ */
