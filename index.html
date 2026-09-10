@@ -574,6 +574,11 @@ nav button .dot{position:absolute;top:-2px;right:0;min-width:16px;height:16px;bo
 .offline{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(96px + env(safe-area-inset-bottom));z-index:9;display:none;
   background:var(--ink);color:var(--cream);font-weight:700;font-size:13px;padding:10px 16px;border-radius:999px}
 .offline.on{display:block}
+.demobar{position:fixed;left:0;right:0;top:0;z-index:14;background:var(--bad);color:#fff;
+  font-family:var(--head);font-weight:800;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;
+  text-align:center;padding:5px 12px;padding-top:calc(5px + env(safe-area-inset-top))}
+.demobar[hidden]{display:none}
+body.demo header{padding-top:34px}
 .toast{position:fixed;left:50%;transform:translateX(-50%) translateY(8px);z-index:12;
   bottom:calc(96px + env(safe-area-inset-bottom));max-width:min(88vw,420px);
   background:var(--ink);color:var(--cream);font-size:13.5px;font-weight:600;line-height:1.35;
@@ -628,6 +633,7 @@ nav button .dot{position:absolute;top:-2px;right:0;min-width:16px;height:16px;bo
   <button data-tab="taste">Taste</button>
   <button data-tab="clubs">Clubs</button>
 </div></nav>
+<div class="demobar" id="demobar" hidden>Demo &middot; invented people &middot; nothing is saved</div>
 <div class="offline" id="offline" role="status" aria-live="polite"></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <button id="add" aria-label="Log something"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
@@ -824,7 +830,11 @@ function peopleOf(w) { const c = w.credits || {}, out = [];
   return out.slice(0,8); }
 
 /* ============ backends ============ */
-const LOCAL = !window.__mockSb && SUPABASE_URL.includes("YOUR-");
+/* #demo runs the whole app on an invented database held in memory. A seeded local
+   client never writes to localStorage, so a demo cannot touch a real log, and a
+   refresh puts it back exactly as it was. */
+const DEMO = /(^|[#?&])demo\b/.test(location.hash + location.search);
+const LOCAL = !window.__mockSb && (DEMO || SUPABASE_URL.includes("YOUR-"));
 function makeLocalSb(seed) {
   const KEY = "rooms.db";
   const blank = { profile:null, signedOut:false, works:{}, profiles:[], entries:[], lists:[], list_items:[], rooms:[], room_members:[], clubs:[], club_members:[], club_votes:[], reactions:[], replies:[], top_lists:[], top_list_items:[], follows:[] };
@@ -879,7 +889,10 @@ function makeLocalSb(seed) {
       _localStart: h => { if (!db.profile) db.profile = { id:"local", handle:h, bio:"" }; db.profile.handle = h; db.signedOut = false; save(); } } };
 }
 let sb = window.__mockSb;
-if (!sb) { if (LOCAL) sb = makeLocalSb(window.__seed || null); else { const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2"); sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY); } }
+if (!sb) {
+  if (DEMO) { const { demoSeed } = await import("./demo.js"); sb = makeLocalSb(demoSeed()); sb.__demo = true; }
+  else if (LOCAL) sb = makeLocalSb(window.__seed || null);
+  else { const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2"); sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY); } }
 const q = async p => { const { data, error } = await p; if (error) throw error; return data; };
 
 /* ---------- writes survive a dead connection ---------- */
@@ -1190,6 +1203,10 @@ function paintHere() {
   $$("[data-prof]", el).forEach(x => x.onclick = () => openProfile(x.dataset.prof));
 }
 function joinRoomChannel(R) {
+  if (sb.__demo) {                                      /* no sockets, but show the room breathing */
+    hereNow = R.members.filter(m => m.id !== me.id).slice(0, 2)
+      .map(p => ({ id:p.id, handle:p.handle, avatar:p.avatar }));
+    paintHere(); return; }
   if (!R || sb.__local || !sb.channel) return;          /* local mode has no sockets */
   if (roomChId === R.id && roomCh) { paintHere(); return; }
   leaveRoomChannel(); roomChId = R.id;
@@ -3066,6 +3083,7 @@ window.__rooms = { paintLog, wireLog, openWholeLog, AV_SHAPES, AV_EYES, AV_COLS,
 
 /* ============ boot ============ */
 if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("./sw.js", { scope: "./" }).catch(() => {});
+if (DEMO) { document.body.classList.add("demo"); const bar = $("#demobar"); if (bar) bar.hidden = false; }
 renderAuth(); sb.auth.onAuthStateChange?.(async ev => {
   if (ev === "SIGNED_IN" && !me) { if (await loadMe()) enter(); else if (pendingUser) renderClaim(); } });
 if (await loadMe()) enter(); else if (pendingUser) renderClaim();
