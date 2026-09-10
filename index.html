@@ -495,6 +495,11 @@ svg .comet{transform-box:fill-box;transform-origin:center;animation:cometTurn 4.
 .dkname small{color:var(--mute);font-size:12.5px;font-weight:600;display:block;margin-top:3px}
 .dkbar{margin-top:14px}
 @media (prefers-reduced-motion:reduce){ .dk{transition:none} }
+.prov{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.pv{width:44px;height:44px;border-radius:11px;overflow:hidden;background:var(--cream2);
+  display:flex;align-items:center;justify-content:center;flex:none;border:1px solid var(--line)}
+.pv img{width:100%;height:100%;object-fit:cover;display:block}
+.pv b{font-family:var(--head);font-weight:800;font-size:9px;text-align:center;padding:2px;line-height:1.1}
 .markrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 .mk{display:block;border:1.5px solid var(--line);border-radius:14px;padding:8px 12px;background:var(--cream)}
 .mk b{font-family:var(--head);font-weight:800;font-size:13px;display:block}
@@ -794,6 +799,28 @@ async function ol(path, params = {}) { const base = proxy() ? proxy() + "/ol" : 
   const u = new URL(base + path); Object.entries(params).forEach(([k,v]) => u.searchParams.set(k,v));
   const r = await fetch(u); if (!r.ok) throw new Error("Open Library " + r.status); return r.json(); }
 const TMDB_IMG = p => p ? "https://image.tmdb.org/t/p/w342" + p : "";
+const TMDB_LOGO = p => p ? "https://image.tmdb.org/t/p/w92" + p : "";
+
+/* ---------- where you can actually watch it ----------
+   TMDB carries JustWatch's availability under /watch/providers, so this needs no new
+   source and no worker change — the worker already forwards any /3/ path with the key
+   on it and caches for a day. Films and shows only: nothing equivalent exists for
+   books or games, so those never ask. */
+const watchCache = {};
+const REGION = () => (P.region || navigator.language?.split("-")[1] || "AU").toUpperCase();
+async function watchOn(w) {
+  if (w.kind !== "film" && w.kind !== "tv") return null;
+  const region = REGION(), key = w.id + "|" + region;
+  if (watchCache[key]) return watchCache[key];
+  const path = (w.kind === "film" ? "movie/" : "tv/") + w.id.split(":")[1] + "/watch/providers";
+  let r; try { r = await tmdb(path); } catch { return null; }
+  const here = r?.results?.[region];
+  const list = kind => (here?.[kind] || []).map(p => ({ name:p.provider_name, logo:TMDB_LOGO(p.logo_path) }));
+  /* rent and buy are the same shrug to somebody deciding what to watch tonight */
+  const seen = new Set(), paid = [];
+  for (const p of [...list("rent"), ...list("buy")]) if (!seen.has(p.name)) { seen.add(p.name); paid.push(p); }
+  return (watchCache[key] = { region, link:here?.link || "", free:list("flatrate"), paid });
+}
 const SOURCES = {
   async film(t) { const d = await tmdb("search/movie", { query:t, include_adult:"false" });
     return (d.results||[]).slice(0,6).map(r => ({ id:"film:"+r.id, kind:"film", title:r.title, year:(r.release_date||"").slice(0,4), cover:TMDB_IMG(r.poster_path) })); },
@@ -2641,6 +2668,7 @@ async function openWork(id) { let w = works[id]; if (!w) { try { const rows = aw
   const cfg = K(w.kind);
   openSheet(`<div class="head">${cover(w)}<div class="hh"><h3>${esc(w.title)}</h3><p class="sub">${tag(w.kind)} ${esc(w.year||"")}${w.creator?" · "+esc(w.creator):""}${w.length?` · ${w.length}${cfg.unit}`:""}</p></div></div>
     <div class="numbers" id="wNumbers"><div><b>—</b><span>You</span></div><div><b>—</b><span>Your room</span></div><div><b>—</b><span>Following</span></div><div><b>—</b><span>Everyone</span></div></div>
+    ${w.kind === "film" || w.kind === "tv" ? `<div id="wWatch"></div>` : ""}
     <div class="card"><div class="h"><span>Everyone</span><span class="tag dim" id="wCount">—</span></div><div class="trio" id="wTrio"><div><b>—</b><span>Score</span></div><div><b>—</b><span>Logged it</span></div><div><b>—</b><span>Agree</span></div></div>
       <div class="lbl">What people loved</div><div id="wLoved">${skeleton(2)}</div></div>
     ${isSoon(w) ? `<p class="sub" style="margin-top:12px">Out ${when(w.release)}. It's on your shelf until then.</p>` : ""}
@@ -2684,6 +2712,7 @@ async function openWork(id) { let w = works[id]; if (!w) { try { const rows = aw
       trio.after(line);
     }
   }
+  paintWatch(w);
   const st = await tagStats(w.id); const top = Object.entries(st.counts).sort((a,b)=>b[1]-a[1]).slice(0,5);
   const wf = $("#wFirst"); if (wf) wf.onclick = () => openLog(w);
   const wc = $("#wCard"); if (wc) wc.onclick = () => openCuts("work", { w, avg:avg(es), n:es.length, agree, top:top.map(([k]) => [k, st.share(k)]) }, "Share " + w.title);
@@ -2791,6 +2820,31 @@ async function clubsFinishedBy(userId) {
 const marksHTML = ms => !ms.length ? "" :
   `<div class="card"><div class="h"><span>Marks</span><span class="tag dim">earned, never bought</span></div>
     <div class="markrow">${ms.map(m => `<span class="mk mk-${m.key}"><b>${esc(m.name)}</b><small>${esc(m.rule)}</small></span>`).join("")}</div></div>`;
+
+async function paintWatch(w) {
+  const el = $("#wWatch"); if (!el) return;
+  el.innerHTML = `<div class="card"><div class="h"><span>Where to watch</span>
+    <span class="tag dim">${esc(REGION())}</span></div><p class="msg">Looking</p></div>`;
+  const got = await watchOn(w);
+  if ($("#wWatch") !== el) return;                 /* the sheet moved on while we waited */
+  const row = (label, list) => !list.length ? "" : `<div class="lbl">${label}</div>
+    <div class="prov">${list.map(p => `<span class="pv" title="${esc(p.name)}">${
+      p.logo ? `<img src="${esc(p.logo)}" alt="${esc(p.name)}" loading="lazy">`
+             : `<b>${esc(p.name)}</b>`}</span>`).join("")}</div>`;
+  const body = !got
+    ? (proxy() || P.tmdbKey
+        ? `<p class="empty">Couldn't check right now.</p>`
+        : `<p class="empty">Needs the worker or a TMDB key — both are in settings.</p>`)
+    : isSoon(w) ? `<p class="empty">Not out yet — nowhere to watch it until ${when(w.release)}.</p>`
+    : (got.free.length || got.paid.length)
+      ? row("Included with", got.free) + row("Rent or buy", got.paid)
+        + (got.link ? `<div class="stack"><a class="btn quiet" href="${esc(got.link)}"
+            target="_blank" rel="noopener">See all the ways</a></div>` : "")
+      : `<p class="empty">Not streaming in ${esc(got.region)} at the moment.</p>`;
+  el.innerHTML = `<div class="card"><div class="h"><span>Where to watch</span>
+    <span class="tag dim">${esc(got?.region || REGION())}</span></div>${body}
+    <p class="sub" style="margin-top:10px;font-size:11px">Availability from JustWatch, via TMDB.</p></div>`;
+}
 
 /* ============ PROFILE PAGE ============ */
 async function openProfile(userId) { const self = userId === me.id;
@@ -2977,6 +3031,9 @@ async function openYou() { let top = { items:[] }; try { top = await ensureMyTop
     <div class="lbl">Cards</div><div class="chips">${[["","Auto"],["day","Day"],["night","Night"]].map(([k,l]) => `<button class="chip ${(P.cardTheme||"")===k?"on":""}" data-ct="${k}">${l}</button>`).join("")}</div>
     <p class="sub" style="margin-top:4px">Auto goes dark in the evening. The medium tints the light either way.</p>
     <div class="lbl">Settings</div><div class="card" style="margin-top:0"><div class="lbl" style="margin-top:0">Worker URL · leave empty unless you run your own</div><input id="workerUrl" placeholder="${esc(WORKER)}" value="${esc(P.workerUrl)}"><div class="lbl">Or a TMDB key for film and TV</div><input id="tmdbKey" value="${esc(P.tmdbKey)}" autocomplete="off">
+      <div class="lbl">Where you are · decides what's streaming</div>
+      <input id="region" maxlength="2" autocapitalize="characters" autocomplete="country"
+        placeholder="${esc(REGION())}" value="${esc(P.region || "")}" style="text-transform:uppercase">
       <p class="sub" style="margin-top:8px">Film and TV data from <a href="https://www.themoviedb.org" target="_blank" rel="noopener">TMDB</a>.
       This product uses the TMDB API but is not endorsed or certified by TMDB. Books from Open Library, games from IGDB.</p></div>
     ${sb.__local ? "" : `<div class="lbl">Password</div><div class="card" style="margin-top:0">
@@ -3021,6 +3078,11 @@ async function openYou() { let top = { items:[] }; try { top = await ensureMyTop
       $("#newPw").value = ""; $("#pwMsg").textContent = "Saved. That's your password on this email now."; }
     catch (e) { $("#pwMsg").textContent = e.message; }
     finally { sp.disabled = false; } };
+  const rg = $("#region"); if (rg) rg.onchange = e => {
+    const v = e.target.value.trim().toUpperCase();
+    P.region = /^[A-Z]{2}$/.test(v) ? v : "";        /* anything else means "work it out" */
+    saveP(); for (const k in watchCache) delete watchCache[k];
+    e.target.value = P.region; e.target.placeholder = REGION(); };
   $("#workerUrl").onchange = e => { P.workerUrl = e.target.value.trim(); saveP(); upcoming = null; }; $("#tmdbKey").onchange = e => { P.tmdbKey = e.target.value.trim(); saveP(); upcoming = null; };
   $$("[data-ct]").forEach(b => b.onclick = () => { P.cardTheme = b.dataset.ct; saveP(); $$("[data-ct]").forEach(x => x.classList.toggle("on", x === b)); });
   $("#importBtn").onclick = openImport;
@@ -3077,6 +3139,7 @@ window.__rooms = { paintLog, wireLog, openWholeLog, AV_SHAPES, AV_EYES, AV_COLS,
   CUTS, openCuts, spanData, tasteOf, reviewData, yearOf, roomPalmares, tagStats, agreement, activeRoom, q, sb: () => sb, remember,
   joinRoomChannel, leaveRoomChannel, paintHere, onLiveEntry, paintDay, get hereNow(){return hereNow},
   say, oops, markLive, takeInvite, dropInvite, inviteLink, useInvite, exportEverything,
+  watchOn, paintWatch, REGION,
   drawDeck, resetDeck, pickMode, candidates, get deckItems(){return deckItems},
   addToShelf, __isSoon:isSoon, __list:activeList,
   marksFor, openPaid, COMET, loadFounders, get founderIds(){return founderIds} };
