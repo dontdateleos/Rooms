@@ -382,3 +382,28 @@ end $$;
 /* the payload of an update/delete carries only the primary key unless we ask for
    the whole row; inserts are complete either way, and full is what the client wants. */
 alter table public.entries replica identity full;
+
+/* ---------- v13: the founder ----------
+   A column on its own would be worthless: profiles_update is `using (id = auth.uid())`
+   with no column restriction, so any signed-in person could set their own flag through
+   the API and wear the ring. The trigger refuses the change whenever the caller is a
+   web client, which leaves the SQL editor — running as postgres — as the only way in.
+
+   To grant it, once, from the dashboard:
+     update profiles set founder = true where handle = 'your_handle';
+*/
+alter table profiles add column if not exists founder boolean not null default false;
+
+create or replace function guard_founder() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if current_user in ('authenticated', 'anon') then
+    if tg_op = 'INSERT' then new.founder := false;
+    else new.founder := old.founder; end if;
+  end if;
+  return new;
+end $$;
+
+drop trigger if exists profiles_guard_founder on profiles;
+create trigger profiles_guard_founder before insert or update on profiles
+  for each row execute function guard_founder();

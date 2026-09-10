@@ -469,6 +469,25 @@ section.on > div > *{animation:rise .38s cubic-bezier(.2,1.2,.38,1) both}
 .alone b{font-family:var(--head);font-weight:800;font-size:14.5px}
 .alone span{font-size:13px;line-height:1.5;color:var(--mute)}
 .alone .btn{margin-top:4px}
+@keyframes cometTurn{to{transform:rotate(360deg)}}
+svg .comet{transform-box:fill-box;transform-origin:center;animation:cometTurn 4.2s linear infinite}
+.tier{border:1.5px solid var(--line);border-radius:22px;padding:16px 18px;margin-top:12px}
+.tier.paid{background:var(--ink);color:var(--cream);border-color:var(--ink)}
+.tier .h{font-family:var(--head);font-weight:900;font-size:16px;letter-spacing:-.02em}
+.tier.paid .h{color:var(--cream)}
+.tier .price{font-family:var(--head);font-weight:900;font-size:30px;letter-spacing:-.04em;display:block;margin-top:4px}
+.tier ul{margin:12px 0 0 17px;font-size:13px;line-height:1.75;color:var(--mute)}
+.tier.paid ul{color:#D9D2E4}
+.tier .note{font-size:11.5px;line-height:1.5;color:var(--mute);margin-top:12px;padding-top:10px;
+  border-top:1px solid var(--line)}
+.tier.paid .note{color:#B9B1C9;border-color:#332C42}
+.markrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.mk{display:block;border:1.5px solid var(--line);border-radius:14px;padding:8px 12px;background:var(--cream)}
+.mk b{font-family:var(--head);font-weight:800;font-size:13px;display:block}
+.mk small{font-size:10.5px;color:var(--mute);font-weight:600;display:block;margin-top:1px}
+.mk-founder{border-color:var(--bad);background:#FFF1F6}
+.mk-founder b{color:var(--bad)}
+.mk-argument,.mk-stillhere{border-color:var(--ink)}
 .here .dot{width:7px;height:7px;border-radius:50%;background:var(--good);flex:none;
   animation:hereBeat 2.6s ease-in-out infinite}
 @keyframes hereBeat{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(.82)}}
@@ -560,6 +579,7 @@ nav button .dot{position:absolute;top:-2px;right:0;min-width:16px;height:16px;bo
   .sheet.on,.sheet.on .panel,.sheet.out,.sheet.out .panel,section.on > div > *,.rate button.pop svg,.chip.bump,
   .bar .tr i,.savedchip,nav button.on,.reveal.in .stars i,.cell.going,
   .here .dot,.here .face.came,.here .face.went,.slip.landedNow,.conseq{animation:none}
+  svg .comet{animation:none}
   html,body{transition:none}
   img.co,.po img,.slot.full img,.ttl img{opacity:1;transform:none;transition:none}
   .wash,.sheet.on .cuts button,.cell.dealt,.po .tick.swept,.po .tick.swept:after,.cell.landed .po,
@@ -659,11 +679,12 @@ function avShade(hex, amt) { const n = parseInt(hex.slice(1), 16); let r = n >> 
 function avHash(s) { let h = 2166136261; for (const ch of String(s || "?")) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return Math.abs(h); }
 function avFor(p) {
   const a = p?.avatar;
+  const founder = !!p?.founder;
   if (a && AV_SHAPES[a.shape] && AV_COLS[a.col] !== undefined)
-    return { shape:a.shape, col:a.col, eyes:AV_EYES[a.eyes] ? a.eyes : "pair", tilt:a.tilt ?? 0 };
+    return { shape:a.shape, col:a.col, eyes:AV_EYES[a.eyes] ? a.eyes : "pair", tilt:a.tilt ?? 0, founder };
   const h = avHash(p?.handle);
   return { shape:AV_NAMES[h % AV_NAMES.length], col:(h >> 3) % AV_COLS.length,
-    eyes:AV_EYE_NAMES[(h >> 11) % AV_EYE_NAMES.length], tilt:((h >> 7) % 9) - 4 }; }
+    eyes:AV_EYE_NAMES[(h >> 11) % AV_EYE_NAMES.length], tilt:((h >> 7) % 9) - 4, founder }; }
 /* the same capsule, arranged four ways — nothing changes but the spacing and the height */
 const AV_EYES = {
   pair:  `<rect x="40" y="46" width="7" height="20" rx="3.5"/><rect x="55" y="44" width="7" height="22" rx="3.5"/>`,
@@ -672,12 +693,40 @@ const AV_EYES = {
   tall:  `<rect x="41" y="41" width="6.5" height="27" rx="3.2"/><rect x="54" y="40" width="6.5" height="28" rx="3.2"/>`
 };
 const AV_EYE_NAMES = Object.keys(AV_EYES);
+/* ---------- the founder's ring ----------
+   One person has this. It is drawn inside the 100x100 viewBox rather than as a CSS ring,
+   so it scales with the avatar wherever it appears — 24px in a chip, 84 on a profile —
+   without a single size being written down twice. A conic gradient can't live in SVG, so
+   the tail is six arcs of rising opacity, which is also cheaper to paint. */
+const COMET = (() => {
+  /* the shapes are not centred on the viewBox — a ball sits at 50,54 and a cube runs
+     34 to 84 — so the ring is centred on the art, not on the box, and sized to clear
+     its own stroke inside 100 units */
+  const R = 42, CX = 50, CY = 54, W = 5, TAIL = 252, N = 14;
+  const pt = d => { const r = (d - 90) * Math.PI / 180;
+    return [(CX + R * Math.cos(r)).toFixed(2), (CY + R * Math.sin(r)).toFixed(2)]; };
+  /* one long sweep in many short pieces: enough of them that the fade reads as a
+     gradient rather than as steps, butt-capped so the joins don't bobble */
+  let d = "";
+  for (let i = 0; i < N; i++) {
+    const a = (i / N) * TAIL, b = ((i + 1) / N) * TAIL;
+    const [x1,y1] = pt(a), [x2,y2] = pt(b);
+    const o = Math.pow((i + 1) / N, 1.7);          /* dark at the head, gone at the tail */
+    d += `<path d="M${x1} ${y1} A${R} ${R} 0 0 1 ${x2} ${y2}" fill="none" stroke="#E0407F"
+      stroke-opacity="${o.toFixed(3)}" stroke-width="${W}" stroke-linecap="${i === 0 ? "round" : "butt"}"/>`;
+  }
+  const [hx,hy] = pt(TAIL);
+  return `<g class="comet">${d}
+    <circle cx="${hx}" cy="${hy}" r="${W/2 + 1.6}" fill="#E0407F"/>
+    <circle cx="${hx}" cy="${hy}" r="1.7" fill="#FFF7EC"/></g>`;
+})();
+
 function avSVG(a) {
   const base = AV_COLS[a.col] || AV_COLS[0], dark = base === "#151320";
   const c = { base, light: dark ? "#3A3650" : avShade(base, .30), dark: dark ? "#0B0A12" : avShade(base, -.18) };
   const eyes = AV_EYES[a.eyes] || AV_EYES.pair;
   return `<svg viewBox="0 0 100 100" data-shape="${a.shape}" aria-hidden="true"><g transform="rotate(${a.tilt||0} 50 54)">${AV_SHAPES[a.shape](c)}
-    <g class="eyes" fill="${dark ? "#FFF7EC" : "#151320"}">${eyes}</g></g></svg>`; }
+    <g class="eyes" fill="${dark ? "#FFF7EC" : "#151320"}">${eyes}</g></g>${a.founder ? COMET : ""}</svg>`; }
 /* a face is new until you've seen it this session; the seed keeps two people
    who share a shape from blinking in lockstep */
 const metFaces = new Set();
@@ -860,7 +909,7 @@ addEventListener("online", flushQueue);
 let me = null; const works = {}; let lists = [], rooms = [], clubs = [], myEntries = [], follows = [], loggedIds = new Set();
 const remember = w => { if (w?.id) works[w.id] = Object.assign(works[w.id]||{}, w); return w?.id ? works[w.id] : null; };
 const logged = id => loggedIds.has(id);
-const ENTRY_SEL = "id,user_id,work_id,rated_on,score,note,loved,breakdown,context,created_at,profiles!entries_user_id_fkey(id,handle,bio,avatar),works(*),reactions(user_id),replies(id,user_id,body,created_at,profiles(handle,avatar))";
+const ENTRY_SEL = "id,user_id,work_id,rated_on,score,note,loved,breakdown,context,created_at,profiles!entries_user_id_fkey(id,handle,bio,avatar,founder),works(*),reactions(user_id),replies(id,user_id,body,created_at,profiles(handle,avatar))";
 
 async function loadLists() { const rows = await q(sb.from("lists").select("id,name,created_at,list_items(work_id,added_at,position,works(*))").order("created_at"));
   /* a hand-placed item keeps its slot; anything never dragged falls in behind, oldest first */
@@ -872,7 +921,7 @@ async function loadLists() { const rows = await q(sb.from("lists").select("id,na
   if (!lists.find(l => l.id === P.activeList)) { P.activeList = lists[0].id; saveP(); } }
 async function loadMine() { myEntries = await q(sb.from("entries").select("*,works(*)").eq("user_id", me.id).order("rated_on",{ascending:false}).order("created_at",{ascending:false}));
   myEntries.forEach(e => remember(e.works)); loggedIds = new Set(myEntries.map(e => e.work_id)); }
-async function loadRooms() { const rs = await q(sb.from("rooms").select("id,name,code,room_members(user_id,profiles(id,handle,bio,avatar))").order("created_at"));
+async function loadRooms() { const rs = await q(sb.from("rooms").select("id,name,code,room_members(user_id,profiles(id,handle,bio,avatar,founder))").order("created_at"));
   rooms = rs.map(r => ({ id:r.id, name:r.name, code:r.code, members:(r.room_members||[]).map(m => m.profiles).filter(Boolean).sort((a,b)=>a.handle.localeCompare(b.handle)) }));
   if (!rooms.find(r => r.id === P.activeRoom)) { P.activeRoom = rooms[0]?.id || null; saveP(); } }
 let openClubs = [], myClubIds = new Set();
@@ -944,7 +993,7 @@ function palmares(votes, items) {
   const ranked = Object.entries(pts).sort((a,b) => b[1] - a[1]).map(([id, p]) => ({ id, p }));
   return { ranked, voters: voters.size, max: ranked[0]?.p || 1 }; }
 
-async function clubMembers(id) { try { const rows = await q(sb.from("club_members").select("user_id,profiles(id,handle,bio,avatar)").eq("club_id", id));
+async function clubMembers(id) { try { const rows = await q(sb.from("club_members").select("user_id,profiles(id,handle,bio,avatar,founder)").eq("club_id", id));
   return rows.map(r => r.profiles).filter(Boolean); } catch { return []; } }
 async function clubProgress(club) {
   /* how far everyone in it has got */
@@ -952,7 +1001,7 @@ async function clubProgress(club) {
   let es = []; try { es = await q(sb.from("entries").select("user_id,work_id").in("work_id", club.items || [])); } catch {}
   const per = {}; for (const e of es) { if (!ids.includes(e.user_id)) continue; (per[e.user_id] ||= new Set()).add(e.work_id); }
   return per; }
-async function loadFollows() { try { follows = await q(sb.from("follows").select("followee,profiles!follows_followee_fkey(id,handle,bio,avatar)").eq("follower", me.id)); }
+async function loadFollows() { try { follows = await q(sb.from("follows").select("followee,profiles!follows_followee_fkey(id,handle,bio,avatar,founder)").eq("follower", me.id)); }
   catch (err) { follows = []; oops(err, "Couldn't load who you follow"); } }
 const activeList = () => lists.find(l => l.id === P.activeList) || lists[0];
 let shelfEdit = false, shelfOff = null, shelfStale = false;
@@ -1316,7 +1365,7 @@ function renderClaim() { const b = $("#authBody");
 
 async function loadMe() { const { data:{ session } } = await sb.auth.getSession(); if (!session) { me = null; pendingUser = null; return null; }
   if (sb.__local) { me = { id:sb.__db.profile.id, handle:sb.__db.profile.handle, bio:sb.__db.profile.bio||"", avatar:sb.__db.profile.avatar||null }; return me; }
-  const rows = await q(sb.from("profiles").select("id,handle,bio,avatar").eq("id", session.user.id).limit(1));
+  const rows = await q(sb.from("profiles").select("id,handle,bio,avatar,founder").eq("id", session.user.id).limit(1));
   me = rows[0] || null; pendingUser = me ? null : session.user.id; return me; }
 async function enter() {
   $("#meBtn").hidden = false; $("#meName").textContent = me.handle; paintMeAv();
@@ -1509,7 +1558,7 @@ async function renderFollowingFeed(fb) {
   wireSlips(fb, es); revealIn(fb); $$("[data-prof]", fb).forEach(x => x.onclick = () => openProfile(x.dataset.prof));
   const tw = $("#twinAdd"); if (tw) tw.onclick = openAdd;
 }
-async function tasteTwins(limit) { let ps = []; try { ps = await q(sb.from("profiles").select("id,handle,bio,avatar").neq("id", me.id).limit(200)); } catch { return []; }
+async function tasteTwins(limit) { let ps = []; try { ps = await q(sb.from("profiles").select("id,handle,bio,avatar,founder").neq("id", me.id).limit(200)); } catch { return []; }
   const mine = tasteOf(myEntries); if (mine.tagged < 3) return []; const out = [];
   for (const p of ps) { if (isFollowing(p.id)) continue; let es = []; try { es = await q(sb.from("entries").select("work_id,score,loved").eq("user_id", p.id).limit(200)); } catch { continue; }
     const t = tasteOf(es); const m = tasteMatch(mine, t); if (m === null || t.tagged < 2) continue; out.push({ p, match:m, top:t.craft.slice(0,3).map(c => c[0]) }); }
@@ -2573,20 +2622,108 @@ async function openWork(id) { let w = works[id]; if (!w) { try { const rows = aw
     $$("[data-es]", el).forEach(b => b.onclick = () => { P.entrySort = b.dataset.es; saveP(); paint(); }); };
   paint(); }
 
+/* ---------- what paying would get you ----------
+   A preview, not a till. Nothing here takes money and nothing is gated yet — it exists
+   so the shape can be argued with before any of it is built. The line it draws:
+   everything a friend of yours needs stays free, because a social app with a paywalled
+   half is a broken app. Marks are never in here — those are earned. */
+const TIERS = [
+  { name:"Everyone", price:"Free", paid:false,
+    has:["Logging, rating, tagging","Rooms, replies, the shelf","Who's here and live arrivals",
+         "Every earned mark","Download everything"],
+    note:"Everything that makes the app work for somebody else lives here. This is not a trial, it is the app." },
+  { name:"Rooms, paid", price:"£2/mo", paid:true,
+    has:["Slip skins and card themes","Ring colours — never ring shapes, those are earned",
+         "More than one shelf","Full history and stats","A look for the room, if the room pays"],
+    note:"Cosmetic and personal. Nothing here changes what anyone sees of your taste, only what it's wearing." },
+];
+function openPaid() {
+  openSheet(`<h3>What paying would get you</h3>
+    <p class="sub">Nothing here is built yet and nothing takes money. It's the shape, written down
+    early so it's easy to keep to.</p>
+    ${TIERS.map(t => `<div class="tier ${t.paid ? "paid" : ""}">
+      <div class="h"><span>${t.name}</span></div>
+      <b class="price">${t.price}</b>
+      <ul>${t.has.map(x => `<li>${esc(x)}</li>`).join("")}</ul>
+      <p class="note">${esc(t.note)}</p></div>`).join("")}
+    <div class="tier"><div class="h"><span>Never</span></div>
+      <ul><li>Buying a mark somebody earned</li><li>Capping how much you can log</li>
+        <li>Paywalling replies or rooms</li><li>Ads, or selling what people rate</li>
+        <li>Locking your own data behind it</li></ul>
+      <p class="note">Each of these would make money and cost the thing being built.</p></div>
+    <div class="stack"><button class="btn quiet" id="paidClose">Close</button></div>`);
+  $("#paidClose").onclick = closeSheet;
+}
+
+/* ---------- marks ----------
+   Records, not achievements: every one of these describes something that already
+   happened, and none of them can be got at by using the app differently. Nine of the
+   twelve are computable from what a profile already loads. The three left out —
+   Charter, Called It, and the room's year — each need a sweep across everybody's
+   rows, so they wait until there is a reason to pay for that query. */
+const decadeOf = w => w?.year ? Math.floor(+String(w.year).slice(0,4) / 10) * 10 : null;
+const yearsSince = iso => iso ? (Date.now() - new Date(iso)) / (365.25 * 864e5) : 0;
+
+function marksFor(p, es, taste, match, extra = {}) {
+  const out = [];
+  const add = (key, name, rule) => out.push({ key, name, rule });
+
+  if (p.founder) add("founder", "Founder", "made the place");
+
+  /* how far apart the two of you landed on the same thing */
+  const byWork = {};
+  for (const e of es) byWork[e.work_id] = Math.max(byWork[e.work_id] ?? -1, e.score);
+  let splits = 0;
+  if (p.id !== me.id) for (const m of myEntries) {
+    const theirs = byWork[m.work_id];
+    if (theirs !== undefined && Math.abs(theirs - m.score) >= 4) splits++;
+  }
+  if (splits >= 20) add("argument", "The Argument", `${splits} splits with you`);
+  else if (splits >= 1) add("split", "The Split", splits === 1 ? "a split with you" : `${splits} splits with you`);
+
+  if (Object.keys(KINDS).every(k => taste.kinds[k])) add("house", "The Whole House", "all four mediums");
+
+  const decades = new Set(es.map(e => decadeOf(works[e.work_id])).filter(Boolean));
+  if (decades.size >= 4) add("longview", "The Long View", `${decades.size} decades`);
+
+  if (match !== null && match >= 90 && taste.tagged >= 3 && tasteOf(myEntries).tagged >= 3)
+    add("twin", "Twin", `${match}% with you`);
+
+  const yrs = Math.floor(yearsSince(p.created_at));
+  if (yrs >= 3) add("stillhere", "Still Here", `${yrs} years in`);
+
+  if (extra.clubsFinished > 0)
+    add("table", "Ran the Table", extra.clubsFinished === 1 ? "finished a club" : `${extra.clubsFinished} clubs finished`);
+
+  const notes = es.filter(e => e.note && e.note.trim()).length;
+  if (notes >= 50) add("saidwhy", "Said Why", `${notes} entries with a note`);
+
+  return out;
+}
+async function clubsFinishedBy(userId) {
+  try { const rows = await q(sb.from("club_members").select("finished_at").eq("user_id", userId));
+    return rows.filter(r => r.finished_at).length; } catch { return 0; }
+}
+const marksHTML = ms => !ms.length ? "" :
+  `<div class="card"><div class="h"><span>Marks</span><span class="tag dim">earned, never bought</span></div>
+    <div class="markrow">${ms.map(m => `<span class="mk mk-${m.key}"><b>${esc(m.name)}</b><small>${esc(m.rule)}</small></span>`).join("")}</div></div>`;
+
 /* ============ PROFILE PAGE ============ */
 async function openProfile(userId) { const self = userId === me.id;
-  let p = self ? me : null; if (!p) { try { const rows = await q(sb.from("profiles").select("id,handle,bio,avatar").eq("id", userId).limit(1)); p = rows[0]; } catch {} } if (!p) return;
+  let p = self ? me : null; if (!p) { try { const rows = await q(sb.from("profiles").select("id,handle,bio,avatar,founder").eq("id", userId).limit(1)); p = rows[0]; } catch {} } if (!p) return;
   let es = []; try { es = await q(sb.from("entries").select(ENTRY_SEL).eq("user_id", userId).order("created_at",{ascending:false}).limit(200)); } catch {} es.forEach(e => remember(e.works));
   const t = tasteOf(es), mine = tasteOf(myEntries), match = tasteMatch(mine, t);
   let top = null; try { top = await loadTop(userId); } catch {}
   const theirTens = {}; for (const [k] of TENS) { if (k === "all time") continue; try { const l = await loadTop(userId, k); if (l?.items.length) theirTens[k] = l.items; } catch {} }
   let fc = 0, fg = 0; try { fc = (await q(sb.from("follows").select("follower").eq("followee", userId))).length; fg = (await q(sb.from("follows").select("followee").eq("follower", userId))).length; } catch {}
   const shared = mine.craft.slice(0,5).map(c=>c[0]).filter(k => t.craft.slice(0,5).some(c => c[0] === k));
+  const marks = marksFor(p, es, t, match, { clubsFinished: await clubsFinishedBy(userId) });
   openSheet(`<div style="display:flex;align-items:center;gap:12px">${avatar(p, "meet")}<div style="flex:1"><h3>${esc(p.handle)}${self?` <span class="tag dim">you</span>`:""}</h3>${p.bio?`<p class="sub" style="margin-top:2px">${esc(p.bio)}</p>`:""}</div>${!self && match!==null?`<span class="ring">${match} match</span>`:""}</div>
     <div class="tally">${Object.keys(KINDS).filter(k=>t.kinds[k]).map(k => `<span><b>${t.kinds[k]}</b>${K(k).label.toLowerCase()}</span>`).join("")}
       <button class="chip" id="showFollowers" style="padding:5px 10px"><b style="margin-right:4px">${fc}</b>followers</button><button class="chip" id="showFollowing" style="padding:5px 10px"><b style="margin-right:4px">${fg}</b>following</button></div>
     <div class="stack">${self ? `<button class="btn ghost" id="editMe">Edit profile &amp; settings</button>` : `<button class="btn ${isFollowing(p.id)?"ghost":"blue"}" id="followBtn">${isFollowing(p.id)?"Following":"Follow"}</button>`}</div>
     ${!self && shared.length && match !== null ? `<p class="sub" style="margin-top:12px">You share <b>${esc(shared.join(", "))}</b>.</p>` : ""}
+    ${marksHTML(marks)}
     <div class="card">${tasteHTML(t, { third:!self })}</div>
     ${top?.items.length ? `<div class="card"><div class="h"><span>${self?"Your":esc(p.handle)+"'s"} four</span></div>${fourHTML(top.items)}</div>` : ""}
     ${Object.keys(theirTens).length ? `<div class="card"><div class="h"><span>${self?"Your":esc(p.handle)+"'s"} tens</span><span class="tag dim">by medium</span></div>
@@ -2605,7 +2742,7 @@ async function openPeople(p, which) {
   let rows = []; try { rows = which === "followers"
     ? await q(sb.from("follows").select("follower").eq("followee", p.id)) : await q(sb.from("follows").select("followee").eq("follower", p.id)); } catch {}
   const ids = rows.map(r => which === "followers" ? r.follower : r.followee); let people = [];
-  if (ids.length) { try { people = await q(sb.from("profiles").select("id,handle,bio,avatar").in("id", ids)); } catch {} }
+  if (ids.length) { try { people = await q(sb.from("profiles").select("id,handle,bio,avatar,founder").in("id", ids)); } catch {} }
   openSheet(`<h3>${esc(p.id === me.id ? "Your" : p.handle + "'s")} ${which}</h3><p class="sub">${people.length} ${people.length === 1 ? "person" : "people"}</p>
     <div class="card">${people.length ? people.map(x => `<div class="twin" data-prof="${esc(x.id)}">${avatar(x)}<div class="t"><b>${esc(x.handle)}</b><small>${esc(x.bio||"")}</small></div>${x.id !== me.id ? `<button class="chip ${isFollowing(x.id)?"on":""}" data-fol="${esc(x.id)}">${isFollowing(x.id)?"Following":"Follow"}</button>` : `<span class="tag dim">you</span>`}</div>`).join("") : `<p class="empty">Nobody yet.</p>`}</div>
     <div class="stack"><button class="btn quiet" id="plBack">Back to ${esc(p.handle)}</button></div>`);
@@ -2762,7 +2899,8 @@ async function openYou() { let top = { items:[] }; try { top = await ensureMyTop
       <div class="lbl" style="margin-top:0">Set one, and you can sign in without waiting for an email</div>
       <input id="newPw" type="password" autocomplete="new-password" placeholder="at least eight characters">
       <div class="stack"><button class="btn" id="savePw">Save the password</button></div><p class="msg" id="pwMsg"></p></div>`}
-    <div class="stack"><button class="btn ghost" id="importBtn">Import from Letterboxd, Goodreads, Steam</button>
+    <div class="stack"><button class="btn ghost" id="paidBtn">What paying would get you</button>
+      <button class="btn ghost" id="importBtn">Import from Letterboxd, Goodreads, Steam</button>
       ${sb.__local?``:`<button class="btn ghost" id="takeout">Download everything</button>`}${sb.__local?`<button class="btn ghost" id="backup">Back up the log</button><button class="btn quiet" id="restore">Restore from a backup</button><input type="file" id="restoreFile" accept="application/json" hidden>`:""}<button class="btn quiet" id="signOut">${sb.__local?"Close the log":"Sign out"}</button><button class="btn quiet" id="sClose">Done</button></div><p class="msg" id="sMsg"></p>`);
   /* the shape picker */
   let av = Object.assign({}, avFor(me));
@@ -2802,6 +2940,7 @@ async function openYou() { let top = { items:[] }; try { top = await ensureMyTop
   $("#workerUrl").onchange = e => { P.workerUrl = e.target.value.trim(); saveP(); upcoming = null; }; $("#tmdbKey").onchange = e => { P.tmdbKey = e.target.value.trim(); saveP(); upcoming = null; };
   $$("[data-ct]").forEach(b => b.onclick = () => { P.cardTheme = b.dataset.ct; saveP(); $$("[data-ct]").forEach(x => x.classList.toggle("on", x === b)); });
   $("#importBtn").onclick = openImport;
+  const pb = $("#paidBtn"); if (pb) pb.onclick = openPaid;
   $("#sClose").onclick = closeSheet; $("#signOut").onclick = async () => { await sb.auth.signOut(); location.reload(); };
   const tk = $("#takeout"); if (tk) tk.onclick = async () => { tk.disabled = true; const was = tk.textContent; tk.textContent = "Gathering…";
     try { const all = await exportEverything();
@@ -2853,7 +2992,8 @@ function downloadJSON(obj, name) {
 window.__rooms = { paintLog, wireLog, openWholeLog, AV_SHAPES, AV_EYES, AV_COLS, avSVG, avFor, get me(){return me}, get entries(){return myEntries}, get works(){return works}, get rooms(){return rooms},
   CUTS, openCuts, spanData, tasteOf, reviewData, yearOf, roomPalmares, tagStats, agreement, activeRoom, q, sb: () => sb, remember,
   joinRoomChannel, leaveRoomChannel, paintHere, onLiveEntry, paintDay, get hereNow(){return hereNow},
-  say, oops, markLive, takeInvite, dropInvite, inviteLink, useInvite, exportEverything };
+  say, oops, markLive, takeInvite, dropInvite, inviteLink, useInvite, exportEverything,
+  marksFor, openPaid, COMET };
 
 /* ============ boot ============ */
 if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("./sw.js", { scope: "./" }).catch(() => {});
