@@ -481,6 +481,20 @@ svg .comet{transform-box:fill-box;transform-origin:center;animation:cometTurn 4.
 .tier .note{font-size:11.5px;line-height:1.5;color:var(--mute);margin-top:12px;padding-top:10px;
   border-top:1px solid var(--line)}
 .tier.paid .note{color:#B9B1C9;border-color:#332C42}
+/* the deck: the top card square on, the next two peeking behind it */
+.deck{position:relative;height:266px;display:flex;align-items:center;justify-content:center;margin-top:16px}
+.dk{position:absolute;width:172px;aspect-ratio:2/3;border-radius:16px;overflow:hidden;
+  background:var(--cream2);box-shadow:0 18px 34px -20px rgba(21,19,32,.6);
+  transform:translate(calc(var(--o) * 15px), calc(var(--o) * -11px)) scale(calc(1 - var(--o) * .07));
+  opacity:calc(1 - var(--o) * .3);
+  transition:transform .38s cubic-bezier(.2,1.1,.35,1),opacity .3s ease}
+.dk .dkco{width:100%;height:100%;object-fit:cover;display:block;opacity:0;transition:opacity .3s}
+.dk .dkco.ok{opacity:1}
+.dkname{text-align:center;margin-top:14px}
+.dkname b{font-family:var(--head);font-weight:900;font-size:21px;letter-spacing:-.03em;display:block}
+.dkname small{color:var(--mute);font-size:12.5px;font-weight:600;display:block;margin-top:3px}
+.dkbar{margin-top:14px}
+@media (prefers-reduced-motion:reduce){ .dk{transition:none} }
 .markrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 .mk{display:block;border:1.5px solid var(--line);border-radius:14px;padding:8px 12px;background:var(--cream)}
 .mk b{font-family:var(--head);font-weight:800;font-size:13px;display:block}
@@ -1607,7 +1621,7 @@ function renderShelf() { const L = activeList(); const all = L ? L.items.map(id 
     ${all.length ? `<div class="chips" style="margin-top:12px">${[["","Everything"],...Object.keys(KINDS).filter(k=>counts[k]).map(k=>[k,K(k).plural+" · "+counts[k]])].map(([k,l]) => `<button class="chip ${P.shelfFilter===k?"on":""}" data-kf="${k}">${l}</button>`).join("")}</div>
       ${soonCount ? `<div class="chips">${[["","All"],["out","Out now"],["soon",`Coming · ${soonCount}`]].map(([k,l]) => `<button class="chip ${(P.when||"")===k?"on":""}" data-wf="${k}">${l}</button>`).join("")}</div>` : ""}
       <div class="shelfbar">${shelfEdit ? `<button class="btn" id="shelfDone">Done</button>`
-        : left.length >= 2 ? `<button class="btn soft" id="spinOpen">Can't decide? Spin ${left.length}</button>` : ""}</div>
+        : left.length >= 2 ? `<button class="btn soft" id="spinOpen">Can't decide? ${left.length} to pick from</button>` : ""}</div>
       <div id="resultArea"></div>
       <div class="grid" id="shelfGrid">${rows.map(w => { const soon = isSoon(w);
         return `<div class="cell" data-cell="${esc(w.id)}"><div class="po ${logged(w.id)?"done":""} ${soon?"soon":""}" data-w="${esc(w.id)}">${cover(w,"")}<b>${esc(w.title)}</b>${tag(w.kind)}
@@ -1641,11 +1655,56 @@ function candidates() { const L = activeList(); if (!L) return []; return L.item
 function openWheel() {
   const c = candidates();
   openSheet(`<h3>Can't decide?</h3><p class="sub">${c.length} on the shelf${P.shelfFilter ? " · " + K(P.shelfFilter).plural.toLowerCase() : ""} · nothing unreleased</p>
+    <div class="seg" style="margin-top:12px">${[["deck","Deal them"],["wheel","Spin for it"]].map(([k,l]) =>
+      `<button data-pm="${k}" class="${pickMode()===k?"on":""}">${l}</button>`).join("")}</div>
     <div class="chips">${[["","Everything"],...Object.keys(KINDS).map(k => [k, K(k).label])].map(([k,l]) => `<button class="chip ${P.shelfFilter===k?"on":""}" data-wk="${k}">${l}</button>`).join("")}</div>
     <div id="wheelArea"></div><div id="resultArea"></div><div class="stack"><button class="btn quiet" id="whClose">Close</button></div>`);
-  $$("[data-wk]").forEach(b => b.onclick = () => { P.shelfFilter = b.dataset.wk; saveP(); openWheel(); });
+  $$("[data-wk]").forEach(b => b.onclick = () => { P.shelfFilter = b.dataset.wk; saveP(); deckItems = []; openWheel(); });
+  $$("[data-pm]").forEach(b => b.onclick = () => { P.pickMode = b.dataset.pm; saveP(); openWheel(); });
   $("#whClose").onclick = () => { closeSheet(); renderShelf(); };
-  drawWheel();
+  if (pickMode() === "deck") { if (!deckItems.length) resetDeck(); drawDeck(); } else drawWheel();
+}
+/* the deck is the default because it asks rather than tells; one tap moves to the wheel and sticks */
+const pickMode = () => P.pickMode === "wheel" ? "wheel" : "deck";
+/* ---------- the deck ----------
+   The wheel picks for you; the deck asks you, one at a time. Same candidates, same
+   medium filter — the only difference is whether you get a say. Skipped titles go to
+   the back rather than out, so a deck never runs dry, it just comes round again. */
+const PICK_VERB = { film:"Watch", tv:"Watch", book:"Read", game:"Play" };
+let deckItems = [], deckSeen = 0;
+function resetDeck() { deckItems = candidates().slice();
+  for (let i = deckItems.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1));
+    [deckItems[i], deckItems[j]] = [deckItems[j], deckItems[i]]; }
+  deckSeen = 0; }
+function drawDeck() {
+  const area = $("#wheelArea"); if (!area) return;
+  $("#resultArea").innerHTML = "";
+  if (!deckItems.length) resetDeck();
+  if (!deckItems.length) { area.innerHTML = `<p class="empty">Nothing on the shelf to pick from.</p>`; return; }
+  const top = deckItems[0];
+  area.innerHTML = `<div class="deck">
+      ${[2,1,0].filter(o => deckItems[o]).map(o => { const w = deckItems[o];
+        return `<div class="dk" style="--o:${o};z-index:${3-o}">${cover(w, "dkco")}</div>`; }).join("")}
+    </div>
+    <div class="dkname"><b>${esc(top.title)}</b><small>${tag(top.kind)} ${esc(top.year||"")}${
+      top.creator ? " · " + esc(top.creator) : ""}</small></div>
+    <div class="stack dkbar"><button class="btn" id="dkTake">${PICK_VERB[top.kind] || "Take"} it</button>
+      <button class="btn ghost" id="dkSkip">Not tonight</button></div>
+    ${deckSeen >= deckItems.length && deckItems.length > 1
+      ? `<p class="sub" style="margin-top:10px">That's all of them. Going round again.</p>` : ""}`;
+  $("#dkTake").onclick = () => { const w = deckItems[0];
+    P.picked = w.id; saveP();
+    const card = $(".dk[style*='--o:0']") || $(".deck .dk:last-child");
+    if (card && !REDUCED) card.animate([{transform:"none"},{transform:"translateY(-64px) scale(1.05)",opacity:0}],
+      { duration:280, easing:"cubic-bezier(.3,1.2,.5,1)" });
+    setTimeout(() => openLog(w), REDUCED ? 0 : 240); };
+  $("#dkSkip").onclick = () => {
+    const card = $(".dk[style*='--o:0']") || $(".deck .dk:last-child");
+    const go = () => { deckItems.push(deckItems.shift()); deckSeen++; drawDeck(); };
+    if (card && !REDUCED) { card.animate([{transform:"none",opacity:1},
+      {transform:"translateX(160px) rotate(10deg)",opacity:0}],
+      { duration:260, easing:"cubic-bezier(.4,0,.9,.4)" }).onfinish = go; }
+    else go(); };
 }
 function drawWheel() { const c = candidates(); wheelItems = c; const area = $("#wheelArea"); if (!area) return;
   if (!c.length) { area.innerHTML = blank("var(--butter)","○", P.shelfFilter ? `No ${K(P.shelfFilter).plural.toLowerCase()} left` : "Nothing left to spin",
@@ -2999,6 +3058,7 @@ window.__rooms = { paintLog, wireLog, openWholeLog, AV_SHAPES, AV_EYES, AV_COLS,
   CUTS, openCuts, spanData, tasteOf, reviewData, yearOf, roomPalmares, tagStats, agreement, activeRoom, q, sb: () => sb, remember,
   joinRoomChannel, leaveRoomChannel, paintHere, onLiveEntry, paintDay, get hereNow(){return hereNow},
   say, oops, markLive, takeInvite, dropInvite, inviteLink, useInvite, exportEverything,
+  drawDeck, resetDeck, pickMode, candidates, get deckItems(){return deckItems},
   marksFor, openPaid, COMET, loadFounders, get founderIds(){return founderIds} };
 
 /* ============ boot ============ */
