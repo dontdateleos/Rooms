@@ -417,6 +417,12 @@ nav button:active{transform:scale(.95)}
 #add svg{width:26px;height:26px;stroke:currentColor;stroke-width:2.6;fill:none;stroke-linecap:round}
 #add.busy{animation:pop .32s cubic-bezier(.3,1.4,.5,1)}
 
+/* the adaptive review: prose, so it is set like prose and not like another stat.
+   Its own name — `.verdict` was taken by the butter callout above. */
+.sumup{margin:14px 0 2px;font-size:15.5px;line-height:1.5;font-weight:400;color:var(--ink);
+  background:none;padding:2px 0 2px 13px;border-left:3px solid var(--line)}
+.sumup b{font-family:var(--head);font-weight:800;font-variant-numeric:tabular-nums}
+
 /* sheets */
 .sheet{position:fixed;inset:0;background:rgba(21,19,32,.45);display:none;align-items:flex-end;z-index:10}
 .sheet.on{display:flex}
@@ -817,7 +823,9 @@ const TMDB_LOGO = p => p ? "https://image.tmdb.org/t/p/w92" + p : "";
    on it and caches for a day. Films and shows only: nothing equivalent exists for
    books or games, so those never ask. */
 const watchCache = {};
-const REGION = () => (P.region || navigator.language?.split("-")[1] || "AU").toUpperCase();
+const REGION = () => { const pick = [P.region, ...(navigator.language || "").split("-").slice(1)]
+    .map(x => String(x || "").toUpperCase()).find(x => /^[A-Z]{2}$/.test(x));
+  return pick || "AU"; };
 async function watchOn(w) {
   if (w.kind !== "film" && w.kind !== "tv") return null;
   const region = REGION(), key = w.id + "|" + region;
@@ -1117,6 +1125,111 @@ async function tagStats(workId) { if (tagCache[workId]) return tagCache[workId];
 function myCustomTags(kind) { const known = new Set(K(kind).craft), counts = {};
   for (const e of myEntries) for (const k of (e.loved||[])) if (!k.startsWith("person:") && !known.has(k)) counts[k] = (counts[k]||0)+1;
   return Object.entries(counts).sort((a,b)=>b[1]-a[1]).map(x=>x[0]).slice(0,8); }
+
+/* ---------- the adaptive review ----------
+   The page already prints the average twice, so this does not exist to say it a third
+   time. It exists to say what a number cannot: whether people agree, whether there are
+   two camps rather than one opinion, and which craft keeps getting named. Every clause
+   has to be earned — under five people there is no consensus to report, so it says how
+   few there are rather than dressing four opinions up as a verdict. It reads one way on
+   a work everyone loves for the same reason and another on a work that splits a room,
+   which is the whole point of generating it instead of printing a stock line.
+
+   `people` is one score per person on the half-star 1..10 scale, already deduplicated,
+   so a rewatch cannot vote twice. */
+/* A count set in digits reads as data; the same count spelled out reads as a sentence.
+   Anything the eye should take as a figure — an average — stays numeric. */
+const SAID = ["", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten",
+  "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen",
+  "nineteen", "twenty"];
+const said = n => SAID[n] || String(n);
+const Cap = s => s.replace(/^(<b>)?([a-z])/, (m, b, c) => (b || "") + c.toUpperCase());
+const BANDS = [[4.3,"loved"],[3.6,"liked"],[2.8,"mixed"],[1.8,"poor"]];
+const bandOf = a => (BANDS.find(([t]) => a >= t) || [0,"bad"])[1];
+/* Two works with the same shape of opinion would otherwise be described in identical
+   words. Keyed off the work's id, so a page always reads the same but a list of them
+   does not read like one sentence repeated. */
+const pickFor = (id, arr) => { let h = 0; for (let i = 0; i < (id||"").length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+  return arr[h % arr.length]; };
+function reviewOf({ people, agree, top, hot, yours, id = "" }) {
+  const n = people.length; if (!n) return "";
+  const B = x => `<b>${x}</b>`;
+  /* chips lowercase a name to sit in a row of craft words; a sentence must not */
+  const nm = k => esc(k.startsWith("person:") ? k.slice(7) : k);
+  const join = ts => ts.length > 1 ? `${B(nm(ts[0][0]))} and ${B(nm(ts[1][0]))}` : B(nm(ts[0][0]));
+  const one = arr => pickFor(id, arr);
+  const avg = people.reduce((a, x) => a + x, 0) / n / 2, a1 = avg.toFixed(1);
+  const picked = (n >= 5 ? top.filter(([k]) => hot(k)) : top.filter(([, c]) => c >= 2)).slice(0, 2);
+  const craft = picked.filter(([k]) => !k.startsWith("person:"));
+  const who = picked.find(([k]) => k.startsWith("person:"));
+
+  if (n === 1) { const own = yours != null, t = top.slice(0, 2), were = t.length > 1 ? "were" : "was";
+    if (!t.length) return own ? `Only you so far, and you didn't say why.`
+      : `One person's logged it, without saying why.`;
+    return own ? `Only you so far — ${join(t)} ${were} what you picked out.`
+      : `One person's been here before you, and ${join(t)} ${were} what they picked out.`; }
+
+  if (n < 5) return craft.length
+    ? `Still early — ${B(said(n))} people, averaging ${B(a1)} — but ${join(craft)} ${craft.length > 1 ? "have" : "has"} already come up more than once.`
+    : `Still early: ${B(said(n))} people so far, averaging ${B(a1)}, and no pattern in what they mention.`;
+
+  const hi = people.filter(x => x >= 8).length, lo = people.filter(x => x <= 5).length;
+  const split = hi / n >= .25 && lo / n >= .25;
+  const settled = agree === null || agree >= 70;
+  const k = bandOf(avg), low = k === "poor" || k === "bad";
+  /* a person is a who, not a what, and two tags take a plural verb */
+  const isAre = craft.length > 1 ? "are" : "is";
+  const why = (whenCraft, whenWho) => who ? whenWho.replace("$", B(nm(who[0])))
+    : craft.length ? whenCraft.replace("$", join(craft)) : ".";
+  let out;
+
+  if (split) {
+    out = one([
+      `People can't agree on this one at all. ${Cap(B(said(hi)))} give it four stars or more, ${B(said(lo))} can't get past two and a half.`,
+      `This one splits a room. ${Cap(B(said(hi)))} rate it four or better while ${B(said(lo))} put it at two and a half or below.`,
+    ]);
+    out += who ? ` It's ${B(nm(who[0]))} the ones who love it keep naming.`
+      : craft.length ? ` The ones who love it keep coming back to ${join(craft)}.` : "";
+  } else if (k === "loved") {
+    out = settled
+      ? one([`Barely an argument between the ${B(said(n))} people who've logged it, all landing near ${B(a1)}`,
+             `Close to unanimous, and that's rare — ${B(said(n))} people, none of them far from ${B(a1)}`])
+      : one([`It scores well at ${B(a1)}, though that number hides a fair spread`,
+             `High marks overall — ${B(a1)} — but the room isn't of one mind about it`]);
+    out += why(`, and $ ${isAre} what they keep coming back to.`, `, and it's $ they keep naming.`);
+  } else if (k === "liked") {
+    out = settled
+      ? one([`Comfortably liked without anyone getting carried away: ${B(a1)} from ${B(said(n))} people`,
+             `Well thought of and quietly so — ${B(said(n))} people, landing on ${B(a1)}`])
+      : one([`It does well on paper at ${B(a1)}, though people sit further apart than that suggests`,
+             `${B(a1)} on average, which flattens a wider range of opinion than it looks`]);
+    out += why(`, and $ ${isAre} what its admirers point to.`, `, and it's $ its admirers point to.`);
+  } else if (k === "mixed") {
+    out = settled
+      ? one([`Solid rather than special. ${Cap(B(said(n)))} people put it at ${B(a1)} and few of them argue`,
+             `Perfectly fine, and nobody pretends otherwise — ${B(a1)} across ${B(said(n))} people`])
+      : one([`Hard to pin down. The ${B(a1)} sits in the middle because opinions are scattered, not because anyone agrees`,
+             `${B(a1)}, but that average is doing a lot of work — the range behind it is wide`]);
+    out += why(`, with $ the part that gets mentioned.`, `, though it's $ people mention.`);
+  } else {
+    out = settled
+      ? one([`There's broad agreement this one doesn't work: ${B(a1)} from ${B(said(n))} people`,
+             `${Cap(B(said(n)))} people, and they're of one mind about it — ${B(a1)}`])
+      : one([`It scores badly at ${B(a1)}, and even that isn't settled`,
+             `${B(a1)}, and the people who dislike it don't dislike it for the same reasons`]);
+    out += who ? `. ${Cap(B(nm(who[0])))} is the name that keeps coming up anyway.`
+      : craft.length ? `. ${Cap(join(craft))} ${isAre} the one thing anybody still credits.` : `.`;
+  }
+
+  if (yours != null && n > 1) {
+    const top1 = Math.max(...people), bot = Math.min(...people);
+    const alone = v => people.filter(x => x === v).length === 1;
+    if (yours === top1 && top1 > bot && alone(top1)) out += ` You rate it higher than anyone else who's logged it.`;
+    else if (yours === bot && top1 > bot && alone(bot)) out += ` Nobody's been harder on it than you.`;
+    else if (Math.abs(yours / 2 - avg) >= 1) out += yours / 2 > avg
+      ? ` You liked it considerably more than most.` : ` You thought a good deal less of it than most.`;
+  }
+  return out; }
 
 /* ---------- ordering entries on a work page ----------
    never ranks people, only posts. popular = who nodded; momentum = who nodded lately;
@@ -2763,6 +2876,7 @@ async function openWork(id) { let w = works[id]; if (!w) { try { const rows = aw
     <div class="numbers" id="wNumbers"><div><b>—</b><span>You</span></div><div><b>—</b><span>Your room</span></div><div><b>—</b><span>Following</span></div><div><b>—</b><span>Everyone</span></div></div>
     ${w.kind === "film" || w.kind === "tv" ? `<div id="wWatch"></div>` : ""}
     <div class="card"><div class="h"><span>Everyone</span><span class="tag dim" id="wCount">—</span></div><div class="trio" id="wTrio"><div><b>—</b><span>Score</span></div><div><b>—</b><span>Logged it</span></div><div><b>—</b><span>Agree</span></div></div>
+      <p class="sumup" id="wVerdict" hidden></p>
       <div class="lbl">What people loved</div><div id="wLoved">${skeleton(2)}</div></div>
     ${isSoon(w) ? `<p class="sub" style="margin-top:12px">Out ${when(w.release)}. It's on your shelf until then.</p>` : ""}
     <div class="stack"><button class="btn ${isSoon(w)?"ghost":""}" id="wLog">${logged(w.id)?"Log it again":isSoon(w)?"Log it anyway":cfg.verb.replace(/^./,c=>c.toUpperCase())+" it"}</button><button class="btn ghost" id="wShelf">${activeList()?.items.includes(w.id)?"Take it off the shelf":"Put it on the shelf"}</button></div>
@@ -2807,6 +2921,12 @@ async function openWork(id) { let w = works[id]; if (!w) { try { const rows = aw
   }
   paintWatch(w);
   const st = await tagStats(w.id); const top = Object.entries(st.counts).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  /* one score per person, latest wins — the same rule the averages use */
+  const latest = {}; es.forEach(r => { if (!latest[r.user_id] || r.rated_on > latest[r.user_id].rated_on) latest[r.user_id] = r; });
+  const people = Object.values(latest).map(r => r.score);
+  const vEl = $("#wVerdict");
+  if (vEl) { const line = reviewOf({ people, agree, top, hot:st.hot, id:w.id, yours:mine.length ? mine[0].score : null });
+    if (line) { vEl.innerHTML = line; vEl.hidden = false; } }
   const wf = $("#wFirst"); if (wf) wf.onclick = () => openLog(w);
   const wc = $("#wCard"); if (wc) wc.onclick = () => openCuts("work", { w, avg:avg(es), n:es.length, agree, top:top.map(([k]) => [k, st.share(k)]) }, "Share " + w.title);
   if ($("#wLoved")) $("#wLoved").innerHTML = top.length
@@ -3235,7 +3355,7 @@ window.__rooms = { paintLog, wireLog, openWholeLog, AV_SHAPES, AV_EYES, AV_COLS,
   joinRoomChannel, leaveRoomChannel, paintHere, onLiveEntry, paintDay, get hereNow(){return hereNow},
   say, oops, markLive, takeInvite, dropInvite, inviteLink, useInvite, exportEverything,
   watchOn, paintWatch, REGION,
-  drawDeck, resetDeck, pickMode, candidates, pickPool, pickFacets, facetsOf, dropFromShelf, loadRecs, recsCached:() => recs !== null, get deckItems(){return deckItems},
+  drawDeck, resetDeck, pickMode, candidates, pickPool, pickFacets, facetsOf, dropFromShelf, loadRecs, recsCached:() => recs !== null, reviewOf, agreement, get deckItems(){return deckItems},
   addToShelf, __isSoon:isSoon, __list:activeList,
   marksFor, openPaid, COMET, loadFounders, get founderIds(){return founderIds} };
 
