@@ -423,6 +423,21 @@ nav button:active{transform:scale(.95)}
   background:none;padding:2px 0 2px 13px;border-left:3px solid var(--line)}
 .sumup b{font-family:var(--head);font-weight:800;font-variant-numeric:tabular-nums}
 
+/* card skins: the swatch is the label, the name is the caption */
+.skins{display:flex;gap:8px;flex-wrap:wrap;margin-top:2px}
+.skins button{background:none;border:0;padding:0;cursor:pointer;display:flex;flex-direction:column;
+  align-items:center;gap:5px;width:62px;font-family:var(--head)}
+.skins .sw{width:46px;height:58px;border-radius:12px;display:block;
+  outline:2px solid transparent;outline-offset:2px;transition:outline-color .16s,transform .16s}
+.skins button.on .sw{outline-color:var(--ink)}
+.skins button:active .sw{transform:scale(.94)}
+.skins b{font-size:11px;font-weight:800;color:var(--mute)}
+.skins button.on b{color:var(--ink)}
+.skins i{font-style:normal;font-size:9px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--ink);background:var(--butter);border-radius:99px;padding:1px 6px;margin-top:-2px}
+.skins button:focus-visible .sw{outline-color:var(--blue)}
+.skinnote{margin-top:8px;font-size:12.5px}
+
 /* sheets */
 .sheet{position:fixed;inset:0;background:rgba(21,19,32,.45);display:none;align-items:flex-end;z-index:10}
 .sheet.on{display:flex}
@@ -800,7 +815,7 @@ const cover = (w, cls = "co") => w?.cover ? `<img class="${cls}" src="${esc(w.co
 /* ============ prefs + sources ============ */
 const WORKER = "https://rooms.jordandf1.workers.dev";
 const proxy = () => (P.workerUrl || WORKER).replace(/\/+$/, "");
-const P = Object.assign({ workerUrl:"", tmdbKey:"", activeList:null, activeRoom:null, picked:null, kinds:["film","tv","book","game"], shelfFilter:"", pickTag:"", feed:"room" },
+const P = Object.assign({ workerUrl:"", tmdbKey:"", activeList:null, activeRoom:null, picked:null, kinds:["film","tv","book","game"], shelfFilter:"", pickTag:"", cardSkin:"", feed:"room" },
   JSON.parse(localStorage.getItem("rooms.prefs") || "{}"));
 const saveP = () => localStorage.setItem("rooms.prefs", JSON.stringify(P));
 async function tmdb(path, params = {}) {
@@ -2243,18 +2258,51 @@ const CARD = { W:1080, H:1350, M:80, blue:"#1F4FE0", night:"#141320", ink:"#1513
 /* dark cards after 7pm or when the phone is in dark mode — same layout, different light */
 const cardDark = () => P.cardTheme === "night" || (P.cardTheme !== "day" &&
   (window.matchMedia("(prefers-color-scheme: dark)").matches || new Date().getHours() >= 19 || new Date().getHours() < 6));
+/* ---------- what a card is wearing ----------
+   A theme changes the ground, the ink that has to sit on it, and the few colours that
+   answer to the ground — the footer rule, and the stars, which would otherwise be butter
+   on a butter card. It never touches a number, a layout or a word. That is the whole rule
+   the paid tier is written to: nothing here changes what anyone sees of your taste.
+   Rooms is free, keeps its day-to-night switch, and stays the default. */
+const CARD_THEMES = {
+  rooms:  { name:"Rooms",  paid:false, dim:true,  day:CARD.blue, night:CARD.night,
+            on:"#fff", pale:CARD.pale, paleNight:CARD.palen,
+            soft:"rgba(255,255,255,.14)", softNight:"rgba(255,255,255,.10)",
+            rule:"rgba(255,255,255,.25)", star:"#FFE86A", empty:"rgba(255,255,255,.28)",
+            accent:"#FFE86A", good:"#9EF0C9", warn:"#FFB36B", ranks:["#FFE86A","#9EF0C9","#8FD3FF"] },
+  paper:  { name:"Paper",  paid:true,  dim:false, day:CARD.cream, on:CARD.ink, pale:"#7A7590",
+            soft:"rgba(21,19,32,.09)", rule:"rgba(21,19,32,.18)", star:CARD.blue, empty:"rgba(21,19,32,.14)",
+            accent:CARD.blue, good:"#12805A", warn:"#A24A08", ranks:[CARD.blue,"#12805A","#6B3FC4"] },
+  butter: { name:"Butter", paid:true,  dim:false, day:"#FFE86A", on:CARD.ink, pale:"#7A6A16",
+            soft:"rgba(21,19,32,.11)", rule:"rgba(21,19,32,.22)", star:CARD.ink, empty:"rgba(21,19,32,.17)",
+            accent:CARD.ink, good:"#12805A", warn:"#8A3D06", ranks:[CARD.ink,"#12805A",CARD.blue] },
+  carbon: { name:"Carbon", paid:true,  dim:true,  day:"#0D0C14", on:"#fff", pale:"#8E88A3",
+            soft:"rgba(255,255,255,.09)", rule:"rgba(255,255,255,.20)", star:"#FFE86A", empty:"rgba(255,255,255,.22)",
+            accent:"#FFE86A", good:"#9EF0C9", warn:"#FFB36B", ranks:["#FFE86A","#9EF0C9","#8FD3FF"] },
+  orchid: { name:"Orchid", paid:true,  dim:true,  day:"#38265F", on:"#fff", pale:"#C6B6E8",
+            soft:"rgba(255,255,255,.12)", rule:"rgba(255,255,255,.24)", star:"#FFE86A", empty:"rgba(255,255,255,.26)",
+            accent:"#FFE86A", good:"#9EF0C9", warn:"#FFB36B", ranks:["#FFE86A","#9EF0C9","#8FD3FF"] },
+};
+const cardTheme = () => CARD_THEMES[P.cardSkin] || CARD_THEMES.rooms;
 function cardCtx(kind) {
   const c = document.createElement("canvas"); c.width = CARD.W; c.height = CARD.H; const x = c.getContext("2d");
-  const dark = cardDark(); const base = dark ? CARD.night : CARD.blue;
+  const th = cardTheme();
+  /* only Rooms carries a second ground; the rest are one light each, all day */
+  const night = !!(th.night && cardDark()), base = night ? th.night : th.day, dark = th.dim;
   x.fillStyle = base; x.fillRect(0,0,CARD.W,CARD.H);
   /* the medium tints the light at the top — same family, different weather */
   const tint = CARD.cols[kind];
-  if (tint) { /* a glow in one corner, not a repaint — the field stays blue */
+  if (tint) { /* a glow in one corner, not a repaint — the ground stays the ground */
     const r = x.createRadialGradient(CARD.W*.88, -140, 40, CARD.W*.88, -140, 700);
-    r.addColorStop(0, tint + (dark ? "2E" : "33")); r.addColorStop(1, tint + "00");
+    r.addColorStop(0, tint + (dark ? (night ? "2E" : "33") : "5C")); r.addColorStop(1, tint + "00");
     x.fillStyle = r; x.fillRect(0,0,CARD.W,CARD.H*.6);
     x.fillStyle = tint; x.fillRect(0, 0, CARD.W, 8); }
-  x.__base = base; x.__dark = dark; x.__pale = dark ? CARD.palen : CARD.pale; x.__soft = dark ? "rgba(255,255,255,.10)" : "rgba(255,255,255,.14)";
+  x.__base = base; x.__dark = dark;
+  x.__on = th.on;
+  x.__pale = night && th.paleNight ? th.paleNight : th.pale;
+  x.__soft = night && th.softNight ? th.softNight : th.soft;
+  x.__rule = th.rule; x.__star = th.star; x.__empty = th.empty;
+  x.__accent = th.accent; x.__good = th.good; x.__warn = th.warn; x.__ranks = th.ranks;
   return { c, x };
 }
 function cardMark(x, left, top, h = 34) {
@@ -2265,10 +2313,10 @@ function cardMark(x, left, top, h = 34) {
   box(left + off, "#8FD3FF", .85);
 }
 function cardHead(x, label) { cardMark(x, CARD.M, 84, 36);
-  x.fillStyle = "#fff"; x.font = "900 40px Outfit, sans-serif"; x.fillText("ROOMS", CARD.M + 76, 116);
+  x.fillStyle = x.__on; x.font = "900 40px Outfit, sans-serif"; x.fillText("ROOMS", CARD.M + 76, 116);
   x.fillStyle = x.__pale; x.font = "700 26px Inter, sans-serif"; x.textAlign = "right"; x.fillText(label.toUpperCase(), CARD.W - CARD.M, 112); x.textAlign = "left"; }
-function cardFoot(x, left, right) { x.fillStyle = "rgba(255,255,255,.25)"; x.fillRect(CARD.M, CARD.H - 150, CARD.W - CARD.M*2, 2);
-  x.fillStyle = "#fff"; x.font = "700 28px Inter, sans-serif"; x.fillText(left, CARD.M, CARD.H - 90);
+function cardFoot(x, left, right) { x.fillStyle = x.__rule; x.fillRect(CARD.M, CARD.H - 150, CARD.W - CARD.M*2, 2);
+  x.fillStyle = x.__on; x.font = "700 28px Inter, sans-serif"; x.fillText(left, CARD.M, CARD.H - 90);
   if (right) { x.textAlign = "right"; x.fillStyle = x.__pale; x.fillText(right, CARD.W - CARD.M, CARD.H - 90); x.textAlign = "left"; } }
 function cardPill(x, text, bg, px, py) { x.font = "800 26px Outfit, sans-serif"; const w = x.measureText(text).width + 40;
   x.fillStyle = bg; x.beginPath(); x.roundRect(px, py, w, 48, 24); x.fill(); x.fillStyle = CARD.ink; x.fillText(text, px + 20, py + 33); return w; }
@@ -2280,8 +2328,8 @@ function cardWrap(x, text, left, top, maxW, lh, font, fill) { x.font = font; x.f
 function cardStars(x, half, left, y, size = 44, gap = 14) {
   for (let i = 0; i < 5; i++) { const f = Math.max(0, Math.min(1, half/2 - i)); const cx = left + i*(size+gap), cy = y;
     x.save(); x.translate(cx, cy); x.scale(size/24, size/24); const p = new Path2D("M12 2.6l2.9 6.1 6.6.9-4.8 4.6 1.2 6.6L12 17.6 6.1 20.8l1.2-6.6L2.5 9.6l6.6-.9z");
-    x.fillStyle = "rgba(255,255,255,.28)"; x.fill(p);
-    if (f > 0) { x.save(); x.beginPath(); x.rect(0, 0, f >= 1 ? 24 : 12, 24); x.clip(); x.fillStyle = "#FFE86A"; x.fill(p); x.restore(); }
+    x.fillStyle = x.__empty; x.fill(p);
+    if (f > 0) { x.save(); x.beginPath(); x.rect(0, 0, f >= 1 ? 24 : 12, 24); x.clip(); x.fillStyle = x.__star; x.fill(p); x.restore(); }
     x.restore(); } }
 async function cardOut(c, name) { const blob = await new Promise(r => c.toBlob(r, "image/png"));
   const file = new File([blob], name, { type:"image/png" });
@@ -2294,11 +2342,11 @@ const stampDate = d => { const [y,m,dd] = String(d).split("-"); return `${+dd} $
 /* ---------- the cuts ----------
    every shareable thing has three: a different way of saying the same numbers. */
 function cardBase(kind, label, tint) { const { c, x } = cardCtx(tint || null); cardHead(x, label); return { c, x }; }
-const big = (x, text, y, size = 190) => { x.fillStyle = "#fff"; x.font = `900 ${size}px Outfit, sans-serif`; x.fillText(text, CARD.M, y); };
+const big = (x, text, y, size = 190) => { x.fillStyle = x.__on; x.font = `900 ${size}px Outfit, sans-serif`; x.fillText(text, CARD.M, y); };
 const kicker = (x, text, y) => { x.fillStyle = x.__pale; x.font = "700 26px Inter, sans-serif"; x.fillText(text.toUpperCase(), CARD.M, y); };
 function listRows(x, rows, y, opts = {}) {
   for (const [left, right, tint] of rows) {
-    x.fillStyle = "#fff"; x.font = "900 44px Outfit, sans-serif";
+    x.fillStyle = x.__on; x.font = "900 44px Outfit, sans-serif";
     const t = String(left).length > 26 ? String(left).slice(0,25) + "…" : left;
     x.fillText(t, CARD.M, y);
     if (right !== undefined && right !== null) { x.textAlign = "right"; x.fillStyle = tint || x.__pale;
@@ -2309,7 +2357,7 @@ function kindBlocks(x, counts, y) {
   const ks = Object.keys(KINDS), cw = (CARD.W - CARD.M*2 - 36)/4;
   ks.forEach((k,i) => { const n = counts[k] || 0, cx = CARD.M + i*(cw+12);
     x.fillStyle = n ? CARD.cols[k] : x.__soft; x.beginPath(); x.roundRect(cx, y, cw, 170, 22); x.fill();
-    x.fillStyle = n ? CARD.ink : "#fff"; x.font = "900 56px Outfit, sans-serif"; x.fillText(String(n), cx + 22, y + 90);
+    x.fillStyle = n ? CARD.ink : x.__on; x.font = "900 56px Outfit, sans-serif"; x.fillText(String(n), cx + 22, y + 90);
     x.font = "700 22px Inter, sans-serif"; x.fillText(K(k).label.toUpperCase(), cx + 22, y + 132); });
   return y + 200; }
 
@@ -2320,33 +2368,33 @@ const CUTS = {
     cuts: [
       ["Poster", async (e) => { const w = works[e.work_id] || {}, cfg = K(w.kind);
         const { c, x } = cardBase("review", cfg.plural, w.kind);
-        let y = cardWrap(x, w.title, CARD.M, 300, CARD.W - CARD.M*2, 96, "900 88px Outfit, sans-serif", "#fff");
+        let y = cardWrap(x, w.title, CARD.M, 300, CARD.W - CARD.M*2, 96, "900 88px Outfit, sans-serif", x.__on);
         x.fillStyle = x.__pale; x.font = "600 32px Inter, sans-serif";
         x.fillText([w.year, w.creator].filter(Boolean).join(" · "), CARD.M, y + 14);
         cardStars(x, e.score, CARD.M, y + 96, 54, 16);
-        if (e.note) cardWrap(x, "“" + e.note + "”", CARD.M, y + 210, CARD.W - CARD.M*2, 64, "italic 700 52px Inter, sans-serif", "#fff");
+        if (e.note) cardWrap(x, "“" + e.note + "”", CARD.M, y + 210, CARD.W - CARD.M*2, 64, "italic 700 52px Inter, sans-serif", x.__on);
         let px = CARD.M, py = CARD.H - 300;
         for (const t of (e.loved||[]).slice(0,5).map(k => k.startsWith("person:") ? lc(k.slice(7)) : k)) {
           x.font = "800 26px Outfit, sans-serif"; const wpx = x.measureText(t).width + 40;
           if (px + wpx > CARD.W - CARD.M) { px = CARD.M; py += 62; }
-          px += cardPill(x, t, CARD.cols[w.kind] || "#FFE86A", px, py) + 12; }
+          px += cardPill(x, t, CARD.cols[w.kind] || x.__accent, px, py) + 12; }
         cardFoot(x, lc(e.profiles?.handle || me.handle), `${cfg.verb} ${stampDate(e.rated_on)}`); return c; }],
       ["Quote", async (e) => { const w = works[e.work_id] || {}, cfg = K(w.kind);
         const { c, x } = cardBase("review", cfg.plural, w.kind);
         const note = e.note || w.title;
-        cardWrap(x, "“" + note + "”", CARD.M, 340, CARD.W - CARD.M*2, 84, "italic 900 68px Outfit, sans-serif", "#fff");
+        cardWrap(x, "“" + note + "”", CARD.M, 340, CARD.W - CARD.M*2, 84, "italic 900 68px Outfit, sans-serif", x.__on);
         kicker(x, w.title + (w.year ? " · " + w.year : ""), CARD.H - 300);
         cardStars(x, e.score, CARD.M, CARD.H - 240, 46, 14);
         cardFoot(x, lc(e.profiles?.handle || me.handle), `${cfg.verb} ${stampDate(e.rated_on)}`); return c; }],
       ["Loved", async (e) => { const w = works[e.work_id] || {}, cfg = K(w.kind);
         const { c, x } = cardBase("review", cfg.plural, w.kind);
-        let y = cardWrap(x, w.title, CARD.M, 270, CARD.W - CARD.M*2, 78, "900 68px Outfit, sans-serif", "#fff") + 20;
+        let y = cardWrap(x, w.title, CARD.M, 270, CARD.W - CARD.M*2, 78, "900 68px Outfit, sans-serif", x.__on) + 20;
         cardStars(x, e.score, CARD.M, y + 20, 44, 14); y += 130;
         const tags = (e.loved||[]).slice(0,6).map(k => k.startsWith("person:") ? lc(k.slice(7)) : k);
         if (tags.length) { kicker(x, "what they loved", y); y += 56;
           let px = CARD.M, py = y; for (const t of tags) { x.font = "800 30px Outfit, sans-serif";
             const wpx = x.measureText(t).width + 44; if (px + wpx > CARD.W - CARD.M) { px = CARD.M; py += 68; }
-            px += cardPill(x, t, CARD.cols[w.kind] || "#FFE86A", px, py) + 14; } }
+            px += cardPill(x, t, CARD.cols[w.kind] || x.__accent, px, py) + 14; } }
         cardFoot(x, lc(e.profiles?.handle || me.handle), `${cfg.verb} ${stampDate(e.rated_on)}`); return c; }]
     ]
   },
@@ -2360,24 +2408,24 @@ const CUTS = {
         x.fillStyle = x.__pale; x.font = "600 34px Inter, sans-serif"; x.fillText(d.line, CARD.M, 550);
         kindBlocks(x, d.kinds, 940);
         if (d.best) { kicker(x, "best of them", 1170);
-          cardWrap(x, works[d.best.work_id]?.title || "", CARD.M, 1215, CARD.W - CARD.M*2, 52, "900 48px Outfit, sans-serif", "#fff"); }
+          cardWrap(x, works[d.best.work_id]?.title || "", CARD.M, 1215, CARD.W - CARD.M*2, 52, "900 48px Outfit, sans-serif", x.__on); }
         cardFoot(x, lc(me.handle), d.range); return c; }],
       ["The list", async (d) => { const { c, x } = cardBase("span", d.label, null);
         kicker(x, `${d.n} ${d.n === 1 ? "thing" : "things"}`, 200);
         let y = 300; for (const e of d.entries.slice(0, 8)) { const w = works[e.work_id] || {};
           x.fillStyle = CARD.cols[kindOf(e.work_id)]; x.beginPath(); x.roundRect(CARD.M, y - 34, 12, 44, 6); x.fill();
-          x.fillStyle = "#fff"; x.font = "900 46px Outfit, sans-serif";
+          x.fillStyle = x.__on; x.font = "900 46px Outfit, sans-serif";
           const t = String(w.title||"").length > 24 ? w.title.slice(0,23) + "…" : (w.title||"");
           x.fillText(t, CARD.M + 32, y);
           x.textAlign = "right"; x.fillStyle = x.__pale; x.font = "900 40px Outfit, sans-serif";
           x.fillText((e.score/2).toFixed(1), CARD.W - CARD.M, y); x.textAlign = "left"; y += 78; }
         cardFoot(x, lc(me.handle), d.range); return c; }],
       ["One number", async (d) => { const { c, x } = cardBase("span", d.label, null);
-        x.fillStyle = "#fff"; x.font = "900 340px Outfit, sans-serif"; x.fillText(String(d.n), CARD.M, 620);
+        x.fillStyle = x.__on; x.font = "900 340px Outfit, sans-serif"; x.fillText(String(d.n), CARD.M, 620);
         x.font = "900 76px Outfit, sans-serif"; x.fillText(d.n === 1 ? "thing" : "things", CARD.M, 720);
         x.fillStyle = x.__pale; x.font = "600 36px Inter, sans-serif"; x.fillText(d.line, CARD.M, 800);
         const top = d.t.craft.slice(0,3).map(k => k[0]); let y = 920;
-        for (const w2 of top) { x.fillStyle = "#FFE86A"; x.font = "900 62px Outfit, sans-serif"; x.fillText(w2, CARD.M, y); y += 74; }
+        for (const w2 of top) { x.fillStyle = x.__accent; x.font = "900 62px Outfit, sans-serif"; x.fillText(w2, CARD.M, y); y += 74; }
         cardFoot(x, lc(me.handle), d.range); return c; }]
     ]
   },
@@ -2388,26 +2436,26 @@ const CUTS = {
     cuts: [
       ["Winner", async (d) => { const { c, x } = cardBase("club", d.club.label, kindOf(d.pal.ranked[0].id));
         kicker(x, d.club.name, 210);
-        cardWrap(x, works[d.pal.ranked[0].id]?.title || "", CARD.M, 340, CARD.W - CARD.M*2, 98, "900 92px Outfit, sans-serif", "#fff");
-        x.fillStyle = "#FFE86A"; x.font = "900 56px Outfit, sans-serif"; x.fillText("won", CARD.M, CARD.H - 340);
+        cardWrap(x, works[d.pal.ranked[0].id]?.title || "", CARD.M, 340, CARD.W - CARD.M*2, 98, "900 92px Outfit, sans-serif", x.__on);
+        x.fillStyle = x.__accent; x.font = "900 56px Outfit, sans-serif"; x.fillText("won", CARD.M, CARD.H - 340);
         cardFoot(x, `${d.pal.voters} ${d.pal.voters === 1 ? "ballot" : "ballots"}`, d.club.due ? "closed " + stampDate(d.club.due) : "closed"); return c; }],
       ["The podium", async (d) => { const { c, x } = cardBase("club", d.club.label, null);
         kicker(x, d.club.name, 200);
         let y = 330; d.pal.ranked.slice(0,3).forEach((r,i) => {
-          x.fillStyle = ["#FFE86A","#9EF0C9","#8FD3FF"][i]; x.font = "900 72px Outfit, sans-serif"; x.fillText(String(i+1), CARD.M, y);
-          cardWrap(x, works[r.id]?.title || "", CARD.M + 110, y, CARD.W - CARD.M*2 - 110, 60, "900 56px Outfit, sans-serif", "#fff");
+          x.fillStyle = x.__ranks[i]; x.font = "900 72px Outfit, sans-serif"; x.fillText(String(i+1), CARD.M, y);
+          cardWrap(x, works[r.id]?.title || "", CARD.M + 110, y, CARD.W - CARD.M*2 - 110, 60, "900 56px Outfit, sans-serif", x.__on);
           y += 150; });
         cardFoot(x, `${d.pal.voters} ${d.pal.voters === 1 ? "ballot" : "ballots"}`, d.club.name.length > 22 ? "" : lc(me.handle)); return c; }],
       ["The ballot", async (d) => { const { c, x } = cardBase("club", d.club.label, null);
         kicker(x, d.club.name, 190);
         let y = 290; for (const [i, r] of d.pal.ranked.slice(0,7).entries()) {
           x.fillStyle = x.__pale; x.font = "900 34px Outfit, sans-serif"; x.fillText(String(i+1), CARD.M, y);
-          x.fillStyle = "#fff"; x.font = "900 44px Outfit, sans-serif";
+          x.fillStyle = x.__on; x.font = "900 44px Outfit, sans-serif";
           const t = String(works[r.id]?.title||""); x.fillText(t.length > 22 ? t.slice(0,21)+"…" : t, CARD.M + 64, y);
           const bx = CARD.M + 640, bw = CARD.W - CARD.M - bx - 70;
           x.fillStyle = x.__soft; x.beginPath(); x.roundRect(bx, y - 26, bw, 22, 11); x.fill();
-          x.fillStyle = "#FFE86A"; x.beginPath(); x.roundRect(bx, y - 26, Math.max(8, bw*r.p/d.pal.max), 22, 11); x.fill();
-          x.textAlign = "right"; x.fillStyle = "#fff"; x.font = "900 30px Outfit, sans-serif";
+          x.fillStyle = x.__accent; x.beginPath(); x.roundRect(bx, y - 26, Math.max(8, bw*r.p/d.pal.max), 22, 11); x.fill();
+          x.textAlign = "right"; x.fillStyle = x.__on; x.font = "900 30px Outfit, sans-serif";
           x.fillText(String(r.p), CARD.W - CARD.M, y); x.textAlign = "left"; y += 84; }
         cardFoot(x, `${d.pal.voters} ${d.pal.voters === 1 ? "ballot" : "ballots"}`, "the club's best"); return c; }]
     ]
@@ -2419,27 +2467,27 @@ const CUTS = {
     cuts: [
       ["Bars", async (d) => { const lead = Object.entries(d.t.kinds).sort((a,b)=>b[1]-a[1])[0]?.[0];
         const { c, x } = cardBase("taste", "taste", lead);
-        x.fillStyle = "#fff"; x.font = "900 96px Outfit, sans-serif"; x.fillText(lc(d.p.handle), CARD.M, 300);
+        x.fillStyle = x.__on; x.font = "900 96px Outfit, sans-serif"; x.fillText(lc(d.p.handle), CARD.M, 300);
         const top = d.t.craft.slice(0,3).map(k => k[0]); let y = 400;
         if (top.length) { kicker(x, "goes for", y); y += 80;
-          for (const w2 of top) { x.fillStyle = "#FFE86A"; x.font = "900 76px Outfit, sans-serif"; x.fillText(w2, CARD.M, y); y += 88; } }
+          for (const w2 of top) { x.fillStyle = x.__accent; x.font = "900 76px Outfit, sans-serif"; x.fillText(w2, CARD.M, y); y += 88; } }
         y += 30; const max = d.t.craft[0]?.[1].total || 1;
-        for (const [k,v] of d.t.craft.slice(0,5)) { x.fillStyle = "#fff"; x.font = "700 30px Inter, sans-serif"; x.fillText(k, CARD.M, y);
+        for (const [k,v] of d.t.craft.slice(0,5)) { x.fillStyle = x.__on; x.font = "700 30px Inter, sans-serif"; x.fillText(k, CARD.M, y);
           const bx = CARD.M + 380, bw = CARD.W - CARD.M - bx; x.fillStyle = x.__soft; x.beginPath(); x.roundRect(bx, y-24, bw, 22, 11); x.fill();
           let off = 0; for (const [kind,val] of Object.entries(v.by).sort((a,b)=>b[1]-a[1])) { const seg = bw*(val/max);
-            x.fillStyle = CARD.cols[kind] || "#fff"; x.beginPath(); x.roundRect(bx+off, y-24, Math.max(6,seg), 22, 11); x.fill(); off += seg; }
+            x.fillStyle = CARD.cols[kind] || x.__on; x.beginPath(); x.roundRect(bx+off, y-24, Math.max(6,seg), 22, 11); x.fill(); off += seg; }
           y += 56; }
         cardFoot(x, Object.entries(d.t.kinds).map(([k,n]) => `${n} ${K(k).label.toLowerCase()}`).join(" · ") || "a new log", `${d.t.n} entries`); return c; }],
       ["The sentence", async (d) => { const { c, x } = cardBase("taste", "taste", null);
         const top = d.t.craft.slice(0,3).map(k => k[0]);
         const line = top.length ? `Goes for ${top[0]}${top[1] ? ", " + top[1] : ""}${top[2] ? " and " + top[2] : ""}.` : "A new log.";
-        cardWrap(x, line, CARD.M, 400, CARD.W - CARD.M*2, 100, "900 84px Outfit, sans-serif", "#fff");
+        cardWrap(x, line, CARD.M, 400, CARD.W - CARD.M*2, 100, "900 84px Outfit, sans-serif", x.__on);
         kicker(x, lc(d.p.handle), CARD.H - 300);
         cardFoot(x, Object.entries(d.t.kinds).map(([k,n]) => `${n} ${K(k).label.toLowerCase()}`).join(" · "), `${d.t.n} entries`); return c; }],
       ["Names", async (d) => { const { c, x } = cardBase("taste", "taste", null);
-        x.fillStyle = "#fff"; x.font = "900 80px Outfit, sans-serif"; x.fillText(lc(d.p.handle), CARD.M, 280);
+        x.fillStyle = x.__on; x.font = "900 80px Outfit, sans-serif"; x.fillText(lc(d.p.handle), CARD.M, 280);
         kicker(x, "names they keep picking", 360);
-        let y = 460; for (const [n] of d.t.people.slice(0,6)) { x.fillStyle = "#FFE86A"; x.font = "900 62px Outfit, sans-serif";
+        let y = 460; for (const [n] of d.t.people.slice(0,6)) { x.fillStyle = x.__accent; x.font = "900 62px Outfit, sans-serif";
           x.fillText(n, CARD.M, y); y += 80; }
         if (!d.t.people.length) { x.fillStyle = x.__pale; x.font = "600 36px Inter, sans-serif";
           x.fillText("Nobody yet — single out a few names.", CARD.M, 460); }
@@ -2452,36 +2500,36 @@ const CUTS = {
     label: "A work",
     cuts: [
       ["Everyone", async (d) => { const { c, x } = cardBase("work", K(d.w.kind).plural, d.w.kind);
-        let y = cardWrap(x, d.w.title, CARD.M, 280, CARD.W - CARD.M*2, 92, "900 84px Outfit, sans-serif", "#fff");
+        let y = cardWrap(x, d.w.title, CARD.M, 280, CARD.W - CARD.M*2, 92, "900 84px Outfit, sans-serif", x.__on);
         x.fillStyle = x.__pale; x.font = "600 32px Inter, sans-serif";
         x.fillText([d.w.year, d.w.creator].filter(Boolean).join(" · "), CARD.M, y + 10); y += 110;
         [["EVERYONE", d.avg],["LOGGED IT", String(d.n)],["AGREE", d.agree === null ? "—" : d.agree + "%"]].forEach(([l,v],i) => {
           const cw = (CARD.W - CARD.M*2 - 40)/3, cx = CARD.M + i*(cw+20);
           x.fillStyle = x.__soft; x.beginPath(); x.roundRect(cx, y, cw, 190, 24); x.fill();
-          x.fillStyle = i === 2 && d.agree !== null ? (d.agree >= 70 ? "#9EF0C9" : "#FFB36B") : "#fff";
+          x.fillStyle = i === 2 && d.agree !== null ? (d.agree >= 70 ? x.__good : x.__warn) : x.__on;
           x.font = "900 72px Outfit, sans-serif"; x.fillText(v, cx + 26, y + 106);
           x.fillStyle = x.__pale; x.font = "700 22px Inter, sans-serif"; x.fillText(l, cx + 26, y + 150); });
         y += 250; kicker(x, "what people loved", y); y += 60;
-        for (const [k,pc] of d.top.slice(0,4)) { x.fillStyle = "#fff"; x.font = "700 36px Inter, sans-serif";
+        for (const [k,pc] of d.top.slice(0,4)) { x.fillStyle = x.__on; x.font = "700 36px Inter, sans-serif";
           x.fillText(k.startsWith("person:") ? lc(k.slice(7)) : k, CARD.M, y);
           const bx = CARD.M + 420, bw = CARD.W - CARD.M - bx - 90;
           x.fillStyle = x.__soft; x.beginPath(); x.roundRect(bx, y-26, bw, 24, 12); x.fill();
           x.fillStyle = CARD.cols[d.w.kind]; x.beginPath(); x.roundRect(bx, y-26, Math.max(8, bw*pc/100), 24, 12); x.fill();
-          x.fillStyle = "#fff"; x.font = "900 28px Outfit, sans-serif"; x.textAlign = "right"; x.fillText(pc + "%", CARD.W - CARD.M, y);
+          x.fillStyle = x.__on; x.font = "900 28px Outfit, sans-serif"; x.textAlign = "right"; x.fillText(pc + "%", CARD.W - CARD.M, y);
           x.textAlign = "left"; y += 62; }
         cardFoot(x, "rooms", lc(me.handle)); return c; }],
       ["Agreement", async (d) => { const { c, x } = cardBase("work", K(d.w.kind).plural, d.w.kind);
-        x.fillStyle = d.agree === null ? "#fff" : (d.agree >= 70 ? "#9EF0C9" : "#FFB36B");
+        x.fillStyle = d.agree === null ? x.__on : (d.agree >= 70 ? x.__good : x.__warn);
         x.font = "900 260px Outfit, sans-serif"; x.fillText(d.agree === null ? "—" : d.agree + "%", CARD.M, 460);
-        x.fillStyle = "#fff"; x.font = "900 64px Outfit, sans-serif"; x.fillText("agree", CARD.M, 550);
-        cardWrap(x, d.w.title, CARD.M, 700, CARD.W - CARD.M*2, 80, "900 68px Outfit, sans-serif", "#fff");
+        x.fillStyle = x.__on; x.font = "900 64px Outfit, sans-serif"; x.fillText("agree", CARD.M, 550);
+        cardWrap(x, d.w.title, CARD.M, 700, CARD.W - CARD.M*2, 80, "900 68px Outfit, sans-serif", x.__on);
         x.fillStyle = x.__pale; x.font = "600 34px Inter, sans-serif";
         x.fillText(`${d.avg} of five · ${d.n} ${d.n === 1 ? "entry" : "entries"}`, CARD.M, 830);
         cardFoot(x, "rooms", lc(me.handle)); return c; }],
       ["Loved", async (d) => { const { c, x } = cardBase("work", K(d.w.kind).plural, d.w.kind);
-        cardWrap(x, d.w.title, CARD.M, 260, CARD.W - CARD.M*2, 80, "900 70px Outfit, sans-serif", "#fff");
+        cardWrap(x, d.w.title, CARD.M, 260, CARD.W - CARD.M*2, 80, "900 70px Outfit, sans-serif", x.__on);
         kicker(x, "what people loved", 420);
-        let y = 520; for (const [k,pc] of d.top.slice(0,5)) { x.fillStyle = "#FFE86A"; x.font = "900 62px Outfit, sans-serif";
+        let y = 520; for (const [k,pc] of d.top.slice(0,5)) { x.fillStyle = x.__accent; x.font = "900 62px Outfit, sans-serif";
           x.fillText(k.startsWith("person:") ? lc(k.slice(7)) : k, CARD.M, y);
           x.textAlign = "right"; x.fillStyle = x.__pale; x.font = "900 44px Outfit, sans-serif";
           x.fillText(pc + "%", CARD.W - CARD.M, y); x.textAlign = "left"; y += 92; }
@@ -2496,24 +2544,24 @@ const CUTS = {
     cuts: [
       ["The best", async (d) => { const { c, x } = cardBase("roomyear", `${d.year} · the room`, kindOf(d.pal.best.id));
         kicker(x, lc(d.room.name), 210);
-        cardWrap(x, works[d.pal.best.id]?.title || "", CARD.M, 350, CARD.W - CARD.M*2, 98, "900 92px Outfit, sans-serif", "#fff");
-        x.fillStyle = "#FFE86A"; x.font = "900 52px Outfit, sans-serif"; x.fillText("the room's best", CARD.M, CARD.H - 340);
+        cardWrap(x, works[d.pal.best.id]?.title || "", CARD.M, 350, CARD.W - CARD.M*2, 98, "900 92px Outfit, sans-serif", x.__on);
+        x.fillStyle = x.__accent; x.font = "900 52px Outfit, sans-serif"; x.fillText("the room's best", CARD.M, CARD.H - 340);
         cardFoot(x, `${d.room.members.length} in the room`, `${d.pal.n} entries`); return c; }],
       ["Per medium", async (d) => { const { c, x } = cardBase("roomyear", `${d.year} · the room`, null);
         kicker(x, lc(d.room.name), 200);
         let y = 320; const t = id => works[id]?.title || "";
         for (const [k, f] of Object.entries(d.pal.byKind)) { x.fillStyle = CARD.cols[k]; x.font = "700 24px Inter, sans-serif";
           x.fillText("BEST " + K(k).label.toUpperCase(), CARD.M, y);
-          y = cardWrap(x, t(f.id), CARD.M, y + 52, CARD.W - CARD.M*2, 56, "900 54px Outfit, sans-serif", "#fff") + 34; }
+          y = cardWrap(x, t(f.id), CARD.M, y + 52, CARD.W - CARD.M*2, 56, "900 54px Outfit, sans-serif", x.__on) + 34; }
         cardFoot(x, `${d.room.members.length} in the room`, `${d.pal.n} entries`); return c; }],
       ["The fight", async (d) => { const { c, x } = cardBase("roomyear", `${d.year} · the room`, null);
         const t = id => works[id]?.title || "";
-        if (d.pal.agreed) { x.fillStyle = "#9EF0C9"; x.font = "900 96px Outfit, sans-serif"; x.fillText(d.pal.agreed.agree + "%", CARD.M, 320);
+        if (d.pal.agreed) { x.fillStyle = x.__good; x.font = "900 96px Outfit, sans-serif"; x.fillText(d.pal.agreed.agree + "%", CARD.M, 320);
           x.fillStyle = x.__pale; x.font = "700 24px Inter, sans-serif"; x.fillText("AGREED ON", CARD.M, 360);
-          cardWrap(x, t(d.pal.agreed.id), CARD.M, 430, CARD.W - CARD.M*2, 60, "900 56px Outfit, sans-serif", "#fff"); }
-        if (d.pal.split) { x.fillStyle = "#FFB36B"; x.font = "900 96px Outfit, sans-serif"; x.fillText(d.pal.split.agree + "%", CARD.M, 760);
+          cardWrap(x, t(d.pal.agreed.id), CARD.M, 430, CARD.W - CARD.M*2, 60, "900 56px Outfit, sans-serif", x.__on); }
+        if (d.pal.split) { x.fillStyle = x.__warn; x.font = "900 96px Outfit, sans-serif"; x.fillText(d.pal.split.agree + "%", CARD.M, 760);
           x.fillStyle = x.__pale; x.font = "700 24px Inter, sans-serif"; x.fillText("THE FIGHT OF THE YEAR", CARD.M, 800);
-          cardWrap(x, t(d.pal.split.id), CARD.M, 870, CARD.W - CARD.M*2, 60, "900 56px Outfit, sans-serif", "#fff"); }
+          cardWrap(x, t(d.pal.split.id), CARD.M, 870, CARD.W - CARD.M*2, 60, "900 56px Outfit, sans-serif", x.__on); }
         cardFoot(x, lc(d.room.name), `${d.pal.n} entries`); return c; }]
     ]
   },
@@ -2526,23 +2574,23 @@ const CUTS = {
         big(x, String(d.n), 400); x.font = "900 64px Outfit, sans-serif"; x.fillText("things", CARD.M, 480);
         x.fillStyle = x.__pale; x.font = "600 34px Inter, sans-serif"; x.fillText(`${d.hours} hours, give or take`, CARD.M, 550);
         const top = d.t.craft.slice(0,3).map(k => k[0]); let y = 660;
-        for (const w of top) { x.fillStyle = "#FFE86A"; x.font = "900 62px Outfit, sans-serif"; x.fillText(w, CARD.M, y); y += 74; }
+        for (const w of top) { x.fillStyle = x.__accent; x.font = "900 62px Outfit, sans-serif"; x.fillText(w, CARD.M, y); y += 74; }
         kindBlocks(x, d.kinds, 940);
         if (d.best) { kicker(x, "best thing", 1170);
-          cardWrap(x, works[d.best.work_id]?.title || "", CARD.M, 1215, CARD.W - CARD.M*2, 52, "900 48px Outfit, sans-serif", "#fff"); }
+          cardWrap(x, works[d.best.work_id]?.title || "", CARD.M, 1215, CARD.W - CARD.M*2, 52, "900 48px Outfit, sans-serif", x.__on); }
         cardFoot(x, lc(me.handle), String(d.year)); return c; }],
       ["Best of", async (d) => { const { c, x } = cardBase("year", `${d.year} in review`, null);
         kicker(x, "the best of them", 210);
         let y = 320; for (const [k, e] of Object.entries(d.perKind)) { x.fillStyle = CARD.cols[k]; x.font = "700 24px Inter, sans-serif";
           x.fillText("BEST " + K(k).label.toUpperCase(), CARD.M, y);
-          y = cardWrap(x, works[e.work_id]?.title || "", CARD.M, y + 52, CARD.W - CARD.M*2, 56, "900 54px Outfit, sans-serif", "#fff") + 34; }
+          y = cardWrap(x, works[e.work_id]?.title || "", CARD.M, y + 52, CARD.W - CARD.M*2, 56, "900 54px Outfit, sans-serif", x.__on) + 34; }
         cardFoot(x, lc(me.handle), `${d.n} things`); return c; }],
       ["One number", async (d) => { const { c, x } = cardBase("year", `${d.year} in review`, null);
-        x.fillStyle = "#fff"; x.font = "900 340px Outfit, sans-serif"; x.fillText(String(d.n), CARD.M, 620);
+        x.fillStyle = x.__on; x.font = "900 340px Outfit, sans-serif"; x.fillText(String(d.n), CARD.M, 620);
         x.font = "900 76px Outfit, sans-serif"; x.fillText("things", CARD.M, 720);
         x.fillStyle = x.__pale; x.font = "600 36px Inter, sans-serif"; x.fillText(`${d.hours} hours, give or take`, CARD.M, 800);
         if (d.rewatch && d.rewatch[1] > 1) { kicker(x, "kept going back to", 950);
-          cardWrap(x, works[d.rewatch[0]]?.title || "", CARD.M, 1010, CARD.W - CARD.M*2, 56, "900 52px Outfit, sans-serif", "#fff"); }
+          cardWrap(x, works[d.rewatch[0]]?.title || "", CARD.M, 1010, CARD.W - CARD.M*2, 56, "900 52px Outfit, sans-serif", x.__on); }
         cardFoot(x, lc(me.handle), String(d.year)); return c; }]
     ]
   }
@@ -2555,13 +2603,28 @@ async function openCuts(kind, data, title) {
   openSheet(`<h3>${esc(title || set.label)}</h3><p class="sub">Three cuts of the same thing. Pick one.</p>
     <div class="cuts" id="cutRow">${set.cuts.map(([name],i) =>
       `<button data-cut="${i}" class="${i===chosen?"on":""}"><canvas id="cut-${i}" width="216" height="270"></canvas><b>Cut ${i+1} · ${esc(name)}</b></button>`).join("")}</div>
+    <div class="lbl">What it's wearing</div>
+    <div class="skins" id="skinRow">${Object.entries(CARD_THEMES).map(([k,t]) =>
+      `<button data-skin="${esc(k)}" class="${(P.cardSkin||"rooms")===k?"on":""}" aria-label="${esc(t.name)}">
+        <span class="sw" style="background:${t.day};${t.dim?"":"box-shadow:inset 0 0 0 1px rgba(21,19,32,.14)"}"></span>
+        <b>${esc(t.name)}</b>${t.paid ? `<i>paid</i>` : ""}</button>`).join("")}</div>
+    <p class="sub skinnote" id="skinNote" hidden></p>
     <div class="stack"><button class="btn blue" id="cutSave">Save it</button><button class="btn quiet" id="cutClose">Not now</button></div>
     <p class="msg" id="cutMsg"></p>`);
-  /* draw each cut small */
-  for (const [i, [, draw]] of set.cuts.entries()) {
-    try { const c = await draw(data); const t = $("#cut-" + i); if (!t) continue;
-      const tx = t.getContext("2d"); tx.clearRect(0,0,t.width,t.height); tx.drawImage(c, 0, 0, t.width, t.height); }
-    catch (err) { console.warn("cut", i, err); } }
+  /* draw each cut small; the skin picker redraws them, so the choice is seen not described */
+  const drawAll = async () => {
+    for (const [i, [, draw]] of set.cuts.entries()) {
+      try { const c = await draw(data); const t = $("#cut-" + i); if (!t) continue;
+        const tx = t.getContext("2d"); tx.clearRect(0,0,t.width,t.height); tx.drawImage(c, 0, 0, t.width, t.height); }
+      catch (err) { console.warn("cut", i, err); } } };
+  /* nothing takes money yet, so a paid skin works and says what it will be rather than
+     dangling a lock over something that cannot be bought */
+  const paidNote = () => { const el = $("#skinNote"); if (!el) return;
+    const t = cardTheme(); el.hidden = !t.paid;
+    el.textContent = t.paid ? `${t.name} is part of Rooms paid. Free while that's still being made.` : ""; };
+  await drawAll(); paidNote();
+  $$("[data-skin]").forEach(b => b.onclick = async () => { P.cardSkin = b.dataset.skin; saveP();
+    $$("[data-skin]").forEach(x2 => x2.classList.toggle("on", x2 === b)); paidNote(); await drawAll(); });
   $$("[data-cut]").forEach(b => b.onclick = () => { chosen = +b.dataset.cut;
     $$("[data-cut]").forEach(x2 => x2.classList.toggle("on", x2 === b)); });
   $("#cutClose").onclick = closeSheet;
@@ -3355,7 +3418,9 @@ window.__rooms = { paintLog, wireLog, openWholeLog, AV_SHAPES, AV_EYES, AV_COLS,
   joinRoomChannel, leaveRoomChannel, paintHere, onLiveEntry, paintDay, get hereNow(){return hereNow},
   say, oops, markLive, takeInvite, dropInvite, inviteLink, useInvite, exportEverything,
   watchOn, paintWatch, REGION,
-  drawDeck, resetDeck, pickMode, candidates, pickPool, pickFacets, facetsOf, dropFromShelf, loadRecs, recsCached:() => recs !== null, reviewOf, agreement, get deckItems(){return deckItems},
+  drawDeck, resetDeck, pickMode, candidates, pickPool, pickFacets, facetsOf, dropFromShelf, loadRecs, recsCached:() => recs !== null, reviewOf, agreement,
+  CUTS, CARD_THEMES, cardTheme, spanData, tasteOf, reviewData, yearOf, roomPalmares, palmares,
+  setSkin:k => { P.cardSkin = k; saveP(); }, get deckItems(){return deckItems},
   addToShelf, __isSoon:isSoon, __list:activeList,
   marksFor, openPaid, COMET, loadFounders, get founderIds(){return founderIds} };
 
