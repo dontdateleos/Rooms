@@ -821,7 +821,7 @@ const cover = (w, cls = "co") => w?.cover ? `<img class="${cls}" src="${esc(w.co
 /* ============ prefs + sources ============ */
 const WORKER = "https://rooms.jordandf1.workers.dev";
 const proxy = () => (P.workerUrl || WORKER).replace(/\/+$/, "");
-const P = Object.assign({ workerUrl:"", tmdbKey:"", activeList:null, activeRoom:null, picked:null, kinds:["film","tv","book","game"], shelfFilter:"", pickTag:"", cardSkin:"", feed:"room" },
+const P = Object.assign({ workerUrl:"", tmdbKey:"", activeList:null, activeRoom:null, picked:null, kinds:["film","tv","book","game"], shelfFilter:"", pickTag:"", pickFrom:"shelf", bestGenre:{}, cardSkin:"", feed:"room" },
   JSON.parse(localStorage.getItem("rooms.prefs") || "{}"));
 const saveP = () => localStorage.setItem("rooms.prefs", JSON.stringify(P));
 async function tmdb(path, params = {}) {
@@ -1809,20 +1809,22 @@ function renderShelf() { const L = activeList(); const all = L ? L.items.map(id 
   /* things leave the shelf when you log them, so anything still here with a tick was
      logged from somewhere else; count those, not the unreleased ones sitting below */
   const done = all.filter(w => logged(w.id)).length;
+  const pickBar = `<div class="shelfbar">${shelfEdit ? `<button class="btn" id="shelfDone">Done</button>`
+      : `<button class="btn soft" id="spinOpen">${left.length >= 2
+          ? `Can't decide? ${left.length} to pick from` : "Can't decide? Spin the best of something"}</button>`}</div>
+    <div id="resultArea"></div>`;
   $("#shelfBody").innerHTML = `<h2>The <span class="hl" style="background:var(--mint)">shelf</span></h2><p class="sub">${all.length ? `${left.length} to go${done ? ` · ${done} done` : ""}${soonCount ? ` · ${soonCount} coming` : ""}` : "Everything you meant to get to."}</p>
     <input id="search" type="search" placeholder="Search film, TV, books, games" autocomplete="off" style="margin-top:12px">
     <div class="chips">${Object.keys(KINDS).map(k => `<button class="chip k ${P.kinds.includes(k)?"on":""}" data-sk="${k}">${K(k).label}</button>`).join("")}</div>
     <div class="msg" id="msg"></div><div id="results"></div>
     ${all.length ? `<div class="chips" style="margin-top:12px">${[["","Everything"],...Object.keys(KINDS).filter(k=>counts[k]).map(k=>[k,K(k).plural+" · "+counts[k]])].map(([k,l]) => `<button class="chip ${P.shelfFilter===k?"on":""}" data-kf="${k}">${l}</button>`).join("")}</div>
       ${soonCount ? `<div class="chips">${[["","All"],["out","Out now"],["soon",`Coming · ${soonCount}`]].map(([k,l]) => `<button class="chip ${(P.when||"")===k?"on":""}" data-wf="${k}">${l}</button>`).join("")}</div>` : ""}
-      <div class="shelfbar">${shelfEdit ? `<button class="btn" id="shelfDone">Done</button>`
-        : left.length >= 2 ? `<button class="btn soft" id="spinOpen">Can't decide? ${left.length} to pick from</button>` : ""}</div>
-      <div id="resultArea"></div>
+      ${pickBar}
       <div class="grid" id="shelfGrid">${rows.map(w => { const soon = isSoon(w);
         return `<div class="cell" data-cell="${esc(w.id)}"><div class="po ${logged(w.id)?"done":""} ${soon?"soon":""}" data-w="${esc(w.id)}">${cover(w,"")}<b>${esc(w.title)}</b>${tag(w.kind)}
           ${soon ? `<span class="soon-tag">${when(w.release)}</span>` : `<button class="tick ${logged(w.id)?"done":""}" data-t="${esc(w.id)}" aria-label="log it"></button>`}</div>
           <div class="cap"><span>${soon ? "Coming" : esc(w.year||"")}</span><span>${!soon && w.length ? w.length+K(w.kind).unit : ""}</span></div></div>`; }).join("")}</div>`
-      : `<div class="tiles" style="margin-top:16px">${Object.keys(KINDS).map((k,i) => `<div class="tile" style="background:${K(k).colour};--r:${[-2,1.5,1,-1.5][i]}deg" data-kt="${k}"><small>Search</small><b>${K(k).plural}</b></div>`).join("")}</div>${blank("var(--mint)","+","An empty shelf","Everything you meant to get to, in one place — out now or still coming. Pick a medium above, or search.",[["shelfFocus","Search for something"]])}`}
+      : `<div class="tiles" style="margin-top:16px">${Object.keys(KINDS).map((k,i) => `<div class="tile" style="background:${K(k).colour};--r:${[-2,1.5,1,-1.5][i]}deg" data-kt="${k}"><small>Search</small><b>${K(k).plural}</b></div>`).join("")}</div>${blank("var(--mint)","+","An empty shelf","Everything you meant to get to, in one place — out now or still coming. Pick a medium above, or search.",[["shelfFocus","Search for something"]])}${pickBar}`}
     <div id="recShelf"></div>
     <div class="lbl">Coming soon · add to the shelf</div><div id="waitBody"><p class="msg">Loading what's coming</p></div>
     <p class="sub" style="margin-top:6px;font-size:12px">Films, shows and games with a date on them.
@@ -1833,7 +1835,9 @@ function renderShelf() { const L = activeList(); const all = L ? L.items.map(id 
   $$("[data-kt]").forEach(b => b.onclick = () => { P.kinds = [b.dataset.kt]; saveP(); renderShelf(); $("#search")?.focus(); });
   $$("[data-kf]").forEach(b => b.onclick = () => { P.shelfFilter = b.dataset.kf; saveP(); renderShelf(); });
   $$("[data-wf]").forEach(b => b.onclick = () => { P.when = b.dataset.wf; saveP(); renderShelf(); });
-  const so = $("#spinOpen"); if (so) so.onclick = openWheel;
+  const so = $("#spinOpen"); if (so) so.onclick = async () => {
+    if (left.length < 2 && pickFrom() !== "best") { P.pickFrom = "best"; saveP(); bestHand = []; }
+    await openWheel(); };
   $$("[data-t]").forEach(b => b.onclick = e => { e.stopPropagation(); openLog(works[b.dataset.t]); });
   $$("[data-w]").forEach(t => t.onclick = () => { if (!shelfEdit) openWork(t.dataset.w); });
   const dn = $("#shelfDone"); if (dn) dn.onclick = () => { shelfEdit = false; renderShelf(); };
@@ -1869,6 +1873,86 @@ async function renderShelfRecs() { const el = $("#recShelf"); if (!el) return;
   $$("[data-rec]", el).forEach(x => x.onclick = () => addToShelf(x.dataset.rec)); }
 function candidates() { const L = activeList(); if (!L) return []; return L.items.filter(id => !logged(id)).map(id => works[id]).filter(Boolean)
   .filter(w => (!P.shelfFilter || w.kind === P.shelfFilter) && !isSoon(w)); }
+/* ---------- the best of a medium ----------
+   The wheel has only ever known your shelf, which is no help at all on the day you have
+   nothing on it. This is the other pool: what a medium's own source considers its best,
+   narrowed by genre, with anything you've already logged taken out — a wheel of things
+   worth watching rather than things you happened to save.
+
+   One source per medium, not several. TMDB rates film and television, IGDB rates games,
+   and Open Library has no ratings worth the name, so books are ordered by how widely
+   they're held instead. Calling the result "combined from several sources" would be a
+   claim the data cannot meet. */
+const BEST_N = 100, BEST_HAND = 14;
+/* a ten out of ten from three people is not a good film */
+const VOTE_FLOOR = { film:1200, tv:300 };
+const BOOK_SUBJECTS = [["Thriller","thriller"],["Science fiction","science_fiction"],
+  ["Fantasy","fantasy"],["Mystery","mystery"],["Romance","romance"],["Horror","horror"],
+  ["Historical","historical_fiction"],["Classics","classic_literature"]];
+const bestCache = {}, genreCache = {};
+let bestPool = [], bestHand = [], bestBusy = false;
+
+async function bestGenres(kind) {
+  if (genreCache[kind]) return genreCache[kind];
+  let out = [];
+  try {
+    if (kind === "film" || kind === "tv") {
+      const d = await tmdb(`genre/${kind === "film" ? "movie" : "tv"}/list`);
+      out = (d.genres || []).map(g => [g.name, String(g.id)]);
+    } else if (kind === "book") out = BOOK_SUBJECTS;
+    else if (kind === "game") {
+      const g = await igdb("genres", "fields name,slug; sort name asc; limit 50;");
+      out = (g || []).map(x => [x.name, x.slug]);
+    }
+  } catch (e) { oops(e, "Couldn't load the genres"); }
+  return (genreCache[kind] = out); }
+
+async function bestOf(kind, gid) {
+  const key = kind + "|" + (gid || "");
+  if (bestCache[key]) return bestCache[key];
+  let rows = [];
+  try {
+    if (kind === "film" || kind === "tv") {
+      const path = kind === "film" ? "discover/movie" : "discover/tv";
+      const got = await Promise.all([1,2,3,4,5].map(pg => tmdb(path, {
+        sort_by:"vote_average.desc", "vote_count.gte":String(VOTE_FLOOR[kind]),
+        include_adult:"false", page:String(pg), ...(gid ? { with_genres:gid } : {}) }).catch(() => ({}))));
+      rows = got.flatMap(d => d.results || []).map(r => ({ id:`${kind}:${r.id}`, kind,
+        title:r.title || r.name, year:String(r.release_date || r.first_air_date || "").slice(0,4),
+        cover:TMDB_IMG(r.poster_path) }));
+    } else if (kind === "book") {
+      const d = await ol(`/subjects/${gid || "fiction"}.json`, { limit:String(BEST_N) });
+      rows = (d.works || []).map(w => ({ id:"book:" + String(w.key).replace("/works/",""), kind:"book",
+        title:w.title, year:String(w.first_publish_year || ""), creator:(w.authors || [])[0]?.name || "",
+        cover:w.cover_id ? `https://covers.openlibrary.org/b/id/${w.cover_id}-M.jpg` : "" }));
+    } else if (kind === "game") {
+      const where = ["total_rating_count > 60", "category = 0"]
+        .concat(gid ? [`genres.slug = "${String(gid).replace(/[^a-z0-9-]/gi, "")}"`] : []).join(" & ");
+      const g = await igdb("games", `where ${where}; sort total_rating desc; limit ${BEST_N}; ` +
+        `fields name,first_release_date,cover.image_id;`);
+      rows = (g || []).map(x => ({ id:"game:" + x.id, kind:"game", title:x.name,
+        year:x.first_release_date ? String(new Date(x.first_release_date*1000).getFullYear()) : "",
+        cover:x.cover?.image_id ? `https://images.igdb.com/igdb/image/upload/t_cover_big/${x.cover.image_id}.jpg` : "" }));
+    }
+  } catch (e) { oops(e, "Couldn't load the best of that"); }
+  const seen = new Set();
+  rows = rows.filter(r => r.title && !seen.has(r.id) && seen.add(r.id)).slice(0, BEST_N);
+  return (bestCache[key] = rows); }
+
+/* a hundred is a list, not a wheel: deal a hand from it and let the rest wait */
+function dealBest() {
+  const left = bestPool.filter(w => !logged(w.id));
+  const pick = left.slice();
+  for (let i = pick.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1));
+    [pick[i], pick[j]] = [pick[j], pick[i]]; }
+  bestHand = pick.slice(0, BEST_HAND);
+  window.__hits = Object.assign(window.__hits || {}, Object.fromEntries(bestHand.map(h => [h.id, h])));
+  return bestHand; }
+const bestKind = () => P.shelfFilter || "film";
+const bestGenre = () => (P.bestGenre || {})[bestKind()] || "";
+async function loadBest() { bestBusy = true;
+  try { bestPool = await bestOf(bestKind(), bestGenre()); dealBest(); } finally { bestBusy = false; } }
+
 /* ---------- narrowing it down ----------
    A shelf of forty isn't one decision, it's forty. "Something tense" and "something by
    him" are how people actually choose, so genres and directors become chips, and both
@@ -1880,22 +1964,41 @@ const facetsOf = w => [...(w.meta?.genres || []).filter(g => g && g.length <= 22
 const facetName = t => t.slice(2);
 function pickFacets(pool) { const n = {}; pool.forEach(w => facetsOf(w).forEach(t => n[t] = (n[t]||0)+1));
   return Object.entries(n).filter(([, c]) => c >= 2).sort((a,b) => b[1]-a[1] || a[0].localeCompare(b[0])).slice(0, 6); }
-function pickPool() { const c = candidates(); return P.pickTag ? c.filter(w => facetsOf(w).includes(P.pickTag)) : c; }
+const pickFrom = () => P.pickFrom === "best" ? "best" : "shelf";
+function pickPool() {
+  if (pickFrom() === "best") return bestHand.filter(w => !logged(w.id));
+  const c = candidates(); return P.pickTag ? c.filter(w => facetsOf(w).includes(P.pickTag)) : c; }
 const widen = () => { P.shelfFilter = ""; P.pickTag = ""; saveP(); deckItems = []; };
-function openWheel() {
+async function openWheel() {
+  /* the best pool is fetched, so it has to be in hand before the sheet is drawn */
+  if (pickFrom() === "best" && !bestHand.length && !bestBusy) await loadBest();
+  const best = pickFrom() === "best";
+  const gens = best ? await bestGenres(bestKind()) : [];
   const all = candidates(), c = pickPool(), facets = pickFacets(all);
-  openSheet(`<h3>Can't decide?</h3><p class="sub">${c.length} on the shelf${P.shelfFilter ? " · " + K(P.shelfFilter).plural.toLowerCase() : ""}${P.pickTag ? " · " + esc(P.pickTag.startsWith("p:") ? facetName(P.pickTag) : facetName(P.pickTag).toLowerCase()) : ""} · nothing unreleased</p>
-    <div class="seg" style="margin-top:12px">${[["deck","Deal them"],["wheel","Spin for it"]].map(([k,l]) =>
+  const gName = (gens.find(([, id]) => id === bestGenre()) || [])[0] || "";
+  openSheet(`<h3>Can't decide?</h3><p class="sub">${best
+      ? `The best ${K(bestKind()).plural.toLowerCase()}${gName ? " · " + esc(gName.toLowerCase()) : ""} · ${bestPool.length} to draw from`
+      : `${c.length} on the shelf${P.shelfFilter ? " · " + K(P.shelfFilter).plural.toLowerCase() : ""}${P.pickTag ? " · " + esc(P.pickTag.startsWith("p:") ? facetName(P.pickTag) : facetName(P.pickTag).toLowerCase()) : ""} · nothing unreleased`}</p>
+    <div class="seg" style="margin-top:12px">${[["shelf","Your shelf"],["best","The best"]].map(([k,l]) =>
+      `<button data-pf="${k}" class="${pickFrom()===k?"on":""}">${l}</button>`).join("")}</div>
+    <div class="seg">${[["deck","Deal them"],["wheel","Spin for it"]].map(([k,l]) =>
       `<button data-pm="${k}" class="${pickMode()===k?"on":""}">${l}</button>`).join("")}</div>
-    <div class="chips">${[["","Everything"],...Object.keys(KINDS).map(k => [k, K(k).label])].map(([k,l]) => `<button class="chip ${P.shelfFilter===k?"on":""}" data-wk="${k}">${l}</button>`).join("")}</div>
-    ${facets.length ? `<div class="lbl">In the mood for</div><div class="chips" id="pickTags">${
+    <div class="chips">${[...(best ? [] : [["","Everything"]]), ...Object.keys(KINDS).map(k => [k, K(k).label])]
+      .map(([k,l]) => `<button class="chip ${(best ? bestKind() : P.shelfFilter)===k?"on":""}" data-wk="${k}">${l}</button>`).join("")}</div>
+    ${best ? `<div class="lbl">Which genre</div><div class="chips" id="bestGens">${
+      [["Anything",""], ...gens].map(([l,id]) => `<button class="chip ${bestGenre()===id?"on":""}" data-bg="${esc(id)}">${esc(l)}</button>`).join("")}</div>`
+    : facets.length ? `<div class="lbl">In the mood for</div><div class="chips" id="pickTags">${
       [["","Anything",""],...facets.map(([t,n]) => [t, facetName(t) + " · " + n, t.startsWith("p:") ? "who" : ""])]
       .map(([t,l,cl]) => `<button class="chip ${cl} ${(P.pickTag||"")===t?"on":""}" data-wt="${esc(t)}">${esc(l)}</button>`).join("")}</div>` : ""}
     <div id="wheelArea"></div><div id="resultArea"></div><div class="stack"><button class="btn quiet" id="whClose">Close</button></div>`);
   /* changing medium can strip the pool of whatever the tag pointed at, so the tag goes
      with it rather than leaving you at an empty wheel you can't explain */
-  $$("[data-wk]").forEach(b => b.onclick = () => { P.shelfFilter = b.dataset.wk; P.pickTag = ""; saveP(); deckItems = []; openWheel(); });
+  const reload = async () => { deckItems = []; bestHand = [];
+    if (pickFrom() === "best") await loadBest(); openWheel(); };
+  $$("[data-pf]").forEach(b => b.onclick = () => { P.pickFrom = b.dataset.pf; saveP(); reload(); });
+  $$("[data-wk]").forEach(b => b.onclick = () => { P.shelfFilter = b.dataset.wk; P.pickTag = ""; saveP(); reload(); });
   $$("[data-wt]").forEach(b => b.onclick = () => { P.pickTag = b.dataset.wt; saveP(); deckItems = []; openWheel(); });
+  $$("[data-bg]").forEach(b => b.onclick = () => { (P.bestGenre ||= {})[bestKind()] = b.dataset.bg; saveP(); reload(); });
   $$("[data-pm]").forEach(b => b.onclick = () => { P.pickMode = b.dataset.pm; saveP(); openWheel(); });
   $("#whClose").onclick = () => { closeSheet(); renderShelf(); };
   if (pickMode() === "deck") { if (!deckItems.length) resetDeck(); drawDeck(); } else drawWheel();
@@ -1944,11 +2047,15 @@ function drawDeck() {
     else go(); };
 }
 function drawWheel() { const c = pickPool(); wheelItems = c; const area = $("#wheelArea"); if (!area) return;
-  if (!c.length) { const narrow = P.shelfFilter || P.pickTag;
-    area.innerHTML = blank("var(--butter)","○", narrow ? "Nothing left there" : "Nothing left to spin",
-    narrow ? "Everything matching that is logged already. Widen it, or add something." : "You've logged everything on your shelf. Add something and the wheel comes back.",
-    [["wheelAll","Everything"],["wheelAdd","Add something","ghost"]]);
-    $("#wheelAll").onclick = () => { widen(); openWheel(); };
+  if (!c.length) { const narrow = P.shelfFilter || P.pickTag, best = pickFrom() === "best";
+    area.innerHTML = best
+      ? blank("var(--butter)","○", "Nothing left in that lot",
+          "You've logged everything the list had. Try another kind, or a different genre.", [["wheelAll","Anything"]])
+      : blank("var(--butter)","○", narrow ? "Nothing left there" : "Nothing left to spin",
+          narrow ? "Everything matching that is logged already. Widen it, or add something." : "You've logged everything on your shelf. Add something and the wheel comes back.",
+          [["wheelAll","Everything"],["wheelAdd","Add something","ghost"]]);
+    $("#wheelAll").onclick = () => { if (best) { (P.bestGenre ||= {})[bestKind()] = ""; saveP(); bestHand = []; loadBest().then(openWheel); }
+      else { widen(); openWheel(); } };
     $("#wheelAdd").onclick = () => { closeSheet(); switchTab("shelf"); setTimeout(() => $("#search")?.focus(), 300); };
     return; }
   if (c.length < 3) { area.innerHTML = `<div class="stack"><button class="btn soft" id="spinBtn">Pick one of the ${c.length}</button></div>`; $("#spinBtn").onclick = () => { const w = c[Math.floor(Math.random()*c.length)]; P.picked = w.id; saveP(); showResult(w); }; return; }
@@ -1988,8 +2095,15 @@ function spin() { const n = wheelItems.length; if (!n || spinning) return; spinn
   g.addEventListener("transitionend", done); requestAnimationFrame(() => { g.style.transform = `rotate(${rot}deg)`; }); }
 function showResult(w) { const el = $("#resultArea"); if (!el) return;
   el.innerHTML = `<div class="result"><small>Tonight's pick</small><b>${esc(w.title)}</b><div style="margin-top:6px">${tag(w.kind)} <span style="font-size:12px;font-weight:700;opacity:.7">${esc(w.year||"")}${w.creator?" · "+esc(w.creator):""}</span></div>
-    <div class="stack"><button class="btn" id="pickedBtn">${K(w.kind).verb} it</button><button class="btn quiet" id="againBtn">Again</button></div></div>`;
-  $("#pickedBtn").onclick = () => openLog(w); $("#againBtn").onclick = () => { P.picked = null; saveP(); if (wheelItems.length >= 3) spin(); else drawWheel(); }; }
+    <div class="stack"><button class="btn" id="pickedBtn">${K(w.kind).verb} it</button>${
+      activeList()?.items.includes(w.id) ? "" : `<button class="btn ghost" id="pickShelf">Put it on the shelf</button>`
+    }<button class="btn quiet" id="againBtn">Again</button></div></div>`;
+  $("#pickedBtn").onclick = async () => { const b = $("#pickedBtn"); b.disabled = true;
+    try { const full = works[w.id] || await ensureWork(w); openLog(full); }
+    catch (e) { oops(e, "Couldn't open that"); } finally { b.disabled = false; } };
+  const sh = $("#pickShelf"); if (sh) sh.onclick = async () => { sh.disabled = true; sh.textContent = "Adding";
+    try { await addToShelf(w.id); sh.textContent = "On the shelf"; } catch { sh.disabled = false; sh.textContent = "Put it on the shelf"; } };
+  $("#againBtn").onclick = () => { P.picked = null; saveP(); if (wheelItems.length >= 3) spin(); else drawWheel(); }; }
 /* the pick follows you back to the shelf and into the room */
 let searchT; function wireSearch() { const el = $("#search"); if (!el) return; el.oninput = e => { clearTimeout(searchT); const v = e.target.value.trim(); if (!v) { $("#results").innerHTML = ""; $("#msg").textContent = "";
       if (shelfStale) { shelfStale = false; if (currentTab() === "shelf") renderShelf(); } return; } searchT = setTimeout(() => doSearch(v, r => addToShelf(r.dataset.add), $("#results"), $("#msg"), el), 400); }; }
@@ -3546,6 +3660,7 @@ window.__rooms = { paintLog, wireLog, openWholeLog, AV_SHAPES, AV_EYES, AV_COLS,
   watchOn, paintWatch, REGION,
   drawDeck, resetDeck, pickMode, candidates, pickPool, pickFacets, facetsOf, dropFromShelf, loadRecs, recsCached:() => recs !== null, reviewOf, agreement,
   CUTS, CARD_THEMES, cardTheme, spanData, tasteOf, reviewData, yearOf, roomPalmares, palmares, byPerson,
+  bestOf, bestGenres, dealBest, loadBest, pickFrom, get bestPool(){return bestPool}, get bestHand(){return bestHand},
   secondThoughts, againLine, apart, shelfAge, waited, openProfile,
   setSkin:k => { P.cardSkin = k; saveP(); }, get deckItems(){return deckItems},
   addToShelf, __isSoon:isSoon, __list:activeList,
