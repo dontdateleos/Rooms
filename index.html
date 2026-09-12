@@ -821,7 +821,7 @@ const cover = (w, cls = "co") => w?.cover ? `<img class="${cls}" src="${esc(w.co
 /* ============ prefs + sources ============ */
 const WORKER = "https://rooms.jordandf1.workers.dev";
 const proxy = () => (P.workerUrl || WORKER).replace(/\/+$/, "");
-const P = Object.assign({ workerUrl:"", tmdbKey:"", activeList:null, activeRoom:null, picked:null, kinds:["film","tv","book","game"], shelfFilter:"", pickTag:"", pickFrom:"shelf", bestGenre:{}, cardSkin:"", feed:"room" },
+const P = Object.assign({ workerUrl:"", tmdbKey:"", activeList:null, activeRoom:null, picked:null, kinds:["film","tv","book","game"], shelfFilter:"", pickTag:"", pickFrom:"shelf", bestGenre:{}, spinN:20, cardSkin:"", feed:"room" },
   JSON.parse(localStorage.getItem("rooms.prefs") || "{}"));
 const saveP = () => localStorage.setItem("rooms.prefs", JSON.stringify(P));
 async function tmdb(path, params = {}) {
@@ -1965,9 +1965,17 @@ const facetName = t => t.slice(2);
 function pickFacets(pool) { const n = {}; pool.forEach(w => facetsOf(w).forEach(t => n[t] = (n[t]||0)+1));
   return Object.entries(n).filter(([, c]) => c >= 2).sort((a,b) => b[1]-a[1] || a[0].localeCompare(b[0])).slice(0, 6); }
 const pickFrom = () => P.pickFrom === "best" ? "best" : "shelf";
+/* How many go on the wheel changes what the wheel is. Ten or twenty and every wedge
+   carries its poster and its name, so you are choosing from a shortlist you can read.
+   Fifty or a hundred and it is colour and chance. Both are worth having; the number is
+   how you say which one you want. */
+const SPIN_SIZES = [10, 20, 50, 0];
+const spinN = () => SPIN_SIZES.includes(P.spinN) ? P.spinN : 20;
 function pickPool() {
-  if (pickFrom() === "best") return bestHand.filter(w => !logged(w.id));
-  const c = candidates(); return P.pickTag ? c.filter(w => facetsOf(w).includes(P.pickTag)) : c; }
+  const base = pickFrom() === "best" ? bestHand.filter(w => !logged(w.id))
+    : (() => { const c = candidates(); return P.pickTag ? c.filter(w => facetsOf(w).includes(P.pickTag)) : c; })();
+  const n = spinN();
+  return n ? base.slice(0, n) : base; }
 const widen = () => { P.shelfFilter = ""; P.pickTag = ""; saveP(); deckItems = []; };
 async function openWheel() {
   /* the best pool is fetched, so it has to be in hand before the sheet is drawn */
@@ -1990,6 +1998,8 @@ async function openWheel() {
     : facets.length ? `<div class="lbl">In the mood for</div><div class="chips" id="pickTags">${
       [["","Anything",""],...facets.map(([t,n]) => [t, facetName(t) + " · " + n, t.startsWith("p:") ? "who" : ""])]
       .map(([t,l,cl]) => `<button class="chip ${cl} ${(P.pickTag||"")===t?"on":""}" data-wt="${esc(t)}">${esc(l)}</button>`).join("")}</div>` : ""}
+    ${(best ? bestPool.length : all.length) > SPIN_SIZES[0] ? `<div class="lbl">How many on it</div><div class="chips" id="spinSizes">${
+      SPIN_SIZES.map(n => `<button class="chip ${spinN()===n?"on":""}" data-sn="${n}">${n || "All"}</button>`).join("")}</div>` : ""}
     <div id="wheelArea"></div><div id="resultArea"></div><div class="stack"><button class="btn quiet" id="whClose">Close</button></div>`);
   /* changing medium can strip the pool of whatever the tag pointed at, so the tag goes
      with it rather than leaving you at an empty wheel you can't explain */
@@ -1999,6 +2009,7 @@ async function openWheel() {
   $$("[data-wk]").forEach(b => b.onclick = () => { P.shelfFilter = b.dataset.wk; P.pickTag = ""; saveP(); reload(); });
   $$("[data-wt]").forEach(b => b.onclick = () => { P.pickTag = b.dataset.wt; saveP(); deckItems = []; openWheel(); });
   $$("[data-bg]").forEach(b => b.onclick = () => { (P.bestGenre ||= {})[bestKind()] = b.dataset.bg; saveP(); reload(); });
+  $$("[data-sn]").forEach(b => b.onclick = () => { P.spinN = +b.dataset.sn; saveP(); deckItems = []; openWheel(); });
   $$("[data-pm]").forEach(b => b.onclick = () => { P.pickMode = b.dataset.pm; saveP(); openWheel(); });
   $("#whClose").onclick = () => { closeSheet(); renderShelf(); };
   if (pickMode() === "deck") { if (!deckItems.length) resetDeck(); drawDeck(); } else drawWheel();
@@ -2079,7 +2090,7 @@ function drawWheel() { const c = pickPool(); wheelItems = c; const area = $("#wh
         + `<image href="${esc(c[i].cover)}" x="${cx}" y="${iy}" width="${R}" height="${ih}" preserveAspectRatio="xMidYMid slice"/>`
         + `<rect x="${cx}" y="${iy}" width="${R}" height="${ih}" fill="#FFF7EC" opacity=".38"/></g></g>`; } }
   for (let i = 0; i < n; i++) s += `<path d="${wedge(i)}" fill="none" stroke="#FFF7EC" stroke-width="${rule}"/>`;
-  for (let i = 0; i < n; i++) { const fs = n<=8?11:n<=12?9.5:n<=18?8:0; if (!fs) continue;
+  for (let i = 0; i < n; i++) { const fs = n<=8?11:n<=12?9.5:n<=20?8:0; if (!fs) continue;
     const mid = -90+(i+.5)*seg, norm = ((mid%360)+360)%360, flip = norm>90&&norm<270; const max = Math.floor(R*.7/(fs*.55)); const t = c[i].title.length>max ? c[i].title.slice(0,max-1)+"…" : c[i].title;
     s += `<text transform="rotate(${mid} ${cx} ${cy}) translate(${(cx+R*.92).toFixed(0)} ${cy})${flip?" rotate(180)":""}" font-size="${fs}" fill="#151320" text-anchor="${flip?"start":"end"}" dominant-baseline="middle" font-weight="800" font-family="Outfit, sans-serif" paint-order="stroke" stroke="#FFF7EC" stroke-width="2.6" stroke-linejoin="round">${esc(t)}</text>`; }
   area.innerHTML = `<div class="wheelwrap"><div class="pointer"></div><svg id="wheel" viewBox="0 0 280 280"><defs>${defs}</defs><g id="wheelG" style="transform:rotate(${rot}deg)">${s}</g></svg></div><div class="stack"><button class="btn soft" id="spinBtn">Spin the ${n}</button></div>`;
@@ -2102,6 +2113,7 @@ function spin() { const n = wheelItems.length; if (!n || spinning) return; spinn
   g.addEventListener("transitionend", done); requestAnimationFrame(() => { g.style.transform = `rotate(${rot}deg)`; }); }
 function showResult(w) { const el = resultEl(); if (!el) return;
   el.innerHTML = `<div class="result"><small>Tonight's pick</small><b>${esc(w.title)}</b><div style="margin-top:6px">${tag(w.kind)} <span style="font-size:12px;font-weight:700;opacity:.7">${esc(w.year||"")}${w.creator?" · "+esc(w.creator):""}</span></div>
+    <div id="pickWatch"></div>
     <div class="stack"><button class="btn" id="pickedBtn">${K(w.kind).verb} it</button>${
       activeList()?.items.includes(w.id) ? "" : `<button class="btn ghost" id="pickShelf">Put it on the shelf</button>`
     }<button class="btn quiet" id="againBtn">Again</button></div></div>`;
@@ -2110,6 +2122,7 @@ function showResult(w) { const el = resultEl(); if (!el) return;
     catch (e) { oops(e, "Couldn't open that"); } finally { b.disabled = false; } };
   const sh = $("#pickShelf"); if (sh) sh.onclick = async () => { sh.disabled = true; sh.textContent = "Adding";
     try { await addToShelf(w.id); sh.textContent = "On the shelf"; } catch { sh.disabled = false; sh.textContent = "Put it on the shelf"; } };
+  paintWatch(w, "pickWatch", true);
   $("#againBtn").onclick = () => { P.picked = null; saveP(); if (wheelItems.length >= 3) spin(); else drawWheel(); }; }
 /* the pick follows you back to the shelf and into the room */
 let searchT; function wireSearch() { const el = $("#search"); if (!el) return; el.oninput = e => { clearTimeout(searchT); const v = e.target.value.trim(); if (!v) { $("#results").innerHTML = ""; $("#msg").textContent = "";
@@ -3339,12 +3352,18 @@ const marksHTML = ms => !ms.length ? "" :
   `<div class="card"><div class="h"><span>Marks</span><span class="tag dim">earned, never bought</span></div>
     <div class="markrow">${ms.map(m => `<span class="mk mk-${m.key}"><b>${esc(m.name)}</b><small>${esc(m.rule)}</small></span>`).join("")}</div></div>`;
 
-async function paintWatch(w) {
-  const el = $("#wWatch"); if (!el) return;
-  el.innerHTML = `<div class="card"><div class="h"><span>Where to watch</span>
+/* The work page asks this as a card of its own. After a spin it is the very next
+   question — "fine, but where" — so the result carries a compact form of the same
+   thing: the logos and nothing else. A compact block stays silent when the answer is
+   about our setup rather than the film, because a pick is no place to be told the
+   worker is missing; the work page says that where it belongs. */
+async function paintWatch(w, target = "wWatch", compact = false) {
+  const el = $("#" + target); if (!el) return;
+  el.innerHTML = compact ? `<p class="msg" style="margin:8px 0 0">Looking</p>`
+    : `<div class="card"><div class="h"><span>Where to watch</span>
     <span class="tag dim">${esc(REGION())}</span></div><p class="msg">Looking</p></div>`;
   const got = await watchOn(w);
-  if ($("#wWatch") !== el) return;                 /* the sheet moved on while we waited */
+  if ($("#" + target) !== el) return;               /* the sheet moved on while we waited */
   const row = (label, list) => !list.length ? "" : `<div class="lbl">${label}</div>
     <div class="prov">${list.map(p => `<span class="pv" title="${esc(p.name)}">${
       p.logo ? `<img src="${esc(p.logo)}" alt="${esc(p.name)}" loading="lazy">`
@@ -3359,6 +3378,14 @@ async function paintWatch(w) {
         + (got.link ? `<div class="stack"><a class="btn quiet" href="${esc(got.link)}"
             target="_blank" rel="noopener">See all the ways</a></div>` : "")
       : `<p class="empty">Not streaming in ${esc(got.region)} at the moment.</p>`;
+  if (compact) {
+    const any = got && (got.free.length || got.paid.length);
+    /* nothing to say, or nothing the film is to blame for: say nothing */
+    if (!got || (!any && !isSoon(w))) { el.innerHTML = got ? `<p class="empty" style="margin:8px 0 0">Not streaming in ${esc(got.region)} at the moment.</p>` : ""; return; }
+    el.innerHTML = (isSoon(w) ? `<p class="empty" style="margin:8px 0 0">Out ${when(w.release)}.</p>`
+      : row("Where to watch", got.free.length ? got.free : got.paid))
+      + `<p class="sub" style="margin-top:8px;font-size:11px">Via JustWatch${got.region ? " · " + esc(got.region) : ""}.</p>`;
+    return; }
   el.innerHTML = `<div class="card"><div class="h"><span>Where to watch</span>
     <span class="tag dim">${esc(got?.region || REGION())}</span></div>${body}
     <p class="sub" style="margin-top:10px;font-size:11px">Availability from JustWatch, via TMDB.</p></div>`;
@@ -3666,7 +3693,7 @@ window.__rooms = { paintLog, wireLog, openWholeLog, AV_SHAPES, AV_EYES, AV_COLS,
   say, oops, markLive, takeInvite, dropInvite, inviteLink, useInvite, exportEverything,
   watchOn, paintWatch, REGION,
   drawDeck, resetDeck, pickMode, candidates, pickPool, pickFacets, facetsOf, dropFromShelf, loadRecs, recsCached:() => recs !== null, reviewOf, agreement,
-  CUTS, CARD_THEMES, cardTheme, spanData, tasteOf, reviewData, yearOf, roomPalmares, palmares, byPerson,
+  CUTS, CARD_THEMES, cardTheme, spanData, tasteOf, reviewData, yearOf, roomPalmares, palmares, byPerson, spinN, SPIN_SIZES,
   bestOf, bestGenres, dealBest, loadBest, pickFrom, get bestPool(){return bestPool}, get bestHand(){return bestHand},
   secondThoughts, againLine, apart, shelfAge, waited, openProfile,
   setSkin:k => { P.cardSkin = k; saveP(); }, get deckItems(){return deckItems},
