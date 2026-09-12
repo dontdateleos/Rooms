@@ -158,6 +158,9 @@ textarea{min-height:76px;resize:none;line-height:1.45}
 .po .tick.done:after{content:"";position:absolute;left:8px;top:4px;width:6px;height:11px;border-right:2px solid #fff;border-bottom:2px solid #fff;transform:rotate(40deg)}
 .po.done{opacity:.45}
 .po.soon{opacity:.72}
+/* what you are on now is the one thing on the shelf that is already moving */
+.po.onit{box-shadow:0 0 0 2px var(--ink)}
+.cell .po.onit + .cap span:first-child{color:var(--ink);font-weight:600}
 .po{-webkit-touch-callout:none}
 .po .rm{position:absolute;top:6px;left:6px;width:26px;height:26px;border-radius:50%;border:0;background:var(--ink);color:#fff;font-size:18px;line-height:1;padding:0;z-index:4;cursor:pointer;display:grid;place-items:center;box-shadow:0 2px 8px -2px rgba(21,19,32,.5)}
 .grid.editing .po{animation:jiggle .34s ease-in-out infinite alternate}
@@ -1819,12 +1822,22 @@ async function renderEveryoneFeed(fb) {
 /* ============ SHELF ============ */
 let wheelItems = [], rot = 0, spinning = false, upcoming = null;
 const isSoon = w => !!(w?.release && w.release > today());
-function renderShelf() { const L = activeList(); const all = L ? L.items.map(id => works[id]).filter(Boolean) : [];
-  const rows = all.filter(w => (!P.shelfFilter || w.kind === P.shelfFilter) && (P.when === "soon" ? isSoon(w) : P.when === "out" ? !isSoon(w) : true));
+function renderShelf() { const L = activeList();
+  /* The shelf holds what you mean to get to; what you're in the middle of belongs with it
+     and need never have been put there, so it joins the grid rather than sitting under it
+     in a strip of its own. "Out now" then means out and not yet started, so the three
+     states of the filter row partition cleanly: not started, on it, not out. */
+  const listed = L ? L.items.map(id => works[id]).filter(Boolean) : [];
+  const all = listed.concat(myNow.map(n => n.works || works[n.work_id])
+    .filter(w => w && !listed.some(x => x.id === w.id)));
+  const rows = all.filter(w => (!P.shelfFilter || w.kind === P.shelfFilter)
+    && (P.when === "soon" ? isSoon(w) : P.when === "now" ? !!nowOf(w.id)
+      : P.when === "out" ? !isSoon(w) && !nowOf(w.id) : true));
   /* once you've dragged one, the shelf is yours to order; until then what's out comes before what's coming */
-  if (!L?.arranged) rows.sort((a,b) => (isSoon(a)?1:0) - (isSoon(b)?1:0) || String(a.release||"").localeCompare(String(b.release||"")));
+  if (!L?.arranged) rows.sort((a,b) => (nowOf(b.id)?1:0) - (nowOf(a.id)?1:0)
+    || (isSoon(a)?1:0) - (isSoon(b)?1:0) || String(a.release||"").localeCompare(String(b.release||"")));
   const left = rows.filter(w => !logged(w.id) && !isSoon(w)); const counts = {}; all.forEach(w => counts[w.kind] = (counts[w.kind]||0)+1);
-  const soonCount = all.filter(isSoon).length;
+  const soonCount = all.filter(isSoon).length, nowCount = all.filter(w => nowOf(w.id)).length;
   /* things leave the shelf when you log them, so anything still here with a tick was
      logged from somewhere else; count those, not the unreleased ones sitting below */
   const done = all.filter(w => logged(w.id)).length;
@@ -1837,18 +1850,15 @@ function renderShelf() { const L = activeList(); const all = L ? L.items.map(id 
     <div class="chips">${Object.keys(KINDS).map(k => `<button class="chip k ${P.kinds.includes(k)?"on":""}" data-sk="${k}">${K(k).label}</button>`).join("")}</div>
     <div class="msg" id="msg"></div><div id="results"></div>
     ${all.length ? `<div class="chips" style="margin-top:12px">${[["","Everything"],...Object.keys(KINDS).filter(k=>counts[k]).map(k=>[k,K(k).plural+" · "+counts[k]])].map(([k,l]) => `<button class="chip ${P.shelfFilter===k?"on":""}" data-kf="${k}">${l}</button>`).join("")}</div>
-      ${soonCount ? `<div class="chips">${[["","All"],["out","Out now"],["soon",`Coming · ${soonCount}`]].map(([k,l]) => `<button class="chip ${(P.when||"")===k?"on":""}" data-wf="${k}">${l}</button>`).join("")}</div>` : ""}
+      ${soonCount || nowCount ? `<div class="chips">${[["","All"],["out","Out now"],
+        ...(nowCount ? [["now",`In the middle of · ${nowCount}`]] : []),
+        ...(soonCount ? [["soon",`Coming · ${soonCount}`]] : [])].map(([k,l]) => `<button class="chip ${(P.when||"")===k?"on":""}" data-wf="${k}">${l}</button>`).join("")}</div>` : ""}
       ${pickBar}
-      <div class="grid" id="shelfGrid">${rows.map(w => { const soon = isSoon(w);
-        return `<div class="cell" data-cell="${esc(w.id)}"><div class="po ${logged(w.id)?"done":""} ${soon?"soon":""}" data-w="${esc(w.id)}">${cover(w,"")}<b>${esc(w.title)}</b>${tag(w.kind)}
+      <div class="grid" id="shelfGrid">${rows.map(w => { const soon = isSoon(w), n = nowOf(w.id);
+        return `<div class="cell" data-cell="${esc(w.id)}"><div class="po ${logged(w.id)?"done":""} ${soon?"soon":""} ${n?"onit":""}" data-w="${esc(w.id)}">${cover(w,"")}<b>${esc(w.title)}</b>${tag(w.kind)}
           ${soon ? `<span class="soon-tag">${when(w.release)}</span>` : `<button class="tick ${logged(w.id)?"done":""}" data-t="${esc(w.id)}" aria-label="log it"></button>`}</div>
-          <div class="cap"><span>${soon ? "Coming" : esc(w.year||"")}</span><span>${!soon && w.length ? w.length+K(w.kind).unit : ""}</span></div></div>`; }).join("")}</div>`
+          <div class="cap"><span>${soon ? "Coming" : n ? nowLine(n) : esc(w.year||"")}</span><span>${!soon && !n && w.length ? w.length+K(w.kind).unit : ""}</span></div></div>`; }).join("")}</div>`
       : `<div class="tiles" style="margin-top:16px">${Object.keys(KINDS).map((k,i) => `<div class="tile" style="background:${K(k).colour};--r:${[-2,1.5,1,-1.5][i]}deg" data-kt="${k}"><small>Search</small><b>${K(k).plural}</b></div>`).join("")}</div>${blank("var(--mint)","+","An empty shelf","Everything you meant to get to, in one place — out now or still coming. Pick a medium above, or search.",[["shelfFocus","Search for something"]])}${pickBar}`}
-    ${(() => { const on = myNow.map(n => [n, n.works || works[n.work_id]]).filter(([, w]) => w);
-      if (!on.length) return "";
-      return `<div class="lbl">In the middle of</div><div class="card" style="margin-top:0">${on.map(([n, w]) =>
-        `<div class="row" data-w="${esc(w.id)}">${cover(w)}<div class="t"><b>${esc(w.title)}</b>
-          <small>${tag(w.kind)} ${nowLine(n)}</small></div><span class="chip">Open</span></div>`).join("")}</div>`; })()}
     <div id="recShelf"></div>
     <div class="lbl">Coming soon · add to the shelf</div><div id="waitBody"><p class="msg">Loading what's coming</p></div>
     <p class="sub" style="margin-top:6px;font-size:12px">Films, shows and games with a date on them.
@@ -1895,8 +1905,13 @@ async function renderShelfRecs() { const el = $("#recShelf"); if (!el) return;
   el.innerHTML = `<div class="lbl">Because of what you rated</div><div class="card" style="margin-top:0">${rs.map(({ r, why }) =>
     `<div class="row" data-rec="${esc(r.id)}">${cover(r)}<div class="t"><b>${esc(r.title)}</b><small>${tag(r.kind)} ${esc(r.year||"")} · because of ${esc(why)}</small></div><span class="chip">Add</span></div>`).join("")}</div>`;
   $$("[data-rec]", el).forEach(x => x.onclick = () => addToShelf(x.dataset.rec)); }
-function candidates() { const L = activeList(); if (!L) return []; return L.items.filter(id => !logged(id)).map(id => works[id]).filter(Boolean)
-  .filter(w => (!P.shelfFilter || w.kind === P.shelfFilter) && !isSoon(w)); }
+/* Something you're in the middle of is, by definition, a thing you mean to get to, so the
+   wheel can land on it even if it never went on the shelf — and the count on the button
+   matches the pool behind it, which it would not if the shelf and the wheel disagreed. */
+function candidates() { const L = activeList();
+  const ids = [...new Set([...(L?.items || []), ...myNow.map(n => n.work_id)])];
+  return ids.filter(id => !logged(id)).map(id => works[id]).filter(Boolean)
+    .filter(w => (!P.shelfFilter || w.kind === P.shelfFilter) && !isSoon(w)); }
 /* ---------- the best of a medium ----------
    The wheel has only ever known your shelf, which is no help at all on the day you have
    nothing on it. This is the other pool: what a medium's own source considers its best,
@@ -2010,7 +2025,7 @@ async function openWheel() {
   const gName = (gens.find(([, id]) => id === bestGenre()) || [])[0] || "";
   openSheet(`<h3>Can't decide?</h3><p class="sub">${best
       ? `The best ${K(bestKind()).plural.toLowerCase()}${gName ? " · " + esc(gName.toLowerCase()) : ""} · ${bestPool.length} to draw from`
-      : `${c.length} on the shelf${P.shelfFilter ? " · " + K(P.shelfFilter).plural.toLowerCase() : ""}${P.pickTag ? " · " + esc(P.pickTag.startsWith("p:") ? facetName(P.pickTag) : facetName(P.pickTag).toLowerCase()) : ""} · nothing unreleased`}</p>
+      : `${c.length} to pick from${P.shelfFilter ? " · " + K(P.shelfFilter).plural.toLowerCase() : ""}${P.pickTag ? " · " + esc(P.pickTag.startsWith("p:") ? facetName(P.pickTag) : facetName(P.pickTag).toLowerCase()) : ""} · nothing unreleased`}</p>
     <div class="seg" style="margin-top:12px">${[["shelf","Your shelf"],["best","The best"]].map(([k,l]) =>
       `<button data-pf="${k}" class="${pickFrom()===k?"on":""}">${l}</button>`).join("")}</div>
     <div class="seg">${[["deck","Deal them"],["wheel","Spin for it"]].map(([k,l]) =>
