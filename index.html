@@ -1983,15 +1983,57 @@ function showResult(w) { const el = $("#resultArea"); if (!el) return;
 /* the pick follows you back to the shelf and into the room */
 let searchT; function wireSearch() { const el = $("#search"); if (!el) return; el.oninput = e => { clearTimeout(searchT); const v = e.target.value.trim(); if (!v) { $("#results").innerHTML = ""; $("#msg").textContent = "";
       if (shelfStale) { shelfStale = false; if (currentTab() === "shelf") renderShelf(); } return; } searchT = setTimeout(() => doSearch(v, r => addToShelf(r.dataset.add), $("#results"), $("#msg"), el), 400); }; }
+/* ---------- looking for a person, not a title ----------
+   "Michael Mann" is not the name of anything, so a title search has nothing to give
+   back. TMDB knows who he is and what he directed, which is how people actually hunt
+   for a film they can't name: by the person who made it. Directing credits win; failing
+   that what they wrote; failing that what they were in — so the same box finds an actor
+   too. Books already work, because Open Library searches authors in its plain query;
+   games do not, because IGDB matches on the game's own name and nothing else. */
+async function byPerson(term) {
+  const want = lc(term).trim(); if (want.length < 3) return null;
+  const d = await tmdb("search/person", { query:term, include_adult:"false" });
+  const who = (d.results || [])[0]; if (!who) return null;
+  /* A search for "Heat" must not quietly become an actor called Heaton. Substrings let
+     that through — the match has to land on whole names: the name itself, one of its
+     parts ("kubrick"), or a query that contains the whole name. */
+  const nm = lc(who.name || ""), parts = nm.split(/\s+/).filter(Boolean);
+  const bits = want.split(/\s+/).filter(Boolean);
+  const named = nm === want || want.includes(nm) || bits.every(b => parts.includes(b));
+  if (!named) return null;
+  const cr = await tmdb(`person/${who.id}/combined_credits`);
+  const seen = new Set();
+  const asRow = r => { const kind = r.media_type === "tv" ? "tv" : "film", id = `${kind}:${r.id}`;
+    if (seen.has(id) || !(r.title || r.name)) return null; seen.add(id);
+    const date = r.release_date || r.first_air_date || "";
+    return { id, kind, title:r.title || r.name, year:date.slice(0,4), cover:TMDB_IMG(r.poster_path),
+      creator:who.name, ...(date ? { release:date } : {}), __date:date }; };
+  const pick = jobs => (cr.crew || []).filter(r => jobs.includes(r.job)).map(asRow).filter(Boolean);
+  const directed = pick(["Director"]);
+  const wrote = directed.length ? [] : pick(["Creator", "Writer", "Screenplay"]);
+  const body = directed.length ? directed : wrote.length ? wrote : (cr.cast || []).map(asRow).filter(Boolean);
+  const rows = body.sort((a, b) => String(b.__date).localeCompare(String(a.__date)))
+    .filter(r => P.kinds.includes(r.kind)).slice(0, 8);
+  if (!rows.length) return null;
+  return { name:who.name, role: directed.length ? "Directed by" : wrote.length ? "Written by" : "With", rows }; }
 async function doSearch(term, onPick, resEl, msgEl, box, acts = null) { msgEl.textContent = "Searching " + P.kinds.map(k => K(k).label.toLowerCase()).join(", ");
-  const done = await Promise.all(P.kinds.map(k => SOURCES[k](term).then(r => ({ k, r })).catch(e => ({ k, err:e.message })))); const hits = done.flatMap(d => d.r || []); const errs = done.filter(d => d.err).map(d => `${K(d.k).label}: ${d.err}`);
-  msgEl.textContent = hits.length ? errs.join(" · ") : "";
-  if (!hits.length) { resEl.innerHTML = errs.length
+  /* the person lookup rides alongside the title searches rather than after them */
+  const wantsScreen = P.kinds.includes("film") || P.kinds.includes("tv");
+  const [done, person] = await Promise.all([
+    Promise.all(P.kinds.map(k => SOURCES[k](term).then(r => ({ k, r })).catch(e => ({ k, err:e.message })))),
+    wantsScreen ? byPerson(term).catch(() => null) : null,
+  ]);
+  const hits = done.flatMap(d => d.r || []); const errs = done.filter(d => d.err).map(d => `${K(d.k).label}: ${d.err}`);
+  const byThem = person ? person.rows.filter(r => !hits.some(h => h.id === r.id)) : [];
+  msgEl.textContent = (hits.length || byThem.length) ? errs.join(" · ") : "";
+  if (!hits.length && !byThem.length) { resEl.innerHTML = errs.length
     ? blank("var(--pink)","!","Can't search that", errs.join(" · ") + ". Check your key or the worker under your name → Edit.", [])
     : blank("var(--cream2)","?", `Nothing for “${esc(term)}”`, `Try fewer words, or turn on another medium above. Some things simply aren't in TMDB, Open Library or IGDB.`, []);
-    return; } window.__hits = Object.assign(window.__hits||{}, Object.fromEntries(hits.map(h => [h.id, h])));
-  resEl.innerHTML = hits.map(h => `<div class="row" data-add="${esc(h.id)}">${cover(h)}<div class="t"><b>${esc(h.title)}</b><small>${tag(h.kind)} ${isSoon(h)?`Coming ${when(h.release)}`:esc(h.year||"")}${h.creator?" · "+esc(h.creator):""}</small></div>${
-    acts ? acts.map(([k,l]) => `<button class="chip" data-act="${k}">${l}</button>`).join("") : `<span class="chip">Add</span>`}</div>`).join("");
+    return; } window.__hits = Object.assign(window.__hits||{}, Object.fromEntries([...hits, ...byThem].map(h => [h.id, h])));
+  const rowHTML = h => `<div class="row" data-add="${esc(h.id)}">${cover(h)}<div class="t"><b>${esc(h.title)}</b><small>${tag(h.kind)} ${isSoon(h)?`Coming ${when(h.release)}`:esc(h.year||"")}${h.creator?" · "+esc(h.creator):""}</small></div>${
+    acts ? acts.map(([k,l]) => `<button class="chip" data-act="${k}">${l}</button>`).join("") : `<span class="chip">Add</span>`}</div>`;
+  resEl.innerHTML = hits.map(rowHTML).join("")
+    + (byThem.length ? `<div class="lbl">${esc(person.role)} ${esc(person.name)}</div>` + byThem.map(rowHTML).join("") : "");
   $$("[data-add]", resEl).forEach(r => {
     r.addEventListener("mousedown", e => e.preventDefault());
     /* tapping the row still does the obvious thing — the first action — so the second
@@ -3419,7 +3461,7 @@ window.__rooms = { paintLog, wireLog, openWholeLog, AV_SHAPES, AV_EYES, AV_COLS,
   say, oops, markLive, takeInvite, dropInvite, inviteLink, useInvite, exportEverything,
   watchOn, paintWatch, REGION,
   drawDeck, resetDeck, pickMode, candidates, pickPool, pickFacets, facetsOf, dropFromShelf, loadRecs, recsCached:() => recs !== null, reviewOf, agreement,
-  CUTS, CARD_THEMES, cardTheme, spanData, tasteOf, reviewData, yearOf, roomPalmares, palmares,
+  CUTS, CARD_THEMES, cardTheme, spanData, tasteOf, reviewData, yearOf, roomPalmares, palmares, byPerson,
   setSkin:k => { P.cardSkin = k; saveP(); }, get deckItems(){return deckItems},
   addToShelf, __isSoon:isSoon, __list:activeList,
   marksFor, openPaid, COMET, loadFounders, get founderIds(){return founderIds} };
