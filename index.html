@@ -1883,7 +1883,7 @@ function candidates() { const L = activeList(); if (!L) return []; return L.item
    and Open Library has no ratings worth the name, so books are ordered by how widely
    they're held instead. Calling the result "combined from several sources" would be a
    claim the data cannot meet. */
-const BEST_N = 100, BEST_HAND = 14;
+const BEST_N = 100;
 /* a ten out of ten from three people is not a good film */
 const VOTE_FLOOR = { film:1200, tv:300 };
 const BOOK_SUBJECTS = [["Thriller","thriller"],["Science fiction","science_fiction"],
@@ -1939,13 +1939,13 @@ async function bestOf(kind, gid) {
   rows = rows.filter(r => r.title && !seen.has(r.id) && seen.add(r.id)).slice(0, BEST_N);
   return (bestCache[key] = rows); }
 
-/* a hundred is a list, not a wheel: deal a hand from it and let the rest wait */
+/* the whole hundred goes on, shuffled so the order is not the source's ranking —
+   a wheel that always puts the same film at the top is not really a wheel */
 function dealBest() {
-  const left = bestPool.filter(w => !logged(w.id));
-  const pick = left.slice();
+  const pick = bestPool.filter(w => !logged(w.id));
   for (let i = pick.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1));
     [pick[i], pick[j]] = [pick[j], pick[i]]; }
-  bestHand = pick.slice(0, BEST_HAND);
+  bestHand = pick;
   window.__hits = Object.assign(window.__hits || {}, Object.fromEntries(bestHand.map(h => [h.id, h])));
   return bestHand; }
 const bestKind = () => P.shelfFilter || "film";
@@ -2070,14 +2070,15 @@ function drawWheel() { const c = pickPool(); wheelItems = c; const area = $("#wh
      name itself gets a cream outline so it holds even over a dark poster. Nothing to show
      and the flat colour carries the wedge on its own, exactly as it used to. */
   const half = R * Math.sin(Math.min(seg, 180) / 2 * Math.PI / 180), iy = (cy - half).toFixed(1), ih = (half * 2).toFixed(1);
+  const rule = Math.max(.5, Math.min(3, 42 / n)), art = n <= 24;
   let defs = "", s = "";
   for (let i = 0; i < n; i++) { const d = wedge(i);
     s += `<path d="${d}" fill="${cols[i%cols.length]}"/>`;
-    if (c[i].cover) { defs += `<clipPath id="wsg${i}"><path d="${d}"/></clipPath>`;
+    if (art && c[i].cover) { defs += `<clipPath id="wsg${i}"><path d="${d}"/></clipPath>`;
       s += `<g clip-path="url(#wsg${i})"><g transform="rotate(${(-90+(i+.5)*seg).toFixed(2)} ${cx} ${cy})">`
         + `<image href="${esc(c[i].cover)}" x="${cx}" y="${iy}" width="${R}" height="${ih}" preserveAspectRatio="xMidYMid slice"/>`
         + `<rect x="${cx}" y="${iy}" width="${R}" height="${ih}" fill="#FFF7EC" opacity=".38"/></g></g>`; } }
-  for (let i = 0; i < n; i++) s += `<path d="${wedge(i)}" fill="none" stroke="#FFF7EC" stroke-width="3"/>`;
+  for (let i = 0; i < n; i++) s += `<path d="${wedge(i)}" fill="none" stroke="#FFF7EC" stroke-width="${rule}"/>`;
   for (let i = 0; i < n; i++) { const fs = n<=8?11:n<=12?9.5:n<=18?8:0; if (!fs) continue;
     const mid = -90+(i+.5)*seg, norm = ((mid%360)+360)%360, flip = norm>90&&norm<270; const max = Math.floor(R*.7/(fs*.55)); const t = c[i].title.length>max ? c[i].title.slice(0,max-1)+"…" : c[i].title;
     s += `<text transform="rotate(${mid} ${cx} ${cy}) translate(${(cx+R*.92).toFixed(0)} ${cy})${flip?" rotate(180)":""}" font-size="${fs}" fill="#151320" text-anchor="${flip?"start":"end"}" dominant-baseline="middle" font-weight="800" font-family="Outfit, sans-serif" paint-order="stroke" stroke="#FFF7EC" stroke-width="2.6" stroke-linejoin="round">${esc(t)}</text>`; }
