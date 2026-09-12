@@ -417,6 +417,15 @@ nav button:active{transform:scale(.95)}
 #add svg{width:26px;height:26px;stroke:currentColor;stroke-width:2.6;fill:none;stroke-linecap:round}
 #add.busy{animation:pop .32s cubic-bezier(.3,1.4,.5,1)}
 
+/* what you're in the middle of, in the room and on your own shelf */
+.nowcard input{width:100%;margin-top:10px}
+.nowrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.nowpill{display:inline-flex;align-items:center;gap:7px;background:var(--cream2);
+  border-radius:99px;padding:5px 12px 5px 6px;font-size:12.5px;max-width:100%}
+.nowpill .av{width:22px;height:22px;flex:none}
+.nowpill b{font-family:var(--head);font-weight:800}
+.nowpill span{color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
 /* the adaptive review: prose, so it is set like prose and not like another stat.
    Its own name — `.verdict` was taken by the butter callout above. */
 .sumup{margin:14px 0 2px;font-size:15.5px;line-height:1.5;font-weight:400;color:var(--ink);
@@ -903,8 +912,9 @@ const DEMO = /(^|[#?&])demo\b/.test(location.hash + location.search);
 const LOCAL = !window.__mockSb && (DEMO || SUPABASE_URL.includes("YOUR-"));
 function makeLocalSb(seed) {
   const KEY = "rooms.db";
-  const blank = { profile:null, signedOut:false, works:{}, profiles:[], entries:[], lists:[], list_items:[], rooms:[], room_members:[], clubs:[], club_members:[], club_votes:[], reactions:[], replies:[], top_lists:[], top_list_items:[], follows:[] };
+  const blank = { profile:null, signedOut:false, works:{}, profiles:[], entries:[], lists:[], list_items:[], rooms:[], room_members:[], clubs:[], club_members:[], club_votes:[], reactions:[], replies:[], top_lists:[], top_list_items:[], follows:[], nows:[] };
   const db = Object.assign({}, blank, seed || JSON.parse(localStorage.getItem(KEY) || "{}"));
+  if (!db.nows) db.nows = [];                 /* a log written before v15 has no such key */
   const save = () => { if (!seed) localStorage.setItem(KEY, JSON.stringify(db)); };
   const uid = () => (crypto.randomUUID ? crypto.randomUUID() : "id-" + Math.random().toString(36).slice(2));
   const now = () => new Date().toISOString();
@@ -919,6 +929,7 @@ function makeLocalSb(seed) {
     if (t === "top_lists") r.top_list_items = db.top_list_items.filter(x => x.top_list_id === r.id).map(x => Object.assign({}, x, { works:db.works[x.work_id]||null }));
     if (t === "follows") r.profiles = profOf(r.followee);
     if (t === "club_members") r.profiles = profOf(r.user_id);
+    if (t === "nows") { r.works = db.works[r.work_id] || null; r.profiles = profOf(r.user_id); }
     return r; };
   const table = t => t === "works" ? Object.values(db.works) : t === "profiles" ? [...(db.profile ? [db.profile] : []), ...db.profiles] : db[t];
   const from = t => { const st = { eqs:[], ins:null, up:null, del:false, upsert:null, sorts:[], lim:0, single:false }; const b = {};
@@ -929,7 +940,12 @@ function makeLocalSb(seed) {
     b.then = (res, rej) => { try {
       const match = r => st.eqs.every(([k,v]) => v instanceof Set ? v.has(r[k]) : (v && typeof v === "object" && "not" in v) ? r[k] !== v.not : r[k] === v);
       let out;
-      if (st.upsert) { const rows = Array.isArray(st.upsert) ? st.upsert : [st.upsert]; if (t === "works") rows.forEach(w => db.works[w.id] = Object.assign(db.works[w.id]||{}, w)); out = rows; save(); }
+      if (st.upsert) { const rows = Array.isArray(st.upsert) ? st.upsert : [st.upsert];
+        if (t === "works") rows.forEach(w => db.works[w.id] = Object.assign(db.works[w.id]||{}, w));
+        else if (t === "nows") rows.forEach(n => { const i = db.nows.findIndex(x => x.user_id === n.user_id && x.work_id === n.work_id);
+          const full = Object.assign({ started_on:now().slice(0,10), at:null }, i >= 0 ? db.nows[i] : {}, n);
+          if (i >= 0) db.nows[i] = full; else db.nows.push(full); });
+        out = rows; save(); }
       else if (st.ins) { const rows = (Array.isArray(st.ins) ? st.ins : [st.ins]).map(r => Object.assign({ id:uid(), created_at:now() }, r));
         if (t === "works") rows.forEach(w => db.works[w.id] = w); else db[t].push(...rows); out = Array.isArray(st.ins) ? rows : rows[0]; save(); }
       else if (st.up) { db[t].forEach((r,i) => { if (match(r)) db[t][i] = Object.assign({}, r, st.up); }); if (t === "profiles" && db.profile && match(db.profile)) Object.assign(db.profile, st.up); out = null; save(); }
@@ -1581,7 +1597,7 @@ async function loadMe() { const { data:{ session } } = await sb.auth.getSession(
 async function enter() {
   $("#meBtn").hidden = false; $("#meName").textContent = me.handle; paintMeAv();
   $("#nav").classList.add("on"); $("#add").classList.add("live"); $("#cogBtn").hidden = false;
-  await Promise.all([loadLists(), loadMine(), loadRooms(), loadFollows(), loadFounders()]); await loadClubs();
+  await Promise.all([loadLists(), loadMine(), loadRooms(), loadFollows(), loadFounders(), loadNow()]); await loadClubs();
   await useInvite();
   switchTab("doors"); movePill(true); checkNew();
   if (!P.onboarded && !myEntries.length) setTimeout(openOnboarding, 400);
@@ -1709,6 +1725,7 @@ async function renderRoomFeed(fb, R) {
   fb.innerHTML = `<div class="card"><div class="h"><span>${esc(R.name)}</span><span class="tag dim">${R.members.length} in here · ${esc(R.code)}</span></div>
       <div class="chips" style="margin-top:8px">${R.members.map(m => `<span class="chip ${m.id===me.id?"on":""}" data-prof="${esc(m.id)}">${esc(m.handle)}</span>`).join("")}<button class="chip" id="invite">+ bring someone in</button><button class="chip" id="leaveRoom">Leave</button></div>
       <div class="here" id="hereRow" aria-live="polite"><small>Nobody else in here right now</small></div>
+      <div class="nowrow" id="roomNow"></div>
       ${R.members.length < 2 ? `<div class="alone"><b>It's just you in here.</b>
         <span>Rooms only does anything with other people in it — agreement, the year, the arguments.
         Send one person the link and the whole thing switches on.</span>
@@ -1732,6 +1749,8 @@ async function renderRoomFeed(fb, R) {
         return head + slipHTML(e, { talk:true }); }).join(""); })()}
     <div class="stack"><button class="btn quiet" id="newRoom">Open another room</button><button class="btn quiet" id="joinRoom">Join with a code</button></div><p class="msg" id="roomMsg"></p>`;
   wireSlips(fb, es); revealIn(fb); wireRoomButtons(); joinRoomChannel(R);
+  /* presence says who is here; this says what they are actually in the middle of */
+  paintRoomNow(R);
   ["talkAdd","compAdd"].forEach(id => { const el = $("#"+id); if (el) el.onclick = openAdd; });
   const ryc = $("#roomYearCard"); if (ryc) ryc.onclick = () => { const pal = roomPalmares(es);
     if (pal) openCuts("roomyear", { room:R, pal, year:String(new Date().getFullYear()) }, "Share the room's year"); };
@@ -1825,6 +1844,11 @@ function renderShelf() { const L = activeList(); const all = L ? L.items.map(id 
           ${soon ? `<span class="soon-tag">${when(w.release)}</span>` : `<button class="tick ${logged(w.id)?"done":""}" data-t="${esc(w.id)}" aria-label="log it"></button>`}</div>
           <div class="cap"><span>${soon ? "Coming" : esc(w.year||"")}</span><span>${!soon && w.length ? w.length+K(w.kind).unit : ""}</span></div></div>`; }).join("")}</div>`
       : `<div class="tiles" style="margin-top:16px">${Object.keys(KINDS).map((k,i) => `<div class="tile" style="background:${K(k).colour};--r:${[-2,1.5,1,-1.5][i]}deg" data-kt="${k}"><small>Search</small><b>${K(k).plural}</b></div>`).join("")}</div>${blank("var(--mint)","+","An empty shelf","Everything you meant to get to, in one place — out now or still coming. Pick a medium above, or search.",[["shelfFocus","Search for something"]])}${pickBar}`}
+    ${(() => { const on = myNow.map(n => [n, n.works || works[n.work_id]]).filter(([, w]) => w);
+      if (!on.length) return "";
+      return `<div class="lbl">In the middle of</div><div class="card" style="margin-top:0">${on.map(([n, w]) =>
+        `<div class="row" data-w="${esc(w.id)}">${cover(w)}<div class="t"><b>${esc(w.title)}</b>
+          <small>${tag(w.kind)} ${nowLine(n)}</small></div><span class="chip">Open</span></div>`).join("")}</div>`; })()}
     <div id="recShelf"></div>
     <div class="lbl">Coming soon · add to the shelf</div><div id="waitBody"><p class="msg">Loading what's coming</p></div>
     <p class="sub" style="margin-top:6px;font-size:12px">Films, shows and games with a date on them.
@@ -2127,6 +2151,58 @@ function showResult(w) { const el = resultEl(); if (!el) return;
 /* the pick follows you back to the shelf and into the room */
 let searchT; function wireSearch() { const el = $("#search"); if (!el) return; el.oninput = e => { clearTimeout(searchT); const v = e.target.value.trim(); if (!v) { $("#results").innerHTML = ""; $("#msg").textContent = "";
       if (shelfStale) { shelfStale = false; if (currentTab() === "shelf") renderShelf(); } return; } searchT = setTimeout(() => doSearch(v, r => addToShelf(r.dataset.add), $("#results"), $("#msg"), el), 400); }; }
+async function paintRoomNow(R) {
+  const el = $("#roomNow"); if (!el || !R) return;
+  const rows = await nowFor(R.members.map(m => m.id));
+  if ($("#roomNow") !== el) return;                  /* the tab moved on while we waited */
+  /* one each: what somebody is on now, not everything they have ever picked up */
+  const seen = new Set(), pick = [];
+  for (const r of rows) { if (seen.has(r.user_id)) continue; seen.add(r.user_id); pick.push(r); }
+  el.innerHTML = pick.map(r => { const w = r.works || works[r.work_id]; if (!w) return "";
+    const who = r.user_id === me.id ? "You" : (r.profiles?.handle || "");
+    return `<span class="nowpill" data-w="${esc(r.work_id)}">${avatar({ id:r.user_id, handle:who,
+      avatar:r.profiles?.avatar }, "av")}<b>${esc(who)}</b><span>${esc(w.title)} · ${nowLine(r)}</span></span>`;
+  }).join("");
+  $$("[data-w]", el).forEach(x => x.onclick = () => openWork(x.dataset.w)); }
+
+/* ---------- what you're in the middle of ----------
+   The app has known two states: on the shelf, and logged. A season, a novel, a game you
+   will be at for a month — none of them had anywhere to live, and the most present-tense
+   thing about a person was invisible to the room.
+
+   Loaded on its own and swallowed on failure, so a database that has not run v15 simply
+   has nobody in the middle of anything, rather than an app that will not start. That
+   lesson cost a sign-in once. */
+let myNow = [];
+const NOW_SEL = "work_id,started_on,at,updated_at";
+async function loadNow() {
+  try { myNow = await q(sb.from("nows").select(NOW_SEL + ",works(*)").eq("user_id", me.id)
+      .order("updated_at", { ascending:false }));
+    myNow.forEach(n => remember(n.works)); }
+  catch { myNow = []; } }
+const nowOf = id => myNow.find(n => n.work_id === id) || null;
+async function startNow(id, at = null) {
+  try { await q(sb.from("nows").upsert({ user_id:me.id, work_id:id, at,
+      updated_at:new Date().toISOString() })); await loadNow(); return true; }
+  catch (e) { oops(e, "Couldn't pick that up"); return false; } }
+async function stopNow(id) {
+  const back = myNow.slice(); myNow = myNow.filter(n => n.work_id !== id);
+  try { await q(sb.from("nows").delete().eq("user_id", me.id).eq("work_id", id)); return true; }
+  catch (e) { myNow = back; oops(e, "Couldn't put that down"); return false; } }
+/* whoever you share a room with can see it, so the same query serves the room */
+async function nowFor(ids) {
+  if (!ids.length) return [];
+  try { return await q(sb.from("nows").select("user_id," + NOW_SEL + ",works(*),profiles(handle,avatar)")
+    .in("user_id", ids).order("updated_at", { ascending:false }).limit(60)); }
+  catch { return []; } }
+/* "since Tuesday" is the honest fallback when nobody has said where they are up to */
+function nowLine(n) {
+  const at = (n.at || "").trim();
+  if (at) return esc(at);
+  const days = Math.floor((Date.now() - new Date(n.started_on + "T12:00:00Z")) / 864e5);
+  return days <= 0 ? "started today" : days === 1 ? "since yesterday"
+    : days < 14 ? `${said(days)} days in` : `since ${stampDate(n.started_on)}`; }
+
 /* ---------- second thoughts ----------
    A ratings site keeps one number per person. A log keeps a history, and the history is
    the interesting part: the app has always let you log a thing twice and has never once
@@ -3191,6 +3267,7 @@ async function openWork(id) { let w = works[id]; if (!w) { try { const rows = aw
       <p class="sumup" id="wVerdict" hidden></p>
       <div class="lbl">What people loved</div><div id="wLoved">${skeleton(2)}</div></div>
     ${isSoon(w) ? `<p class="sub" style="margin-top:12px">Out ${when(w.release)}. It's on your shelf until then.</p>` : ""}
+    <div id="wNow"></div>
     <div class="stack"><button class="btn ${isSoon(w)?"ghost":""}" id="wLog">${logged(w.id)?"Log it again":isSoon(w)?"Log it anyway":cfg.verb.replace(/^./,c=>c.toUpperCase())+" it"}</button><button class="btn ghost" id="wShelf">${activeList()?.items.includes(w.id)?"Take it off the shelf":"Put it on the shelf"}</button></div>
     <div class="card"><div class="h"><span>Details</span></div>${Object.entries(w.credits||{}).filter(([k,v]) => v).map(([r,n]) => `<div class="kv"><span>${r === "dp" ? "camerawork" : r}</span>${esc(n)}</div>`).join("")}${w.meta?.genres?.length?`<div class="kv"><span>genres</span>${esc(w.meta.genres.join(", "))}</div>`:""}</div>
     <div id="wEntries"></div><div class="stack"><button class="btn soft" id="wCard">Save the card</button><button class="btn quiet" id="wClose">Close</button></div>`);
@@ -3237,6 +3314,21 @@ async function openWork(id) { let w = works[id]; if (!w) { try { const rows = aw
     const again = againLine(mine); if (again) bits.push(again);
     const days = shelfAge(w.id); if (days) bits.push(`It's been on your shelf ${waited(days)}.`);
     if (bits.length) { ag.innerHTML = bits.join(" "); ag.hidden = false; } }
+  /* the middle state: neither meaning to, nor done with */
+  const paintNow = () => { const el = $("#wNow"); if (!el) return;
+    const n = nowOf(w.id);
+    el.innerHTML = isSoon(w) ? "" : n
+      ? `<div class="card nowcard"><div class="h"><span>You're on it</span><span class="tag dim">${nowLine(n)}</span></div>
+          <input id="nowAt" maxlength="40" placeholder="Where are you up to?" value="${esc(n.at || "")}">
+          <div class="stack"><button class="btn quiet" id="nowStop">Put it down</button></div></div>`
+      : `<div class="stack"><button class="btn ghost" id="nowStart">Start it</button></div>`;
+    const go = $("#nowStart"); if (go) go.onclick = async () => { go.disabled = true;
+      if (await startNow(w.id)) { paintNow(); say("On it"); } else go.disabled = false; };
+    const stop = $("#nowStop"); if (stop) stop.onclick = async () => { stop.disabled = true;
+      if (await stopNow(w.id)) { paintNow(); if (currentTab() === "shelf") renderShelf(); } else stop.disabled = false; };
+    const at = $("#nowAt"); if (at) { let t;
+      at.oninput = () => { clearTimeout(t); t = setTimeout(() => startNow(w.id, at.value.trim() || null), 600); }; } };
+  paintNow();
   paintWatch(w);
   const st = await tagStats(w.id); const top = Object.entries(st.counts).sort((a,b)=>b[1]-a[1]).slice(0,5);
   /* one score per person, latest wins — the same rule the averages use */
@@ -3473,6 +3565,8 @@ function openLog(w, edit = null) { const cfg = K(w.kind); const loved = edit?.lo
   $("#wSave").onclick = async () => { if (!score) return; const e = { user_id:me.id, work_id:w.id, rated_on:$("#wDate").value || today(), score, note:$("#wNote").value.trim() || null, loved:loved.length?loved.slice():null, context:Object.keys(ctx).length?ctx:null, breakdown:null };
     $("#wSave").disabled = true; try { await saveEntry(e, edit?.id); await loadMine();
       const offShelf = !edit?.id && dropFromShelf(w.id);
+      /* you are not in the middle of something you have just finished */
+      if (!edit?.id && nowOf(w.id)) stopNow(w.id);
       justSwept = w.id; inkWash(w.kind); recs = null; delete tagCache[w.id]; if (P.picked === w.id) { P.picked = null; saveP(); } closeSheet(); refresh();
       if (offShelf) say("Off the shelf");
       const saved = (edit ? myEntries.find(x => x.id === edit.id) : myEntries.find(x => x.work_id === w.id)) || e; openEntry(saved, true); } catch (err) { $("#wMsg").textContent = err.message; $("#wSave").disabled = false; } }; }
@@ -3694,6 +3788,7 @@ window.__rooms = { paintLog, wireLog, openWholeLog, AV_SHAPES, AV_EYES, AV_COLS,
   watchOn, paintWatch, REGION,
   drawDeck, resetDeck, pickMode, candidates, pickPool, pickFacets, facetsOf, dropFromShelf, loadRecs, recsCached:() => recs !== null, reviewOf, agreement,
   CUTS, CARD_THEMES, cardTheme, spanData, tasteOf, reviewData, yearOf, roomPalmares, palmares, byPerson, spinN, SPIN_SIZES,
+  loadNow, startNow, stopNow, nowOf, nowFor, nowLine, get myNow(){return myNow},
   bestOf, bestGenres, dealBest, loadBest, pickFrom, get bestPool(){return bestPool}, get bestHand(){return bestHand},
   secondThoughts, againLine, apart, shelfAge, waited, openProfile,
   setSkin:k => { P.cardSkin = k; saveP(); }, get deckItems(){return deckItems},

@@ -415,3 +415,45 @@ create trigger profiles_guard_founder before insert or update on profiles
    because the client compares it as a string ("2026-11-04" > today()) and an odd
    value from a source should not be able to fail an insert. Safe to re-run. */
 alter table works add column if not exists release text;
+
+/* ---------- v15: what you're in the middle of ----------
+   The app has only ever known two states: on the shelf, meaning you mean to get to it,
+   and logged, meaning you're done. Everything that takes longer than one sitting — a
+   season, a novel, a game you'll be at for a month — has had nowhere to live, and the
+   most present-tense thing about a person was invisible to the room they're in.
+
+   Its own table rather than a second list, because a list cannot answer "where are you
+   up to" and because list_items is private by RLS: `lists_mine` is `for all` on
+   `owner = auth.uid()`, so nobody could ever see anybody else's. The read policy here
+   matches entries exactly — yourself, or somebody you share a room with — so this is
+   visible to precisely the people who can already see what you rate.
+
+   `at` is free text on purpose. "episode 4", "page 200", "act II", "just started" —
+   the shape of progress differs per medium and per person, and a number would force
+   a fidelity nobody has. Safe to re-run. */
+create table if not exists nows (
+  user_id uuid not null references profiles on delete cascade,
+  work_id text not null references works on delete cascade,
+  started_on date not null default current_date,
+  at text,
+  updated_at timestamptz default now(),
+  primary key (user_id, work_id)
+);
+create index if not exists nows_user_idx on nows (user_id, updated_at desc);
+
+alter table nows enable row level security;
+drop policy if exists nows_read on nows;
+create policy nows_read on nows for select to authenticated
+  using (user_id = auth.uid() or shares_room(user_id));
+drop policy if exists nows_mine on nows;
+create policy nows_mine on nows for all to authenticated
+  using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+/* the room should see somebody pick a book up without waiting for a reload */
+do $$ begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'nows')
+  then execute 'alter publication supabase_realtime add table public.nows'; end if;
+end $$;
+alter table nows replica identity full;
