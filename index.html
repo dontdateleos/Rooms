@@ -423,6 +423,12 @@ nav button:active{transform:scale(.95)}
   background:none;padding:2px 0 2px 13px;border-left:3px solid var(--line)}
 .sumup b{font-family:var(--head);font-weight:800;font-variant-numeric:tabular-nums}
 
+/* your own history with a thing, set apart from the room's view of it */
+.sumup.mine{border-left-color:var(--sky)}
+.dkname .waited{color:var(--bad);font-weight:700}
+.chip.up{background:var(--mint);color:var(--ink)}
+.chip.down{background:var(--cream2);color:var(--mute)}
+
 /* card skins: the swatch is the label, the name is the caption */
 .skins{display:flex;gap:8px;flex-wrap:wrap;margin-top:2px}
 .skins button{background:none;border:0;padding:0;cursor:pointer;display:flex;flex-direction:column;
@@ -1003,7 +1009,10 @@ async function loadLists() { const rows = await q(sb.from("lists").select("id,na
   const byHand = (a,b) => a.position != null && b.position != null ? a.position - b.position
     : a.position != null ? -1 : b.position != null ? 1 : String(a.added_at||"").localeCompare(String(b.added_at||""));
   lists = rows.map(l => ({ id:l.id, name:l.name, arranged:(l.list_items||[]).some(i => i.position != null),
-    items:(l.list_items||[]).slice().sort(byHand).map(i => { remember(i.works); return i.work_id; }) }));
+    items:(l.list_items||[]).slice().sort(byHand).map(i => { remember(i.works); return i.work_id; }),
+    /* added_at was always fetched and always thrown away; how long a thing has sat
+       there is the most honest fact the shelf holds about it */
+    added:Object.fromEntries((l.list_items||[]).map(i => [i.work_id, i.added_at])) }));
   if (!lists.length) { const l = await q(sb.from("lists").insert({ owner:me.id, name:"the shelf" }).select().single()); lists = [{ id:l.id, name:l.name, items:[] }]; }
   if (!lists.find(l => l.id === P.activeList)) { P.activeList = lists[0].id; saveP(); } }
 async function loadMine() { myEntries = await q(sb.from("entries").select("*,works(*)").eq("user_id", me.id).order("rated_on",{ascending:false}).order("created_at",{ascending:false}));
@@ -1914,7 +1923,8 @@ function drawDeck() {
         return `<div class="dk" style="--o:${o};z-index:${3-o}">${cover(w, "dkco")}</div>`; }).join("")}
     </div>
     <div class="dkname"><b>${esc(top.title)}</b><small>${tag(top.kind)} ${esc(top.year||"")}${
-      top.creator ? " · " + esc(top.creator) : ""}</small></div>
+      top.creator ? " · " + esc(top.creator) : ""}${(() => { const d = shelfAge(top.id);
+      return d ? ` · <span class="waited">waiting ${waited(d)}</span>` : ""; })()}</small></div>
     <div class="stack dkbar"><button class="btn" id="dkTake">${PICK_VERB[top.kind] || "Take"} it</button>
       <button class="btn ghost" id="dkSkip">Not tonight</button></div>
     ${deckSeen >= deckItems.length && deckItems.length > 1
@@ -1983,6 +1993,60 @@ function showResult(w) { const el = $("#resultArea"); if (!el) return;
 /* the pick follows you back to the shelf and into the room */
 let searchT; function wireSearch() { const el = $("#search"); if (!el) return; el.oninput = e => { clearTimeout(searchT); const v = e.target.value.trim(); if (!v) { $("#results").innerHTML = ""; $("#msg").textContent = "";
       if (shelfStale) { shelfStale = false; if (currentTab() === "shelf") renderShelf(); } return; } searchT = setTimeout(() => doSearch(v, r => addToShelf(r.dataset.add), $("#results"), $("#msg"), el), 400); }; }
+/* ---------- second thoughts ----------
+   A ratings site keeps one number per person. A log keeps a history, and the history is
+   the interesting part: the app has always let you log a thing twice and has never once
+   said anything about it. Only a move worth naming counts — half a star is the noise of
+   rating on a different evening, a whole star is a change of mind. */
+const MIND_CHANGED = 2;                       /* half-stars, so: one whole star */
+function secondThoughts(es = myEntries) {
+  const by = {};
+  for (const e of es) (by[e.work_id] ||= []).push(e);
+  const out = [];
+  for (const [id, list] of Object.entries(by)) {
+    if (list.length < 2) continue;
+    const seq = list.slice().sort((a, b) => String(a.rated_on).localeCompare(String(b.rated_on)));
+    const first = seq[0], last = seq[seq.length - 1];
+    out.push({ id, first, last, n:seq.length, delta:last.score - first.score });
+  }
+  return out.sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta)); }
+/* the line a work page shows about your own history with it */
+function againLine(list) {
+  if (!list || list.length < 2) return "";
+  const seq = list.slice().sort((a, b) => String(a.rated_on).localeCompare(String(b.rated_on)));
+  const first = seq[0], last = seq[seq.length - 1];
+  const B = x => `<b>${x}</b>`, st = e => B((e.score / 2).toFixed(1));
+  const yr = e => String(e.rated_on || "").slice(0, 4);
+  const times = seq.length > 2 ? `${said(seq.length)} times` : "twice";
+  if (last.score === first.score)
+    return `Logged ${times}, and you landed on ${st(last)} every time.`;
+  const up = last.score > first.score;
+  const same = yr(first) === yr(last);
+  return `You had it at ${st(first)} in ${B(yr(first))}${same ? " and again" : `, and in ${B(yr(last))}`}`
+    + ` you have it at ${st(last)}. ${up ? "It grew on you." : "It didn't hold up."}`; }
+
+/* ---------- how far apart two people are ----------
+   Distance, never a ranking: it says how much light there is between you, not which of
+   you is right. Under three shared titles there is nothing to say. */
+function apart(mineEs, theirs) {
+  const keep = (acc, e) => { const cur = acc[e.work_id];
+    if (!cur || String(e.rated_on) > String(cur.rated_on)) acc[e.work_id] = e; return acc; };
+  const a = mineEs.reduce(keep, {}), b = theirs.reduce(keep, {});
+  const rows = [];
+  for (const id in a) if (b[id]) rows.push({ id, mine:a[id].score, them:b[id].score, d:Math.abs(a[id].score - b[id].score) });
+  if (rows.length < 3) return null;
+  const mean = rows.reduce((t, r) => t + r.d, 0) / rows.length / 2;
+  const far = rows.reduce((t, r) => r.d > t.d ? r : t, rows[0]);
+  return { n:rows.length, mean, far, level:rows.filter(r => r.d === 0).length }; }
+
+/* ---------- how long it has been waiting ----------
+   Under a month is not a conscience, it is a shelf doing its job. */
+function shelfAge(id) { const L = activeList(), at = L?.added?.[id]; if (!at) return null;
+  const days = Math.floor((Date.now() - new Date(at)) / 864e5);
+  return days >= 30 ? days : null; }
+const waited = d => d >= 365 ? `${said(Math.floor(d / 365))} year${d >= 730 ? "s" : ""}`
+  : `${said(Math.max(1, Math.round(d / 30)))} months`;
+
 /* ---------- looking for a person, not a title ----------
    "Michael Mann" is not the name of anything, so a title search has nothing to give
    back. TMDB knows who he is and what he directed, which is how people actually hunt
@@ -2044,7 +2108,7 @@ async function ensureWork(hit) { if (works[hit.id]?.credits) return works[hit.id
   const w = Object.assign({ id:hit.id, kind:hit.kind, title:hit.title, year:hit.year, cover:hit.cover, creator:hit.creator||"", length:hit.length||0 }, extra);
   if (hit.release) w.release = hit.release; await q(sb.from("works").upsert(w)); works[hit.id] = w; return w; }
 async function addToShelf(id) { const L = activeList(), hit = window.__hits?.[id] || works[id]; if (!L || !hit) return; const m = $("#msg"); if (m) m.textContent = "Adding";
-  try { const w = await ensureWork(hit); if (!L.items.includes(w.id)) { await q(sb.from("list_items").insert({ list_id:L.id, work_id:w.id })); L.items.push(w.id); justDealt = w.id; }
+  try { const w = await ensureWork(hit); if (!L.items.includes(w.id)) { await q(sb.from("list_items").insert({ list_id:L.id, work_id:w.id })); L.items.push(w.id); (L.added ||= {})[w.id] = new Date().toISOString(); justDealt = w.id; }
     /* re-rendering the tab would take the field, the results and the keyboard with it,
        so while a search is open the shelf waits and the row says it landed */
     const box = $("#search"), open = box && box.value.trim();
@@ -2219,6 +2283,13 @@ async function renderTaste() { const body = $("#tasteBody"); const t = tasteOf(m
     <div class="card"><div class="h"><span>Your ten</span><button class="chip" id="editTop">Edit</button></div>
       <div class="chips" id="tenPick">${TENS.map(([k,l]) => `<button class="chip ${(P.ten||"all time")===k?"on":""}" data-ten="${k}">${l}</button>`).join("")}</div>
       <div id="tenBody">${skeleton(1)}</div></div>
+    ${(() => { const st = secondThoughts().filter(x => Math.abs(x.delta) >= MIND_CHANGED).slice(0, 5);
+      if (!st.length) return "";
+      return `<div class="card"><div class="h"><span>Second thoughts</span><span class="tag dim">${st.length} you've moved on</span></div>
+        ${st.map(x => { const w2 = works[x.id] || {}; const up = x.delta > 0;
+          return `<div class="row" data-work="${esc(x.id)}">${cover(w2)}<div class="t"><b>${esc(w2.title || "")}</b>
+            <small>${tag(w2.kind)} ${(x.first.score/2).toFixed(1)} in ${esc(String(x.first.rated_on).slice(0,4))} · now ${(x.last.score/2).toFixed(1)}</small></div>
+            <span class="chip ${up ? "up" : "down"}">${up ? "▲" : "▼"} ${(Math.abs(x.delta)/2).toFixed(1)}</span></div>`; }).join("")}</div>`; })()}
     <div class="card"><div class="h"><span>What to take on next</span><span class="tag dim">from what you loved</span></div><div id="recBody">${skeleton(2)}</div></div>
     ${myEntries.length ? `<div class="card"><div class="h"><span>Share a stretch</span><span class="tag dim">three cuts each</span></div>
       <div class="chips" style="margin-top:10px"><button class="chip" id="shareWeek">This week</button><button class="chip" id="shareMonth">This month</button></div></div>` : ""}
@@ -2244,6 +2315,7 @@ async function renderTaste() { const body = $("#tasteBody"); const t = tasteOf(m
     $$("#tenBody [data-work]").forEach(x => x.onclick = () => openWork(x.dataset.work));
     $("#editTop").onclick = () => openTopEditor(top);
   };
+  $$("#tasteBody .row[data-work]").forEach(x => x.onclick = () => openWork(x.dataset.work));
   $$("[data-ten]", body).forEach(b => b.onclick = () => { P.ten = b.dataset.ten; saveP();
     $$("[data-ten]", body).forEach(x => x.classList.toggle("on", x === b)); paintTen(); });
   paintTen();
@@ -2979,6 +3051,7 @@ async function openWork(id) { let w = works[id]; if (!w) { try { const rows = aw
   const cfg = K(w.kind);
   openSheet(`<div class="head">${cover(w)}<div class="hh"><h3>${esc(w.title)}</h3><p class="sub">${tag(w.kind)} ${esc(w.year||"")}${w.creator?" · "+esc(w.creator):""}${w.length?` · ${w.length}${cfg.unit}`:""}</p></div></div>
     <div class="numbers" id="wNumbers"><div><b>—</b><span>You</span></div><div><b>—</b><span>Your room</span></div><div><b>—</b><span>Following</span></div><div><b>—</b><span>Everyone</span></div></div>
+    <p class="sumup mine" id="wAgain" hidden></p>
     ${w.kind === "film" || w.kind === "tv" ? `<div id="wWatch"></div>` : ""}
     <div class="card"><div class="h"><span>Everyone</span><span class="tag dim" id="wCount">—</span></div><div class="trio" id="wTrio"><div><b>—</b><span>Score</span></div><div><b>—</b><span>Logged it</span></div><div><b>—</b><span>Agree</span></div></div>
       <p class="sumup" id="wVerdict" hidden></p>
@@ -3024,6 +3097,12 @@ async function openWork(id) { let w = works[id]; if (!w) { try { const rows = aw
       trio.after(line);
     }
   }
+  /* your own history with it: the second log is the interesting one */
+  const ag = $("#wAgain");
+  if (ag) { const bits = [];
+    const again = againLine(mine); if (again) bits.push(again);
+    const days = shelfAge(w.id); if (days) bits.push(`It's been on your shelf ${waited(days)}.`);
+    if (bits.length) { ag.innerHTML = bits.join(" "); ag.hidden = false; } }
   paintWatch(w);
   const st = await tagStats(w.id); const top = Object.entries(st.counts).sort((a,b)=>b[1]-a[1]).slice(0,5);
   /* one score per person, latest wins — the same rule the averages use */
@@ -3179,6 +3258,11 @@ async function openProfile(userId) { const self = userId === me.id;
       <button class="chip" id="showFollowers" style="padding:5px 10px"><b style="margin-right:4px">${fc}</b>followers</button><button class="chip" id="showFollowing" style="padding:5px 10px"><b style="margin-right:4px">${fg}</b>following</button></div>
     <div class="stack">${self ? `<button class="btn ghost" id="editMe">Edit profile &amp; settings</button>` : `<button class="btn ${isFollowing(p.id)?"ghost":"blue"}" id="followBtn">${isFollowing(p.id)?"Following":"Follow"}</button>`}</div>
     ${!self && shared.length && match !== null ? `<p class="sub" style="margin-top:12px">You share <b>${esc(shared.join(", "))}</b>.</p>` : ""}
+    ${(() => { if (self) return ""; const g = apart(myEntries, es); if (!g) return "";
+      const w2 = works[g.far.id] || {};
+      return `<p class="sumup" style="margin-top:12px">You've both logged <b>${said(g.n)}</b>.
+        On average you're <b>${g.mean.toFixed(1)}</b> of a star apart${g.level ? `, and you land on exactly the same score for <b>${said(g.level)}</b>` : ""}.
+        ${w2.title ? `Furthest apart: <b>${esc(w2.title)}</b> — you <b>${(g.far.mine/2).toFixed(1)}</b>, them <b>${(g.far.them/2).toFixed(1)}</b>.` : ""}</p>`; })()}
     ${marksHTML(marks)}
     <div class="card">${tasteHTML(t, { third:!self })}</div>
     ${top?.items.length ? `<div class="card"><div class="h"><span>${self?"Your":esc(p.handle)+"'s"} four</span></div>${fourHTML(top.items)}</div>` : ""}
@@ -3462,6 +3546,7 @@ window.__rooms = { paintLog, wireLog, openWholeLog, AV_SHAPES, AV_EYES, AV_COLS,
   watchOn, paintWatch, REGION,
   drawDeck, resetDeck, pickMode, candidates, pickPool, pickFacets, facetsOf, dropFromShelf, loadRecs, recsCached:() => recs !== null, reviewOf, agreement,
   CUTS, CARD_THEMES, cardTheme, spanData, tasteOf, reviewData, yearOf, roomPalmares, palmares, byPerson,
+  secondThoughts, againLine, apart, shelfAge, waited, openProfile,
   setSkin:k => { P.cardSkin = k; saveP(); }, get deckItems(){return deckItems},
   addToShelf, __isSoon:isSoon, __list:activeList,
   marksFor, openPaid, COMET, loadFounders, get founderIds(){return founderIds} };
