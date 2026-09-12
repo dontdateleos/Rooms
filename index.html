@@ -2017,7 +2017,7 @@ function resetDeck() { deckItems = pickPool().slice();
   deckSeen = 0; }
 function drawDeck() {
   const area = $("#wheelArea"); if (!area) return;
-  $("#resultArea").innerHTML = "";
+  const ra = resultEl(); if (ra) ra.innerHTML = "";
   if (!deckItems.length) resetDeck();
   if (!deckItems.length) { area.innerHTML = `<p class="empty">Nothing here to pick from.${P.shelfFilter || P.pickTag ? " Try <b>Everything</b> or <b>Anything</b> above." : ""}</p>`; return; }
   const top = deckItems[0];
@@ -2084,7 +2084,13 @@ function drawWheel() { const c = pickPool(); wheelItems = c; const area = $("#wh
     s += `<text transform="rotate(${mid} ${cx} ${cy}) translate(${(cx+R*.92).toFixed(0)} ${cy})${flip?" rotate(180)":""}" font-size="${fs}" fill="#151320" text-anchor="${flip?"start":"end"}" dominant-baseline="middle" font-weight="800" font-family="Outfit, sans-serif" paint-order="stroke" stroke="#FFF7EC" stroke-width="2.6" stroke-linejoin="round">${esc(t)}</text>`; }
   area.innerHTML = `<div class="wheelwrap"><div class="pointer"></div><svg id="wheel" viewBox="0 0 280 280"><defs>${defs}</defs><g id="wheelG" style="transform:rotate(${rot}deg)">${s}</g></svg></div><div class="stack"><button class="btn soft" id="spinBtn">Spin the ${n}</button></div>`;
   $("#spinBtn").onclick = spin; }
-function spin() { const n = wheelItems.length; if (!n || spinning) return; spinning = true; $("#spinBtn").disabled = true; $("#resultArea").innerHTML = "";
+/* Two elements have carried this id since the app was written: one on the shelf page,
+   where a pick follows you back to, and one inside the pick sheet. querySelector hands
+   back the first in the document, which is the shelf's — so with the sheet open a spin
+   wrote its result behind the sheet, where nobody could see it. The sheet's own wins
+   whenever there is one. */
+const resultEl = () => $("#sheetBody #resultArea") || $("#resultArea");
+function spin() { const n = wheelItems.length; if (!n || spinning) return; spinning = true; $("#spinBtn").disabled = true; const ra0 = resultEl(); if (ra0) ra0.innerHTML = "";
   const seg = 360/n, t = Math.floor(Math.random()*n); const want = (((-(t+.5)*seg + (Math.random()-.5)*seg*.7) % 360) + 360) % 360; const cur = ((rot%360)+360)%360;
   rot += 360*(5+Math.floor(Math.random()*3)) + (((want-cur)%360)+360)%360; const g = $("#wheelG");
   const done = () => { g.removeEventListener("transitionend", done); spinning = false; const b = $("#spinBtn"); if (b) b.disabled = false;
@@ -2094,7 +2100,7 @@ function spin() { const n = wheelItems.length; if (!n || spinning) return; spinn
     showResult(wheelItems[t]);
     const r = $(".result"); if (r) { r.classList.remove("landed"); void r.offsetWidth; r.classList.add("landed"); } };
   g.addEventListener("transitionend", done); requestAnimationFrame(() => { g.style.transform = `rotate(${rot}deg)`; }); }
-function showResult(w) { const el = $("#resultArea"); if (!el) return;
+function showResult(w) { const el = resultEl(); if (!el) return;
   el.innerHTML = `<div class="result"><small>Tonight's pick</small><b>${esc(w.title)}</b><div style="margin-top:6px">${tag(w.kind)} <span style="font-size:12px;font-weight:700;opacity:.7">${esc(w.year||"")}${w.creator?" · "+esc(w.creator):""}</span></div>
     <div class="stack"><button class="btn" id="pickedBtn">${K(w.kind).verb} it</button>${
       activeList()?.items.includes(w.id) ? "" : `<button class="btn ghost" id="pickShelf">Put it on the shelf</button>`
