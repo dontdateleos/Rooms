@@ -1469,7 +1469,17 @@ function together(e, all) {
 
 /* ============ shell ============ */
 const RENDER = { doors:renderDoors, shelf:renderShelf, taste:renderTaste, clubs:renderClubs };
-/* 19 — the pill follows the tab you land on */
+/* 19 — the pill follows the tab you land on.
+   It caches pixel geometry in inline styles, which means anything that moves the nav
+   behind its back leaves it pointing at a layout that no longer exists. The way to see
+   it: turn the phone to landscape, where .in stops growing at its 560px max-width and
+   every tab measures 109 wide, then turn it back. iOS keeps the wide numbers — the pill
+   sits a column too far right and runs under the + — because a window resize event is
+   not reliably delivered after layout settles on rotation, and is never delivered at all
+   for the other things that move the nav: a bfcache restore, the URL bar collapsing, or
+   Outfit arriving late and resizing labels inside min-content tracks.
+   So watch the element rather than the window. The button is the one source of truth and
+   it is re-read whenever its own box could have changed. */
 function movePill(instant) { const p = $("#navPill"), on = $("nav button[data-tab].on");
   if (!p || !on || !on.offsetWidth) return;
   if (instant) p.style.transition = "none";
@@ -1477,6 +1487,13 @@ function movePill(instant) { const p = $("#navPill"), on = $("nav button[data-ta
   p.classList.add("set");
   if (instant) { void p.offsetWidth; p.style.transition = ""; } }
 addEventListener("resize", () => movePill(true));
+addEventListener("orientationchange", () => movePill(true));
+addEventListener("pageshow", () => movePill(true));
+/* rAF so the re-measure lands after the layout that triggered it, and so forcing a
+   reflow inside the callback can't feed back into the observer */
+if (window.ResizeObserver) { const nb = $("nav .in");
+  if (nb) new ResizeObserver(() => requestAnimationFrame(() => movePill(true))).observe(nb); }
+document.fonts?.ready.then(() => movePill(true)).catch(() => {});
 
 const TAB_ORDER = ["doors", "shelf", "taste", "clubs"];
 function switchTab(n) { shelfEdit = false;
@@ -2197,8 +2214,12 @@ async function loadNow() {
   catch { myNow = []; } }
 const nowOf = id => myNow.find(n => n.work_id === id) || null;
 async function startNow(id, at = null) {
-  try { await q(sb.from("nows").upsert({ user_id:me.id, work_id:id, at,
-      updated_at:new Date().toISOString() })); await loadNow(); return true; }
+  /* The day is the one on your own calendar, not the server's — the same rule rated_on
+     already follows. Sent only on the way in: saying where you're up to must not restart
+     the clock on something you picked up a fortnight ago. */
+  const row = { user_id:me.id, work_id:id, at, updated_at:new Date().toISOString() };
+  if (!nowOf(id)) row.started_on = today();
+  try { await q(sb.from("nows").upsert(row)); await loadNow(); return true; }
   catch (e) { oops(e, "Couldn't pick that up"); return false; } }
 async function stopNow(id) {
   const back = myNow.slice(); myNow = myNow.filter(n => n.work_id !== id);
@@ -2210,12 +2231,19 @@ async function nowFor(ids) {
   try { return await q(sb.from("nows").select("user_id," + NOW_SEL + ",works(*),profiles(handle,avatar)")
     .in("user_id", ids).order("updated_at", { ascending:false }).limit(60)); }
   catch { return []; } }
-/* "since Tuesday" is the honest fallback when nobody has said where they are up to */
+/* "since Tuesday" is the honest fallback when nobody has said where they are up to.
+   Counted as calendar days apart, not as hours elapsed. Measuring the gap in milliseconds
+   against a fixed hour of the day put every line a day out between midnight and noon —
+   something begun yesterday evening read "started today" at breakfast. Both ends are
+   plain dates now, so what it says never depends on what time you happen to look. */
+const dayNo = s => { const [y,m,d] = String(s || "").split("-").map(Number);
+  return y ? Date.UTC(y, m - 1, d) / 864e5 : NaN; };
 function nowLine(n) {
   const at = (n.at || "").trim();
   if (at) return esc(at);
-  const days = Math.floor((Date.now() - new Date(n.started_on + "T12:00:00Z")) / 864e5);
-  return days <= 0 ? "started today" : days === 1 ? "since yesterday"
+  const days = dayNo(today()) - dayNo(n.started_on);
+  if (!(days > 0)) return "started today";        /* also a missing or skewed date */
+  return days === 1 ? "since yesterday"
     : days < 14 ? `${said(days)} days in` : `since ${stampDate(n.started_on)}`; }
 
 /* ---------- second thoughts ----------
