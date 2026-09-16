@@ -400,10 +400,35 @@ nav .in:has(.navpill.set) button.on{background:none}
 .verdict b{font-family:var(--head);font-weight:900}
 
 /* wheel */
-.wheelwrap{position:relative;width:min(100%,280px);margin:10px auto 0}
-.pointer{position:absolute;top:-2px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:9px solid transparent;border-right:9px solid transparent;border-top:16px solid var(--ink);z-index:2}
-#wheel{width:100%;display:block}
-#wheelG{transform-box:fill-box;transform-origin:center;transition:transform 4.4s cubic-bezier(.12,.74,.06,1)}
+/* ---------- the reel ----------
+   It was a wheel with names printed round the rim: fat cream spokes, a black triangle,
+   every title outlined and half of them upside down. All of that is fairground. This is
+   the same act of chance done as a reel — posters upright at their own shape, sliding
+   under a fixed mark — so nothing rotates, nothing is inverted, nothing needs an outline
+   to survive its own background, and the title is set once, in one place, at any count. */
+.wheelwrap{position:relative;width:100%;margin:14px auto 0}
+.pointer{position:absolute;top:-6px;bottom:-6px;left:50%;width:2px;transform:translateX(-50%);
+  background:linear-gradient(180deg,var(--ink) 0 14px,transparent 14px calc(100% - 14px),var(--ink) calc(100% - 14px) 100%);
+  z-index:3;pointer-events:none}
+#wheel{position:relative;overflow:hidden;padding:10px 0;
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 14%,#000 86%,transparent);
+  mask-image:linear-gradient(90deg,transparent,#000 14%,#000 86%,transparent)}
+#wheelG{display:flex;gap:var(--rgap);will-change:transform;
+  transition:transform 4.4s cubic-bezier(.12,.74,.06,1)}
+#wheelG.jump{transition:none}
+.rc{position:relative;flex:none;width:var(--rw);height:var(--rh);border-radius:8px;overflow:hidden;
+  background:var(--cream2);box-shadow:0 0 0 1px rgba(21,19,32,.14) inset;
+  opacity:.4;transform:scale(.88);transform-origin:center bottom;
+  transition:opacity .22s ease,transform .22s ease}
+.rc img{width:100%;height:100%;object-fit:cover;display:block}
+.rc.on{opacity:1;transform:scale(1);box-shadow:0 0 0 1.5px rgba(21,19,32,.55) inset,0 6px 16px -8px rgba(21,19,32,.5)}
+.rc i{position:absolute;inset:auto 0 0 0;padding:6px 5px;font-style:normal;font-family:var(--head);
+  font-weight:800;font-size:9.5px;line-height:1.15;color:var(--cream);text-align:center;
+  background:linear-gradient(180deg,transparent,rgba(21,19,32,.82));overflow:hidden;max-height:2.4em}
+.reelnow{text-align:center;margin-top:16px;min-height:44px}
+.reelnow b{display:block;font-family:var(--head);font-weight:900;font-size:20px;letter-spacing:-.02em;
+  line-height:1.15}
+.reelnow small{color:var(--mute);font-size:12.5px;font-weight:600}
 .result{margin-top:14px;background:var(--butter);border-radius:20px;padding:16px}
 .result small{font-weight:800;font-size:11px;letter-spacing:.06em;text-transform:uppercase}
 .result b{font-family:var(--head);font-weight:900;font-size:24px;letter-spacing:-.03em;display:block;margin-top:4px}
@@ -658,9 +683,9 @@ body.demo header{padding-top:34px}
 .more{background:none;border:0;padding:4px 0 0;font-family:var(--head);font-weight:800;font-size:13px;color:var(--mute);cursor:pointer}
 @keyframes thump{0%{transform:scale(1)}30%{transform:scale(1.04)}60%{transform:scale(.985)}100%{transform:scale(1)}}
 .result.landed{animation:thump .42s cubic-bezier(.3,1.3,.5,1)}
-.wheelwrap.landed{animation:thump .34s cubic-bezier(.3,1.3,.5,1)}
+.wheelwrap.landed .rc.on{animation:thump .34s cubic-bezier(.3,1.3,.5,1)}
 .savedchip{animation:saved 1.6s ease both}
-@media(prefers-reduced-motion:reduce){#wheelG{transition-duration:.5s}
+@media(prefers-reduced-motion:reduce){#wheelG{transition-duration:.5s}.rc{transition:none}
   .sheet.on,.sheet.on .panel,.sheet.out,.sheet.out .panel,section.on > div > *,.rate button.pop svg,.chip.bump,
   .bar .tr i,.savedchip,nav button.on,.reveal.in .stars i,.cell.going,
   .here .dot,.here .face.came,.here .face.went,.slip.landedNow,.conseq{animation:none}
@@ -1865,7 +1890,16 @@ async function renderEveryoneFeed(fb) {
 }
 
 /* ============ SHELF ============ */
-let wheelItems = [], rot = 0, spinning = false, upcoming = null;
+let wheelItems = [], reelX = 0, spinning = false, upcoming = null;
+/* One cell per item is not enough to slide along: a pool of three would travel three
+   cells and stop. The strip repeats until it is at least a run-up plus a screen wide,
+   and the spin jumps back to the far end before it glides forward, so the distance
+   travelled is the same whether you are picking from three or a hundred. */
+const REEL = { w:88, h:132, gap:10, lead:22 };
+const reelStep = () => REEL.w + REEL.gap;
+const reelCopies = n => Math.max(1, Math.ceil((REEL.lead + 10) / n));
+/* item index -> a cell in the middle of the rendered strip */
+const reelHome = (n, copies, i) => Math.floor((copies - 1) / 2) * n + i;
 const isSoon = w => !!(w?.release && w.release > today());
 function renderShelf() { const L = activeList();
   /* The shelf holds what you mean to get to; what you're in the middle of belongs with it
@@ -2191,47 +2225,83 @@ function drawWheel() { const c = pickPool(); wheelItems = c; const area = $("#wh
     const add = $("#wheelAdd"); if (add) add.onclick = () => { closeSheet(); switchTab("shelf"); setTimeout(() => $("#search")?.focus(), 300); };
     return; }
   if (c.length < 3) { area.innerHTML = `<div class="stack"><button class="btn soft" id="spinBtn">Pick one of the ${c.length}</button></div>`; $("#spinBtn").onclick = () => { const w = c[Math.floor(Math.random()*c.length)]; P.picked = w.id; saveP(); showResult(w); }; return; }
-  const n = c.length, seg = 360/n, R = 132, cx = 140, cy = 140; const cols = ["#FFB36B","#F5A3C7","#FFE86A","#9EF0C9","#8FD3FF","#B9A6FF"];
-  const wedge = i => { const a0 = (-90+i*seg)*Math.PI/180, a1 = (-90+(i+1)*seg)*Math.PI/180;
-    return `M${cx} ${cy} L${(cx+R*Math.cos(a0)).toFixed(1)} ${(cy+R*Math.sin(a0)).toFixed(1)} A${R} ${R} 0 ${seg>180?1:0} 1 ${(cx+R*Math.cos(a1)).toFixed(1)} ${(cy+R*Math.sin(a1)).toFixed(1)} Z`; };
-  /* You recognise a poster long before you can read a title, so each wedge wears its own,
-     clipped to its slice and cropped from the middle. The image sits in a box that just
-     covers the wedge — half the chord at the rim is as tall as it ever needs to be — and
-     rides an inner group, because a clip-path shares whatever transform its own element
-     carries. A wash of cream over the top keeps the artwork from eating the name, and the
-     name itself gets a cream outline so it holds even over a dark poster. Nothing to show
-     and the flat colour carries the wedge on its own, exactly as it used to. */
-  const half = R * Math.sin(Math.min(seg, 180) / 2 * Math.PI / 180), iy = (cy - half).toFixed(1), ih = (half * 2).toFixed(1);
-  const rule = Math.max(.5, Math.min(3, 42 / n)), art = n <= 24;
-  let defs = "", s = "";
-  for (let i = 0; i < n; i++) { const d = wedge(i);
-    s += `<path d="${d}" fill="${cols[i%cols.length]}"/>`;
-    if (art && c[i].cover) { defs += `<clipPath id="wsg${i}"><path d="${d}"/></clipPath>`;
-      s += `<g clip-path="url(#wsg${i})"><g transform="rotate(${(-90+(i+.5)*seg).toFixed(2)} ${cx} ${cy})">`
-        + `<image href="${esc(c[i].cover)}" x="${cx}" y="${iy}" width="${R}" height="${ih}" preserveAspectRatio="xMidYMid slice"/>`
-        + `<rect x="${cx}" y="${iy}" width="${R}" height="${ih}" fill="#FFF7EC" opacity=".38"/></g></g>`; } }
-  for (let i = 0; i < n; i++) s += `<path d="${wedge(i)}" fill="none" stroke="#FFF7EC" stroke-width="${rule}"/>`;
-  for (let i = 0; i < n; i++) { const fs = n<=8?11:n<=12?9.5:n<=20?8:0; if (!fs) continue;
-    const mid = -90+(i+.5)*seg, norm = ((mid%360)+360)%360, flip = norm>90&&norm<270; const max = Math.floor(R*.7/(fs*.55)); const t = c[i].title.length>max ? c[i].title.slice(0,max-1)+"…" : c[i].title;
-    s += `<text transform="rotate(${mid} ${cx} ${cy}) translate(${(cx+R*.92).toFixed(0)} ${cy})${flip?" rotate(180)":""}" font-size="${fs}" fill="#151320" text-anchor="${flip?"start":"end"}" dominant-baseline="middle" font-weight="800" font-family="Outfit, sans-serif" paint-order="stroke" stroke="#FFF7EC" stroke-width="2.6" stroke-linejoin="round">${esc(t)}</text>`; }
-  area.innerHTML = `<div class="wheelwrap"><div class="pointer"></div><svg id="wheel" viewBox="0 0 280 280"><defs>${defs}</defs><g id="wheelG" style="transform:rotate(${rot}deg)">${s}</g></svg></div><div class="stack"><button class="btn soft" id="spinBtn">Spin the ${n}</button></div>`;
+  const n = c.length, copies = reelCopies(n), step = reelStep();
+  /* Rest in a middle copy rather than at the head of the strip, so whatever is under the
+     mark has something either side of it — a reel showing its own left-hand edge reads as
+     a list that has run out, not as one waiting to move. */
+  const at = reelHome(n, copies, Math.min(n - 1, Math.max(0, reelAt || 0)));
+  let cells = "";
+  for (let k = 0; k < copies; k++) for (let i = 0; i < n; i++) { const w = c[i];
+    cells += `<div class="rc" data-ri="${i}">${w.cover
+      ? `<img src="${esc(w.cover)}" alt="" loading="lazy" decoding="async">` : ""}`
+      + `<i>${esc(w.title)}</i></div>`; }
+  area.innerHTML = `<div class="wheelwrap" style="--rw:${REEL.w}px;--rh:${REEL.h}px;--rgap:${REEL.gap}px">
+      <div class="pointer"></div>
+      <div id="wheel"><div id="wheelG">${cells}</div></div>
+    </div>
+    <div class="reelnow" id="reelNow"></div>
+    <div class="stack"><button class="btn soft" id="spinBtn">Spin the ${n}</button></div>`;
+  reelTo(at, true); markReel();
   $("#spinBtn").onclick = spin; }
+/* Where the strip has to sit for cell `idx` to be under the mark. The viewport is
+   whatever width the sheet gives us, so the centring is measured rather than assumed. */
+let reelAt = 0;
+function reelTo(idx, instant) {
+  const view = $("#wheel"), g = $("#wheelG"); if (!view || !g) return;
+  const step = reelStep();
+  reelX = view.clientWidth / 2 - REEL.w / 2 - idx * step;
+  if (instant) { g.classList.add("jump"); g.style.transform = `translateX(${reelX}px)`;
+    void g.offsetWidth; g.classList.remove("jump"); }
+  else g.style.transform = `translateX(${reelX}px)`; }
+/* which cell is nearest the mark right now — read off the page, so it stays honest
+   mid-glide as well as at rest */
+function markReel() {
+  const view = $("#wheel"); if (!view) return null;
+  const mid = view.getBoundingClientRect().left + view.clientWidth / 2;
+  let best = null, bd = Infinity;
+  for (const el of $$(".rc", view)) { const r = el.getBoundingClientRect();
+    const d = Math.abs(r.left + r.width / 2 - mid);
+    if (d < bd) { bd = d; best = el; } }
+  if (!best) return null;
+  for (const el of $$(".rc.on", view)) if (el !== best) el.classList.remove("on");
+  best.classList.add("on");
+  const w = wheelItems[+best.dataset.ri]; const now = $("#reelNow");
+  if (w && now) now.innerHTML = `<b>${esc(w.title)}</b><small>${esc([w.year, w.creator].filter(Boolean).join(" · "))}</small>`;
+  return w; }
+
 /* Two elements have carried this id since the app was written: one on the shelf page,
    where a pick follows you back to, and one inside the pick sheet. querySelector hands
    back the first in the document, which is the shelf's — so with the sheet open a spin
    wrote its result behind the sheet, where nobody could see it. The sheet's own wins
    whenever there is one. */
 const resultEl = () => $("#sheetBody #resultArea") || $("#resultArea");
-function spin() { const n = wheelItems.length; if (!n || spinning) return; spinning = true; $("#spinBtn").disabled = true; const ra0 = resultEl(); if (ra0) ra0.innerHTML = "";
-  const seg = 360/n, t = Math.floor(Math.random()*n); const want = (((-(t+.5)*seg + (Math.random()-.5)*seg*.7) % 360) + 360) % 360; const cur = ((rot%360)+360)%360;
-  rot += 360*(5+Math.floor(Math.random()*3)) + (((want-cur)%360)+360)%360; const g = $("#wheelG");
-  const done = () => { g.removeEventListener("transitionend", done); spinning = false; const b = $("#spinBtn"); if (b) b.disabled = false;
+function spin() { const n = wheelItems.length; if (!n || spinning) return;
+  spinning = true; $("#spinBtn").disabled = true;
+  const ra0 = resultEl(); if (ra0) ra0.innerHTML = "";
+  const g = $("#wheelG"); if (!g) { spinning = false; return; }
+  const copies = reelCopies(n), t = Math.floor(Math.random() * n);
+  /* Land in the last copy, having jumped back to the first — so the run-up is the whole
+     strip however few things are on it, and a pool of three travels as far as a hundred. */
+  const land = copies > 1 ? (copies - 1) * n + t : t;
+  const from = Math.max(0, land - REEL.lead);
+  reelTo(from, true);
+  let live = 0;
+  const tick = () => { if (!spinning) return; markReel(); live = requestAnimationFrame(tick); };
+  /* transitionend bubbles, and every cell under the mark fades its own opacity as the
+     strip goes by — so without this the landing fires on the first of those, mid-glide,
+     and the reel comes to rest a dozen cells from what it claimed to pick. */
+  const done = e => { if (e && e.target !== g) return;
+    g.removeEventListener("transitionend", done); cancelAnimationFrame(live);
+    spinning = false; const b = $("#spinBtn"); if (b) b.disabled = false;
+    reelAt = t; markReel();
     P.picked = wheelItems[t].id; saveP();
     const ww = $(".wheelwrap"); if (ww) { ww.classList.remove("landed"); void ww.offsetWidth; ww.classList.add("landed"); }
     if (navigator.vibrate) navigator.vibrate([12, 40, 18]);
     showResult(wheelItems[t]);
     const r = $(".result"); if (r) { r.classList.remove("landed"); void r.offsetWidth; r.classList.add("landed"); } };
-  g.addEventListener("transitionend", done); requestAnimationFrame(() => { g.style.transform = `rotate(${rot}deg)`; }); }
+  g.addEventListener("transitionend", done);
+  live = requestAnimationFrame(tick);
+  requestAnimationFrame(() => reelTo(land, false)); }
 function showResult(w) { const el = resultEl(); if (!el) return;
   el.innerHTML = `<div class="result"><small>Tonight's pick</small><b>${esc(w.title)}</b><div style="margin-top:6px">${tag(w.kind)} <span style="font-size:12px;font-weight:700;opacity:.7">${esc(w.year||"")}${w.creator?" · "+esc(w.creator):""}</span></div>
     <div id="pickWatch"></div>
@@ -3929,7 +3999,7 @@ function downloadJSON(obj, name) {
 }
 
 /* a small hook so the card renderers can be exercised by the test harness */
-window.__rooms = { facesFor, faceEl, faceMap, FACE_IMG, paintLog, wireLog, openWholeLog, AV_SHAPES, AV_EYES, AV_COLS, avSVG, avFor, get me(){return me}, get entries(){return myEntries}, get works(){return works}, get rooms(){return rooms},
+window.__rooms = { reelTo, markReel, REEL, reelCopies, get reelAt(){return reelAt}, facesFor, faceEl, faceMap, FACE_IMG, paintLog, wireLog, openWholeLog, AV_SHAPES, AV_EYES, AV_COLS, avSVG, avFor, get me(){return me}, get entries(){return myEntries}, get works(){return works}, get rooms(){return rooms},
   CUTS, openCuts, spanData, tasteOf, reviewData, yearOf, roomPalmares, tagStats, agreement, activeRoom, q, sb: () => sb, remember,
   joinRoomChannel, leaveRoomChannel, paintHere, onLiveEntry, paintDay, get hereNow(){return hereNow},
   say, oops, markLive, takeInvite, dropInvite, inviteLink, useInvite, exportEverything,
