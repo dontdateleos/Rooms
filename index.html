@@ -85,6 +85,13 @@ textarea{min-height:76px;resize:none;line-height:1.45}
 .chip{font-family:var(--body);font-weight:700;font-size:13px;border:2px solid var(--line);background:#fff;color:var(--ink);padding:7px 11px;border-radius:999px;cursor:pointer;display:inline-flex;align-items:baseline;gap:6px}
 .chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
 .chip.who{border-color:var(--lilac)}.chip.who.on{background:var(--lilac);color:var(--ink);border-color:var(--lilac)}
+/* a chip carrying a face centres on it rather than on the baseline of its text, and the
+   picture eats the padding on that side so the chip doesn't grow a lopsided gap */
+.chip.hasface{align-items:center;padding-left:4px;gap:7px}
+.face{width:26px;height:26px;border-radius:50%;object-fit:cover;flex:none;
+  background:var(--lilac);display:grid;place-items:center;
+  font-family:var(--head);font-weight:800;font-size:10px;color:var(--ink);letter-spacing:.02em}
+.chip.on .face{box-shadow:0 0 0 2px rgba(255,255,255,.55)}
 .chip u{text-decoration:none;font-size:10px;font-weight:800;color:var(--mute)}
 .chip.on u{color:#fff;opacity:.8}
 .chip.k.on{background:var(--ink)}
@@ -892,14 +899,27 @@ const SOURCES = {
       creator:x.involved_companies?.[0]?.company?.name || "", cover:x.cover?.image_id ? `https://images.igdb.com/igdb/image/upload/t_cover_big/${x.cover.image_id}.jpg` : "" })); }
 };
 const crewName = (c, ...jobs) => { const out = []; for (const j of jobs) for (const p of (c?.crew||[])) if (p.job === j && !out.includes(p.name)) out.push(p.name); return out.slice(0,2).join(", "); };
+/* ---------- faces ----------
+   credits are stored as joined strings — "Michael Mann", "Pacino, De Niro, Kilmer" —
+   and everything downstream reads them that way: the Details card, peopleOf, the review,
+   the share cards. So the photograph goes somewhere else entirely rather than changing
+   that shape: a name → path map in meta, which is already a free JSON blob.
+   Paths, not URLs, so the size can change later without rewriting every stored work. */
+const faceMap = c => { const out = {};
+  for (const pn of (c?.crew || [])) if (pn.profile_path && !out[pn.name]) out[pn.name] = pn.profile_path;
+  for (const pn of (c?.cast || [])) if (pn.profile_path && !out[pn.name]) out[pn.name] = pn.profile_path;
+  return out; };
+const FACE_IMG = p => p ? "https://image.tmdb.org/t/p/w185" + p : "";
 const DETAIL = {
   async film(raw) { const d = await tmdb("movie/"+raw, { append_to_response:"credits" });
-    return { creator:crewName(d.credits,"Director"), length:d.runtime||0, meta:{ genres:(d.genres||[]).map(g=>g.name) },
+    return { creator:crewName(d.credits,"Director"), length:d.runtime||0, meta:{ genres:(d.genres||[]).map(g=>g.name), faces:faceMap(d.credits) },
       credits:{ director:crewName(d.credits,"Director"), writer:crewName(d.credits,"Screenplay","Writer","Story"), dp:crewName(d.credits,"Director of Photography"),
         editor:crewName(d.credits,"Editor"), composer:crewName(d.credits,"Original Music Composer"), design:crewName(d.credits,"Production Design"),
         cast:(d.credits?.cast||[]).slice(0,4).map(p=>p.name).join(", ") } }; },
   async tv(raw) { const d = await tmdb("tv/"+raw, { append_to_response:"credits" }); const cr = (d.created_by||[]).map(p=>p.name).join(", ");
-    return { creator:cr, length:d.number_of_episodes||0, meta:{ genres:(d.genres||[]).map(g=>g.name) },
+    const faces = Object.assign(faceMap(d.credits),
+      Object.fromEntries((d.created_by||[]).filter(p=>p.profile_path).map(p=>[p.name,p.profile_path])));
+    return { creator:cr, length:d.number_of_episodes||0, meta:{ genres:(d.genres||[]).map(g=>g.name), faces },
       credits:{ creator:cr, writer:cr, director:crewName(d.credits,"Director"), dp:crewName(d.credits,"Director of Photography"), composer:crewName(d.credits,"Original Music Composer"),
         cast:(d.credits?.cast||[]).slice(0,4).map(p=>p.name).join(", ") } }; },
   async book(raw) { try { const d = await ol(`/works/${raw}.json`); return { meta:{ genres:(d.subjects||[]).slice(0,4) } }; } catch { return {}; } },
@@ -3619,6 +3639,39 @@ async function openPeople(p, which) {
   $$("[data-fol]").forEach(b => b.onclick = async e => { e.stopPropagation(); const id = b.dataset.fol;
     try { if (isFollowing(id)) await q(sb.from("follows").delete().eq("follower", me.id).eq("followee", id)); else await q(sb.from("follows").insert({ follower:me.id, followee:id })); await loadFollows(); openPeople(p, which); } catch (err) { alert(err.message); } }); }
 
+/* ---------- getting a face for somebody ----------
+   Works saved before any of this have no map and are never refetched — ensureWork stops
+   at `credits`. Rather than widen that and re-fetch every work, the log sheet asks once
+   for the one work it is showing, and the answer is kept on the work so it is asked once
+   ever. Failure is silent: a missing photograph is initials, not an error. */
+const faceCache = {};
+async function facesFor(w) {
+  if (w?.meta?.faces) return w.meta.faces;
+  if (faceCache[w.id]) return faceCache[w.id];
+  if (w.kind !== "film" && w.kind !== "tv") return (faceCache[w.id] = {});
+  faceCache[w.id] = {};                        /* claim it, so a second open doesn't refetch */
+  try {
+    const d = await tmdb(`${w.kind === "film" ? "movie" : "tv"}/${w.id.split(":")[1]}/credits`);
+    const faces = faceMap(d);
+    faceCache[w.id] = faces;
+    if (Object.keys(faces).length) {
+      w.meta = Object.assign({}, w.meta, { faces });
+      works[w.id] = w;
+      /* write it back so nobody else pays for it either */
+      q(sb.from("works").upsert({ id:w.id, meta:w.meta })).catch(() => {});
+    }
+    return faces;
+  } catch { return faceCache[w.id]; } }
+
+/* a photograph if there is one, initials in the lilac if there isn't — never a broken
+   image and never a gap, so a row of people reads as a row either way */
+function faceEl(name, path) {
+  const ini = String(name || "?").split(/\s+/).filter(Boolean).slice(0,2).map(x => x[0]).join("").toUpperCase();
+  /* the initials are a stand-in for a photograph, so they are decoration: hidden from
+     anything reading the chip aloud, which would otherwise say "E G Elliot Goldenthal" */
+  return path ? `<img class="face" src="${esc(FACE_IMG(path))}" alt="" loading="lazy" decoding="async">`
+              : `<span class="face noface" aria-hidden="true">${esc(ini)}</span>`; }
+
 /* ============ THE LOG SHEET ============ */
 function openLog(w, edit = null) { const cfg = K(w.kind); const loved = edit?.loved ? edit.loved.slice() : []; const ctx = Object.assign({}, edit?.context); let score = edit ? edit.score : 0;
   const starRow = () => `<div class="rate">${[0,1,2,3,4].map(i => `<button data-i="${i}" aria-label="${i+1} stars"><svg viewBox="0 0 24 24">${starPath(Math.max(0,Math.min(1,score/2-i)))}</svg></button>`).join("")}</div><div class="hint">Tap for a full star, hold for a half</div>`;
@@ -3629,7 +3682,10 @@ function openLog(w, edit = null) { const cfg = K(w.kind); const loved = edit?.lo
   const drawTicks = () => { $("#tickRow").innerHTML = cfg.ticks.flatMap(([key,a,b]) => [`<button class="tk ${ctx[key]===a?"on":""}" data-tk="${key}|${a}">${a}</button>`,`<button class="tk ${ctx[key]===b?"on":""}" data-tk="${key}|${b}">${b}</button>`]).join("") + `<button class="tk ${ctx.with?"on":""}" data-tk="with|">${ctx.with?"With "+esc(ctx.with):"With…"}</button>`;
     $$("[data-tk]").forEach(b => b.onclick = () => { const [key,val] = b.dataset.tk.split("|"); if (key === "with") ctx.with = (prompt("Who with?", ctx.with||"")||"").trim(); else ctx[key] = ctx[key] === val ? null : val; drawTicks(); }); }; drawTicks();
   let stats = { n:0, counts:{}, share:() => 0, hot:() => false };
-  const chip = (key, label, cls = "") => `<button class="chip ${cls} ${loved.includes(key)?"on":""}" data-lv="${esc(key)}">${esc(label)}${stats.hot(key)?`<u>${stats.share(key)}%</u>`:""}</button>`;
+  let faces = w.meta?.faces || {};
+  const chip = (key, label, cls = "") => { const who = cls.includes("who") && key.startsWith("person:") ? key.slice(7) : null;
+    return `<button class="chip ${cls} ${who?"hasface":""} ${loved.includes(key)?"on":""}" data-lv="${esc(key)}">${
+      who ? faceEl(who, faces[who]) : ""}${esc(label)}${stats.hot(key)?`<u>${stats.share(key)}%</u>`:""}</button>`; };
   const paintLoved = () => { const el = $("#lovedWrap"); if (!el) return; const people = peopleOf(w);
     const pop = Object.entries(stats.counts).sort((a,b)=>b[1]-a[1]).map(x=>x[0]).filter(stats.hot).slice(0,5); const popSet = new Set(pop);
     const crafts = cfg.craft.filter(c => !popSet.has(c)), persons = people.filter(([n]) => !popSet.has("person:"+n)), mine = myCustomTags(w.kind).filter(t => !popSet.has(t) && !cfg.craft.includes(t));
@@ -3642,7 +3698,11 @@ function openLog(w, edit = null) { const cfg = K(w.kind); const loved = edit?.lo
     $$("[data-lv]", el).forEach(b => b.onclick = () => { const k = b.dataset.lv, i = loved.indexOf(k); if (i >= 0) loved.splice(i,1); else loved.push(k); b.classList.toggle("on");
       b.classList.remove("bump"); void b.offsetWidth; b.classList.add("bump"); if (navigator.vibrate) navigator.vibrate(5); });
     const add = () => { const t = lc($("#lvNew").value.trim()).replace(/\s+/g," "); if (!t || t.length < 2) return; if (!loved.includes(t)) loved.push(t); $("#lvNew").value = ""; paintLoved(); }; $("#lvAdd").onclick = add; $("#lvNew").onkeydown = e => { if (e.key === "Enter") { e.preventDefault(); add(); } }; };
-  const drawLoved = () => { const el = $("#lovedWrap"); if (!score) { el.innerHTML = ""; return; } if (el.dataset.drawn) return; el.dataset.drawn = "1"; paintLoved(); tagStats(w.id).then(s => { stats = s; if ($("#lovedWrap")?.dataset.drawn) paintLoved(); }).catch(()=>{}); };
+  const drawLoved = () => { const el = $("#lovedWrap"); if (!score) { el.innerHTML = ""; return; } if (el.dataset.drawn) return; el.dataset.drawn = "1"; paintLoved();
+    tagStats(w.id).then(s => { stats = s; if ($("#lovedWrap")?.dataset.drawn) paintLoved(); }).catch(()=>{});
+    /* the names are already there; the photographs arrive when they arrive */
+    facesFor(w).then(f => { if (!Object.keys(f).length) return; faces = f;
+      if ($("#lovedWrap")?.dataset.drawn) paintLoved(); }).catch(()=>{}); };
   const wireStars = () => $$("#rateWrap [data-i]").forEach(b => { let timer = null, fired = false; const set = half => { fired = true; score = half; $("#rateWrap").innerHTML = starRow(); wireStars(); $("#wSave").disabled = false; if (navigator.vibrate) navigator.vibrate(8);
       $$("#rateWrap button").slice(0, Math.ceil(half/2)).forEach((sb2, n) => setTimeout(() => { sb2.classList.add("pop"); setTimeout(() => sb2.classList.remove("pop"), 340); }, n*45));
       drawLoved(); }; const i = +b.dataset.i;
@@ -3869,7 +3929,7 @@ function downloadJSON(obj, name) {
 }
 
 /* a small hook so the card renderers can be exercised by the test harness */
-window.__rooms = { paintLog, wireLog, openWholeLog, AV_SHAPES, AV_EYES, AV_COLS, avSVG, avFor, get me(){return me}, get entries(){return myEntries}, get works(){return works}, get rooms(){return rooms},
+window.__rooms = { facesFor, faceEl, faceMap, FACE_IMG, paintLog, wireLog, openWholeLog, AV_SHAPES, AV_EYES, AV_COLS, avSVG, avFor, get me(){return me}, get entries(){return myEntries}, get works(){return works}, get rooms(){return rooms},
   CUTS, openCuts, spanData, tasteOf, reviewData, yearOf, roomPalmares, tagStats, agreement, activeRoom, q, sb: () => sb, remember,
   joinRoomChannel, leaveRoomChannel, paintHere, onLiveEntry, paintDay, get hereNow(){return hereNow},
   say, oops, markLive, takeInvite, dropInvite, inviteLink, useInvite, exportEverything,
