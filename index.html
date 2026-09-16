@@ -483,6 +483,13 @@ nav button:active{transform:scale(.95)}
 .auth h1{font-size:44px;letter-spacing:-.04em;line-height:.95}
 .auth h1 span{color:var(--blue)}
 .auth p{color:var(--mute);font-weight:500;line-height:1.55;margin-top:14px;font-size:15px}
+/* The front door says what the app is for, so it is set in ink at reading size rather
+   than greyed out under the headline like a caption. The turn carries the weight. */
+.auth .say{color:var(--ink);font-weight:500;font-size:17.5px;line-height:1.5;margin-top:18px;max-width:23em}
+/* the turn sits on its own line at every width — set apart, the way an epigraph is,
+   rather than trailing off the end of whichever line it happens to land on */
+.auth .say b{display:block;margin-top:6px;font-family:var(--head);font-weight:800;font-size:19px}
+.auth .note{font-size:13.5px;margin-top:10px}
 /* ---- motion: only where it explains something ---- */
 @keyframes sheetUp{from{transform:translateY(26px);opacity:0}to{transform:translateY(0);opacity:1}}
 @keyframes sheetDown{from{transform:translateY(0);opacity:1}to{transform:translateY(30px);opacity:0}}
@@ -1530,8 +1537,9 @@ $("#sheet").onclick = e => { if (e.target === $("#sheet")) closeSheet(); };
 function renderAuth() {
   const b = $("#authBody");
   if (sb.__local) { const prev = sb.__db.profile;
-    b.innerHTML = `<h1>Every room<br>you've <span>been in.</span></h1>
-      <p>One log for film, TV, books and games — and the friends you argue with about them. It lives on this device until there's a backend.</p>
+    b.innerHTML = `<h1>Every room<br>you’ve <span>been in.</span></h1>
+      <p class="say">You used to be able to stand in someone’s front room and know them. The shelves told you. Nothing tells you now. <b>This does.</b></p>
+      <p class="note">Nothing leaves this device yet.</p>
       ${prev ? `<div class="stack"><button class="btn blue" id="cont">Continue as ${esc(prev.handle)}</button></div>` : `
       <div class="lbl">Pick a handle</div><input id="handle" maxlength="24" autocapitalize="none" autocorrect="off" placeholder="handle">
       <div class="stack"><button class="btn blue" id="startLocal">Open my rooms</button></div>`}<p class="msg" id="authMsg"></p>`;
@@ -1539,9 +1547,9 @@ function renderAuth() {
     if (prev) $("#cont").onclick = () => go(prev.handle); else $("#startLocal").onclick = () => { const h = lc($("#handle").value.trim());
       if (!/^[a-z0-9_]{2,24}$/.test(h)) { $("#authMsg").textContent = "two to twenty-four, lowercase, no spaces"; return; } go(h); }; return; }
   const invited = takeInvite();
-  b.innerHTML = `<h1>Every room<br>you've <span>been in.</span></h1>
-    ${invited ? `<p><b>Someone's put you on the list.</b> Make an account and you'll go straight into their room — the invite waits for you.</p>`
-              : `<p>Sign in, or make an account.</p>`}
+  b.innerHTML = `<h1>Every room<br>you’ve <span>been in.</span></h1>
+    <p class="say">You used to be able to stand in someone’s front room and know them. The shelves told you. Nothing tells you now. <b>This does.</b></p>
+    ${invited ? `<p class="note"><b>Someone’s put you on the list.</b> Make an account and you'll go straight into their room — the invite waits for you.</p>` : ""}
     <div class="lbl">Email</div><input id="email" type="email" inputmode="email" autocapitalize="none" autocorrect="off" placeholder="you@somewhere">
     <div class="lbl">Password</div><input id="pw" type="password" autocomplete="current-password" placeholder="at least eight characters">
     <div class="stack"><button class="btn blue" id="signIn">Sign in</button><button class="btn ghost" id="signUp">Make an account</button></div>
