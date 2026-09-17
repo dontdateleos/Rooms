@@ -967,9 +967,10 @@ const DEMO = /(^|[#?&])demo\b/.test(location.hash + location.search);
 const LOCAL = !window.__mockSb && (DEMO || SUPABASE_URL.includes("YOUR-"));
 function makeLocalSb(seed) {
   const KEY = "rooms.db";
-  const blank = { profile:null, signedOut:false, works:{}, profiles:[], entries:[], lists:[], list_items:[], rooms:[], room_members:[], clubs:[], club_members:[], club_votes:[], reactions:[], replies:[], top_lists:[], top_list_items:[], follows:[], nows:[] };
+  const blank = { profile:null, signedOut:false, works:{}, profiles:[], entries:[], lists:[], list_items:[], rooms:[], room_members:[], clubs:[], club_members:[], club_votes:[], reactions:[], replies:[], top_lists:[], top_list_items:[], follows:[], nows:[], handovers:[] };
   const db = Object.assign({}, blank, seed || JSON.parse(localStorage.getItem(KEY) || "{}"));
   if (!db.nows) db.nows = [];                 /* a log written before v15 has no such key */
+  if (!db.handovers) db.handovers = [];       /* nor one written before v16 */
   const save = () => { if (!seed) localStorage.setItem(KEY, JSON.stringify(db)); };
   const uid = () => (crypto.randomUUID ? crypto.randomUUID() : "id-" + Math.random().toString(36).slice(2));
   const now = () => new Date().toISOString();
@@ -985,21 +986,31 @@ function makeLocalSb(seed) {
     if (t === "follows") r.profiles = profOf(r.followee);
     if (t === "club_members") r.profiles = profOf(r.user_id);
     if (t === "nows") { r.works = db.works[r.work_id] || null; r.profiles = profOf(r.user_id); }
+    if (t === "handovers") { r.works = db.works[r.work_id] || null; r.sender_p = profOf(r.sender); }
     return r; };
   const table = t => t === "works" ? Object.values(db.works) : t === "profiles" ? [...(db.profile ? [db.profile] : []), ...db.profiles] : db[t];
   const from = t => { const st = { eqs:[], ins:null, up:null, del:false, upsert:null, sorts:[], lim:0, single:false }; const b = {};
     b.select = () => b; b.eq = (k,v) => { st.eqs.push([k,v]); return b; }; b.in = (k,vs) => { st.eqs.push([k,new Set(vs)]); return b; };
     b.neq = (k,v) => { st.eqs.push([k, { not:v }]); return b; };
+    /* postgrest's or() is a string of its own filters; only the eq form is used here */
+    b.or = expr => { st.or = String(expr).split(",").map(x => x.split(".")).filter(x => x[1] === "eq")
+      .map(x => [x[0], x.slice(2).join(".")]); return b; };
     b.order = (k,o) => { st.sorts.push([k, o?.ascending !== false]); return b; }; b.limit = n => { st.lim = n; return b; }; b.single = () => { st.single = true; return b; };
     b.insert = x => { st.ins = x; return b; }; b.upsert = x => { st.upsert = x; return b; }; b.update = x => { st.up = x; return b; }; b.delete = () => { st.del = true; return b; };
     b.then = (res, rej) => { try {
-      const match = r => st.eqs.every(([k,v]) => v instanceof Set ? v.has(r[k]) : (v && typeof v === "object" && "not" in v) ? r[k] !== v.not : r[k] === v);
+      const match = r => st.eqs.every(([k,v]) => v instanceof Set ? v.has(r[k]) : (v && typeof v === "object" && "not" in v) ? r[k] !== v.not : r[k] === v)
+        && (!st.or || st.or.some(([k,v]) => String(r[k]) === v));
       let out;
       if (st.upsert) { const rows = Array.isArray(st.upsert) ? st.upsert : [st.upsert];
         if (t === "works") rows.forEach(w => db.works[w.id] = Object.assign(db.works[w.id]||{}, w));
         else if (t === "nows") rows.forEach(n => { const i = db.nows.findIndex(x => x.user_id === n.user_id && x.work_id === n.work_id);
           const full = Object.assign({ started_on:now().slice(0,10), at:null }, i >= 0 ? db.nows[i] : {}, n);
           if (i >= 0) db.nows[i] = full; else db.nows.push(full); });
+        else if (t === "handovers") rows.forEach(h => { const i = db.handovers.findIndex(x =>
+            x.sender === h.sender && x.recipient === h.recipient && x.work_id === h.work_id);
+          const full = Object.assign({ id:uid(), created_at:now(), acted_at:null, accepted:null },
+            i >= 0 ? db.handovers[i] : {}, h);
+          if (i >= 0) db.handovers[i] = full; else db.handovers.push(full); });
         out = rows; save(); }
       else if (st.ins) { const rows = (Array.isArray(st.ins) ? st.ins : [st.ins]).map(r => Object.assign({ id:uid(), created_at:now() }, r));
         if (t === "works") rows.forEach(w => db.works[w.id] = w); else db[t].push(...rows); out = Array.isArray(st.ins) ? rows : rows[0]; save(); }
@@ -1670,7 +1681,7 @@ async function loadMe() { const { data:{ session } } = await sb.auth.getSession(
 async function enter() {
   $("#meBtn").hidden = false; $("#meName").textContent = me.handle; paintMeAv();
   $("#nav").classList.add("on"); $("#add").classList.add("live"); $("#cogBtn").hidden = false;
-  await Promise.all([loadLists(), loadMine(), loadRooms(), loadFollows(), loadFounders(), loadNow()]); await loadClubs();
+  await Promise.all([loadLists(), loadMine(), loadRooms(), loadFollows(), loadFounders(), loadNow(), loadFollowsMe()]); await loadClubs(); await loadHand();
   await useInvite();
   switchTab("doors"); movePill(true); checkNew();
   if (!P.onboarded && !myEntries.length) setTimeout(openOnboarding, 400);
@@ -1936,8 +1947,15 @@ function renderShelf() { const L = activeList();
       <div class="grid" id="shelfGrid">${rows.map(w => { const soon = isSoon(w), n = nowOf(w.id);
         return `<div class="cell" data-cell="${esc(w.id)}"><div class="po ${logged(w.id)?"done":""} ${soon?"soon":""} ${n?"onit":""}" data-w="${esc(w.id)}">${cover(w,"")}<b>${esc(w.title)}</b>${tag(w.kind)}
           ${soon ? `<span class="soon-tag">${when(w.release)}</span>` : `<button class="tick ${logged(w.id)?"done":""}" data-t="${esc(w.id)}" aria-label="log it"></button>`}</div>
-          <div class="cap"><span>${soon ? "Coming" : n ? nowLine(n) : esc(w.year||"")}</span><span>${!soon && !n && w.length ? w.length+K(w.kind).unit : ""}</span></div></div>`; }).join("")}</div>`
+          <div class="cap"><span>${soon ? "Coming" : n ? nowLine(n) : (() => { const f = cameFrom(w.id);
+            return f ? `from ${esc(f.sender_p?.handle || "a friend")}` : esc(w.year||""); })()}</span><span>${!soon && !n && w.length ? w.length+K(w.kind).unit : ""}</span></div></div>`; }).join("")}</div>`
       : `<div class="tiles" style="margin-top:16px">${Object.keys(KINDS).map((k,i) => `<div class="tile" style="background:${K(k).colour};--r:${[-2,1.5,1,-1.5][i]}deg" data-kt="${k}"><small>Search</small><b>${K(k).plural}</b></div>`).join("")}</div>${blank("var(--mint)","+","An empty shelf","Everything you meant to get to, in one place — out now or still coming. Pick a medium above, or search.",[["shelfFocus","Search for something"]])}${pickBar}`}
+    ${(() => { const q = handIn.map(h => [h, h.works || works[h.work_id]]).filter(([, w]) => w);
+      if (!q.length) return "";
+      return `<div class="lbl">Handed to you</div><div class="card" style="margin-top:0">${q.map(([h, w]) =>
+        `<div class="row" style="cursor:default">${cover(w)}<div class="t"><b>${esc(w.title)}</b>
+          <small>${tag(w.kind)} from ${esc(h.sender_p?.handle || "someone")}${h.note ? ` · “${esc(h.note)}”` : ""}</small></div>
+          <span class="chip" data-yes="${esc(h.id)}">Take it</span><span class="chip" data-no="${esc(h.id)}">No</span></div>`).join("")}</div>`; })()}
     <div id="recShelf"></div>
     <div class="lbl">Coming soon · add to the shelf</div><div id="waitBody"><p class="msg">Loading what's coming</p></div>
     <p class="sub" style="margin-top:6px;font-size:12px">Films, shows and games with a date on them.
@@ -1953,6 +1971,10 @@ function renderShelf() { const L = activeList();
     await openWheel(); };
   $$("[data-t]").forEach(b => b.onclick = e => { e.stopPropagation(); openLog(works[b.dataset.t]); });
   $$("[data-w]").forEach(t => t.onclick = () => { if (!shelfEdit) openWork(t.dataset.w); });
+  $$("[data-yes],[data-no]").forEach(b => b.onclick = async e => { e.stopPropagation();
+    const yes = "yes" in b.dataset, h = handIn.find(x => x.id === (b.dataset.yes || b.dataset.no));
+    if (!h) return; b.textContent = "…";
+    if (await answerHand(h, yes)) { say(yes ? "On the shelf" : "Gone"); renderShelf(); } });
   const dn = $("#shelfDone"); if (dn) dn.onclick = () => { shelfEdit = false; renderShelf(); };
   if (!rows.length) shelfEdit = false;
   if (!REDUCED) {
@@ -2331,6 +2353,82 @@ async function paintRoomNow(R) {
       avatar:r.profiles?.avatar }, "av")}<b>${esc(who)}</b><span>${esc(w.title)} · ${nowLine(r)}</span></span>`;
   }).join("");
   $$("[data-w]", el).forEach(x => x.onclick = () => openWork(x.dataset.w)); }
+
+function openHand(w) {
+  const people = reachable(); const pick = new Set();
+  const sentTo = new Set(handOut.filter(h => h.work_id === w.id).map(h => h.recipient));
+  openSheet(`<h3>Who should ${esc(K(w.kind).verb === "read" ? "read" : "see")} it?</h3>
+    <p class="sub">Goes to them, not to the room. They can take it or leave it, and you won't be told which.</p>
+    <div class="card" style="margin-top:12px">${people.map(p => `<div class="twin" data-hand="${esc(p.id)}" style="cursor:pointer">
+      ${avatar(p)}<div class="t"><b>${esc(p.handle)}</b>${sentTo.has(p.id) ? `<small>already sent</small>` : ""}</div>
+      <span class="chip" data-tick="${esc(p.id)}">${sentTo.has(p.id) ? "Sent" : "Send"}</span></div>`).join("")}</div>
+    <div class="lbl">Why, if you like</div>
+    <input id="handNote" maxlength="90" placeholder="One line — optional">
+    <div class="stack"><button class="btn" id="handGo" disabled>Hand it over</button>
+      <button class="btn quiet" id="handNo">Not now</button></div><p class="msg" id="handMsg"></p>`);
+  const sync = () => { const b = $("#handGo"); if (!b) return;
+    b.disabled = !pick.size; b.textContent = pick.size > 1 ? `Hand it to ${said(pick.size)}` : "Hand it over"; };
+  $$("[data-hand]").forEach(row => row.onclick = () => { const id = row.dataset.hand;
+    if (sentTo.has(id)) return;
+    const chip = $(`[data-tick="${CSS.escape(id)}"]`);
+    if (pick.has(id)) { pick.delete(id); chip.classList.remove("on"); chip.textContent = "Send"; }
+    else { pick.add(id); chip.classList.add("on"); chip.textContent = "Sending"; }
+    sync(); });
+  $("#handNo").onclick = closeSheet;
+  $("#handGo").onclick = async () => { const b = $("#handGo"); b.disabled = true;
+    try { await handTo([...pick], w, $("#handNote").value.trim());
+      closeSheet(); say(pick.size > 1 ? "Handed over" : `Sent to ${people.find(p => p.id === [...pick][0])?.handle || "them"}`); }
+    catch (e) { $("#handMsg").textContent = e.message; b.disabled = false; } }; }
+
+/* ---------- handing something to somebody ----------
+   The first thing in this app aimed at one person rather than broadcast to a room. It
+   goes into a queue, not onto their shelf: the shelf is described to its owner as
+   everything they mean to get to, and somebody else does not get to decide what they
+   meant. Declining is silent — a decline the sender can see is a decline nobody makes,
+   and then the queue is just another thing you have to be polite about.
+
+   Swallowed on failure like the rest, so a database that has not run v16 has nobody
+   handing anybody anything rather than an app that will not start. */
+let handAll = [], handIn = [], handOut = [];
+const HAND_SEL = "id,sender,recipient,work_id,note,created_at,acted_at,accepted";
+async function loadHand() {
+  try { const rows = await q(sb.from("handovers")
+      .select(HAND_SEL + ",works(*),sender_p:profiles!handovers_sender_fkey(id,handle,avatar)")
+      .or(`sender.eq.${me.id},recipient.eq.${me.id}`).order("created_at", { ascending:false }).limit(200));
+    rows.forEach(h => remember(h.works));
+    /* the answered ones leave the queue but not the record — an accepted handover is the
+       only thing that knows where a title on your shelf came from */
+    handAll = rows;
+    handIn  = rows.filter(h => h.recipient === me.id && h.acted_at == null);
+    handOut = rows.filter(h => h.sender === me.id); }
+  catch { handAll = []; handIn = []; handOut = []; } }
+/* who you may put something in front of: a shared room, or a follow both ways. A one-way
+   follow is one person's decision and must not buy the right to write into somebody's app. */
+function reachable() {
+  const out = new Map();
+  for (const r of rooms) for (const m of r.members) if (m.id !== me.id) out.set(m.id, m);
+  for (const f of follows) { const p = f.profiles; if (!p || p.id === me.id) continue;
+    if (followsMe.has(p.id)) out.set(p.id, p); }
+  return [...out.values()].sort((a,b) => a.handle.localeCompare(b.handle)); }
+let followsMe = new Set();
+async function loadFollowsMe() {
+  try { const rows = await q(sb.from("follows").select("follower").eq("followee", me.id));
+    followsMe = new Set(rows.map(r => r.follower)); }
+  catch { followsMe = new Set(); } }
+async function handTo(ids, w, note) {
+  const rows = ids.map(id => ({ sender:me.id, recipient:id, work_id:w.id, note:note || null }));
+  await q(sb.from("works").upsert({ id:w.id, kind:w.kind, title:w.title, year:w.year,
+    cover:w.cover, creator:w.creator || "", length:w.length || 0 }));
+  await q(sb.from("handovers").upsert(rows, { onConflict:"sender,recipient,work_id" }));
+  await loadHand(); }
+async function answerHand(h, yes) {
+  const back = handIn.slice(); handIn = handIn.filter(x => x.id !== h.id);
+  try { await q(sb.from("handovers").update({ acted_at:new Date().toISOString(), accepted:yes }).eq("id", h.id));
+    if (yes) await addToShelf(h.work_id);
+    await loadHand(); return true; }
+  catch (e) { handIn = back; oops(e, "Couldn't answer that"); return false; } }
+/* where a title came from, for the ones that came from somebody */
+const cameFrom = id => handAll.find(h => h.work_id === id && h.recipient === me.id && h.accepted) || null;
 
 /* ---------- what you're in the middle of ----------
    The app has known two states: on the shelf, and logged. A season, a novel, a game you
@@ -3446,7 +3544,8 @@ async function openWork(id) { let w = works[id]; if (!w) { try { const rows = aw
       <div class="lbl">What people loved</div><div id="wLoved">${skeleton(2)}</div></div>
     ${isSoon(w) ? `<p class="sub" style="margin-top:12px">Out ${when(w.release)}. It's on your shelf until then.</p>` : ""}
     <div id="wNow"></div>
-    <div class="stack"><button class="btn ${isSoon(w)?"ghost":""}" id="wLog">${logged(w.id)?"Log it again":isSoon(w)?"Log it anyway":cfg.verb.replace(/^./,c=>c.toUpperCase())+" it"}</button><button class="btn ghost" id="wShelf">${activeList()?.items.includes(w.id)?"Take it off the shelf":"Put it on the shelf"}</button></div>
+    <div class="stack"><button class="btn ${isSoon(w)?"ghost":""}" id="wLog">${logged(w.id)?"Log it again":isSoon(w)?"Log it anyway":cfg.verb.replace(/^./,c=>c.toUpperCase())+" it"}</button><button class="btn ghost" id="wShelf">${activeList()?.items.includes(w.id)?"Take it off the shelf":"Put it on the shelf"}</button>${
+      reachable().length ? `<button class="btn quiet" id="wHand">Tell someone to ${cfg.verb === "read" ? "read" : cfg.verb === "played" ? "play" : "watch"} it</button>` : ""}</div>
     <div class="card"><div class="h"><span>Details</span></div>${Object.entries(w.credits||{}).filter(([k,v]) => v).map(([r,n]) => `<div class="kv"><span>${r === "dp" ? "camerawork" : r}</span>${esc(n)}</div>`).join("")}${w.meta?.genres?.length?`<div class="kv"><span>genres</span>${esc(w.meta.genres.join(", "))}</div>`:""}</div>
     <div id="wEntries"></div><div class="stack"><button class="btn soft" id="wCard">Save the card</button><button class="btn quiet" id="wClose">Close</button></div>`);
   $("#wClose").onclick = closeSheet; $("#wLog").onclick = () => openLog(w); $("#wShelf").onclick = async () => { const b = $("#wShelf"); b.disabled = true;
@@ -3507,6 +3606,7 @@ async function openWork(id) { let w = works[id]; if (!w) { try { const rows = aw
     const at = $("#nowAt"); if (at) { let t;
       at.oninput = () => { clearTimeout(t); t = setTimeout(() => startNow(w.id, at.value.trim() || null), 600); }; } };
   paintNow();
+  const hb = $("#wHand"); if (hb) hb.onclick = () => openHand(w);
   paintWatch(w);
   const st = await tagStats(w.id); const top = Object.entries(st.counts).sort((a,b)=>b[1]-a[1]).slice(0,5);
   /* one score per person, latest wins — the same rule the averages use */
@@ -3999,7 +4099,7 @@ function downloadJSON(obj, name) {
 }
 
 /* a small hook so the card renderers can be exercised by the test harness */
-window.__rooms = { reelTo, markReel, REEL, reelCopies, get reelAt(){return reelAt}, facesFor, faceEl, faceMap, FACE_IMG, paintLog, wireLog, openWholeLog, AV_SHAPES, AV_EYES, AV_COLS, avSVG, avFor, get me(){return me}, get entries(){return myEntries}, get works(){return works}, get rooms(){return rooms},
+window.__rooms = { loadHand, handTo, answerHand, reachable, cameFrom, openHand, get handIn(){return handIn}, get handOut(){return handOut}, get handAll(){return handAll}, reelTo, markReel, REEL, reelCopies, get reelAt(){return reelAt}, facesFor, faceEl, faceMap, FACE_IMG, paintLog, wireLog, openWholeLog, AV_SHAPES, AV_EYES, AV_COLS, avSVG, avFor, get me(){return me}, get entries(){return myEntries}, get works(){return works}, get rooms(){return rooms},
   CUTS, openCuts, spanData, tasteOf, reviewData, yearOf, roomPalmares, tagStats, agreement, activeRoom, q, sb: () => sb, remember,
   joinRoomChannel, leaveRoomChannel, paintHere, onLiveEntry, paintDay, get hereNow(){return hereNow},
   say, oops, markLive, takeInvite, dropInvite, inviteLink, useInvite, exportEverything,
@@ -4008,7 +4108,7 @@ window.__rooms = { reelTo, markReel, REEL, reelCopies, get reelAt(){return reelA
   CUTS, CARD_THEMES, cardTheme, spanData, tasteOf, reviewData, yearOf, roomPalmares, palmares, byPerson, spinN, SPIN_SIZES,
   loadNow, startNow, stopNow, nowOf, nowFor, nowLine, get myNow(){return myNow},
   bestOf, bestGenres, dealBest, loadBest, pickFrom, seenMode, keepSeen, get bestPool(){return bestPool}, get bestHand(){return bestHand},
-  secondThoughts, againLine, apart, shelfAge, waited, openProfile,
+  secondThoughts, againLine, apart, shelfAge, waited, openProfile, openWork,
   setSkin:k => { P.cardSkin = k; saveP(); }, get deckItems(){return deckItems},
   addToShelf, __isSoon:isSoon, __list:activeList,
   marksFor, openPaid, COMET, loadFounders, get founderIds(){return founderIds} };

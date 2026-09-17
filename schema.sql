@@ -457,3 +457,82 @@ do $$ begin
   then execute 'alter publication supabase_realtime add table public.nows'; end if;
 end $$;
 alter table nows replica identity full;
+
+/* ---------- v16: handing something to somebody ----------
+   Every social act in this app has been a broadcast: you log, and the room sees it.
+   Nothing was ever aimed at one person, and "you have to watch this" said to one friend
+   is the commonest thing anybody does about films. It is also the only thing here that
+   happens on a day nobody finished anything.
+
+   It lands in a queue rather than on their shelf. The shelf is described to its owner as
+   everything they mean to get to, and somebody else does not get to decide what they
+   meant. Accepting moves it across; declining removes it and is never reported back,
+   because a decline anybody can see is a decline nobody makes.
+
+   The accepted row is also the record of where a title came from — no column on entries
+   and nothing to stamp at save time, because the handover already says who and when.
+   Safe to re-run. */
+
+/* A one-way follow must not buy the right to put things in front of somebody: follows is
+   readable by all and writable by anybody about anybody, so on its own it is an open door.
+   A shared room is an invite code you handed out; a mutual follow is two decisions. */
+create or replace function can_hand_to(target uuid)
+returns boolean language sql security definer stable set search_path = public as $$
+  select target <> auth.uid() and (
+    shares_room(target)
+    or (exists (select 1 from follows where follower = auth.uid() and followee = target)
+        and exists (select 1 from follows where follower = target and followee = auth.uid())))
+$$;
+
+create table if not exists handovers (
+  id uuid primary key default gen_random_uuid(),
+  sender uuid not null references profiles on delete cascade,
+  recipient uuid not null references profiles on delete cascade,
+  work_id text not null references works on delete cascade,
+  note text,
+  created_at timestamptz default now(),
+  acted_at timestamptz,
+  accepted boolean,
+  unique (sender, recipient, work_id),
+  check (sender <> recipient)
+);
+create index if not exists handovers_in_idx on handovers (recipient, created_at desc);
+create index if not exists handovers_out_idx on handovers (sender, created_at desc);
+
+alter table handovers enable row level security;
+drop policy if exists handovers_read on handovers;
+create policy handovers_read on handovers for select to authenticated
+  using (sender = auth.uid() or recipient = auth.uid());
+drop policy if exists handovers_send on handovers;
+create policy handovers_send on handovers for insert to authenticated
+  with check (sender = auth.uid() and can_hand_to(recipient));
+drop policy if exists handovers_answer on handovers;
+create policy handovers_answer on handovers for update to authenticated
+  using (recipient = auth.uid()) with check (recipient = auth.uid());
+drop policy if exists handovers_unsend on handovers;
+create policy handovers_unsend on handovers for delete to authenticated
+  using (sender = auth.uid() and acted_at is null);
+
+/* RLS grants a row, not a column, so the update policy above would also let a recipient
+   rewrite the note they were sent or move it to somebody else. Answering is all they may
+   actually do. */
+create or replace function handovers_answer_only() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if auth.uid() = old.recipient and auth.uid() <> old.sender then
+    new.sender := old.sender; new.recipient := old.recipient;
+    new.work_id := old.work_id; new.note := old.note; new.created_at := old.created_at;
+  end if;
+  return new;
+end $$;
+drop trigger if exists handovers_guard on handovers;
+create trigger handovers_guard before update on handovers
+  for each row execute function handovers_answer_only();
+
+do $$ begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'handovers')
+  then execute 'alter publication supabase_realtime add table public.handovers'; end if;
+end $$;
+alter table handovers replica identity full;
