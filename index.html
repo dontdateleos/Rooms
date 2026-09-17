@@ -1754,7 +1754,26 @@ const skeleton = (n = 3) => Array.from({length:n}, () => `<div class="skel"><i c
 /* ============ HOME: your room · following · everyone ============ */
 async function renderDoors() {
   const body = $("#doorsBody"); const R = activeRoom();
-  body.innerHTML = `<div class="seg">${[["room","Your room"],["following","Following"],["everyone","Everyone"]].map(([k,l]) => `<button data-feed="${k}" class="${P.feed===k?"on":""}">${l}</button>`).join("")}</div><div id="feedBody">${skeleton(3)}</div>`;
+  const mem = memories()[0], rev = dueReview();
+  body.innerHTML = `${rev ? `<div class="card look" id="revCard"><div class="h"><span>${esc(rev.head)}</span><span class="tag dim">${rev.kind === "year" ? "the year" : "last month"}</span></div>
+      <div class="stack"><button class="btn soft" id="revGo">Have a look</button></div></div>` : ""}
+    ${mem ? `<div class="card look" id="memCard"><div class="h"><span>${esc(mem.head)}</span><span class="tag dim">${
+        mem.kind === "still" ? "and never went back" : when(mem.when || mem.entries[0].rated_on)}</span></div>
+      ${mem.entries.slice(0,3).map(e => { const w = works[e.work_id] || e.works || {};
+        return `<div class="row" data-w="${esc(e.work_id)}">${cover(w)}<div class="t"><b>${esc(w.title||"")}</b>
+          <small>${tag(w.kind)} ${(e.score/2).toFixed(1)}${e.note ? ` · “${esc(e.note)}”` : ""}</small></div></div>`; }).join("")}
+      ${mem.entries.length > 3 ? `<p class="sub">and ${said(mem.entries.length - 3)} more that day.</p>` : ""}
+      <div class="stack"><button class="btn soft" id="memShare">Share it</button><button class="btn quiet" id="memGo">Not now</button></div></div>` : ""}
+    <div class="seg">${[["room","Your room"],["following","Following"],["everyone","Everyone"]].map(([k,l]) => `<button data-feed="${k}" class="${P.feed===k?"on":""}">${l}</button>`).join("")}</div><div id="feedBody">${skeleton(3)}</div>`;
+  const rg = $("#revGo"); if (rg) rg.onclick = () => rev.kind === "year"
+    ? openCuts("year", Object.assign(reviewData(yearOf(myEntries, rev.year)), { year:rev.year }), "Share your year")
+    : openCuts("span", spanOf(rev.entries, lc(rev.head.split(",")[0]),
+        `${stampDate(rev.entries[rev.entries.length-1].rated_on)} — ${stampDate(rev.entries[0].rated_on)}`),
+        "Share the month");
+  const mg = $("#memGo"); if (mg) mg.onclick = () => { memForget(mem.id); renderDoors(); };
+  const ms = $("#memShare"); if (ms) ms.onclick = () => openCuts("span",
+    spanOf(mem.entries, lc(mem.head), stampDate(mem.when || mem.entries[0].rated_on)), "Share it");
+  $$("#memCard [data-w]", body).forEach(x => x.onclick = () => openWork(x.dataset.w));
   $$("[data-feed]", body).forEach(b => b.onclick = () => { P.feed = b.dataset.feed; saveP(); renderDoors(); });
   const fb = $("#feedBody");
   if (P.feed === "room") return renderRoomFeed(fb, R);
@@ -2275,15 +2294,20 @@ function reelTo(idx, instant) {
   if (instant) { g.classList.add("jump"); g.style.transform = `translateX(${reelX}px)`;
     void g.offsetWidth; g.classList.remove("jump"); }
   else g.style.transform = `translateX(${reelX}px)`; }
-/* which cell is nearest the mark right now — read off the page, so it stays honest
-   mid-glide as well as at rest */
-function markReel() {
+/* Which cell is under the mark, worked back from where the strip actually is. Reading
+   the live matrix is one measurement; asking every cell for its rectangle was as many as
+   there are cells, sixty times a second, each one forcing layout — at a hundred titles
+   that is six thousand forced layouts a second, and it was starving the fetch that fills
+   the card the spin lands on. */
+function reelIndexNow() {
+  const view = $("#wheel"), g = $("#wheelG"); if (!view || !g) return -1;
+  const m = new DOMMatrixReadOnly(getComputedStyle(g).transform);
+  return Math.round((view.clientWidth / 2 - REEL.w / 2 - m.m41) / reelStep()); }
+function markReel(idx) {
   const view = $("#wheel"); if (!view) return null;
-  const mid = view.getBoundingClientRect().left + view.clientWidth / 2;
-  let best = null, bd = Infinity;
-  for (const el of $$(".rc", view)) { const r = el.getBoundingClientRect();
-    const d = Math.abs(r.left + r.width / 2 - mid);
-    if (d < bd) { bd = d; best = el; } }
+  const cells = $$(".rc", view); if (!cells.length) return null;
+  const i = idx == null ? reelIndexNow() : idx;
+  const best = cells[Math.max(0, Math.min(cells.length - 1, i))];
   if (!best) return null;
   for (const el of $$(".rc.on", view)) if (el !== best) el.classList.remove("on");
   best.classList.add("on");
@@ -2307,8 +2331,11 @@ function spin() { const n = wheelItems.length; if (!n || spinning) return;
   const land = copies > 1 ? (copies - 1) * n + t : t;
   const from = Math.max(0, land - REEL.lead);
   reelTo(from, true);
-  let live = 0;
-  const tick = () => { if (!spinning) return; markReel(); live = requestAnimationFrame(tick); };
+  let live = 0, lastI = -1;
+  /* and the page is only touched when the answer changes, not on every frame */
+  const tick = () => { if (!spinning) return;
+    const i = reelIndexNow(); if (i !== lastI) { lastI = i; markReel(i); }
+    live = requestAnimationFrame(tick); };
   /* transitionend bubbles, and every cell under the mark fades its own opacity as the
      strip goes by — so without this the landing fires on the first of those, mid-glide,
      and the reel comes to rest a dozen cells from what it claimed to pick. */
@@ -2429,6 +2456,99 @@ async function answerHand(h, yes) {
   catch (e) { handIn = back; oops(e, "Couldn't answer that"); return false; } }
 /* where a title came from, for the ones that came from somebody */
 const cameFrom = id => handAll.find(h => h.work_id === id && h.recipient === me.id && h.accepted) || null;
+
+/* ---------- what you were doing then ----------
+   Every surface in this app points forward — the shelf, the suggestions, the reel. The
+   log is the one thing nobody ever looks back at, and it is the only part that gets more
+   interesting the longer you keep it.
+
+   It stays quiet until there is something worth saying: ten entries and two months of
+   log, or the first month is a feature announcing itself to an empty room. Anniversaries
+   come first because they are the ones that are true today and false tomorrow; the
+   standing ones wait behind them. Dismissals live on the device — the cost is that one
+   comes back on a new phone, which is cheaper than a table and a migration for it. */
+const MEM_MIN = 10, MEM_DAYS = 60, MEM_YEARS = [1, 2, 3, 5, 10, 15, 20];
+const memGone = () => { try { return new Set(JSON.parse(localStorage.getItem("rooms.mem") || "[]")); }
+  catch { return new Set(); } };
+const memForget = id => { try { const g = [...memGone(), id].slice(-200);
+  localStorage.setItem("rooms.mem", JSON.stringify(g)); } catch {} };
+function memories() {
+  if (myEntries.length < MEM_MIN) return [];
+  const dates = myEntries.map(e => String(e.rated_on)).filter(Boolean).sort();
+  if (!dates.length || dayNo(today()) - dayNo(dates[0]) < MEM_DAYS) return [];
+  const [Y, M, D] = today().split("-").map(Number), pad = n => String(n).padStart(2, "0");
+  const out = [];
+  for (const yrs of MEM_YEARS) {
+    const then = `${Y - yrs}-${pad(M)}-${pad(D)}`;
+    const on = myEntries.filter(e => String(e.rated_on) === then);
+    if (on.length) out.push({ id:"day:" + then, kind:"day", yrs, when:then, entries:on,
+      head: yrs === 1 ? "A year ago today" : `${Cap(said(yrs))} years ago today` });
+  }
+  for (const yrs of MEM_YEARS) {
+    const mid = dayNo(today()) - Math.round(yrs * 365.25);
+    const on = myEntries.filter(e => Math.abs(dayNo(String(e.rated_on)) - mid) <= 3);
+    if (on.length >= 3 && !out.some(o => o.yrs === yrs))
+      out.push({ id:"week:" + (Y - yrs) + ":" + pad(M), kind:"week", yrs, entries:on,
+        head: yrs === 1 ? "A year ago this week" : `${Cap(said(yrs))} years ago this week` });
+  }
+  /* something you loved and never went back to */
+  const again = new Set(); const seen = {};
+  for (const e of myEntries) { if (seen[e.work_id]) again.add(e.work_id); seen[e.work_id] = 1; }
+  const loved = myEntries.filter(e => e.score >= 9 && !again.has(e.work_id)
+      && dayNo(today()) - dayNo(String(e.rated_on)) > 400)
+    .sort((a,b) => String(a.rated_on).localeCompare(String(b.rated_on)));
+  if (loved.length) out.push({ id:"still:" + loved[0].work_id, kind:"still", entries:[loved[0]],
+    head:"You gave this five stars" });
+  const gone = memGone();
+  return out.filter(m => !gone.has(m.id)); }
+
+/* The month and the year are not memories, they are reviews: they arrive on a date and
+   they already have cards, so this is a door to what is there rather than anything new. */
+function dueReview() {
+  const [Y, M, D] = today().split("-").map(Number);
+  if (M === 1 && D <= 21) { const last = String(Y - 1);
+    if (yearOf(myEntries, last).length >= 5) return { kind:"year", year:last, head:`${last}, all of it` }; }
+  if (D <= 7) { const pm = M === 1 ? 12 : M - 1, py = M === 1 ? Y - 1 : Y;
+    const pre = `${py}-${String(pm).padStart(2,"0")}`;
+    const es = myEntries.filter(e => String(e.rated_on).startsWith(pre));
+    if (es.length >= 3) return { kind:"month", pre, entries:es,
+      head:`${new Date(py, pm-1, 1).toLocaleString("en-GB",{month:"long"})}, in one card` }; }
+  return null; }
+
+/* ---------- whose word is good ----------
+   The handovers already know who put what in front of you, and your log already knows
+   what you made of it. Put them together and the app can answer a question no ratings
+   site can: not "is this good" but "is this person right about you".
+
+   The trap is small numbers. One person sends you one thing, you love it, and they top
+   the list for ever on a sample of one. So nothing counts below three of theirs logged,
+   and the average is pulled toward your own by three phantom entries at your mean —
+   somebody with four has to be a long way off you to move, somebody with thirty barely
+   feels it. It is the plainest shrinkage there is and it stops the list being noise.
+
+   Private, always. A public ranking of your friends is a different app. */
+const HAND_FLOOR = 3;
+function whoseWord() {
+  const latest = {};
+  for (const e of myEntries) { const cur = latest[e.work_id];
+    if (!cur || String(e.rated_on) > String(cur.rated_on)) latest[e.work_id] = e; }
+  const all = Object.values(latest);
+  if (all.length < 5) return [];
+  const myMean = all.reduce((a,e) => a + e.score, 0) / all.length;
+  const by = {};
+  for (const h of handAll) {
+    if (h.recipient !== me.id || !h.accepted) continue;
+    const b = by[h.sender] ||= { id:h.sender, who:h.sender_p, took:0, logged:0, sum:0 };
+    b.took++;
+    const e = latest[h.work_id]; if (e) { b.logged++; b.sum += e.score; } }
+  return Object.values(by).filter(b => b.logged >= HAND_FLOOR).map(b =>
+      Object.assign(b, { myMean, mean:(b.sum + HAND_FLOOR * myMean) / (b.logged + HAND_FLOOR) }))
+    .map(b => Object.assign(b, { delta:b.mean - b.myMean }))
+    .sort((a,b) => b.mean - a.mean); }
+/* people who have handed you things but not enough of them to say anything yet */
+const wordPending = () => { const seen = new Set(whoseWord().map(b => b.id));
+  return [...new Set(handAll.filter(h => h.recipient === me.id && h.accepted && !seen.has(h.sender))
+    .map(h => h.sender))].length; };
 
 /* ---------- what you're in the middle of ----------
    The app has known two states: on the shelf, and logged. A season, a novel, a game you
@@ -2776,6 +2896,16 @@ async function renderTaste() { const body = $("#tasteBody"); const t = tasteOf(m
           return `<div class="row" data-work="${esc(x.id)}">${cover(w2)}<div class="t"><b>${esc(w2.title || "")}</b>
             <small>${tag(w2.kind)} ${(x.first.score/2).toFixed(1)} in ${esc(String(x.first.rated_on).slice(0,4))} · now ${(x.last.score/2).toFixed(1)}</small></div>
             <span class="chip ${up ? "up" : "down"}">${up ? "▲" : "▼"} ${(Math.abs(x.delta)/2).toFixed(1)}</span></div>`; }).join("")}</div>`; })()}
+    ${(() => { const rank = whoseWord(), waiting = wordPending();
+      if (!rank.length && !waiting) return "";
+      return `<div class="card"><div class="h"><span>Whose word is good</span><span class="tag dim">only you see this</span></div>
+        ${rank.map(b => { const up = b.delta >= 0;
+          return `<div class="row" data-prof="${esc(b.id)}">${avatar(b.who || { id:b.id, handle:"?" })}
+            <div class="t"><b>${esc(b.who?.handle || "someone")}</b>
+              <small>${b.took} taken · ${b.logged} logged · you average ${(b.myMean/2).toFixed(1)}</small></div>
+            <span class="chip ${up ? "up" : "down"}">${(b.mean/2).toFixed(1)} ${up ? "▲" : "▼"} ${(Math.abs(b.delta)/2).toFixed(1)}</span></div>`; }).join("")}
+        ${waiting ? `<p class="sub" style="margin-top:${rank.length?"10":"4"}px">${rank.length ? "" : "Nothing to say yet. "}${
+          said(waiting)} ${waiting === 1 ? "other person has" : "others have"} handed you things — it takes ${said(HAND_FLOOR)} logged before their average means anything.</p>` : ""}</div>`; })()}
     <div class="card"><div class="h"><span>What to take on next</span><span class="tag dim">from what you loved</span></div><div id="recBody">${skeleton(2)}</div></div>
     ${myEntries.length ? `<div class="card"><div class="h"><span>Share a stretch</span><span class="tag dim">three cuts each</span></div>
       <div class="chips" style="margin-top:10px"><button class="chip" id="shareWeek">This week</button><button class="chip" id="shareMonth">This month</button></div></div>` : ""}
@@ -3234,15 +3364,18 @@ async function openCuts(kind, data, title) {
 }
 
 /* what a week or a month looks like as data */
-function spanData(days, label) {
-  const from = new Date(Date.now() - days*864e5).toISOString().slice(0,10);
-  const entries = myEntries.filter(e => String(e.rated_on) >= from);
+/* A stretch is any set of entries with a name on it, so a memory and a month can share
+   the card with a window of days rather than each faking the other's shape. */
+function spanOf(entries, label, range) {
   const kinds = {}; entries.forEach(e => kinds[kindOf(e.work_id)] = (kinds[kindOf(e.work_id)]||0)+1);
   const t = tasteOf(entries), best = entries.slice().sort((a,b) => b.score - a.score)[0];
   const top = t.craft.slice(0,3).map(c => c[0]);
   return { label, n:entries.length, entries, kinds, t, best,
-    line: top.length ? `You went for ${top.join(", ")}.` : "A quiet stretch.",
-    range: `${stampDate(from)} — ${stampDate(today())}` }; }
+    line: top.length ? `You went for ${top.join(", ")}.` : "A quiet stretch.", range }; }
+function spanData(days, label) {
+  const from = new Date(Date.now() - days*864e5).toISOString().slice(0,10);
+  return spanOf(myEntries.filter(e => String(e.rated_on) >= from), label,
+    `${stampDate(from)} — ${stampDate(today())}`); }
 
 /* the room's year keeps its own cut, and so does the year in review */
 /* ---------- the room's year ---------- */
@@ -4099,7 +4232,7 @@ function downloadJSON(obj, name) {
 }
 
 /* a small hook so the card renderers can be exercised by the test harness */
-window.__rooms = { loadHand, handTo, answerHand, reachable, cameFrom, openHand, get handIn(){return handIn}, get handOut(){return handOut}, get handAll(){return handAll}, reelTo, markReel, REEL, reelCopies, get reelAt(){return reelAt}, facesFor, faceEl, faceMap, FACE_IMG, paintLog, wireLog, openWholeLog, AV_SHAPES, AV_EYES, AV_COLS, avSVG, avFor, get me(){return me}, get entries(){return myEntries}, get works(){return works}, get rooms(){return rooms},
+window.__rooms = { spanOf, reelIndexNow, memories, dueReview, memForget, MEM_MIN, MEM_DAYS, whoseWord, wordPending, HAND_FLOOR, loadHand, handTo, answerHand, reachable, cameFrom, openHand, get handIn(){return handIn}, get handOut(){return handOut}, get handAll(){return handAll}, reelTo, markReel, REEL, reelCopies, get reelAt(){return reelAt}, facesFor, faceEl, faceMap, FACE_IMG, paintLog, wireLog, openWholeLog, AV_SHAPES, AV_EYES, AV_COLS, avSVG, avFor, get me(){return me}, get entries(){return myEntries}, get works(){return works}, get rooms(){return rooms},
   CUTS, openCuts, spanData, tasteOf, reviewData, yearOf, roomPalmares, tagStats, agreement, activeRoom, q, sb: () => sb, remember,
   joinRoomChannel, leaveRoomChannel, paintHere, onLiveEntry, paintDay, get hereNow(){return hereNow},
   say, oops, markLive, takeInvite, dropInvite, inviteLink, useInvite, exportEverything,
