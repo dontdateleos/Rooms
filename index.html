@@ -603,6 +603,7 @@ svg .comet{transform-box:fill-box;transform-origin:center;animation:cometTurn 4.
 .pv img{width:100%;height:100%;object-fit:cover;display:block}
 .pv b{font-family:var(--head);font-weight:800;font-size:9px;text-align:center;padding:2px;line-height:1.1}
 .markrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.findrow{display:flex;justify-content:center;margin-top:10px}
 .mk{display:block;border:1.5px solid var(--line);border-radius:14px;padding:8px 12px;background:var(--cream)}
 .mk b{font-family:var(--head);font-weight:800;font-size:13px;display:block}
 .mk small{font-size:10.5px;color:var(--mute);font-weight:600;display:block;margin-top:1px}
@@ -1055,29 +1056,35 @@ function makeLocalSb(seed) {
   const now = () => new Date().toISOString();
   const profOf = id => { if (db.profile && db.profile.id === id) return { id:db.profile.id, handle:db.profile.handle, bio:db.profile.bio||"", avatar:db.profile.avatar||null };
     const p = db.profiles.find(x => x.id === id); return p ? { id:p.id, handle:p.handle, bio:p.bio||"", avatar:p.avatar||null } : null; };
-  const expand = (t, r) => { r = Object.assign({}, r);
+  const expand = (t, r, sel = "") => { r = Object.assign({}, r);
     if (t === "entries") { r.works = db.works[r.work_id] || null; r.profiles = profOf(r.user_id);
       r.reactions = db.reactions.filter(x => x.entry_id === r.id).map(x => ({ user_id:x.user_id }));
       r.replies = db.replies.filter(x => x.entry_id === r.id).map(x => Object.assign({}, x, { profiles:profOf(x.user_id) })); }
     if (t === "lists") r.list_items = db.list_items.filter(x => x.list_id === r.id).map(x => Object.assign({}, x, { works:db.works[x.work_id]||null }));
     if (t === "rooms") r.room_members = db.room_members.filter(x => x.room_id === r.id).map(x => ({ user_id:x.user_id, profiles:profOf(x.user_id) }));
     if (t === "top_lists") r.top_list_items = db.top_list_items.filter(x => x.top_list_id === r.id).map(x => Object.assign({}, x, { works:db.works[x.work_id]||null }));
-    if (t === "follows") r.profiles = profOf(r.followee);
+    /* follows has two foreign keys to profiles and the query names which it wants;
+       attaching the wrong side quietly hands back the wrong person */
+    if (t === "follows") r.profiles = profOf(/follows_follower_fkey/.test(sel) ? r.follower : r.followee);
     if (t === "club_members") r.profiles = profOf(r.user_id);
     if (t === "nows") { r.works = db.works[r.work_id] || null; r.profiles = profOf(r.user_id); }
     if (t === "handovers") { r.works = db.works[r.work_id] || null; r.sender_p = profOf(r.sender); }
     return r; };
   const table = t => t === "works" ? Object.values(db.works) : t === "profiles" ? [...(db.profile ? [db.profile] : []), ...db.profiles] : db[t];
   const from = t => { const st = { eqs:[], ins:null, up:null, del:false, upsert:null, sorts:[], lim:0, single:false }; const b = {};
-    b.select = () => b; b.eq = (k,v) => { st.eqs.push([k,v]); return b; }; b.in = (k,vs) => { st.eqs.push([k,new Set(vs)]); return b; };
+    b.select = cols => { st.sel = String(cols || ""); return b; }; b.eq = (k,v) => { st.eqs.push([k,v]); return b; }; b.in = (k,vs) => { st.eqs.push([k,new Set(vs)]); return b; };
     b.neq = (k,v) => { st.eqs.push([k, { not:v }]); return b; };
     /* postgrest's or() is a string of its own filters; only the eq form is used here */
+    b.ilike = (k,v) => { st.eqs.push([k, { like:String(v).replace(/%/g,"").toLowerCase() }]); return b; };
     b.or = expr => { st.or = String(expr).split(",").map(x => x.split(".")).filter(x => x[1] === "eq")
       .map(x => [x[0], x.slice(2).join(".")]); return b; };
     b.order = (k,o) => { st.sorts.push([k, o?.ascending !== false]); return b; }; b.limit = n => { st.lim = n; return b; }; b.single = () => { st.single = true; return b; };
     b.insert = x => { st.ins = x; return b; }; b.upsert = x => { st.upsert = x; return b; }; b.update = x => { st.up = x; return b; }; b.delete = () => { st.del = true; return b; };
     b.then = (res, rej) => { try {
-      const match = r => st.eqs.every(([k,v]) => v instanceof Set ? v.has(r[k]) : (v && typeof v === "object" && "not" in v) ? r[k] !== v.not : r[k] === v)
+      const match = r => st.eqs.every(([k,v]) => v instanceof Set ? v.has(r[k])
+          : (v && typeof v === "object" && "not" in v) ? r[k] !== v.not
+          : (v && typeof v === "object" && "like" in v) ? String(r[k]||"").toLowerCase().includes(v.like)
+          : r[k] === v)
         && (!st.or || st.or.some(([k,v]) => String(r[k]) === v));
       let out;
       if (st.upsert) { const rows = Array.isArray(st.upsert) ? st.upsert : [st.upsert];
@@ -1095,7 +1102,7 @@ function makeLocalSb(seed) {
         if (t === "works") rows.forEach(w => db.works[w.id] = w); else db[t].push(...rows); out = Array.isArray(st.ins) ? rows : rows[0]; save(); }
       else if (st.up) { db[t].forEach((r,i) => { if (match(r)) db[t][i] = Object.assign({}, r, st.up); }); if (t === "profiles" && db.profile && match(db.profile)) Object.assign(db.profile, st.up); out = null; save(); }
       else if (st.del) { db[t] = db[t].filter(r => !match(r)); out = null; save(); }
-      else { out = table(t).filter(match).map(r => expand(t, r));
+      else { out = table(t).filter(match).map(r => expand(t, r, st.sel || ""));
         for (const [k,asc] of st.sorts.slice().reverse()) out.sort((a,b) => String(a[k] ?? "").localeCompare(String(b[k] ?? "")) * (asc ? 1 : -1));
         if (st.lim) out = out.slice(0, st.lim); if (st.single) out = out[0] ?? null; }
       return Promise.resolve({ data:out, error:null }).then(res, rej); } catch (e) { return Promise.resolve({ data:null, error:e }).then(res, rej); } };
@@ -1279,6 +1286,11 @@ let shelfEdit = false, shelfOff = null, shelfStale = false;
 let justDealt = null, justSwept = null;
 const activeRoom = () => rooms.find(r => r.id === P.activeRoom) || rooms[0];
 const isFollowing = id => follows.some(f => f.followee === id);
+async function setFollow(id, on) {
+  try { if (on) await q(sb.from("follows").insert({ follower:me.id, followee:id }));
+    else await q(sb.from("follows").delete().eq("follower", me.id).eq("followee", id));
+    await loadFollows(); return true; }
+  catch (e) { oops(e, on ? "Couldn't follow them" : "Couldn't unfollow"); return false; } }
 
 /* ============ maths ============ */
 function agreement(scores) { if (scores.length < 2) return null; const s = scores.slice().sort((a,b)=>a-b);
@@ -1581,7 +1593,7 @@ async function onLiveEntry(row, memberIds) {
 }
 
 /* ---------- what's happened since you were last here ---------- */
-let unseen = { entries:[], replies:[], followers:0 };
+let unseen = { entries:[], replies:[], followers:[] };
 const lastSeen = () => P.lastSeen || new Date(Date.now() - 3*864e5).toISOString();
 async function checkNew() {
   const since = lastSeen(); const R = activeRoom();
@@ -1592,18 +1604,31 @@ async function checkNew() {
     const mineIds = new Set(myEntries.map(e => e.id));
     const reps = await q(sb.from("replies").select("id,entry_id,user_id,created_at,profiles(handle)").limit(200));
     unseen.replies = reps.filter(r => mineIds.has(r.entry_id) && r.user_id !== me.id && String(r.created_at) > since);
-    const fol = await q(sb.from("follows").select("follower,created_at").eq("followee", me.id));
-    unseen.followers = fol.filter(f => String(f.created_at || "") > since).length;
+    /* a count could only ever say "somebody". Keeping who lets the strip say their name
+       and offer the one thing anybody wants to do about it. */
+    const fol = await q(sb.from("follows")
+      .select("follower,created_at,profiles!follows_follower_fkey(id,handle,bio,avatar)")
+      .eq("followee", me.id));
+    unseen.followers = fol.filter(f => String(f.created_at || "") > folSeen());
   } catch {}
   paintDot();
+  /* enter() renders the room and then asks who is new, so the strip is drawn from an
+     empty list first. Paint it again once there is something to say. */
+  paintNewFollowers();
 }
 function paintDot() {
-  const n = unseen.entries.length + unseen.replies.length + unseen.followers;
+  const n = unseen.entries.length + unseen.replies.length + unseen.followers.length;
   const btn = $("nav button[data-tab='doors']"); if (!btn) return;
   $(".dot", btn)?.remove();
   if (n > 0 && currentTab() !== "home") btn.insertAdjacentHTML("beforeend", `<span class="dot">${n > 9 ? "9+" : n}</span>`);
 }
-function markSeen() { P.lastSeen = new Date().toISOString(); saveP(); unseen = { entries:[], replies:[], followers:0 }; paintDot(); }
+/* New followers keep their own mark. Opening the room should stop the dot nagging, but it
+   must not silently throw away the one list you might act on. */
+const folSeen = () => P.folSeen || new Date(Date.now() - 14*864e5).toISOString();
+function markSeen() { P.lastSeen = new Date().toISOString(); saveP();
+  unseen.entries = []; unseen.replies = []; paintDot(); }
+function markFollowersSeen() { P.folSeen = new Date().toISOString(); saveP();
+  unseen.followers = []; paintDot(); }
 
 /* ---------- you were both there ---------- */
 function together(e, all) {
@@ -1850,7 +1875,10 @@ async function renderDoors() {
           <small>${tag(w.kind)} ${(e.score/2).toFixed(1)}${e.note ? ` · “${esc(e.note)}”` : ""}</small></div></div>`; }).join("")}
       ${mem.entries.length > 3 ? `<p class="sub">and ${said(mem.entries.length - 3)} more that day.</p>` : ""}
       <div class="stack"><button class="btn soft" id="memShare">Share it</button><button class="btn quiet" id="memGo">Not now</button></div></div>` : ""}
-    <div class="seg">${[["room","Your room"],["following","Following"],["everyone","Everyone"]].map(([k,l]) => `<button data-feed="${k}" class="${P.feed===k?"on":""}">${l}</button>`).join("")}</div><div id="feedBody">${skeleton(3)}</div>`;
+    <div id="newFol"></div>
+    <div class="seg">${[["room","Your room"],["following","Following"],["everyone","Everyone"]].map(([k,l]) => `<button data-feed="${k}" class="${P.feed===k?"on":""}">${l}</button>`).join("")}</div>
+    <div class="findrow"><button class="chip" id="findPeople">Find someone by handle</button></div>
+    <div id="feedBody">${skeleton(3)}</div>`;
   const rg = $("#revGo"); if (rg) rg.onclick = () => rev.kind === "year"
     ? openCuts("year", Object.assign(reviewData(yearOf(myEntries, rev.year)), { year:rev.year }), "Share your year")
     : openCuts("span", spanOf(rev.entries, lc(rev.head.split(",")[0]),
@@ -1861,12 +1889,76 @@ async function renderDoors() {
     spanOf(mem.entries, lc(mem.head), stampDate(mem.when || mem.entries[0].rated_on)), "Share it");
   $$("#memCard [data-w]", body).forEach(x => x.onclick = () => openWork(x.dataset.w));
   $$("[data-feed]", body).forEach(b => b.onclick = () => { P.feed = b.dataset.feed; saveP(); renderDoors(); });
+  $("#findPeople").onclick = openFind;
   const fb = $("#feedBody");
+  /* the dot existed and nothing ever cleared it: markSeen was written and never called,
+     so every visit counted the same three days of entries again */
+  markSeen();
+  paintNewFollowers();
   if (P.feed === "room") return renderRoomFeed(fb, R);
   leaveRoomChannel();
   if (P.feed === "following") return renderFollowingFeed(fb);
   return renderEveryoneFeed(fb);
 }
+/* ---------- somebody followed you ----------
+   The dot said a number and nothing said a name, so the one thing anybody wants to do
+   about a new follower — look at them, and follow back — had nowhere to happen. */
+function paintNewFollowers() {
+  const el = $("#newFol"); if (!el) return;
+  const fs = unseen.followers.filter(f => f.profiles);
+  if (!fs.length) { el.innerHTML = ""; return; }
+  el.innerHTML = `<div class="card"><div class="h">
+      <span>${said(fs.length)} new ${fs.length === 1 ? "follower" : "followers"}</span>
+      <button class="chip" id="folDone">Done</button></div>
+    ${fs.map(f => { const p = f.profiles;
+      return `<div class="twin" data-prof="${esc(p.id)}" style="cursor:pointer">${avatar(p)}
+        <div class="t"><b>${esc(p.handle)}</b><small>${esc(p.bio || "started following you")}</small></div>
+        <button class="chip ${isFollowing(p.id) ? "on" : ""}" data-back="${esc(p.id)}">${
+          isFollowing(p.id) ? "Following" : "Follow back"}</button></div>`; }).join("")}</div>`;
+  $("#folDone").onclick = () => { markFollowersSeen(); paintNewFollowers(); };
+  $$("[data-back]", el).forEach(b => b.onclick = async ev => { ev.stopPropagation();
+    const id = b.dataset.back, on = !isFollowing(id); b.disabled = true;
+    if (await setFollow(id, on)) { b.classList.toggle("on", on); b.textContent = on ? "Following" : "Follow back"; }
+    b.disabled = false; });
+  $$("[data-prof]", el).forEach(x => x.onclick = () => openProfile(x.dataset.prof)); }
+
+/* ---------- finding anybody ----------
+   Every route to a profile went through seeing one of their entries first, so you could
+   only follow somebody you had already stumbled across. Profiles are readable by anyone
+   signed in, so a handle is enough. */
+let findT;
+function openFind() {
+  openSheet(`<h3>Find someone</h3><p class="sub">By handle. Everyone in Rooms is findable —
+      what they've logged still follows the same rules it always did.</p>
+    <input id="findQ" type="search" placeholder="handle" autocapitalize="none" autocorrect="off" style="margin-top:12px">
+    <p class="msg" id="findMsg"></p><div id="findRes"></div>
+    <div class="stack"><button class="btn quiet" id="findClose">Not now</button></div>`);
+  $("#findClose").onclick = closeSheet;
+  setTimeout(() => $("#findQ")?.focus(), 350);
+  $("#findQ").oninput = e => { clearTimeout(findT); const v = e.target.value.trim().replace(/^@/, "");
+    const res = $("#findRes"), msg = $("#findMsg");
+    if (v.length < 2) { res.innerHTML = ""; msg.textContent = ""; return; }
+    msg.textContent = "Looking";
+    findT = setTimeout(async () => {
+      let rows = [];
+      try { rows = await q(sb.from("profiles").select("id,handle,bio,avatar")
+        .ilike("handle", `%${v}%`).limit(20)); } catch (err) { msg.textContent = err.message; return; }
+      rows = rows.filter(r => r.id !== me.id);
+      if ($("#findRes") !== res) return;
+      msg.textContent = "";
+      res.innerHTML = rows.length
+        ? `<div class="card">${rows.map(p => `<div class="twin" data-prof="${esc(p.id)}" style="cursor:pointer">${avatar(p)}
+            <div class="t"><b>${esc(p.handle)}</b><small>${esc(p.bio || "")}</small></div>
+            <button class="chip ${isFollowing(p.id) ? "on" : ""}" data-fnd="${esc(p.id)}">${
+              isFollowing(p.id) ? "Following" : "Follow"}</button></div>`).join("")}</div>`
+        : `<p class="empty">Nobody called “${esc(v)}”.</p>`;
+      $$("[data-fnd]", res).forEach(b => b.onclick = async ev => { ev.stopPropagation();
+        const id = b.dataset.fnd, on = !isFollowing(id); b.disabled = true;
+        if (await setFollow(id, on)) { b.classList.toggle("on", on); b.textContent = on ? "Following" : "Follow"; }
+        b.disabled = false; });
+      $$("[data-prof]", res).forEach(x => x.onclick = () => openProfile(x.dataset.prof));
+    }, 350); }; }
+
 function slipHTML(e, opts = {}) { const w = remember(e.works) || works[e.work_id] || {}; const mine = e.user_id === me.id;
   const same = (e.reactions||[]).some(r => r.user_id === me.id), n = (e.reactions||[]).length;
   const reps = (e.replies||[]).slice().sort((a,b)=>String(a.created_at).localeCompare(String(b.created_at)));
@@ -4028,7 +4120,8 @@ async function openProfile(userId) { const self = userId === me.id;
     <div class="stack"><button class="btn soft" id="pCard">Save the card</button><button class="btn quiet" id="pClose">Close</button></div>`);
   $("#pCard").onclick = () => openCuts("taste", { p, t }, "Share this taste");
   $("#pClose").onclick = closeSheet; wireSlips($("#sheetBody"), es); revealIn($("#sheetBody")); $$("#sheetBody .four [data-work]").forEach(x => x.onclick = () => openWork(x.dataset.work));
-  const fb = $("#followBtn"); if (fb) fb.onclick = async () => { try { if (isFollowing(p.id)) await q(sb.from("follows").delete().eq("follower", me.id).eq("followee", p.id)); else await q(sb.from("follows").insert({ follower:me.id, followee:p.id })); await loadFollows(); openProfile(p.id); } catch (e) { alert(e.message); } };
+  const fb = $("#followBtn"); if (fb) fb.onclick = async () => {
+    if (await setFollow(p.id, !isFollowing(p.id))) openProfile(p.id); };
   const em = $("#editMe"); if (em) em.onclick = openYou;
   $("#showFollowers").onclick = () => openPeople(p, "followers"); $("#showFollowing").onclick = () => openPeople(p, "following"); }
 
@@ -4044,7 +4137,7 @@ async function openPeople(p, which) {
   $("#plBack").onclick = () => openProfile(p.id);
   $$("[data-prof]", $("#sheetBody")).forEach(x => x.onclick = e => { if (e.target.closest("[data-fol]")) return; openProfile(x.dataset.prof); });
   $$("[data-fol]").forEach(b => b.onclick = async e => { e.stopPropagation(); const id = b.dataset.fol;
-    try { if (isFollowing(id)) await q(sb.from("follows").delete().eq("follower", me.id).eq("followee", id)); else await q(sb.from("follows").insert({ follower:me.id, followee:id })); await loadFollows(); openPeople(p, which); } catch (err) { alert(err.message); } }); }
+    if (await setFollow(id, !isFollowing(id))) openPeople(p, which); }); }
 
 /* ---------- getting a face for somebody ----------
    Works saved before any of this have no map and are never refetched — ensureWork stops
@@ -4336,7 +4429,7 @@ function downloadJSON(obj, name) {
 }
 
 /* a small hook so the card renderers can be exercised by the test harness */
-window.__rooms = { nowVerb, openAdd, RINGS, MARK_RING, ringFromMarks, ringCache, myRing, spanOf, reelIndexNow, memories, dueReview, memForget, MEM_MIN, MEM_DAYS, whoseWord, wordPending, HAND_FLOOR, loadHand, handTo, answerHand, reachable, cameFrom, openHand, get handIn(){return handIn}, get handOut(){return handOut}, get handAll(){return handAll}, reelTo, markReel, REEL, reelCopies, get reelAt(){return reelAt}, facesFor, faceEl, faceMap, FACE_IMG, paintLog, wireLog, openWholeLog, AV_SHAPES, AV_EYES, AV_COLS, avSVG, avFor, get me(){return me}, get entries(){return myEntries}, get works(){return works}, get rooms(){return rooms},
+window.__rooms = { openFind, setFollow, isFollowing, get follows(){return follows}, paintNewFollowers, markFollowersSeen, get unseen(){return unseen}, nowVerb, openAdd, RINGS, MARK_RING, ringFromMarks, ringCache, myRing, spanOf, reelIndexNow, memories, dueReview, memForget, MEM_MIN, MEM_DAYS, whoseWord, wordPending, HAND_FLOOR, loadHand, handTo, answerHand, reachable, cameFrom, openHand, get handIn(){return handIn}, get handOut(){return handOut}, get handAll(){return handAll}, reelTo, markReel, REEL, reelCopies, get reelAt(){return reelAt}, facesFor, faceEl, faceMap, FACE_IMG, paintLog, wireLog, openWholeLog, AV_SHAPES, AV_EYES, AV_COLS, avSVG, avFor, get me(){return me}, get entries(){return myEntries}, get works(){return works}, get rooms(){return rooms},
   CUTS, openCuts, spanData, tasteOf, reviewData, yearOf, roomPalmares, tagStats, agreement, activeRoom, q, sb: () => sb, remember,
   joinRoomChannel, leaveRoomChannel, paintHere, onLiveEntry, paintDay, get hereNow(){return hereNow},
   say, oops, markLive, takeInvite, dropInvite, inviteLink, useInvite, exportEverything,
