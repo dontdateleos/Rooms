@@ -790,14 +790,22 @@ function avShade(hex, amt) { const n = parseInt(hex.slice(1), 16); let r = n >> 
   if (amt > 0) { r += (255-r)*amt; g += (255-g)*amt; b += (255-b)*amt; } else { r *= (1+amt); g *= (1+amt); b *= (1+amt); }
   return "#" + [r,g,b].map(v => Math.round(v).toString(16).padStart(2,"0")).join(""); }
 function avHash(s) { let h = 2166136261; for (const ch of String(s || "?")) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return Math.abs(h); }
+/* A mark is computed from somebody's entries, and a feed does not have everybody's
+   entries — asking for them to draw a 24px ring would be a query per face. So a ring is
+   remembered the moment its marks are worked out for a real reason: yours when your log
+   loads, anybody else's when you open their profile. Until then they simply have none,
+   which is honest — better a ring that arrives late than one invented from what happens
+   to be in memory. */
+const ringCache = {};
 function avFor(p) {
   const a = p?.avatar;
   const founder = !!p?.founder || founderIds.has(p?.id);
+  const ring = ringCache[p?.id] || null;
   if (a && AV_SHAPES[a.shape] && AV_COLS[a.col] !== undefined)
-    return { shape:a.shape, col:a.col, eyes:AV_EYES[a.eyes] ? a.eyes : "pair", tilt:a.tilt ?? 0, founder };
+    return { shape:a.shape, col:a.col, eyes:AV_EYES[a.eyes] ? a.eyes : "pair", tilt:a.tilt ?? 0, founder, ring };
   const h = avHash(p?.handle);
   return { shape:AV_NAMES[h % AV_NAMES.length], col:(h >> 3) % AV_COLS.length,
-    eyes:AV_EYE_NAMES[(h >> 11) % AV_EYE_NAMES.length], tilt:((h >> 7) % 9) - 4, founder }; }
+    eyes:AV_EYE_NAMES[(h >> 11) % AV_EYE_NAMES.length], tilt:((h >> 7) % 9) - 4, founder, ring }; }
 /* the same capsule, arranged four ways — nothing changes but the spacing and the height */
 const AV_EYES = {
   pair:  `<rect x="40" y="46" width="7" height="20" rx="3.5"/><rect x="55" y="44" width="7" height="22" rx="3.5"/>`,
@@ -834,12 +842,67 @@ const COMET = (() => {
     <circle cx="${hx}" cy="${hy}" r="1.7" fill="#FFF7EC"/></g>`;
 })();
 
+/* ---------- the six rings ----------
+   Not a cosmetic anybody picks or buys. Each one is a mark, drawn at the only size that
+   matters — a mark is a claim about you, and the claim belongs on the face that turns up
+   in every feed, chip and room pill rather than on a card in a row nobody scrolls to.
+
+   The shapes were chosen against a 24px avatar, which rules out anything with detail
+   inside it: rings, gaps and haloes survive that, crests and emblems do not. They are
+   drawn in the same 100x100 viewBox as the comet and centred on the art at 50,54 — not
+   on the box — so like the comet they scale everywhere without a size written twice.
+   Nothing reaches past 46 units from that centre, which is what keeps the bottom of the
+   widest ring inside the box. */
+const RING_R = 42, RING_CX = 50, RING_CY = 54;
+const ringPt = (r, d) => { const a = (d - 90) * Math.PI / 180;
+  return [(RING_CX + r * Math.cos(a)).toFixed(2), (RING_CY + r * Math.sin(a)).toFixed(2)]; };
+const ringArc = (c, sweep, from, w = 5, r = RING_R) => { const [x1,y1] = ringPt(r, from), [x2,y2] = ringPt(r, from + sweep);
+  return `<path d="M${x1} ${y1} A${r} ${r} 0 ${sweep > 180 ? 1 : 0} 1 ${x2} ${y2}" fill="none"
+    stroke="${c}" stroke-width="${w}" stroke-linecap="round"/>`; };
+const ringCircle = (c, r, w, o = 1) => `<circle cx="${RING_CX}" cy="${RING_CY}" r="${r}" fill="none"
+  stroke="${c}" stroke-width="${w}" stroke-opacity="${o}"/>`;
+const RINGS = {
+  solid:  c => ringCircle(c, RING_R, 5),
+  double: c => ringCircle(c, 36, 3) + ringCircle(c, 43, 3),
+  notch:  c => ringArc(c, 312, 24),
+  dash:   c => `<circle cx="${RING_CX}" cy="${RING_CY}" r="${RING_R}" fill="none" stroke="${c}"
+    stroke-width="5" stroke-linecap="round" stroke-dasharray="9 11"/>`,
+  /* two strokes falling away rather than a blur: a filter would cost a paint per avatar
+     and there can be a dozen on screen */
+  halo:   c => ringCircle(c, 41, 4.5) + ringCircle(c, 44.5, 2, .34),
+  split:  c => ringArc(c, 176, 128),
+};
+/* which mark a ring belongs to, and in what colour — the order here is the order they
+   were argued for, and the first one you hold is the one you wear */
+const MARK_RING = {
+  argument:  ["split",  "#151320"],
+  split:     ["split",  "#E0407F"],
+  table:     ["double", "#B9A6FF"],
+  stillhere: ["halo",   "#B9A6FF"],
+  twin:      ["halo",   "#9EF0C9"],
+  house:     ["solid",  "#2E7D5B"],
+  longview:  ["solid",  "#8FD3FF"],
+  heldline:  ["dash",   "#FF8E6E"],
+  calledit:  ["notch",  "#FFB36B"],
+  saidwhy:   ["solid",  "#F5A3C7"],
+};
+const RING_ORDER = Object.keys(MARK_RING);
+/* the comet is a record of something nobody can grant themselves, so it outranks
+   anything earned by using the app */
+function ringFromMarks(marks) {
+  if (!marks?.length) return null;
+  const held = new Set(marks.map(m => m.key));
+  for (const k of RING_ORDER) if (held.has(k)) { const [kind, c] = MARK_RING[k];
+    return RINGS[kind] ? RINGS[kind](c) : null; }
+  return null; }
+
 function avSVG(a) {
   const base = AV_COLS[a.col] || AV_COLS[0], dark = base === "#151320";
   const c = { base, light: dark ? "#3A3650" : avShade(base, .30), dark: dark ? "#0B0A12" : avShade(base, -.18) };
   const eyes = AV_EYES[a.eyes] || AV_EYES.pair;
   return `<svg viewBox="0 0 100 100" data-shape="${a.shape}" aria-hidden="true"><g transform="rotate(${a.tilt||0} 50 54)">${AV_SHAPES[a.shape](c)}
-    <g class="eyes" fill="${dark ? "#FFF7EC" : "#151320"}">${eyes}</g></g>${a.founder ? COMET : ""}</svg>`; }
+    <g class="eyes" fill="${dark ? "#FFF7EC" : "#151320"}">${eyes}</g></g>${
+      a.founder ? COMET : (a.ring || "")}</svg>`; }
 /* a face is new until you've seen it this session; the seed keeps two people
    who share a shape from blinking in lockstep */
 const metFaces = new Set();
@@ -1098,7 +1161,14 @@ async function loadLists() { const rows = await q(sb.from("lists").select("id,na
   if (!lists.length) { const l = await q(sb.from("lists").insert({ owner:me.id, name:"the shelf" }).select().single()); lists = [{ id:l.id, name:l.name, items:[] }]; }
   if (!lists.find(l => l.id === P.activeList)) { P.activeList = lists[0].id; saveP(); } }
 async function loadMine() { myEntries = await q(sb.from("entries").select("*,works(*)").eq("user_id", me.id).order("rated_on",{ascending:false}).order("created_at",{ascending:false}));
-  myEntries.forEach(e => remember(e.works)); loggedIds = new Set(myEntries.map(e => e.work_id)); }
+  myEntries.forEach(e => remember(e.works)); loggedIds = new Set(myEntries.map(e => e.work_id));
+  myRing(); }
+/* your own ring, from the log that has just landed. No club query and no taste match —
+   both need a round trip, and the two marks that want them light up when you open your
+   own profile, which is the one place anybody goes looking. */
+function myRing() {
+  try { ringCache[me.id] = ringFromMarks(marksFor(me, myEntries, tasteOf(myEntries), null, {})); }
+  catch { ringCache[me.id] = null; } }
 async function loadRooms() { const rs = await q(sb.from("rooms").select("id,name,code,room_members(user_id,profiles(id,handle,bio,avatar))").order("created_at"));
   rooms = rs.map(r => ({ id:r.id, name:r.name, code:r.code, members:(r.room_members||[]).map(m => m.profiles).filter(Boolean).sort((a,b)=>a.handle.localeCompare(b.handle)) }));
   if (!rooms.find(r => r.id === P.activeRoom)) { P.activeRoom = rooms[0]?.id || null; saveP(); } }
@@ -3904,6 +3974,7 @@ async function openProfile(userId) { const self = userId === me.id;
   let fc = 0, fg = 0; try { fc = (await q(sb.from("follows").select("follower").eq("followee", userId))).length; fg = (await q(sb.from("follows").select("followee").eq("follower", userId))).length; } catch {}
   const shared = mine.craft.slice(0,5).map(c=>c[0]).filter(k => t.craft.slice(0,5).some(c => c[0] === k));
   const marks = marksFor(p, es, t, match, { clubsFinished: await clubsFinishedBy(userId) });
+  ringCache[userId] = ringFromMarks(marks);
   openSheet(`<div style="display:flex;align-items:center;gap:12px">${avatar(p, "meet")}<div style="flex:1"><h3>${esc(p.handle)}${self?` <span class="tag dim">you</span>`:""}</h3>${p.bio?`<p class="sub" style="margin-top:2px">${esc(p.bio)}</p>`:""}</div>${!self && match!==null?`<span class="ring">${match} match</span>`:""}</div>
     <div class="tally">${Object.keys(KINDS).filter(k=>t.kinds[k]).map(k => `<span><b>${t.kinds[k]}</b>${K(k).label.toLowerCase()}</span>`).join("")}
       <button class="chip" id="showFollowers" style="padding:5px 10px"><b style="margin-right:4px">${fc}</b>followers</button><button class="chip" id="showFollowing" style="padding:5px 10px"><b style="margin-right:4px">${fg}</b>following</button></div>
@@ -4232,7 +4303,7 @@ function downloadJSON(obj, name) {
 }
 
 /* a small hook so the card renderers can be exercised by the test harness */
-window.__rooms = { spanOf, reelIndexNow, memories, dueReview, memForget, MEM_MIN, MEM_DAYS, whoseWord, wordPending, HAND_FLOOR, loadHand, handTo, answerHand, reachable, cameFrom, openHand, get handIn(){return handIn}, get handOut(){return handOut}, get handAll(){return handAll}, reelTo, markReel, REEL, reelCopies, get reelAt(){return reelAt}, facesFor, faceEl, faceMap, FACE_IMG, paintLog, wireLog, openWholeLog, AV_SHAPES, AV_EYES, AV_COLS, avSVG, avFor, get me(){return me}, get entries(){return myEntries}, get works(){return works}, get rooms(){return rooms},
+window.__rooms = { RINGS, MARK_RING, ringFromMarks, ringCache, myRing, spanOf, reelIndexNow, memories, dueReview, memForget, MEM_MIN, MEM_DAYS, whoseWord, wordPending, HAND_FLOOR, loadHand, handTo, answerHand, reachable, cameFrom, openHand, get handIn(){return handIn}, get handOut(){return handOut}, get handAll(){return handAll}, reelTo, markReel, REEL, reelCopies, get reelAt(){return reelAt}, facesFor, faceEl, faceMap, FACE_IMG, paintLog, wireLog, openWholeLog, AV_SHAPES, AV_EYES, AV_COLS, avSVG, avFor, get me(){return me}, get entries(){return myEntries}, get works(){return works}, get rooms(){return rooms},
   CUTS, openCuts, spanData, tasteOf, reviewData, yearOf, roomPalmares, tagStats, agreement, activeRoom, q, sb: () => sb, remember,
   joinRoomChannel, leaveRoomChannel, paintHere, onLiveEntry, paintDay, get hereNow(){return hereNow},
   say, oops, markLive, takeInvite, dropInvite, inviteLink, useInvite, exportEverything,
