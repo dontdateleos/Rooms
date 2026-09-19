@@ -118,8 +118,8 @@ header .wrap{display:flex;align-items:center;justify-content:space-between;heigh
 /* who liked it, under the foot rather than inside the button: it is a sentence and it
    grows, and a button that grows moves everything beside it */
 .acts button.lk{display:grid;place-items:center;padding:2px 0}
-.hrt{width:19px;height:19px;display:block;fill:none;stroke:currentColor;stroke-width:2.15;
-  stroke-linecap:round;stroke-linejoin:round;transform:rotate(-5deg)}
+.hrt{width:19px;height:19px;display:block;fill:none;stroke:currentColor;stroke-width:2;
+  stroke-linecap:round;stroke-linejoin:round}
 /* at rest it was disappearing into the rule above it */
 .acts button.lk{color:var(--mute2,#9a94ad)}
 .acts button.lk.on{color:var(--bad)}
@@ -2202,11 +2202,11 @@ function openFind() {
       $$("[data-prof]", res).forEach(x => x.onclick = () => openProfile(x.dataset.prof));
     }, 350); }; }
 
-/* The heart is drawn rather than constructed — uneven lobes, a tail off-centre, and a
-   few degrees of tilt. At this size the wobble is nearly subliminal, which is the point:
-   it should read as a heart somebody inked, not one a grid produced. */
-const INK_HEART = "M12.25 19.7C10.85 18.75 4.7 15 4.7 10.65 4.7 8.2 6.55 6.55 8.7 6.6c1.5.05 2.8.9 3.45 2.2.65-1.45 2.05-2.35 3.6-2.25 2.25.15 3.9 2 3.75 4.4-.25 4.25-6 7.9-7.25 8.75z";
-const heartSVG = on => `<svg viewBox="0 0 24 24" aria-hidden="true" class="hrt"><path d="${INK_HEART}" fill="${on ? "currentColor" : "none"}"/></svg>`;
+/* Even lobes, square on the grid, the same stroke weight as every other icon in the
+   header. The hollow and filled states are the same shape in two conditions, which is
+   the whole reason this mark works where a tick or a ditto needs a container. */
+const HEART = "M12 20s-7-4.6-7-9.4A4.1 4.1 0 0 1 12 8a4.1 4.1 0 0 1 7 2.6C19 15.4 12 20 12 20z";
+const heartSVG = on => `<svg viewBox="0 0 24 24" aria-hidden="true" class="hrt"><path d="${HEART}" fill="${on ? "currentColor" : "none"}"/></svg>`;
 
 /* ---------- who liked it ----------
    Anyone signed in can like a post that is not room-only, so a bare count is mostly
