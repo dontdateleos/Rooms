@@ -604,6 +604,18 @@ svg .comet{transform-box:fill-box;transform-origin:center;animation:cometTurn 4.
 .pv b{font-family:var(--head);font-weight:800;font-size:9px;text-align:center;padding:2px;line-height:1.1}
 .markrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 .findrow{display:flex;justify-content:center;margin-top:10px}
+/* the chip rides in on how far you have pulled, so the gesture has an answer before
+   you let go rather than only after */
+.pull{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 8px);z-index:8;
+  transform:translate(-50%,-140%);opacity:0;pointer-events:none;
+  background:var(--ink);color:var(--cream);border-radius:99px;padding:7px 15px;
+  font-family:var(--head);font-weight:800;font-size:12.5px;letter-spacing:.01em;
+  box-shadow:0 8px 20px -10px rgba(21,19,32,.6);transition:opacity .16s,transform .16s}
+.pull.on{opacity:calc(.35 + var(--p,0) * .65);transform:translate(-50%,calc(-140% + var(--p,0) * 140%))}
+.pull.ready{background:var(--blue)}
+.pull.going{opacity:1;transform:translate(-50%,0);animation:pullGo 1s linear infinite}
+@keyframes pullGo{0%,100%{opacity:1}50%{opacity:.55}}
+@media(prefers-reduced-motion:reduce){.pull{transition:none}.pull.going{animation:none}}
 .mk{display:block;border:1.5px solid var(--line);border-radius:14px;padding:8px 12px;background:var(--cream)}
 .mk b{font-family:var(--head);font-weight:800;font-size:13px;display:block}
 .mk small{font-size:10.5px;color:var(--mute);font-weight:600;display:block;margin-top:1px}
@@ -1682,6 +1694,55 @@ $$("nav button[data-tab]").forEach(b => b.onclick = () => switchTab(b.dataset.ta
 markLive();
 const currentTab = () => $$("main section").find(s => s.classList.contains("on"))?.id.replace("tab-","");
 const refresh = () => RENDER[currentTab()]?.();
+/* ---------- pulling the page down ----------
+   refresh() only redraws what is already in memory, which is the wrong thing to do when
+   somebody asks for new. This fetches first. It is deliberately the shared things rather
+   than everything: your log, your queue, what you are on, and who is new. */
+let pulling = false;
+async function pullRefresh() {
+  if (pulling || !me) return false;
+  pulling = true;
+  try {
+    await Promise.all([loadMine().catch(()=>{}), loadHand().catch(()=>{}), loadNow().catch(()=>{})]);
+    await checkNew().catch(()=>{});
+    refresh();
+    return true;
+  } finally { pulling = false; } }
+
+/* Touch only, and only from a page already at the top. The sheet does its own scrolling
+   and must never be dragged out from under itself. Nothing calls preventDefault, so the
+   rubber band still does what the phone expects — this only reads the gesture. */
+(() => {
+  const TRIG = 72;
+  let y0 = null, live = false, dist = 0, bar = null;
+  const chip = () => bar ||= (() => { const d = document.createElement("div");
+    d.className = "pull"; d.id = "pullBar"; d.textContent = "Pull down";
+    document.body.appendChild(d); return d; })();
+  const off = () => { const b = chip(); b.classList.remove("on","ready","going"); b.style.removeProperty("--p"); };
+  addEventListener("touchstart", e => {
+    if (e.touches.length !== 1 || pulling) return;
+    if ($("#sheet")?.classList.contains("on")) return;
+    if (window.scrollY > 0 || !me) return;
+    y0 = e.touches[0].clientY; dist = 0; live = false;
+  }, { passive:true });
+  addEventListener("touchmove", e => {
+    if (y0 == null) return;
+    if (window.scrollY > 0) { y0 = null; if (live) { live = false; off(); } return; }
+    dist = e.touches[0].clientY - y0;
+    if (dist <= 6) { if (live) { live = false; off(); } return; }
+    live = true; const b = chip(), p = Math.min(1, dist / TRIG);
+    b.style.setProperty("--p", p.toFixed(3));
+    b.classList.add("on"); b.classList.toggle("ready", p >= 1);
+    b.textContent = p >= 1 ? "Let go" : "Pull down";
+  }, { passive:true });
+  addEventListener("touchend", async () => {
+    if (!live) { y0 = null; return; }
+    const go = dist >= TRIG; y0 = null; live = false;
+    if (!go) return off();
+    const b = chip(); b.classList.add("going"); b.textContent = "Refreshing";
+    try { await pullRefresh(); } finally { setTimeout(off, 260); }
+  }, { passive:true });
+})();
 let sheetGoing = null;
 /* 03 — a flood of the medium's colour, once, on the way out of a save */
 function inkWash(kind) { if (REDUCED) return;
@@ -1968,7 +2029,8 @@ function slipHTML(e, opts = {}) { const w = remember(e.works) || works[e.work_id
     ${e.note?`<div class="q${String(e.note).length > 210 ? " clip" : ""}">“${esc(e.note)}”</div>${String(e.note).length > 210 ? `<button class="more" data-more="${e.id}">More</button>` : ""}`:""}
     ${(() => { const t = together(e); return t ? `<div class="loved" style="margin-top:10px"><span class="together">◆ ${t}</span></div>` : ""; })()}
     ${e.loved?.length?`<div class="loved">${e.loved.slice(0,4).map(k => `<span>${esc(k.startsWith("person:")?lc(k.slice(7)):k)}</span>`).join("")}</div>`:""}
-    <div class="foot"><div class="acts">${opts.talk ? `<button data-same="${e.id}" class="${same?"on":""}" ${mine?"disabled":""}>Same${n?" · "+n:""}</button><button data-reply="${e.id}">Reply</button>` : ""}</div>${stars(e.score,"sm")}</div>
+    <div class="foot"><div class="acts">${mine ? "" : `<button data-same="${e.id}" class="${same?"on":""}">Same${n?" · "+n:""}</button>`
+      }${opts.talk ? `<button data-reply="${e.id}">Reply</button>` : ""}</div>${stars(e.score,"sm")}</div>
     ${reps.map(r => `<div class="reply"><b>${esc(r.profiles?.handle)}</b> ${esc(r.body)}${
       r.user_id === me.id ? `<button class="unreply" data-unreply="${esc(r.id)}" aria-label="Delete your reply">\u00d7</button>` : ""
     }</div>`).join("")}<div id="rb-${e.id}"></div></div>`; }
@@ -1977,11 +2039,19 @@ function wireSlips(el, es) { const by = Object.fromEntries(es.map(e => [e.id, e]
     const qd = b.previousElementSibling; qd.classList.toggle("clip"); b.textContent = qd.classList.contains("clip") ? "More" : "Less"; });
   $$("[data-work]", el).forEach(x => x.onclick = () => openWork(x.dataset.work));
   $$("[data-prof]", el).forEach(x => x.onclick = () => openProfile(x.dataset.prof));
+  /* Same used to live only in the room, and re-rendered the whole feed on every tap —
+     which rebuilt the page under your thumb and threw away where you were reading. It
+     now appears wherever a review does, and only the button it was, changes. */
   $$("[data-same]", el).forEach(b => b.onclick = async () => { const e = by[b.dataset.same], has = (e.reactions||[]).some(r => r.user_id === me.id);
-    try { if (has) await q(sb.from("reactions").delete().eq("entry_id",e.id).eq("user_id",me.id)); else await q(sb.from("reactions").insert({ entry_id:e.id, user_id:me.id })); renderDoors();
+    b.disabled = true;
+    try { if (has) await q(sb.from("reactions").delete().eq("entry_id",e.id).eq("user_id",me.id)); else await q(sb.from("reactions").insert({ entry_id:e.id, user_id:me.id }));
+      e.reactions = has ? (e.reactions||[]).filter(r => r.user_id !== me.id) : [...(e.reactions||[]), { user_id:me.id }];
+      const c = e.reactions.length;
+      b.classList.toggle("on", !has); b.textContent = `Same${c ? " · " + c : ""}`;
       if (!has && !REDUCED) requestAnimationFrame(() => { const nb = $(`[data-same="${CSS.escape(e.id)}"]`);
         if (nb) { nb.classList.add("popped"); setTimeout(() => nb.classList.remove("popped"), 520); } });
-    } catch (err) { oops(err, has ? "Couldn't take that back" : "Couldn't agree with that"); } });
+    } catch (err) { oops(err, has ? "Couldn't take that back" : "Couldn't agree with that"); }
+    finally { b.disabled = false; } });
   $$("[data-unreply]", el).forEach(b => b.onclick = async () => {
     if (!confirm("Delete this reply?")) return;
     try { await q(sb.from("replies").delete().eq("id", b.dataset.unreply).eq("user_id", me.id)); renderDoors(); }
@@ -4429,7 +4499,7 @@ function downloadJSON(obj, name) {
 }
 
 /* a small hook so the card renderers can be exercised by the test harness */
-window.__rooms = { openFind, setFollow, isFollowing, get follows(){return follows}, paintNewFollowers, markFollowersSeen, get unseen(){return unseen}, nowVerb, openAdd, RINGS, MARK_RING, ringFromMarks, ringCache, myRing, spanOf, reelIndexNow, memories, dueReview, memForget, MEM_MIN, MEM_DAYS, whoseWord, wordPending, HAND_FLOOR, loadHand, handTo, answerHand, reachable, cameFrom, openHand, get handIn(){return handIn}, get handOut(){return handOut}, get handAll(){return handAll}, reelTo, markReel, REEL, reelCopies, get reelAt(){return reelAt}, facesFor, faceEl, faceMap, FACE_IMG, paintLog, wireLog, openWholeLog, AV_SHAPES, AV_EYES, AV_COLS, avSVG, avFor, get me(){return me}, get entries(){return myEntries}, get works(){return works}, get rooms(){return rooms},
+window.__rooms = { pullRefresh, openFind, setFollow, isFollowing, get follows(){return follows}, paintNewFollowers, markFollowersSeen, get unseen(){return unseen}, nowVerb, openAdd, RINGS, MARK_RING, ringFromMarks, ringCache, myRing, spanOf, reelIndexNow, memories, dueReview, memForget, MEM_MIN, MEM_DAYS, whoseWord, wordPending, HAND_FLOOR, loadHand, handTo, answerHand, reachable, cameFrom, openHand, get handIn(){return handIn}, get handOut(){return handOut}, get handAll(){return handAll}, reelTo, markReel, REEL, reelCopies, get reelAt(){return reelAt}, facesFor, faceEl, faceMap, FACE_IMG, paintLog, wireLog, openWholeLog, AV_SHAPES, AV_EYES, AV_COLS, avSVG, avFor, get me(){return me}, get entries(){return myEntries}, get works(){return works}, get rooms(){return rooms},
   CUTS, openCuts, spanData, tasteOf, reviewData, yearOf, roomPalmares, tagStats, agreement, activeRoom, q, sb: () => sb, remember,
   joinRoomChannel, leaveRoomChannel, paintHere, onLiveEntry, paintDay, get hereNow(){return hereNow},
   say, oops, markLive, takeInvite, dropInvite, inviteLink, useInvite, exportEverything,
