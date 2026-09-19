@@ -1536,6 +1536,16 @@ function reviewOf({ people, agree, top, hot, yours, id = "" }) {
 /* ---------- ordering entries on a work page ----------
    never ranks people, only posts. popular = who nodded; momentum = who nodded lately;
    like you = whoever singled out what you tend to single out. */
+/* A feed is a list of things people just did, so newest means most recently posted —
+   not most recently watched. Somebody catching up on a film from 2011 has done
+   something now, and burying it under an entry logged last week because that film is
+   newer gets the feed backwards.
+   rated_on breaks the tie, and the id breaks that, so the order is total: two entries
+   written in the same second must not swap places between one render and the next. */
+const newestFirst = (a, b) =>
+  String(b.created_at || "").localeCompare(String(a.created_at || ""))
+  || String(b.rated_on || "").localeCompare(String(a.rated_on || ""))
+  || String(b.id || "").localeCompare(String(a.id || ""));
 const SORTS = { popular:"Popular", momentum:"Momentum", similar:"Like you", recent:"Recent" };
 const daysAgo = d => Math.max(0, (Date.now() - new Date(d + "T12:00:00Z")) / 864e5);
 function sortEntries(es, how, myTaste) {
@@ -1549,9 +1559,11 @@ function sortEntries(es, how, myTaste) {
     popular: e => sames(e)*3 + said(e),
     momentum: e => (sames(e)*3 + said(e) + 1) / Math.pow(daysAgo(e.rated_on) + 2, .7),
     similar: e => like(e)*6 + sames(e)*.5 + said(e)*.25,
-    recent: e => -daysAgo(e.rated_on)
+    /* was -daysAgo(e.rated_on), which made this the only list in the app where
+       "recent" meant recently watched rather than recently posted */
+    recent: () => 0
   }[how] || (() => 0);
-  return es.slice().sort((a,b) => by(b) - by(a) || String(b.created_at||"").localeCompare(String(a.created_at||"")));
+  return es.slice().sort((a,b) => by(b) - by(a) || newestFirst(a, b));
 }
 
 /* ---------- reveal cards as they scroll in ---------- */
@@ -1731,7 +1743,9 @@ async function checkNew() {
      meant a database that had not run the latest migration answered none of them —
      one unknown column and the bell went dark about people as well. */
   if (R) { try { const ids = R.members.map(m => m.id).filter(i => i !== me.id);
-    if (ids.length) { const es = await q(sb.from("entries").select("id,user_id,created_at,work_id,profiles!entries_user_id_fkey(handle)").in("user_id", ids).limit(100));
+    /* limit(100) with no order is an arbitrary hundred rows, so in a busy room the
+       newest entries were the ones it could silently fail to count */
+    if (ids.length) { const es = await q(sb.from("entries").select("id,user_id,created_at,work_id,profiles!entries_user_id_fkey(handle)").in("user_id", ids).order("created_at",{ascending:false}).limit(100));
       unseen.entries = es.filter(e => String(e.created_at) > since); } } catch {} }
   /* a count could only ever say "somebody". Keeping who lets the row say their name
      and offer the one thing anybody wants to do about it. */
@@ -2283,6 +2297,7 @@ async function renderRoomFeed(fb, R) {
       <div class="stack"><button class="btn blue" id="newRoom">Open a room</button><button class="btn ghost" id="joinRoom">Join with a code</button></div><p class="msg" id="roomMsg"></p>`; wireRoomButtons(); return; }
   const ids = R.members.map(m => m.id); let es = [];
   try { es = await q(sb.from("entries").select(ENTRY_SEL).in("user_id", ids).order("created_at",{ascending:false}).limit(60)); } catch (e) { fb.innerHTML = `<p class="empty">${esc(e.message)}</p>`; return; }
+  es.sort(newestFirst);
   es.forEach(e => remember(e.works)); const comp = competition(es, 6);
   const pick = P.picked && !logged(P.picked) && works[P.picked];
   fb.innerHTML = `<div class="card"><div class="h"><span>${esc(R.name)}</span><span class="tag dim">${R.members.length} in here · ${esc(R.code)}</span></div>
@@ -2305,7 +2320,7 @@ async function renderRoomFeed(fb, R) {
         ${pal.split && pal.split.id !== pal.agreed?.id ? `<div class="row" data-cw="${esc(pal.split.id)}"><span class="rk">≠</span><div class="t"><b>${t(pal.split.id)}</b><small><span class="bad">${pal.split.agree}% agree</span> · the fight of the year</small></div></div>` : ""}
         <div class="stack"><button class="btn soft" id="roomYearCard">Save the card</button></div>
       </div>`; })()}
-    <div class="lbl" id="talkTop">What the room said</div>${(() => { if (!es.length) return blank("var(--pink)","“","Nothing said yet","Log something and it lands here for the room to see.",[["talkAdd","Log something"]]);
+    <div class="tagrow" style="margin:18px 0 8px"><span class="lbl" id="talkTop" style="margin:0">What the room said</span><span class="tag dim">newest first</span></div>${(() => { if (!es.length) return blank("var(--pink)","“","Nothing said yet","Log something and it lands here for the room to see.",[["talkAdd","Log something"]]);
       const since = lastSeen(); let shown = false;
       return es.map(e => { const isNew = e.user_id !== me.id && String(e.created_at) > since; let head = "";
         if (isNew && !shown) { shown = true; head = `<div class="newline">New since you were here</div>`; }
@@ -2341,6 +2356,7 @@ async function renderFollowingFeed(fb) {
   const ids = follows.map(f => f.followee); let es = [];
   if (ids.length) { try { es = await q(sb.from("entries").select(ENTRY_SEL).in("user_id", ids).order("created_at",{ascending:false}).limit(60)); }
     catch (err) { oops(err, "Couldn't load the following feed"); } }
+  es.sort(newestFirst);
   es.forEach(e => remember(e.works));
   const twins = await tasteTwins(6);
   fb.innerHTML = (ids.length ? `<div class="chips" style="margin-top:6px">${follows.map(f => `<button class="chip" data-prof="${esc(f.followee)}">${esc(f.profiles?.handle||"")}</button>`).join("")}</div>` : "")
@@ -4166,7 +4182,7 @@ async function openWork(id) { let w = works[id]; if (!w) { try { const rows = aw
     const on = activeList()?.items.includes(w.id);
     try { if (on) await removeFromShelf(w.id); else await addToShelf(w.id); } finally {
       b.textContent = activeList()?.items.includes(w.id) ? "Take it off the shelf" : "Put it on the shelf"; b.disabled = false; } };
-  let es = []; try { es = await q(sb.from("entries").select(ENTRY_SEL).eq("work_id", w.id).order("created_at",{ascending:false}).limit(200)); }
+  let es = []; try { es = (await q(sb.from("entries").select(ENTRY_SEL).eq("work_id", w.id).order("created_at",{ascending:false}).limit(200))).sort(newestFirst); }
   catch (err) { oops(err, "Couldn't load what people said"); }
   const mine = es.filter(e => e.user_id === me.id), room = activeRoom() ? es.filter(e => activeRoom().members.some(m => m.id === e.user_id)) : [], fol = es.filter(e => isFollowing(e.user_id));
   const avg = list => { const best = {}; list.forEach(r => { if (!best[r.user_id] || r.rated_on > best[r.user_id].rated_on) best[r.user_id] = r; }); const v = Object.values(best); return v.length ? (v.reduce((a,r)=>a+r.score,0)/v.length/2).toFixed(1) : "—"; };
@@ -4378,7 +4394,7 @@ async function paintWatch(w, target = "wWatch", compact = false) {
 /* ============ PROFILE PAGE ============ */
 async function openProfile(userId) { const self = userId === me.id;
   let p = self ? me : null; if (!p) { try { const rows = await q(sb.from("profiles").select("id,handle,bio,avatar").eq("id", userId).limit(1)); p = rows[0]; } catch {} } if (!p) return;
-  let es = []; try { es = await q(sb.from("entries").select(ENTRY_SEL).eq("user_id", userId).order("created_at",{ascending:false}).limit(200)); } catch {} es.forEach(e => remember(e.works));
+  let es = []; try { es = (await q(sb.from("entries").select(ENTRY_SEL).eq("user_id", userId).order("created_at",{ascending:false}).limit(200))).sort(newestFirst); } catch {} es.forEach(e => remember(e.works));
   const t = tasteOf(es), mine = tasteOf(myEntries), match = tasteMatch(mine, t);
   let top = null; try { top = await loadTop(userId); } catch {}
   const theirTens = {}; for (const [k] of TENS) { if (k === "all time") continue; try { const l = await loadTop(userId, k); if (l?.items.length) theirTens[k] = l.items; } catch {} }
@@ -4762,7 +4778,7 @@ window.__rooms = { pullRefresh, openFind, setFollow, isFollowing, get follows(){
   CUTS, CARD_THEMES, cardTheme, spanData, tasteOf, reviewData, yearOf, roomPalmares, palmares, byPerson, spinN, SPIN_SIZES,
   loadNow, startNow, stopNow, nowOf, nowFor, nowLine, get myNow(){return myNow},
   bestOf, bestGenres, dealBest, loadBest, pickFrom, seenMode, keepSeen, get bestPool(){return bestPool}, get bestHand(){return bestHand},
-  secondThoughts, againLine, apart, shelfAge, waited, openProfile, openWork,
+  newestFirst, sortEntries, secondThoughts, againLine, apart, shelfAge, waited, openProfile, openWork,
   setSkin:k => { P.cardSkin = k; saveP(); }, get deckItems(){return deckItems},
   addToShelf, __isSoon:isSoon, __list:activeList,
   marksFor, openPaid, COMET, loadFounders, get founderIds(){return founderIds} };
