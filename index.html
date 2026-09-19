@@ -2277,6 +2277,10 @@ const pickMode = () => P.pickMode === "wheel" ? "wheel" : "deck";
    medium filter — the only difference is whether you get a say. Skipped titles go to
    the back rather than out, so a deck never runs dry, it just comes round again. */
 const PICK_VERB = { film:"Watch", tv:"Watch", book:"Read", game:"Play" };
+/* "Start it" sat next to "Watch it" — two buttons that sound like the same thing and do
+   opposite ones. Naming the medium says what the state is rather than what you are about
+   to do, and it cannot be mistaken for its neighbour. */
+const nowVerb = k => (PICK_VERB[k] || "Watch") + "ing";
 let deckItems = [], deckSeen = 0;
 function resetDeck() { deckItems = pickPool().slice();
   for (let i = deckItems.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1));
@@ -2771,7 +2775,7 @@ async function doSearch(term, onPick, resEl, msgEl, box, acts = null) { msgEl.te
     : blank("var(--cream2)","?", `Nothing for “${esc(term)}”`, `Try fewer words, or turn on another medium above. Some things simply aren't in TMDB, Open Library or IGDB.`, []);
     return; } window.__hits = Object.assign(window.__hits||{}, Object.fromEntries([...hits, ...byThem].map(h => [h.id, h])));
   const rowHTML = h => `<div class="row" data-add="${esc(h.id)}">${cover(h)}<div class="t"><b>${esc(h.title)}</b><small>${tag(h.kind)} ${isSoon(h)?`Coming ${when(h.release)}`:esc(h.year||"")}${h.creator?" · "+esc(h.creator):""}</small></div>${
-    acts ? acts.map(([k,l]) => `<button class="chip" data-act="${k}">${l}</button>`).join("") : `<span class="chip">Add</span>`}</div>`;
+    acts ? acts.map(([k,l]) => `<button class="chip" data-act="${k}">${typeof l === "function" ? l(h) : l}</button>`).join("") : `<span class="chip">Add</span>`}</div>`;
   resEl.innerHTML = hits.map(rowHTML).join("")
     + (byThem.length ? `<div class="lbl">${esc(person.role)} ${esc(person.name)}</div>` + byThem.map(rowHTML).join("") : "");
   $$("[data-add]", resEl).forEach(r => {
@@ -2890,7 +2894,9 @@ async function renderWaiting() { const el = $("#waitBody"); if (!el) return;
 function openAdd() {
   const shelf = candidates().slice(0, 8);
   const recent = myEntries.slice(0, 4);
-  openSheet(`<h3>What did you just finish?</h3><p class="sub">Search it, or take one off the shelf. Haven't got to it yet? <b>Shelf</b> puts it aside instead.</p>
+  openSheet(`<h3>What are you up to?</h3><p class="sub">Search it, or take one off the shelf.
+    <b>Log</b> if you've finished it, <b>Shelf</b> if you haven't got to it, and the third
+    one if you're in the middle of it right now.</p>
     <input id="aSearch" type="search" placeholder="Search film, TV, books, games" autocomplete="off" style="margin-top:12px">
     <div class="chips">${Object.keys(KINDS).map(k => `<button class="chip k ${P.kinds.includes(k)?"on":""}" data-ak="${k}">${K(k).label}</button>`).join("")}</div>
     <div class="msg" id="aMsg"></div><div id="aResults"></div>
@@ -2909,8 +2915,13 @@ function openAdd() {
        the same result can go to the shelf without pretending you've watched it */
     t = setTimeout(() => doSearch(v, async (r, act) => { const id = r.dataset.add;
       if (act === "shelf") return addToShelf(id);
-      try { const w = await ensureWork(window.__hits[id]); openLog(w); } catch (err) { $("#aMsg").textContent = err.message; }
-    }, $("#aResults"), $("#aMsg"), null, [["log","Log"],["shelf","Shelf"]]), 400); };
+      try { const w = await ensureWork(window.__hits[id]);
+        /* the moment you most want to say you have started something is the moment you
+           have just picked it up, which is exactly when it is not on any list yet */
+        if (act === "now") { if (await startNow(w.id)) { closeSheet(); say(`${nowVerb(w.kind)} it`); refresh(); } return; }
+        openLog(w); } catch (err) { $("#aMsg").textContent = err.message; }
+    }, $("#aResults"), $("#aMsg"), null,
+      [["log","Log"],["shelf","Shelf"],["now", h => nowVerb(h.kind)]]), 400); };
 }
 $("#add").onclick = () => { const b = $("#add"); b.classList.remove("busy"); void b.offsetWidth; b.classList.add("busy"); if (navigator.vibrate) navigator.vibrate(8); openAdd(); };
 
@@ -3798,10 +3809,10 @@ async function openWork(id) { let w = works[id]; if (!w) { try { const rows = aw
   const paintNow = () => { const el = $("#wNow"); if (!el) return;
     const n = nowOf(w.id);
     el.innerHTML = isSoon(w) ? "" : n
-      ? `<div class="card nowcard"><div class="h"><span>You're on it</span><span class="tag dim">${nowLine(n)}</span></div>
+      ? `<div class="card nowcard"><div class="h"><span>${nowVerb(w.kind)} now</span><span class="tag dim">${nowLine(n)}</span></div>
           <input id="nowAt" maxlength="40" placeholder="Where are you up to?" value="${esc(n.at || "")}">
           <div class="stack"><button class="btn quiet" id="nowStop">Put it down</button></div></div>`
-      : `<div class="stack"><button class="btn ghost" id="nowStart">Start it</button></div>`;
+      : `<div class="stack"><button class="btn ghost" id="nowStart">${nowVerb(w.kind)} it</button></div>`;
     const go = $("#nowStart"); if (go) go.onclick = async () => { go.disabled = true;
       if (await startNow(w.id)) { paintNow(); say("On it"); } else go.disabled = false; };
     const stop = $("#nowStop"); if (stop) stop.onclick = async () => { stop.disabled = true;
@@ -4303,7 +4314,7 @@ function downloadJSON(obj, name) {
 }
 
 /* a small hook so the card renderers can be exercised by the test harness */
-window.__rooms = { RINGS, MARK_RING, ringFromMarks, ringCache, myRing, spanOf, reelIndexNow, memories, dueReview, memForget, MEM_MIN, MEM_DAYS, whoseWord, wordPending, HAND_FLOOR, loadHand, handTo, answerHand, reachable, cameFrom, openHand, get handIn(){return handIn}, get handOut(){return handOut}, get handAll(){return handAll}, reelTo, markReel, REEL, reelCopies, get reelAt(){return reelAt}, facesFor, faceEl, faceMap, FACE_IMG, paintLog, wireLog, openWholeLog, AV_SHAPES, AV_EYES, AV_COLS, avSVG, avFor, get me(){return me}, get entries(){return myEntries}, get works(){return works}, get rooms(){return rooms},
+window.__rooms = { nowVerb, openAdd, RINGS, MARK_RING, ringFromMarks, ringCache, myRing, spanOf, reelIndexNow, memories, dueReview, memForget, MEM_MIN, MEM_DAYS, whoseWord, wordPending, HAND_FLOOR, loadHand, handTo, answerHand, reachable, cameFrom, openHand, get handIn(){return handIn}, get handOut(){return handOut}, get handAll(){return handAll}, reelTo, markReel, REEL, reelCopies, get reelAt(){return reelAt}, facesFor, faceEl, faceMap, FACE_IMG, paintLog, wireLog, openWholeLog, AV_SHAPES, AV_EYES, AV_COLS, avSVG, avFor, get me(){return me}, get entries(){return myEntries}, get works(){return works}, get rooms(){return rooms},
   CUTS, openCuts, spanData, tasteOf, reviewData, yearOf, roomPalmares, tagStats, agreement, activeRoom, q, sb: () => sb, remember,
   joinRoomChannel, leaveRoomChannel, paintHere, onLiveEntry, paintDay, get hereNow(){return hereNow},
   say, oops, markLive, takeInvite, dropInvite, inviteLink, useInvite, exportEverything,
