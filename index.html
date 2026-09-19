@@ -115,6 +115,10 @@ header .wrap{display:flex;align-items:center;justify-content:space-between;heigh
 .note .t p{font-size:13.5px;font-weight:500;line-height:1.35;margin:0}
 .note .t small{display:block;font-size:11px;font-weight:600;color:var(--mute);margin-top:2px}
 .note .acts{display:flex;gap:6px;flex:none}
+/* who liked it, under the foot rather than inside the button: it is a sentence and it
+   grows, and a button that grows moves everything beside it */
+.likes{font-size:12.5px;font-weight:600;color:var(--mute);margin-top:8px}
+.likes:empty{display:none}
 /* the two fields almost nobody needs, folded away rather than deleted */
 .fold{margin-top:18px;border-top:1px solid var(--line);padding-top:6px}
 .fold>summary{list-style:none;cursor:pointer;font-weight:700;font-size:11px;letter-spacing:.06em;
@@ -308,8 +312,8 @@ textarea{min-height:76px;resize:none;line-height:1.45}
 @keyframes heartPop{0%{transform:scale(1)}28%{transform:scale(.82)}62%{transform:scale(1.3)}100%{transform:none}}
 @keyframes halo{0%{transform:translate(-50%,-50%) scale(.5);opacity:.4}
   100%{transform:translate(-50%,-50%) scale(2.1);opacity:0}}
-[data-same].popped{animation:heartPop .5s cubic-bezier(.3,1.7,.5,1);position:relative}
-[data-same].popped:before{content:"";position:absolute;left:50%;top:50%;width:34px;height:34px;border-radius:50%;
+[data-like].popped{animation:heartPop .5s cubic-bezier(.3,1.7,.5,1);position:relative}
+[data-like].popped:before{content:"";position:absolute;left:50%;top:50%;width:34px;height:34px;border-radius:50%;
   background:var(--bad);animation:halo .5s ease-out both;pointer-events:none}
 
 /* 13 — a profile's avatar builds itself piece by piece */
@@ -792,7 +796,7 @@ body.demo header{padding-top:34px}
   html,body{transition:none}
   img.co,.po img,.slot.full img,.ttl img{opacity:1;transform:none;transition:none}
   .wash,.sheet.on .cuts button,.cell.dealt,.po .tick.swept,.po .tick.swept:after,.cell.landed .po,
-  .cell.shoved .po,.tiles .tile,[data-same].popped,[data-same].popped:before,
+  .cell.shoved .po,.tiles .tile,[data-like].popped,[data-like].popped:before,
   .sheet.on .av.meet svg > g > *,.sheet.on .av.big svg > g > *,.av.new svg > g > *,.av.new .eyes,.av .eyes,
   .newline,.newline:before,.newline:after{animation:none}
   .navpill,.odo .reel .strip,.trio .agree .ring .val{transition:none}
@@ -1258,7 +1262,7 @@ addEventListener("online", flushQueue);
 let me = null; const works = {}; let lists = [], rooms = [], clubs = [], myEntries = [], follows = [], loggedIds = new Set();
 const remember = w => { if (w?.id) works[w.id] = Object.assign(works[w.id]||{}, w); return w?.id ? works[w.id] : null; };
 const logged = id => loggedIds.has(id);
-const ENTRY_SEL = "id,user_id,work_id,rated_on,score,note,loved,breakdown,context,created_at,profiles!entries_user_id_fkey(id,handle,bio,avatar),works(*),reactions(user_id)";
+const ENTRY_SEL = "id,user_id,work_id,rated_on,score,note,loved,breakdown,context,created_at,room_only,profiles!entries_user_id_fkey(id,handle,bio,avatar),works(*),reactions(user_id)";
 
 async function loadLists() { const rows = await q(sb.from("lists").select("id,name,created_at,list_items(work_id,added_at,position,works(*))").order("created_at"));
   /* a hand-placed item keeps its slot; anything never dragged falls in behind, oldest first */
@@ -1702,7 +1706,8 @@ async function onLiveEntry(row, memberIds) {
 /* ---------- what's happened since you were last here ----------
    Two different questions were sharing one number, and it made both of them worse.
    "There are eleven new entries in your room" is a nudge to go and read. "Mo followed
-   you, and two people agreed with your Dune" is a list of things that happened to you,
+   you, and two people liked what you said about Dune" is a list of things that happened
+   to you,
    each of which you might want to do something about. The first belongs on the tab
    that holds the feed. The second needs somewhere of its own, so it got the bell. */
 let unseen = { entries:[], followers:[], likes:[] };
@@ -1785,7 +1790,7 @@ const noteAgo = at => { if (!at) return "";
 function noteRow(n) {
   const t = n.work?.title || n.entry?.works?.title || works[n.entry?.work_id]?.title || "";
   const line = n.kind === "follow" ? "started following you"
-    : n.kind === "like" ? (t ? `agreed with you on <b>${esc(t)}</b>` : "agreed with something you wrote")
+    : n.kind === "like" ? (t ? `liked what you said about <b>${esc(t)}</b>` : "liked something you wrote")
     : (t ? `handed you <b>${esc(t)}</b>` : "handed you something");
   const acts = n.kind === "follow"
       ? `<button class="chip ${isFollowing(n.p.id) ? "on" : ""}" data-back="${esc(n.p.id)}">${isFollowing(n.p.id) ? "Following" : "Follow back"}</button>`
@@ -2191,6 +2196,36 @@ function openFind() {
       $$("[data-prof]", res).forEach(x => x.onclick = () => openProfile(x.dataset.prof));
     }, 350); }; }
 
+/* ---------- who liked it ----------
+   Anyone signed in can like a post that is not room-only, so a bare count is mostly
+   strangers and flattens the one distinction this app is built on: agreement from
+   somebody whose taste you know is worth more than agreement from forty people you
+   have never met.
+
+   So the people you know are named and everyone else is a number. "Know" is meant
+   strictly — your rooms, the people you follow, the people who follow you — because
+   naming somebody you merely scrolled past would imply a relationship you do not have.
+   reactions come back as bare user_ids, and the names held locally are exactly the
+   names worth printing, so this costs no extra request. */
+function knownName(id) {
+  if (id === me?.id) return "you";
+  for (const r of rooms) { const m = r.members?.find(m => m.id === id); if (m?.handle) return m.handle; }
+  const f = follows.find(f => f.followee === id); if (f?.profiles?.handle) return f.profiles.handle;
+  const b = followsMe.get?.(id); if (b?.handle) return b.handle;
+  return null; }
+const LIKE_NAMES = 2;
+function likeLine(e) {
+  const rs = e.reactions || []; if (!rs.length) return "";
+  const names = [], ids = rs.map(r => r.user_id);
+  /* you always come first, because the first thing you check is whether you already did */
+  if (ids.includes(me.id)) names.push("you");
+  for (const id of ids) { if (id === me.id || names.length >= LIKE_NAMES) continue;
+    const n = knownName(id); if (n && !names.includes(n)) names.push(n); }
+  const rest = rs.length - names.length;
+  if (!names.length) return `${said(rest)} ${rest === 1 ? "person" : "people"} liked this`;
+  if (!rest) return `${names.length === 1 ? names[0] : names.slice(0,-1).join(", ") + " and " + names[names.length-1]} liked this`;
+  return `${names.join(", ")} and ${said(rest)} other${rest === 1 ? "" : "s"} liked this`; }
+
 function slipHTML(e, opts = {}) { const w = remember(e.works) || works[e.work_id] || {}; const mine = e.user_id === me.id;
   const same = (e.reactions||[]).some(r => r.user_id === me.id), n = (e.reactions||[]).length;
   return `<div class="slip" data-slip="${e.id}">
@@ -2199,25 +2234,30 @@ function slipHTML(e, opts = {}) { const w = remember(e.works) || works[e.work_id
     ${e.note?`<div class="q${String(e.note).length > 210 ? " clip" : ""}">“${esc(e.note)}”</div>${String(e.note).length > 210 ? `<button class="more" data-more="${e.id}">More</button>` : ""}`:""}
     ${(() => { const t = together(e); return t ? `<div class="loved" style="margin-top:10px"><span class="together">◆ ${t}</span></div>` : ""; })()}
     ${e.loved?.length?`<div class="loved">${e.loved.slice(0,4).map(k => `<span>${esc(k.startsWith("person:")?lc(k.slice(7)):k)}</span>`).join("")}</div>`:""}
-    <div class="foot"><div class="acts">${mine ? "" : `<button data-same="${e.id}" class="${same?"on":""}">Same${n?" · "+n:""}</button>`
-      }</div>${stars(e.score,"sm")}</div></div>`; }
+    <div class="foot"><div class="acts">${mine ? "" : `<button data-like="${e.id}" class="${same?"on":""}">${same ? "Liked" : "Like"}</button>`
+      }${mine && e.room_only ? `<span class="tag dim">room only</span>` : ""}</div>${stars(e.score,"sm")}</div>
+    <div class="likes" data-likes="${e.id}">${likeLine(e)}</div></div>`; }
 function wireSlips(el, es) { const by = Object.fromEntries(es.map(e => [e.id, e]));
   $$("[data-more]", el).forEach(b => b.onclick = ev => { ev.stopPropagation();
     const qd = b.previousElementSibling; qd.classList.toggle("clip"); b.textContent = qd.classList.contains("clip") ? "More" : "Less"; });
   $$("[data-work]", el).forEach(x => x.onclick = () => openWork(x.dataset.work));
   $$("[data-prof]", el).forEach(x => x.onclick = () => openProfile(x.dataset.prof));
-  /* Same used to live only in the room, and re-rendered the whole feed on every tap —
-     which rebuilt the page under your thumb and threw away where you were reading. It
-     now appears wherever a review does, and only the button it was, changes. */
-  $$("[data-same]", el).forEach(b => b.onclick = async () => { const e = by[b.dataset.same], has = (e.reactions||[]).some(r => r.user_id === me.id);
+  /* It used to be called Same, lived only in the room, and re-rendered the whole feed
+     on every tap — which rebuilt the page under your thumb and threw away where you
+     were reading. It now appears wherever a review does, and only the button it was,
+     plus the line of names under it, changes. */
+  $$("[data-like]", el).forEach(b => b.onclick = async () => { const e = by[b.dataset.like], has = (e.reactions||[]).some(r => r.user_id === me.id);
     b.disabled = true;
     try { if (has) await q(sb.from("reactions").delete().eq("entry_id",e.id).eq("user_id",me.id)); else await q(sb.from("reactions").insert({ entry_id:e.id, user_id:me.id }));
       e.reactions = has ? (e.reactions||[]).filter(r => r.user_id !== me.id) : [...(e.reactions||[]), { user_id:me.id }];
-      const c = e.reactions.length;
-      b.classList.toggle("on", !has); b.textContent = `Same${c ? " · " + c : ""}`;
-      if (!has && !REDUCED) requestAnimationFrame(() => { const nb = $(`[data-same="${CSS.escape(e.id)}"]`);
+      b.classList.toggle("on", !has); b.textContent = has ? "Like" : "Liked";
+      /* the line under it is the other half of the same fact, and it is the only other
+         thing that moves — the list must not be rebuilt under the thumb that tapped */
+      const line = el.querySelector(`[data-likes="${CSS.escape(e.id)}"]`) || document.querySelector(`[data-likes="${CSS.escape(e.id)}"]`);
+      if (line) line.textContent = likeLine(e);
+      if (!has && !REDUCED) requestAnimationFrame(() => { const nb = $(`[data-like="${CSS.escape(e.id)}"]`);
         if (nb) { nb.classList.add("popped"); setTimeout(() => nb.classList.remove("popped"), 520); } });
-    } catch (err) { oops(err, has ? "Couldn't take that back" : "Couldn't agree with that"); }
+    } catch (err) { oops(err, has ? "Couldn't take that back" : "Couldn't like that"); }
     finally { b.disabled = false; } });
   }
 function compRows(rows, onOpen) { return rows.map((f,i) => { const w = works[f.id] || {};
@@ -2848,11 +2888,14 @@ function reachable() {
   for (const f of follows) { const p = f.profiles; if (!p || p.id === me.id) continue;
     if (followsMe.has(p.id)) out.set(p.id, p); }
   return [...out.values()].sort((a,b) => a.handle.localeCompare(b.handle)); }
-let followsMe = new Set();
+/* a Map, not a Set: it used to hold ids alone, and a name you cannot look up is a
+   person who shows up in "and three others" although you know exactly who they are */
+let followsMe = new Map();
 async function loadFollowsMe() {
-  try { const rows = await q(sb.from("follows").select("follower").eq("followee", me.id));
-    followsMe = new Set(rows.map(r => r.follower)); }
-  catch { followsMe = new Set(); } }
+  try { const rows = await q(sb.from("follows")
+      .select("follower,profiles!follows_follower_fkey(id,handle,avatar)").eq("followee", me.id));
+    followsMe = new Map(rows.map(r => [r.follower, r.profiles || null])); }
+  catch { followsMe = new Map(); } }
 async function handTo(ids, w, note) {
   const rows = ids.map(id => ({ sender:me.id, recipient:id, work_id:w.id, note:note || null }));
   await q(sb.from("works").upsert({ id:w.id, kind:w.kind, title:w.title, year:w.year,
@@ -4407,6 +4450,13 @@ function openLog(w, edit = null) { const cfg = K(w.kind); const loved = edit?.lo
   openSheet(`<div class="head">${cover(w)}<div class="hh"><h3>${esc(w.title)}</h3><p class="sub">${tag(w.kind)} ${esc(w.year||"")}${w.creator?" · "+esc(w.creator):""}</p></div></div>
     <div class="lbl">Date ${cfg.verb}</div><input type="date" id="wDate" value="${edit?esc(edit.rated_on):today()}"><div class="lbl">Your rating</div><div id="rateWrap">${starRow()}</div><div class="ticks" id="tickRow"></div><div id="lovedWrap"></div>
     <div class="lbl">Add a note</div><textarea id="wNote" placeholder="One line, if you want">${edit?.note?esc(edit.note):""}</textarea>
+    ${/* room_only has been in the schema since v13 and nothing ever set it, so every
+          entry anybody has ever written is public. Only worth offering when there is a
+          room to keep it in. */""}
+    ${rooms.length ? `<div class="lbl">Who sees this</div><div class="seg" id="wWho">${
+      [["all","Everyone"],["room","Just the room"]].map(([k,l]) =>
+        `<button data-who="${k}" class="${(edit ? (edit.room_only ? "room" : "all") : (P.postTo === "room" ? "room" : "all")) === k ? "on" : ""}">${l}</button>`).join("")}</div>
+      <p class="sub" id="whoNote"></p>` : ""}
     <div class="stack"><button class="btn" id="wSave" ${edit?"":"disabled"}>${edit?"Save changes":"Save the entry"}</button><button class="btn quiet" id="wCancel">Not now</button></div><p class="msg" id="wMsg"></p>`);
   const drawTicks = () => { $("#tickRow").innerHTML = cfg.ticks.flatMap(([key,a,b]) => [`<button class="tk ${ctx[key]===a?"on":""}" data-tk="${key}|${a}">${a}</button>`,`<button class="tk ${ctx[key]===b?"on":""}" data-tk="${key}|${b}">${b}</button>`]).join("") + `<button class="tk ${ctx.with?"on":""}" data-tk="with|">${ctx.with?"With "+esc(ctx.with):"With…"}</button>`;
     $$("[data-tk]").forEach(b => b.onclick = () => { const [key,val] = b.dataset.tk.split("|"); if (key === "with") ctx.with = (prompt("Who with?", ctx.with||"")||"").trim(); else ctx[key] = ctx[key] === val ? null : val; drawTicks(); }); }; drawTicks();
@@ -4432,6 +4482,17 @@ function openLog(w, edit = null) { const cfg = K(w.kind); const loved = edit?.lo
     /* the names are already there; the photographs arrive when they arrive */
     facesFor(w).then(f => { if (!Object.keys(f).length) return; faces = f;
       if ($("#lovedWrap")?.dataset.drawn) paintLoved(); }).catch(()=>{}); };
+  /* remembered, and shown every time, because a sticky choice you cannot see is a
+     choice that eventually surprises you */
+  let roomOnly = edit ? !!edit.room_only : P.postTo === "room";
+  const paintWho = () => { const n = $("#whoNote"); if (!n) return;
+    n.textContent = roomOnly
+      ? `Only ${rooms.length === 1 ? esc(rooms[0].name) : "your rooms"} can see this one.`
+      : "Anyone in Rooms can find this, and anyone can like it.";
+    $$("[data-who]").forEach(b => b.classList.toggle("on", (b.dataset.who === "room") === roomOnly)); };
+  $$("[data-who]").forEach(b => b.onclick = () => { roomOnly = b.dataset.who === "room";
+    P.postTo = roomOnly ? "room" : "all"; saveP(); paintWho(); });
+  paintWho();
   const wireStars = () => $$("#rateWrap [data-i]").forEach(b => { let timer = null, fired = false; const set = half => { fired = true; score = half; $("#rateWrap").innerHTML = starRow(); wireStars(); $("#wSave").disabled = false; if (navigator.vibrate) navigator.vibrate(8);
       $$("#rateWrap button").slice(0, Math.ceil(half/2)).forEach((sb2, n) => setTimeout(() => { sb2.classList.add("pop"); setTimeout(() => sb2.classList.remove("pop"), 340); }, n*45));
       drawLoved(); }; const i = +b.dataset.i;
@@ -4439,7 +4500,7 @@ function openLog(w, edit = null) { const cfg = K(w.kind); const loved = edit?.lo
     b.addEventListener("pointerup", e => { e.preventDefault(); b.classList.remove("holding"); if (timer) { clearTimeout(timer); timer = null; } if (!fired) set(i*2+2); });
     b.addEventListener("pointerleave", () => { b.classList.remove("holding"); if (timer) { clearTimeout(timer); timer = null; } }); b.addEventListener("contextmenu", e => e.preventDefault()); });
   wireStars(); drawLoved(); $("#wCancel").onclick = closeSheet;
-  $("#wSave").onclick = async () => { if (!score) return; const e = { user_id:me.id, work_id:w.id, rated_on:$("#wDate").value || today(), score, note:$("#wNote").value.trim() || null, loved:loved.length?loved.slice():null, context:Object.keys(ctx).length?ctx:null, breakdown:null };
+  $("#wSave").onclick = async () => { if (!score) return; const e = { user_id:me.id, work_id:w.id, rated_on:$("#wDate").value || today(), score, note:$("#wNote").value.trim() || null, loved:loved.length?loved.slice():null, context:Object.keys(ctx).length?ctx:null, breakdown:null, room_only:roomOnly };
     $("#wSave").disabled = true; try { await saveEntry(e, edit?.id); await loadMine();
       const offShelf = !edit?.id && dropFromShelf(w.id);
       /* you are not in the middle of something you have just finished */
@@ -4450,7 +4511,7 @@ function openLog(w, edit = null) { const cfg = K(w.kind); const loved = edit?.lo
 
 /* ============ ENTRY PAGE ============ */
 function openEntry(e, justSaved = false) { const w = works[e.work_id] || e.works || {}; const cfg = K(w.kind || kindOf(e.work_id)); const mine = e.user_id === me.id;
-  openSheet(`${justSaved?`<span class="tag savedchip" style="background:var(--mint)">Saved</span>`:""}<div class="head" style="margin-top:10px">${cover(w)}<div class="hh"><h3>${esc(w.title)}</h3><p class="sub">${tag(w.kind)} ${esc(w.year||"")} · ${esc(mine?"you":e.profiles?.handle||"")} ${cfg.verb} ${when(e.rated_on)}</p><div style="margin-top:10px">${stars(e.score,"big")}</div></div></div>
+  openSheet(`${justSaved?`<span class="tag savedchip" style="background:var(--mint)">Saved</span>`:""}<div class="head" style="margin-top:10px">${cover(w)}<div class="hh"><h3>${esc(w.title)}</h3><p class="sub">${tag(w.kind)} ${esc(w.year||"")} · ${esc(mine?"you":e.profiles?.handle||"")} ${cfg.verb} ${when(e.rated_on)}${mine && e.room_only ? ` · <span class="tag dim">room only</span>` : ""}</p><div style="margin-top:10px">${stars(e.score,"big")}</div></div></div>
     ${e.context ? `<div class="ticks">${Object.entries(e.context).filter(([k,v]) => v).map(([k,v]) => `<span class="tk on">${k==="with"?"With "+esc(v):esc(v)}</span>`).join("")}</div>` : ""}
     ${e.loved?.length?`<div class="chips" style="margin-top:12px">${e.loved.map(k => `<span class="chip ${k.startsWith("person:")?"who on":"on"}">${esc(k.startsWith("person:")?lc(k.slice(7)):k)}</span>`).join("")}</div>`:""}
     ${e.note?`<div class="card"><div class="say" style="font-size:19px;margin:0">“${esc(e.note)}”</div></div>`:""}
@@ -4678,7 +4739,7 @@ function downloadJSON(obj, name) {
 }
 
 /* a small hook so the card renderers can be exercised by the test harness */
-window.__rooms = { pullRefresh, openFind, setFollow, isFollowing, get follows(){return follows}, openNotes, noteList, noteRow, markNotesSeen, noteCount, newHands, noteSeen, get unseen(){return unseen}, nowVerb, openAdd, RINGS, MARK_RING, ringFromMarks, ringCache, myRing, spanOf, reelIndexNow, memories, dueReview, memForget, MEM_MIN, MEM_DAYS, whoseWord, wordPending, HAND_FLOOR, loadHand, handTo, answerHand, reachable, cameFrom, openHand, get handIn(){return handIn}, get handOut(){return handOut}, get handAll(){return handAll}, reelTo, markReel, REEL, reelCopies, get reelAt(){return reelAt}, facesFor, faceEl, faceMap, FACE_IMG, paintLog, wireLog, openWholeLog, AV_SHAPES, AV_EYES, AV_COLS, avSVG, avFor, get me(){return me}, get entries(){return myEntries}, get works(){return works}, get rooms(){return rooms},
+window.__rooms = { pullRefresh, openFind, setFollow, isFollowing, get follows(){return follows}, openNotes, noteList, noteRow, markNotesSeen, noteCount, newHands, noteSeen, get unseen(){return unseen}, nowVerb, openAdd, RINGS, MARK_RING, ringFromMarks, ringCache, myRing, spanOf, reelIndexNow, memories, dueReview, memForget, MEM_MIN, MEM_DAYS, whoseWord, wordPending, HAND_FLOOR, loadHand, handTo, answerHand, reachable, cameFrom, openHand, get handIn(){return handIn}, get handOut(){return handOut}, get handAll(){return handAll}, reelTo, markReel, REEL, reelCopies, get reelAt(){return reelAt}, facesFor, faceEl, faceMap, FACE_IMG, paintLog, wireLog, openWholeLog, openLog, likeLine, knownName, AV_SHAPES, AV_EYES, AV_COLS, avSVG, avFor, get me(){return me}, get entries(){return myEntries}, get works(){return works}, get rooms(){return rooms},
   CUTS, openCuts, spanData, tasteOf, reviewData, yearOf, roomPalmares, tagStats, agreement, activeRoom, q, sb: () => sb, remember,
   joinRoomChannel, leaveRoomChannel, paintHere, onLiveEntry, paintDay, get hereNow(){return hereNow},
   say, oops, markLive, takeInvite, dropInvite, inviteLink, useInvite, exportEverything,

@@ -579,3 +579,24 @@ create policy replies_read on replies for select to authenticated
 /* the bell asks one question on every load — "reactions on my entries, newest
    first" — and without this it is a scan of every reaction in the table */
 create index if not exists reactions_entry_time on reactions (entry_id, created_at desc);
+
+
+/* ============================================================================
+   v18 — room_only finally means something, so the rows hanging off an entry
+         have to respect it
+   ============================================================================
+   The column has existed since v13 and nothing ever set it, so every entry
+   anybody has written has been public. The app can now keep one inside a room,
+   which makes a gap in reactions_mine worth closing: it only ever checked that
+   the row was yours, never that the entry was one you are allowed to see. You
+   cannot read a room-only entry you are not in, so you cannot find its id — but
+   "they cannot find it" is not the same as "they cannot write to it", and the
+   second is the one worth being true.
+   ============================================================================ */
+
+drop policy if exists reactions_mine on reactions;
+create policy reactions_mine on reactions for all to authenticated
+  using (user_id = auth.uid())
+  with check (user_id = auth.uid() and exists (select 1 from entries e
+    where e.id = reactions.entry_id
+      and (e.user_id = auth.uid() or (not e.room_only) or shares_room(e.user_id))));
