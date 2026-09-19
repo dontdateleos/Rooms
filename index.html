@@ -117,6 +117,12 @@ header .wrap{display:flex;align-items:center;justify-content:space-between;heigh
 .note .acts{display:flex;gap:6px;flex:none}
 /* who liked it, under the foot rather than inside the button: it is a sentence and it
    grows, and a button that grows moves everything beside it */
+.acts button.lk{display:grid;place-items:center;padding:2px 0}
+.hrt{width:19px;height:19px;display:block;fill:none;stroke:currentColor;stroke-width:2.15;
+  stroke-linecap:round;stroke-linejoin:round;transform:rotate(-5deg)}
+/* at rest it was disappearing into the rule above it */
+.acts button.lk{color:var(--mute2,#9a94ad)}
+.acts button.lk.on{color:var(--bad)}
 .likes{font-size:12.5px;font-weight:600;color:var(--mute);margin-top:8px}
 .likes:empty{display:none}
 /* the two fields almost nobody needs, folded away rather than deleted */
@@ -2196,6 +2202,12 @@ function openFind() {
       $$("[data-prof]", res).forEach(x => x.onclick = () => openProfile(x.dataset.prof));
     }, 350); }; }
 
+/* The heart is drawn rather than constructed — uneven lobes, a tail off-centre, and a
+   few degrees of tilt. At this size the wobble is nearly subliminal, which is the point:
+   it should read as a heart somebody inked, not one a grid produced. */
+const INK_HEART = "M12.25 19.7C10.85 18.75 4.7 15 4.7 10.65 4.7 8.2 6.55 6.55 8.7 6.6c1.5.05 2.8.9 3.45 2.2.65-1.45 2.05-2.35 3.6-2.25 2.25.15 3.9 2 3.75 4.4-.25 4.25-6 7.9-7.25 8.75z";
+const heartSVG = on => `<svg viewBox="0 0 24 24" aria-hidden="true" class="hrt"><path d="${INK_HEART}" fill="${on ? "currentColor" : "none"}"/></svg>`;
+
 /* ---------- who liked it ----------
    Anyone signed in can like a post that is not room-only, so a bare count is mostly
    strangers and flattens the one distinction this app is built on: agreement from
@@ -2234,7 +2246,7 @@ function slipHTML(e, opts = {}) { const w = remember(e.works) || works[e.work_id
     ${e.note?`<div class="q${String(e.note).length > 210 ? " clip" : ""}">“${esc(e.note)}”</div>${String(e.note).length > 210 ? `<button class="more" data-more="${e.id}">More</button>` : ""}`:""}
     ${(() => { const t = together(e); return t ? `<div class="loved" style="margin-top:10px"><span class="together">◆ ${t}</span></div>` : ""; })()}
     ${e.loved?.length?`<div class="loved">${e.loved.slice(0,4).map(k => `<span>${esc(k.startsWith("person:")?lc(k.slice(7)):k)}</span>`).join("")}</div>`:""}
-    <div class="foot"><div class="acts">${mine ? "" : `<button data-like="${e.id}" class="${same?"on":""}">${same ? "Liked" : "Like"}</button>`
+    <div class="foot"><div class="acts">${mine ? "" : `<button data-like="${e.id}" class="lk ${same?"on":""}" aria-pressed="${same}" aria-label="${same ? "Liked — tap to take it back" : "Like this"}">${heartSVG(same)}</button>`
       }${mine && e.room_only ? `<span class="tag dim">room only</span>` : ""}</div>${stars(e.score,"sm")}</div>
     <div class="likes" data-likes="${e.id}">${likeLine(e)}</div></div>`; }
 function wireSlips(el, es) { const by = Object.fromEntries(es.map(e => [e.id, e]));
@@ -2250,7 +2262,9 @@ function wireSlips(el, es) { const by = Object.fromEntries(es.map(e => [e.id, e]
     b.disabled = true;
     try { if (has) await q(sb.from("reactions").delete().eq("entry_id",e.id).eq("user_id",me.id)); else await q(sb.from("reactions").insert({ entry_id:e.id, user_id:me.id }));
       e.reactions = has ? (e.reactions||[]).filter(r => r.user_id !== me.id) : [...(e.reactions||[]), { user_id:me.id }];
-      b.classList.toggle("on", !has); b.textContent = has ? "Like" : "Liked";
+      b.classList.toggle("on", !has); b.innerHTML = heartSVG(!has);
+      b.setAttribute("aria-pressed", String(!has));
+      b.setAttribute("aria-label", has ? "Like this" : "Liked — tap to take it back");
       /* the line under it is the other half of the same fact, and it is the only other
          thing that moves — the list must not be rebuilt under the thumb that tapped */
       const line = el.querySelector(`[data-likes="${CSS.escape(e.id)}"]`) || document.querySelector(`[data-likes="${CSS.escape(e.id)}"]`);
