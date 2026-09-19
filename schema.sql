@@ -536,3 +536,46 @@ do $$ begin
   then execute 'alter publication supabase_realtime add table public.handovers'; end if;
 end $$;
 alter table handovers replica identity full;
+
+
+/* ============================================================================
+   v17 — a bell, and the quiet thing it turned up
+   ============================================================================
+   Two problems, one of which was already live.
+
+   1. Agreement had no clock. reactions is (entry_id, user_id) and nothing more,
+      so "who agreed with me since I last looked" was a question the table could
+      not answer. A column with a default is enough; existing rows are stamped
+      at the moment this runs, and the app only ever asks about rows newer than
+      the first time you opened the bell, so nobody gets a week of backlog.
+
+   2. entries_read was widened in v13 so anything not marked room_only is
+      readable by anyone signed in. The things hanging off an entry were never
+      widened with it. That was invisible until the Same button started drawing
+      outside rooms, and then it was bad in a specific way: you could write a
+      reaction to a stranger's review — reactions_mine only checks that the row
+      is yours — but you could not read it back. The count said nothing, your
+      own agreement looked untaken, and tapping again collided with the row you
+      had already written.
+
+      So the rule lives with the entry now, and these two follow it rather than
+      keeping their own out-of-date copy of it.
+   ============================================================================ */
+
+alter table reactions add column if not exists created_at timestamptz default now();
+
+drop policy if exists reactions_read on reactions;
+create policy reactions_read on reactions for select to authenticated
+  using (exists (select 1 from entries e
+    where e.id = reactions.entry_id
+      and (e.user_id = auth.uid() or (not e.room_only) or shares_room(e.user_id))));
+
+drop policy if exists replies_read on replies;
+create policy replies_read on replies for select to authenticated
+  using (exists (select 1 from entries e
+    where e.id = replies.entry_id
+      and (e.user_id = auth.uid() or (not e.room_only) or shares_room(e.user_id))));
+
+/* the bell asks one question on every load — "reactions on my entries, newest
+   first" — and without this it is a scan of every reaction in the table */
+create index if not exists reactions_entry_time on reactions (entry_id, created_at desc);

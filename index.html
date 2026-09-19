@@ -51,6 +51,36 @@ header .wrap{display:flex;align-items:center;justify-content:space-between;heigh
 .cog svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linejoin:round}
 .cog:active{transform:rotate(38deg) scale(.94)}
 .me .av{width:24px;height:24px}
+/* the bell. A count of things that happened TO you — not a count of things to read,
+   which is what the Doors tab already says. Those are different feelings and they were
+   sharing one number. */
+.bell{position:relative;width:38px;height:38px;border-radius:50%;border:0;background:#fff;color:var(--ink);cursor:pointer;
+  display:none;place-items:center;padding:0;transition:transform .18s cubic-bezier(.3,1.4,.5,1)}
+.bell:not([hidden]){display:grid}
+.bell svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.bell:active{transform:scale(.92)}
+/* far enough out of the corner that it does not sit on the bell's dome — a count that
+   eats the icon it belongs to leaves you looking at neither */
+.bell .dot{position:absolute;top:-5px;right:-5px;min-width:16px;height:16px;border-radius:99px;background:var(--bad);color:#fff;
+  font-family:var(--head);font-weight:800;font-size:10px;display:grid;place-items:center;padding:0 4px;border:2px solid var(--cream);box-sizing:content-box}
+/* not .ring — that is the taste-twin match pill, and sharing the name put its mint
+   border round the bell. Every class in here is global; this one is the bell's alone. */
+.bell.jolt svg{animation:bellRing 1.1s cubic-bezier(.36,.07,.19,.97)}
+@keyframes bellRing{0%,100%{transform:rotate(0)}12%{transform:rotate(13deg)}26%{transform:rotate(-11deg)}
+  40%{transform:rotate(8deg)}54%{transform:rotate(-6deg)}68%{transform:rotate(3deg)}82%{transform:rotate(-2deg)}}
+/* one row per thing that happened. Same shape as .twin so the app keeps one idea of
+   what a person in a list looks like. */
+/* the new-mark hangs to the left of the row, so the row is inset far enough to hold it:
+   .panel .in clips overflow, and a dot at a negative offset is a dot nobody ever sees */
+.note{display:flex;align-items:center;gap:12px;padding:12px 0 12px 13px;border-bottom:1px solid var(--line);cursor:pointer}
+.note:last-child{border-bottom:0}
+.note.fresh{position:relative}
+.note.fresh::before{content:"";position:absolute;left:1px;top:50%;width:5px;height:5px;margin-top:-2.5px;border-radius:50%;background:var(--bad)}
+.note .t{flex:1;min-width:0}
+.note .t b{font-family:var(--head);font-weight:800;font-size:14.5px}
+.note .t p{font-size:13.5px;font-weight:500;line-height:1.35;margin:0}
+.note .t small{display:block;font-size:11px;font-weight:600;color:var(--mute);margin-top:2px}
+.note .acts{display:flex;gap:6px;flex:none}
 main{padding:8px 0 24px}
 section{display:none}section.on{display:block}
 
@@ -727,6 +757,7 @@ body.demo header{padding-top:34px}
   .newline,.newline:before,.newline:after{animation:none}
   .navpill,.odo .reel .strip,.trio .agree .ring .val{transition:none}
   .av:not(#meAv) svg[data-shape]{animation:none}
+  .bell.jolt svg{animation:none}
   .tile,.po,.club,.slip,.btn{transition:none}
   .reveal{opacity:1;transform:none;transition:none}}
 </style>
@@ -737,6 +768,7 @@ body.demo header{padding-top:34px}
   <div class="logo"><svg class="mark" viewBox="0 0 64 64" aria-hidden="true"><rect x="8" y="14" width="34" height="34" rx="8" fill="var(--apricot)"/><rect x="22" y="14" width="34" height="34" rx="8" fill="var(--sky)" opacity=".85"/></svg>Rooms</div>
   <div class="hr">
     <button class="me" id="meBtn" hidden><span class="av" id="meAv"></span><span id="meName"></span></button>
+    <button class="bell" id="bellBtn" aria-label="What happened" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8.5a6 6 0 1 0-12 0c0 5-2 6.5-2 6.5h16s-2-1.5-2-6.5z"/><path d="M13.7 19a2 2 0 0 1-3.4 0"/></svg></button>
     <button class="cog" id="cogBtn" aria-label="Settings" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.6 1.6 0 0 0 .32 1.77l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.6 1.6 0 0 0-1.77-.32 1.6 1.6 0 0 0-1 1.47V21a2 2 0 1 1-4 0v-.11a1.6 1.6 0 0 0-1.05-1.47 1.6 1.6 0 0 0-1.77.32l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.6 1.6 0 0 0 .32-1.77 1.6 1.6 0 0 0-1.47-1H3a2 2 0 1 1 0-4h.11a1.6 1.6 0 0 0 1.47-1.05 1.6 1.6 0 0 0-.32-1.77l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.6 1.6 0 0 0 1.77.32H9a1.6 1.6 0 0 0 1-1.47V3a2 2 0 1 1 4 0v.11a1.6 1.6 0 0 0 1 1.47 1.6 1.6 0 0 0 1.77-.32l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.6 1.6 0 0 0-.32 1.77V9a1.6 1.6 0 0 0 1.47 1H21a2 2 0 1 1 0 4h-.11a1.6 1.6 0 0 0-1.47 1z"/></svg></button>
   </div>
 </div></header>
@@ -1079,6 +1111,10 @@ function makeLocalSb(seed) {
        attaching the wrong side quietly hands back the wrong person */
     if (t === "follows") r.profiles = profOf(/follows_follower_fkey/.test(sel) ? r.follower : r.followee);
     if (t === "club_members") r.profiles = profOf(r.user_id);
+    /* asked for on their own by the bell — who agreed, and who replied. Inside an entry
+       these already carry a person; queried directly they used to carry nobody, which
+       is how a notification ends up saying "somebody". */
+    if (t === "reactions" || t === "replies") r.profiles = profOf(r.user_id);
     if (t === "nows") { r.works = db.works[r.work_id] || null; r.profiles = profOf(r.user_id); }
     if (t === "handovers") { r.works = db.works[r.work_id] || null; r.sender_p = profOf(r.sender); }
     return r; };
@@ -1604,43 +1640,147 @@ async function onLiveEntry(row, memberIds) {
   setTimeout(() => slip.classList.remove("warm"), 2600);
 }
 
-/* ---------- what's happened since you were last here ---------- */
-let unseen = { entries:[], replies:[], followers:[] };
+/* ---------- what's happened since you were last here ----------
+   Two different questions were sharing one number, and it made both of them worse.
+   "There are eleven new entries in your room" is a nudge to go and read. "Mo followed
+   you, and two people agreed with your Dune" is a list of things that happened to you,
+   each of which you might want to do something about. The first belongs on the tab
+   that holds the feed. The second needs somewhere of its own, so it got the bell. */
+let unseen = { entries:[], replies:[], followers:[], likes:[] };
 const lastSeen = () => P.lastSeen || new Date(Date.now() - 3*864e5).toISOString();
+/* The bell's own mark. Unlike the feed's, this one starts at the moment you first
+   arrive rather than three days back: opening a new bell to a pile of history you have
+   already seen elsewhere teaches you to ignore it on day one. */
+function noteSeen() {
+  if (!P.noteSeen) { P.noteSeen = new Date().toISOString(); saveP(); }
+  return P.noteSeen; }
 async function checkNew() {
-  const since = lastSeen(); const R = activeRoom();
-  try {
-    if (R) { const ids = R.members.map(m => m.id).filter(i => i !== me.id);
-      if (ids.length) { const es = await q(sb.from("entries").select("id,user_id,created_at,work_id,profiles!entries_user_id_fkey(handle)").in("user_id", ids).limit(100));
-        unseen.entries = es.filter(e => String(e.created_at) > since); } }
-    const mineIds = new Set(myEntries.map(e => e.id));
-    const reps = await q(sb.from("replies").select("id,entry_id,user_id,created_at,profiles(handle)").limit(200));
-    unseen.replies = reps.filter(r => mineIds.has(r.entry_id) && r.user_id !== me.id && String(r.created_at) > since);
-    /* a count could only ever say "somebody". Keeping who lets the strip say their name
-       and offer the one thing anybody wants to do about it. */
-    const fol = await q(sb.from("follows")
+  const since = lastSeen(), mark = noteSeen(), R = activeRoom();
+  const mineIds = new Set(myEntries.map(e => e.id));
+  /* Four independent questions, four independent tries. They used to share one, which
+     meant a database that had not run the latest migration answered none of them —
+     one unknown column and the bell went dark about people as well. */
+  if (R) { try { const ids = R.members.map(m => m.id).filter(i => i !== me.id);
+    if (ids.length) { const es = await q(sb.from("entries").select("id,user_id,created_at,work_id,profiles!entries_user_id_fkey(handle)").in("user_id", ids).limit(100));
+      unseen.entries = es.filter(e => String(e.created_at) > since); } } catch {} }
+  try { const reps = await q(sb.from("replies").select("id,entry_id,user_id,body,created_at,profiles(id,handle,bio,avatar)").limit(200));
+    unseen.replies = reps.filter(r => mineIds.has(r.entry_id) && r.user_id !== me.id && String(r.created_at) > mark); } catch {}
+  /* a count could only ever say "somebody". Keeping who lets the row say their name
+     and offer the one thing anybody wants to do about it. */
+  try { const fol = await q(sb.from("follows")
       .select("follower,created_at,profiles!follows_follower_fkey(id,handle,bio,avatar)")
       .eq("followee", me.id));
-    unseen.followers = fol.filter(f => String(f.created_at || "") > folSeen());
-  } catch {}
+    unseen.followers = fol.filter(f => String(f.created_at || "") > mark); } catch {}
+  /* v17 gave reactions a clock. Before it, this select throws on the unknown column and
+     agreement simply does not appear — which is the right way to be out of date. */
+  if (mineIds.size) { try { const rs = await q(sb.from("reactions")
+      .select("entry_id,user_id,created_at,profiles(id,handle,bio,avatar)")
+      .in("entry_id", [...mineIds].slice(0, 200)).neq("user_id", me.id).limit(200));
+    unseen.likes = rs.filter(r => String(r.created_at || "") > mark); } catch { unseen.likes = []; } }
   paintDot();
-  /* enter() renders the room and then asks who is new, so the strip is drawn from an
-     empty list first. Paint it again once there is something to say. */
-  paintNewFollowers();
 }
+/* Handovers are not diffed against the mark. An unanswered one is not news you have
+   caught up on, it is a question somebody asked you that is still sitting there, so it
+   stays in the list until you answer it — and it only counts towards the badge while
+   it is genuinely new. */
+const newHands = () => handIn.filter(h => String(h.created_at || "") > noteSeen());
+const noteCount = () => unseen.followers.length + unseen.likes.length + unseen.replies.length + newHands().length;
 function paintDot() {
-  const n = unseen.entries.length + unseen.replies.length + unseen.followers.length;
-  const btn = $("nav button[data-tab='doors']"); if (!btn) return;
-  $(".dot", btn)?.remove();
-  if (n > 0 && currentTab() !== "home") btn.insertAdjacentHTML("beforeend", `<span class="dot">${n > 9 ? "9+" : n}</span>`);
+  const btn = $("nav button[data-tab='doors']");
+  if (btn) { const n = unseen.entries.length;
+    $(".dot", btn)?.remove();
+    if (n > 0 && currentTab() !== "home") btn.insertAdjacentHTML("beforeend", `<span class="dot">${n > 9 ? "9+" : n}</span>`); }
+  const bell = $("#bellBtn");
+  if (bell) { const m = noteCount(), had = !!$(".dot", bell);
+    $(".dot", bell)?.remove();
+    if (m > 0) { bell.insertAdjacentHTML("beforeend", `<span class="dot">${m > 9 ? "9+" : m}</span>`);
+      bell.setAttribute("aria-label", `What happened · ${m} new`);
+      /* it shakes when something arrives, not every time the page redraws */
+      if (!had && !REDUCED) { bell.classList.remove("jolt"); void bell.offsetWidth; bell.classList.add("jolt"); } }
+    else bell.setAttribute("aria-label", "What happened"); }
 }
-/* New followers keep their own mark. Opening the room should stop the dot nagging, but it
-   must not silently throw away the one list you might act on. */
-const folSeen = () => P.folSeen || new Date(Date.now() - 14*864e5).toISOString();
 function markSeen() { P.lastSeen = new Date().toISOString(); saveP();
-  unseen.entries = []; unseen.replies = []; paintDot(); }
-function markFollowersSeen() { P.folSeen = new Date().toISOString(); saveP();
-  unseen.followers = []; paintDot(); }
+  unseen.entries = []; paintDot(); }
+function markNotesSeen() { P.noteSeen = new Date().toISOString(); saveP();
+  unseen.followers = []; unseen.likes = []; unseen.replies = []; paintDot(); }
+
+/* ---------- the bell ----------
+   Everything here is somebody doing something to you, and every row offers the thing
+   you would want to do back. It is one list rather than four tabs: there are never
+   enough of these to need sorting, and a tab you have to check is a tab you forget. */
+function noteList() {
+  const out = [];
+  for (const f of unseen.followers) { const p = f.profiles; if (!p) continue;
+    out.push({ kind:"follow", at:f.created_at, p, id:"f" + p.id }); }
+  for (const r of unseen.likes) { const p = r.profiles; if (!p) continue;
+    out.push({ kind:"like", at:r.created_at, p, id:"l" + r.entry_id + r.user_id,
+      entry:myEntries.find(e => e.id === r.entry_id) }); }
+  for (const r of unseen.replies) { const p = r.profiles; if (!p) continue;
+    out.push({ kind:"reply", at:r.created_at, p, id:"r" + r.id, body:r.body,
+      entry:myEntries.find(e => e.id === r.entry_id) }); }
+  const fresh = noteSeen();
+  for (const h of handIn) out.push({ kind:"hand", at:h.created_at, p:h.sender_p, id:"h" + h.id,
+    hand:h, work:works[h.work_id] || h.works, stale:!(String(h.created_at || "") > fresh) });
+  return out.sort((a,b) => String(b.at || "").localeCompare(String(a.at || "")));
+}
+const noteAgo = at => { if (!at) return "";
+  const m = (Date.now() - new Date(at)) / 6e4;
+  return m < 2 ? "just now" : m < 60 ? `${Math.round(m)} min ago`
+    : m < 1440 ? `${Math.round(m/60)}h ago`
+    : m < 10080 ? `${Math.round(m/1440)}d ago` : stampDate(String(at).slice(0,10)); };
+function noteRow(n) {
+  const t = n.work?.title || n.entry?.works?.title || works[n.entry?.work_id]?.title || "";
+  const line = n.kind === "follow" ? "started following you"
+    : n.kind === "like" ? (t ? `agreed with you on <b>${esc(t)}</b>` : "agreed with something you wrote")
+    : n.kind === "reply" ? (t ? `replied about <b>${esc(t)}</b>` : "replied to you")
+    : (t ? `handed you <b>${esc(t)}</b>` : "handed you something");
+  const acts = n.kind === "follow"
+      ? `<button class="chip ${isFollowing(n.p.id) ? "on" : ""}" data-back="${esc(n.p.id)}">${isFollowing(n.p.id) ? "Following" : "Follow back"}</button>`
+    : n.kind === "hand"
+      ? `<button class="chip" data-yes="${esc(n.hand.id)}">Take it</button><button class="chip" data-no="${esc(n.hand.id)}">No</button>`
+      : "";
+  return `<div class="note${n.stale ? "" : " fresh"}" data-note="${esc(n.id)}">${avatar(n.p)}
+    <div class="t"><p><b>${esc(n.p?.handle || "somebody")}</b> ${line}</p>
+      ${n.kind === "reply" && n.body ? `<small>“${esc(String(n.body).slice(0, 90))}”</small>` : `<small>${noteAgo(n.at)}</small>`}</div>
+    ${acts ? `<div class="acts">${acts}</div>` : ""}</div>`;
+}
+function openNotes() {
+  const ns = noteList();
+  openSheet(`<h3>What happened</h3>
+    <p class="sub">People, agreement, and anything somebody put in front of you.</p>
+    <div id="noteBody" style="margin-top:10px">${ns.length ? ns.map(noteRow).join("")
+      : `<p class="msg">Nothing yet. When somebody follows you, agrees with something you wrote,
+         or hands you a title, it lands here.</p>`}</div>
+    <div class="stack"><button class="btn quiet" id="noteClose">Close</button></div>`);
+  $("#noteClose").onclick = closeSheet;
+  wireNotes(ns);
+  /* marked read on open, not on close — you have seen them, and a badge that survives
+     you looking at it is the reason people stop looking */
+  markNotesSeen();
+}
+function wireNotes(ns) {
+  const el = $("#noteBody"); if (!el) return;
+  const by = Object.fromEntries(ns.map(n => [n.id, n]));
+  $$("[data-back]", el).forEach(b => b.onclick = async ev => { ev.stopPropagation();
+    const id = b.dataset.back, on = !isFollowing(id); b.disabled = true;
+    if (await setFollow(id, on)) { b.classList.toggle("on", on); b.textContent = on ? "Following" : "Follow back"; }
+    b.disabled = false; });
+  $$("[data-yes],[data-no]", el).forEach(b => b.onclick = async ev => { ev.stopPropagation();
+    const yes = "yes" in b.dataset, h = handIn.find(x => x.id === (b.dataset.yes || b.dataset.no));
+    if (!h) return; b.textContent = "…";
+    if (await answerHand(h, yes)) { say(yes ? "On the shelf" : "Gone");
+      /* only the row it was: the list must not jump under the thumb that answered it */
+      const row = b.closest(".note"); if (row) { row.classList.remove("fresh");
+        const a = $(".acts", row); if (a) a.outerHTML = `<span class="tag dim">${yes ? "taken" : "gone"}</span>`; }
+      paintDot(); if (currentTab() === "shelf") renderShelf(); } });
+  $$("[data-note]", el).forEach(x => x.onclick = ev => {
+    if (ev.target.closest(".acts")) return;
+    const n = by[x.dataset.note]; if (!n) return;
+    closeSheet();
+    if (n.kind === "follow") return openProfile(n.p.id);
+    const w = n.hand?.work_id || n.entry?.work_id;
+    if (w) openWork(w); else if (n.p) openProfile(n.p.id); });
+}
 
 /* ---------- you were both there ---------- */
 function together(e, all) {
@@ -1853,6 +1993,7 @@ async function loadMe() { const { data:{ session } } = await sb.auth.getSession(
 async function enter() {
   $("#meBtn").hidden = false; $("#meName").textContent = me.handle; paintMeAv();
   $("#nav").classList.add("on"); $("#add").classList.add("live"); $("#cogBtn").hidden = false;
+  $("#bellBtn").hidden = false;
   await Promise.all([loadLists(), loadMine(), loadRooms(), loadFollows(), loadFounders(), loadNow(), loadFollowsMe()]); await loadClubs(); await loadHand();
   await useInvite();
   switchTab("doors"); movePill(true); checkNew();
@@ -1861,6 +2002,7 @@ async function enter() {
 function paintMeAv() { const el = $("#meAv"); if (el) el.innerHTML = avSVG(avFor(me)); }
 $("#meBtn").onclick = () => me && openProfile(me.id);
 $("#cogBtn").onclick = () => me && openYou();
+$("#bellBtn").onclick = () => me && openNotes();
 
 /* ============ FIRST RUN ============ */
 function openOnboarding() {
@@ -1936,7 +2078,6 @@ async function renderDoors() {
           <small>${tag(w.kind)} ${(e.score/2).toFixed(1)}${e.note ? ` · “${esc(e.note)}”` : ""}</small></div></div>`; }).join("")}
       ${mem.entries.length > 3 ? `<p class="sub">and ${said(mem.entries.length - 3)} more that day.</p>` : ""}
       <div class="stack"><button class="btn soft" id="memShare">Share it</button><button class="btn quiet" id="memGo">Not now</button></div></div>` : ""}
-    <div id="newFol"></div>
     <div class="seg">${[["room","Your room"],["following","Following"],["everyone","Everyone"]].map(([k,l]) => `<button data-feed="${k}" class="${P.feed===k?"on":""}">${l}</button>`).join("")}</div>
     <div class="findrow"><button class="chip" id="findPeople">Find someone by handle</button></div>
     <div id="feedBody">${skeleton(3)}</div>`;
@@ -1955,34 +2096,11 @@ async function renderDoors() {
   /* the dot existed and nothing ever cleared it: markSeen was written and never called,
      so every visit counted the same three days of entries again */
   markSeen();
-  paintNewFollowers();
   if (P.feed === "room") return renderRoomFeed(fb, R);
   leaveRoomChannel();
   if (P.feed === "following") return renderFollowingFeed(fb);
   return renderEveryoneFeed(fb);
 }
-/* ---------- somebody followed you ----------
-   The dot said a number and nothing said a name, so the one thing anybody wants to do
-   about a new follower — look at them, and follow back — had nowhere to happen. */
-function paintNewFollowers() {
-  const el = $("#newFol"); if (!el) return;
-  const fs = unseen.followers.filter(f => f.profiles);
-  if (!fs.length) { el.innerHTML = ""; return; }
-  el.innerHTML = `<div class="card"><div class="h">
-      <span>${said(fs.length)} new ${fs.length === 1 ? "follower" : "followers"}</span>
-      <button class="chip" id="folDone">Done</button></div>
-    ${fs.map(f => { const p = f.profiles;
-      return `<div class="twin" data-prof="${esc(p.id)}" style="cursor:pointer">${avatar(p)}
-        <div class="t"><b>${esc(p.handle)}</b><small>${esc(p.bio || "started following you")}</small></div>
-        <button class="chip ${isFollowing(p.id) ? "on" : ""}" data-back="${esc(p.id)}">${
-          isFollowing(p.id) ? "Following" : "Follow back"}</button></div>`; }).join("")}</div>`;
-  $("#folDone").onclick = () => { markFollowersSeen(); paintNewFollowers(); };
-  $$("[data-back]", el).forEach(b => b.onclick = async ev => { ev.stopPropagation();
-    const id = b.dataset.back, on = !isFollowing(id); b.disabled = true;
-    if (await setFollow(id, on)) { b.classList.toggle("on", on); b.textContent = on ? "Following" : "Follow back"; }
-    b.disabled = false; });
-  $$("[data-prof]", el).forEach(x => x.onclick = () => openProfile(x.dataset.prof)); }
-
 /* ---------- finding anybody ----------
    Every route to a profile went through seeing one of their entries first, so you could
    only follow somebody you had already stumbled across. Profiles are readable by anyone
@@ -2680,7 +2798,8 @@ async function loadHand() {
     handAll = rows;
     handIn  = rows.filter(h => h.recipient === me.id && h.acted_at == null);
     handOut = rows.filter(h => h.sender === me.id); }
-  catch { handAll = []; handIn = []; handOut = []; } }
+  catch { handAll = []; handIn = []; handOut = []; }
+  paintDot(); }
 /* who you may put something in front of: a shared room, or a follow both ways. A one-way
    follow is one person's decision and must not buy the right to write into somebody's app. */
 function reachable() {
@@ -4499,7 +4618,7 @@ function downloadJSON(obj, name) {
 }
 
 /* a small hook so the card renderers can be exercised by the test harness */
-window.__rooms = { pullRefresh, openFind, setFollow, isFollowing, get follows(){return follows}, paintNewFollowers, markFollowersSeen, get unseen(){return unseen}, nowVerb, openAdd, RINGS, MARK_RING, ringFromMarks, ringCache, myRing, spanOf, reelIndexNow, memories, dueReview, memForget, MEM_MIN, MEM_DAYS, whoseWord, wordPending, HAND_FLOOR, loadHand, handTo, answerHand, reachable, cameFrom, openHand, get handIn(){return handIn}, get handOut(){return handOut}, get handAll(){return handAll}, reelTo, markReel, REEL, reelCopies, get reelAt(){return reelAt}, facesFor, faceEl, faceMap, FACE_IMG, paintLog, wireLog, openWholeLog, AV_SHAPES, AV_EYES, AV_COLS, avSVG, avFor, get me(){return me}, get entries(){return myEntries}, get works(){return works}, get rooms(){return rooms},
+window.__rooms = { pullRefresh, openFind, setFollow, isFollowing, get follows(){return follows}, openNotes, noteList, noteRow, markNotesSeen, noteCount, newHands, noteSeen, get unseen(){return unseen}, nowVerb, openAdd, RINGS, MARK_RING, ringFromMarks, ringCache, myRing, spanOf, reelIndexNow, memories, dueReview, memForget, MEM_MIN, MEM_DAYS, whoseWord, wordPending, HAND_FLOOR, loadHand, handTo, answerHand, reachable, cameFrom, openHand, get handIn(){return handIn}, get handOut(){return handOut}, get handAll(){return handAll}, reelTo, markReel, REEL, reelCopies, get reelAt(){return reelAt}, facesFor, faceEl, faceMap, FACE_IMG, paintLog, wireLog, openWholeLog, AV_SHAPES, AV_EYES, AV_COLS, avSVG, avFor, get me(){return me}, get entries(){return myEntries}, get works(){return works}, get rooms(){return rooms},
   CUTS, openCuts, spanData, tasteOf, reviewData, yearOf, roomPalmares, tagStats, agreement, activeRoom, q, sb: () => sb, remember,
   joinRoomChannel, leaveRoomChannel, paintHere, onLiveEntry, paintDay, get hereNow(){return hereNow},
   say, oops, markLive, takeInvite, dropInvite, inviteLink, useInvite, exportEverything,
