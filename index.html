@@ -1192,7 +1192,7 @@ const cover = (w, cls = "co") => w?.cover ? `<img class="${cls}" src="${esc(w.co
 /* ============ prefs + sources ============ */
 const WORKER = "https://rooms.jordandf1.workers.dev";
 const proxy = () => (P.workerUrl || WORKER).replace(/\/+$/, "");
-const P = Object.assign({ workerUrl:"", tmdbKey:"", activeList:null, activeRoom:null, picked:null, kinds:["film","tv","book","game"], shelfFilter:"", pickTag:"", pickFrom:"shelf", bestGenre:{}, spinN:20, seen:"", cardSkin:"", feed:"room", theme:"" },
+const P = Object.assign({ workerUrl:"", tmdbKey:"", activeList:null, activeRoom:null, picked:null, kinds:["film","tv","book","game"], shelfFilter:"", pickTag:"", pickFrom:"shelf", bestGenre:{}, howLong:"", spinN:20, seen:"", cardSkin:"", feed:"room", theme:"" },
   JSON.parse(localStorage.getItem("rooms.prefs") || "{}"));
 const saveP = () => localStorage.setItem("rooms.prefs", JSON.stringify(P));
 async function tmdb(path, params = {}) {
@@ -3155,27 +3155,63 @@ const pickFrom = () => P.pickFrom === "best" ? "best" : "shelf";
    how you say which one you want. */
 const SPIN_SIZES = [10, 20, 50, 0];
 const spinN = () => SPIN_SIZES.includes(P.spinN) ? P.spinN : 20;
+/* ---------- how long have you got ----------
+   The commonest reason to put something back is that it doesn't fit the evening, and
+   the wheel had no way to hear that. "Two hours" and "four hundred pages" are the same
+   question asked of different things, so the bands are per medium and in that medium's
+   own words — which is also why they only appear once a medium is chosen: a row that
+   mixed runtimes with page counts would be measuring nothing.
+
+   Each band carries its count, so the shape of the pool is visible before you tap and
+   you can't land on an empty one. Anything with no length recorded is in no band at
+   all, which is the honest answer — we don't know how long it is, so we can't promise
+   it fits. */
+const HOW_LONG = {
+  film: [["s","Under 1½ hours",0,89],   ["m","About two hours",90,130], ["l","Over two hours",131,null]],
+  tv:   [["s","A few episodes",1,9],    ["m","A season or two",10,30],  ["l","Something to live in",31,null]],
+  book: [["s","Under 250 pages",1,249], ["m","250 to 450",250,450],     ["l","Over 450",451,null]],
+  game: [["s","Under ten hours",1,9],   ["m","Ten to thirty",10,30],    ["l","Over thirty",31,null]] };
+/* whichever medium the pool is actually speaking about */
+const pickKind = () => pickFrom() === "best" ? bestKind() : P.shelfFilter;
+const howLong = () => (HOW_LONG[pickKind()] || []).some(b => b[0] === P.howLong) ? P.howLong : "";
+const inBand = (w, b) => { const n = +w.length || 0;
+  return n > 0 && n >= b[2] && (b[3] === null || n <= b[3]); };
+const keepLong = w => { const h = howLong(); if (!h) return true;
+  const b = (HOW_LONG[w.kind] || []).find(x => x[0] === h);
+  return !!b && inBand(w, b); };
+/* the pool before the length band and the size, so the band chips can count honestly */
+function pickBase() { return pickFrom() === "best" ? bestHand.filter(keepSeen)
+  : (() => { const c = candidates(); return P.pickTag ? c.filter(w => facetsOf(w).includes(P.pickTag)) : c; })(); }
 function pickPool() {
-  const base = pickFrom() === "best" ? bestHand.filter(keepSeen)
-    : (() => { const c = candidates(); return P.pickTag ? c.filter(w => facetsOf(w).includes(P.pickTag)) : c; })();
+  const base = pickBase().filter(keepLong);
   const n = spinN();
   return n ? base.slice(0, n) : base; }
-const widen = () => { P.shelfFilter = ""; P.pickTag = ""; P.seen = ""; saveP(); deckItems = []; };
+const widen = () => { P.shelfFilter = ""; P.pickTag = ""; P.seen = ""; P.howLong = ""; saveP(); deckItems = []; };
 async function openWheel() {
   /* the best pool is fetched, so it has to be in hand before the sheet is drawn */
   if (pickFrom() === "best" && !bestHand.length && !bestBusy) await loadBest();
   const best = pickFrom() === "best";
   const gens = best ? await bestGenres(bestKind()) : [];
-  const all = candidates(), c = pickPool(), facets = pickFacets(all);
+  const all = candidates(), facets = pickFacets(all);
+  /* counted off the pool as it stands before the band, so the numbers hold still
+     while you read them rather than collapsing round whichever one you picked */
+  const bands = HOW_LONG[pickKind()] || [], bandPool = pickBase();
+  const bandN = bands.map(b => [b, bandPool.filter(w => inBand(w, b)).length]).filter(([, n]) => n);
+  /* the band is remembered between visits, and a shelf changes underneath it. A band
+     nothing falls into any more is a dead end you cannot see — its chip is gone, so
+     there is nothing lit to explain the empty wheel. Let it go rather than strand you. */
+  if (howLong() && !bandN.some(([b]) => b[0] === howLong())) { P.howLong = ""; saveP(); }
+  const hlName = (bands.find(b => b[0] === howLong()) || [])[1] || "";
+  const c = pickPool();
   /* what is actually there to spin, after every narrowing — the count and the size chips
      both have to speak about this and not about the hundred we happened to fetch */
-  const avail = best ? bestHand.filter(keepSeen).length : all.length;
+  const avail = (best ? bestHand.filter(keepSeen) : all).filter(keepLong).length;
   const SEEN = [["", "New to me"], ["any", "Either"], ["only", "Seen before"]];
   const seenName = (SEEN.find(([k]) => k === seenMode()) || [])[1];
   const gName = (gens.find(([, id]) => id === bestGenre()) || [])[0] || "";
   openSheet(`<h3>Can't decide?</h3><p class="sub">${best
-      ? `The best ${K(bestKind()).plural.toLowerCase()}${gName ? " · " + esc(gName.toLowerCase()) : ""} · ${avail} to draw from${seenMode() ? " · " + esc(seenName.toLowerCase()) : ""}`
-      : `${c.length} to pick from${seenMode() ? " · " + esc(seenName.toLowerCase()) : ""}${P.shelfFilter ? " · " + K(P.shelfFilter).plural.toLowerCase() : ""}${P.pickTag ? " · " + esc(P.pickTag.startsWith("p:") ? facetName(P.pickTag) : facetName(P.pickTag).toLowerCase()) : ""} · nothing unreleased`}</p>
+      ? `The best ${K(bestKind()).plural.toLowerCase()}${gName ? " · " + esc(gName.toLowerCase()) : ""} · ${avail} to draw from${seenMode() ? " · " + esc(seenName.toLowerCase()) : ""}${hlName ? " · " + esc(hlName.toLowerCase()) : ""}`
+      : `${c.length} to pick from${seenMode() ? " · " + esc(seenName.toLowerCase()) : ""}${P.shelfFilter ? " · " + K(P.shelfFilter).plural.toLowerCase() : ""}${P.pickTag ? " · " + esc(P.pickTag.startsWith("p:") ? facetName(P.pickTag) : facetName(P.pickTag).toLowerCase()) : ""}${hlName ? " · " + esc(hlName.toLowerCase()) : ""} · nothing unreleased`}</p>
     <div class="seg" style="margin-top:12px">${[["shelf","Your shelf"],["best","The best"]].map(([k,l]) =>
       `<button data-pf="${k}" class="${pickFrom()===k?"on":""}">${l}</button>`).join("")}</div>
     <div class="seg">${[["deck","Deal them"],["wheel","Spin for it"]].map(([k,l]) =>
@@ -3189,6 +3225,9 @@ async function openWheel() {
     : facets.length ? `<div class="lbl">In the mood for</div><div class="chips" id="pickTags">${
       [["","Anything",""],...facets.map(([t,n]) => [t, facetName(t) + " · " + n, t.startsWith("p:") ? "who" : ""])]
       .map(([t,l,cl]) => `<button class="chip ${cl} ${(P.pickTag||"")===t?"on":""}" data-wt="${esc(t)}">${esc(l)}</button>`).join("")}</div>` : ""}
+    ${bandN.length >= 2 ? `<div class="lbl">How long have you got</div><div class="chips" id="howLong">${
+      [`<button class="chip ${howLong()?"":"on"}" data-hl="">Any</button>`,
+       ...bandN.map(([b,n]) => `<button class="chip ${howLong()===b[0]?"on":""}" data-hl="${b[0]}">${esc(b[1])} · ${n}</button>`)].join("")}</div>` : ""}
     ${avail > SPIN_SIZES[0] ? `<div class="lbl">How many on it</div><div class="chips" id="spinSizes">${
       SPIN_SIZES.map(n => `<button class="chip ${spinN()===n?"on":""}" data-sn="${n}">${n || "All"}</button>`).join("")}</div>` : ""}
     <div id="wheelArea"></div><div id="resultArea"></div><div class="stack"><button class="btn quiet" id="whClose">Close</button></div>`);
@@ -3196,12 +3235,15 @@ async function openWheel() {
      with it rather than leaving you at an empty wheel you can't explain */
   const reload = async () => { deckItems = []; bestHand = [];
     if (pickFrom() === "best") await loadBest(); openWheel(); };
-  $$("[data-pf]").forEach(b => b.onclick = () => { P.pickFrom = b.dataset.pf; saveP(); reload(); });
-  $$("[data-wk]").forEach(b => b.onclick = () => { P.shelfFilter = b.dataset.wk; P.pickTag = ""; saveP(); reload(); });
+  /* a band is a number in one medium's units; carrying "under 250 pages" into films
+     would keep the word and lose the meaning, so it goes when the medium goes */
+  $$("[data-pf]").forEach(b => b.onclick = () => { P.pickFrom = b.dataset.pf; P.howLong = ""; saveP(); reload(); });
+  $$("[data-wk]").forEach(b => b.onclick = () => { P.shelfFilter = b.dataset.wk; P.pickTag = ""; P.howLong = ""; saveP(); reload(); });
   $$("[data-wt]").forEach(b => b.onclick = () => { P.pickTag = b.dataset.wt; saveP(); deckItems = []; openWheel(); });
   /* no refetch: the hundred in hand is the same hundred, we are only keeping different ones */
   $$("[data-sv]").forEach(b => b.onclick = () => { P.seen = b.dataset.sv; saveP(); deckItems = []; openWheel(); });
   $$("[data-bg]").forEach(b => b.onclick = () => { (P.bestGenre ||= {})[bestKind()] = b.dataset.bg; saveP(); reload(); });
+  $$("[data-hl]").forEach(b => b.onclick = () => { P.howLong = b.dataset.hl; saveP(); deckItems = []; openWheel(); });
   $$("[data-sn]").forEach(b => b.onclick = () => { P.spinN = +b.dataset.sn; saveP(); deckItems = []; openWheel(); });
   $$("[data-pm]").forEach(b => b.onclick = () => { P.pickMode = b.dataset.pm; saveP(); openWheel(); });
   $("#whClose").onclick = () => { closeSheet(); renderShelf(); };
@@ -5430,7 +5472,8 @@ window.__rooms = { pullRefresh, openFind, setFollow, isFollowing, get follows(){
   joinRoomChannel, leaveRoomChannel, paintHere, onLiveEntry, paintDay, get hereNow(){return hereNow},
   say, oops, markLive, takeInvite, dropInvite, inviteLink, useInvite, exportEverything,
   watchOn, paintWatch, REGION,
-  drawDeck, resetDeck, pickMode, candidates, pickPool, pickFacets, facetsOf, dropFromShelf, loadRecs, recsCached:() => recs !== null, reviewOf, agreement,
+  drawDeck, resetDeck, pickMode, candidates, pickPool, pickBase, pickFacets, facetsOf,
+  HOW_LONG, howLong, keepLong, inBand, pickKind, dropFromShelf, loadRecs, recsCached:() => recs !== null, reviewOf, agreement,
   CUTS, CARD_THEMES, cardTheme, spanData, tasteOf, reviewData, yearOf, roomPalmares, palmares, byPerson, spinN, SPIN_SIZES,
   loadNow, startNow, stopNow, nowOf, nowFor, nowLine, get myNow(){return myNow},
   bestOf, bestGenres, dealBest, loadBest, pickFrom, seenMode, keepSeen, get bestPool(){return bestPool}, get bestHand(){return bestHand},
