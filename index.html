@@ -1387,7 +1387,10 @@ const isFollowing = id => follows.some(f => f.followee === id);
 async function setFollow(id, on) {
   try { if (on) await q(sb.from("follows").insert({ follower:me.id, followee:id }));
     else await q(sb.from("follows").delete().eq("follower", me.id).eq("followee", id));
-    await loadFollows(); return true; }
+    await loadFollows();
+    /* the socket filter names the people you follow, so it is wrong the moment that
+       list changes. Re-armed here because this is the one path in or out. */
+    joinMeChannel(); return true; }
   catch (e) { oops(e, on ? "Couldn't follow them" : "Couldn't unfollow"); return false; } }
 
 /* ============ maths ============ */
@@ -1671,8 +1674,9 @@ setInterval(paintDayAndTheme, 6e5);
    one channel per room carries both: presence for the faces, postgres_changes for
    the entries. Opened when the room feed renders, closed when you leave it. */
 let roomCh = null, roomChId = null, hereNow = [];
+let nowPaintT = null;
 function leaveRoomChannel() { if (roomCh) { try { sb.removeChannel(roomCh); } catch {} }
-  roomCh = null; roomChId = null; hereNow = []; }
+  clearTimeout(nowPaintT); roomCh = null; roomChId = null; hereNow = []; }
 function paintHere() {
   const el = $("#hereRow"); if (!el) return;
   const others = hereNow.filter(p => p.id !== me.id);
@@ -1702,24 +1706,93 @@ function joinRoomChannel(R) {
   });
   ch.on("postgres_changes", { event: "INSERT", schema: "public", table: "entries" },
     p => onLiveEntry(p.new, memberIds));
+  /* what people are in the middle of sat right under the faces, which are live, and was
+     a snapshot from whenever the page last drew. Every event, because starting, moving
+     on and stopping all change the row. Debounced: three people picking something up at
+     once is one repaint, not three. */
+  ch.on("postgres_changes", { event: "*", schema: "public", table: "nows" }, p => {
+    const row = p.new || p.old; if (!row || !memberIds.has(row.user_id)) return;
+    clearTimeout(nowPaintT);
+    nowPaintT = setTimeout(() => { const cur = activeRoom();
+      if (cur && cur.id === roomChId && $("#roomNow")) paintRoomNow(cur); }, 350); });
   ch.subscribe(st => { if (st === "SUBSCRIBED")
     ch.track({ id: me.id, handle: me.handle, avatar: me.avatar }).catch(() => {}); });
   roomCh = ch;
 }
-/* an entry someone in this room just made, dropped in at the top of what the room said */
-async function onLiveEntry(row, memberIds) {
-  if (!row || row.user_id === me.id || !memberIds.has(row.user_id)) return;
-  if ($(`[data-slip="${CSS.escape(row.id)}"]`)) return;   /* already on screen */
-  let full; try { full = (await q(sb.from("entries").select(ENTRY_SEL).eq("id", row.id).limit(1)))[0]; } catch { return; }
-  if (!full) return;
-  const anchor = $("#talkTop"); if (!anchor) return;
+/* an entry somebody just made, dropped in under whichever heading it belongs to.
+   The row a socket hands over is the bare table row, so the entry is refetched to get
+   the person, the work and the likes attached. That request takes time the tab may not
+   wait for, which is why the anchor is looked up again on the way back rather than
+   held across the await. */
+async function dropInSlip(row, anchorSel) {
+  if (!row || row.user_id === me.id) return false;
+  if ($(`[data-slip="${CSS.escape(row.id)}"]`)) return false;   /* already on screen */
+  if (!$(anchorSel)) return false;
+  let full; try { full = (await q(sb.from("entries").select(ENTRY_SEL).eq("id", row.id).limit(1)))[0]; } catch { return false; }
+  const anchor = $(anchorSel); if (!full || !anchor) return false;
+  if ($(`[data-slip="${CSS.escape(row.id)}"]`)) return false;
   remember(full.works);
-  const node = document.createElement("div"); node.innerHTML = slipHTML(full, { talk:true });
-  const slip = node.firstElementChild; if (!slip) return;
+  const node = document.createElement("div"); node.innerHTML = slipHTML(full);
+  const slip = node.firstElementChild; if (!slip) return false;
   slip.classList.add("landedNow", "warm"); slip.dataset.revealed = "1";
   anchor.after(slip); wireSlips(slip, [full]);
   setTimeout(() => slip.classList.remove("warm"), 2600);
+  return true;
 }
+const onLiveEntry = (row, memberIds) =>
+  row && memberIds.has(row.user_id) ? dropInSlip(row, "#talkTop") : Promise.resolve(false);
+
+/* ---------- the channel that is about you rather than a room ----------
+   A room channel dies when you leave the room, which is right for presence and wrong
+   for anything addressed to you personally. This one is opened once you are in and
+   stays for the session.
+
+   The handover half filters server-side on the recipient, so the only rows that cross
+   the wire are the ones meant for you. The following half cannot: "whoever I follow"
+   is a set, and a realtime filter that lists it can be refused for length or for the
+   operator. So it asks narrowly first and, if the socket rejects that, asks broadly
+   and does the filtering here — the feed works either way, it is only the amount that
+   travels that differs. */
+let meCh = null, meChKey = null;
+const followSet = () => new Set(follows.map(f => f.followee));
+function leaveMeChannel() { if (meCh) { try { sb.removeChannel(meCh); } catch {} } meCh = null; meChKey = null; }
+function joinMeChannel(broad = false) {
+  if (!me || sb.__local || !sb.channel) return;
+  const ids = [...followSet()].filter(Boolean).sort();
+  /* a filter has a length the socket will accept; past that, ask broadly */
+  const narrow = !broad && ids.length > 0 && ids.length <= 40;
+  const key = (narrow ? "n:" + ids.join(",") : broad ? "b" : "h") + "|" + ids.length;
+  if (meCh && meChKey === key) return;
+  leaveMeChannel(); meChKey = key;
+  const ch = sb.channel(`me:${me.id}`);
+  ch.on("postgres_changes", { event:"INSERT", schema:"public", table:"handovers",
+    filter:`recipient=eq.${me.id}` }, p => onLiveHand(p.new));
+  if (narrow) ch.on("postgres_changes", { event:"INSERT", schema:"public", table:"entries",
+    filter:`user_id=in.(${ids.join(",")})` }, p => onFollowEntry(p.new));
+  else if (ids.length) ch.on("postgres_changes", { event:"INSERT", schema:"public", table:"entries" },
+    p => onFollowEntry(p.new));
+  /* assigned before subscribing, not after: a client that reports its status
+     synchronously would otherwise run the retry while meCh still pointed at the last
+     channel, so leaveMeChannel would tidy the wrong one and the narrow channel would
+     be reinstated over the broad one the moment subscribe returned. */
+  meCh = ch;
+  ch.subscribe(st => {
+    /* the narrow filter is the one that can be refused. Losing it should cost the
+       bandwidth, never the feature. */
+    if ((st === "CHANNEL_ERROR" || st === "TIMED_OUT") && narrow) { leaveMeChannel(); joinMeChannel(true); } });
+}
+/* somebody put something in front of you. loadHand repaints the bell on its way out. */
+async function onLiveHand(row) {
+  if (!row || row.recipient !== me.id) return;
+  if (handAll.some(h => h.id === row.id)) return;
+  await loadHand();
+  if (currentTab() === "shelf") renderShelf(); }
+/* somebody you follow logged something. Only worth dropping in if that is the feed you
+   are actually looking at; anywhere else the next render picks it up. */
+function onFollowEntry(row) {
+  if (!row || row.user_id === me.id || !followSet().has(row.user_id)) return;
+  if (currentTab() !== "doors" || P.feed !== "following") return;
+  dropInSlip(row, "#folTop"); }
 
 /* ---------- what's happened since you were last here ----------
    Two different questions were sharing one number, and it made both of them worse.
@@ -2074,7 +2147,7 @@ async function enter() {
   $("#bellBtn").hidden = false;
   await Promise.all([loadLists(), loadMine(), loadRooms(), loadFollows(), loadFounders(), loadNow(), loadFollowsMe()]); await loadClubs(); await loadHand();
   await useInvite();
-  switchTab("doors"); movePill(true); checkNew();
+  switchTab("doors"); movePill(true); checkNew(); joinMeChannel();
   if (!P.onboarded && !myEntries.length) setTimeout(openOnboarding, 400);
 }
 function paintMeAv() { const el = $("#meAv"); if (el) el.innerHTML = avSVG(avFor(me)); }
@@ -2320,7 +2393,7 @@ async function renderRoomFeed(fb, R) {
         ${pal.split && pal.split.id !== pal.agreed?.id ? `<div class="row" data-cw="${esc(pal.split.id)}"><span class="rk">≠</span><div class="t"><b>${t(pal.split.id)}</b><small><span class="bad">${pal.split.agree}% agree</span> · the fight of the year</small></div></div>` : ""}
         <div class="stack"><button class="btn soft" id="roomYearCard">Save the card</button></div>
       </div>`; })()}
-    <div class="tagrow" style="margin:18px 0 8px"><span class="lbl" id="talkTop" style="margin:0">What the room said</span><span class="tag dim">newest first</span></div>${(() => { if (!es.length) return blank("var(--pink)","“","Nothing said yet","Log something and it lands here for the room to see.",[["talkAdd","Log something"]]);
+    <div class="tagrow" id="talkTop" style="margin:18px 0 8px"><span class="lbl" style="margin:0">What the room said</span><span class="tag dim">newest first</span></div>${(() => { if (!es.length) return blank("var(--pink)","“","Nothing said yet","Log something and it lands here for the room to see.",[["talkAdd","Log something"]]);
       const since = lastSeen(); let shown = false;
       return es.map(e => { const isNew = e.user_id !== me.id && String(e.created_at) > since; let head = "";
         if (isNew && !shown) { shown = true; head = `<div class="newline">New since you were here</div>`; }
@@ -2360,6 +2433,7 @@ async function renderFollowingFeed(fb) {
   es.forEach(e => remember(e.works));
   const twins = await tasteTwins(6);
   fb.innerHTML = (ids.length ? `<div class="chips" style="margin-top:6px">${follows.map(f => `<button class="chip" data-prof="${esc(f.followee)}">${esc(f.profiles?.handle||"")}</button>`).join("")}</div>` : "")
+    + `<div id="folTop"></div>`
     + (es.length ? es.map(e => slipHTML(e)).join("") : blank("var(--lilac)","✦","Nobody yet","Following is for taste, not for friends. Find someone whose sensibility interests you and their entries land here.",[]))
     + (twins.length ? `<div class="card"><div class="h"><span>Taste twins</span><span class="tag dim">by what you single out</span></div>${twins.map(t => `<div class="twin" data-prof="${esc(t.p.id)}">${avatar(t.p)}<div class="t"><b>${esc(t.p.handle)}</b><small>${esc(t.top.join(" · "))}</small></div><span class="ring">${t.match}</span></div>`).join("")}</div>`
       : (tasteOf(myEntries).tagged < 3
@@ -4778,7 +4852,8 @@ window.__rooms = { pullRefresh, openFind, setFollow, isFollowing, get follows(){
   CUTS, CARD_THEMES, cardTheme, spanData, tasteOf, reviewData, yearOf, roomPalmares, palmares, byPerson, spinN, SPIN_SIZES,
   loadNow, startNow, stopNow, nowOf, nowFor, nowLine, get myNow(){return myNow},
   bestOf, bestGenres, dealBest, loadBest, pickFrom, seenMode, keepSeen, get bestPool(){return bestPool}, get bestHand(){return bestHand},
-  newestFirst, sortEntries, secondThoughts, againLine, apart, shelfAge, waited, openProfile, openWork,
+  newestFirst, sortEntries, joinMeChannel, leaveMeChannel, onLiveHand, onFollowEntry, dropInSlip,
+  get meCh(){return meCh}, secondThoughts, againLine, apart, shelfAge, waited, openProfile, openWork,
   setSkin:k => { P.cardSkin = k; saveP(); }, get deckItems(){return deckItems},
   addToShelf, __isSoon:isSoon, __list:activeList,
   marksFor, openPaid, COMET, loadFounders, get founderIds(){return founderIds} };
