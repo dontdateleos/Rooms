@@ -600,3 +600,44 @@ create policy reactions_mine on reactions for all to authenticated
   with check (user_id = auth.uid() and exists (select 1 from entries e
     where e.id = reactions.entry_id
       and (e.user_id = auth.uid() or (not e.room_only) or shares_room(e.user_id))));
+
+
+/* ============================================================================
+   v19 — closing your own account
+   ============================================================================
+   Apple requires that an account made in an app can be deleted from inside that
+   app, and it is the right thing regardless of who is asking. Everything hangs
+   off profiles, which hangs off the auth user, so one delete takes the lot —
+   entries, reactions, follows, top lists, club votes, what you were in the
+   middle of, and anything anybody handed you.
+
+   Two things it has to do by hand. Rooms survive their maker (created_by is set
+   null, not cascaded) so a room you started outlives you if anybody else is
+   still in it — but a room with nobody left in it is closed behind you, the same
+   rule leave_room already follows. And the rooms have to be gathered BEFORE the
+   memberships go, because afterwards there is nothing left to say which they
+   were.
+
+   Deleting from auth.users needs more than the caller has, which is what
+   security definer is for. It is scoped to auth.uid() and nothing else, so it
+   cannot be pointed at anybody else's account.
+   ============================================================================ */
+
+create or replace function delete_me() returns void
+language plpgsql security definer set search_path = public, auth as $$
+declare
+  me uuid := auth.uid();
+  was uuid[];
+begin
+  if me is null then raise exception 'not signed in'; end if;
+
+  select coalesce(array_agg(room_id), '{}') into was from room_members where user_id = me;
+  delete from room_members where user_id = me;
+  delete from rooms r where r.id = any(was)
+    and not exists (select 1 from room_members m where m.room_id = r.id);
+
+  delete from auth.users where id = me;
+end $$;
+
+revoke all on function delete_me() from public, anon;
+grant execute on function delete_me() to authenticated;

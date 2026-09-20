@@ -290,6 +290,8 @@ input::placeholder,textarea::placeholder{color:#B7B2C2}
 textarea{min-height:76px;resize:none;line-height:1.45}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;font-family:var(--head);font-weight:800;font-size:16px;padding:14px 18px;border-radius:999px;background:var(--ink);color:var(--cream);border:0;cursor:pointer}
 .btn.soft{background:var(--butter);color:var(--onAccent)}
+.btn.bad{background:var(--bad);color:#fff}
+.btn.bad:disabled{opacity:.45;cursor:default}
 .btn.ghost{background:transparent;color:var(--ink);border:2px solid var(--line)}
 .btn.quiet{background:transparent;color:var(--mute)}
 .btn.blue{background:var(--blue)}
@@ -1353,6 +1355,17 @@ function makeLocalSb(seed) {
     rpc: (name, args) => {
       if (name === "create_room") { const r = { id:uid(), name:args.p_name, code:Math.random().toString(36).slice(2,8), created_at:now() }; db.rooms.push(r); db.room_members.push({ room_id:r.id, user_id:db.profile.id }); save(); return Promise.resolve({ data:r, error:null }); }
       if (name === "join_room") return Promise.resolve({ data:null, error:new Error("joining a room needs the hosted setup") });
+      /* the local mock has no auth user to delete, but it can do the same thing to the
+         log it holds — which is what closing the account means here */
+      if (name === "delete_me") { const mine = db.profile?.id;
+        const was = db.room_members.filter(m => m.user_id === mine).map(m => m.room_id);
+        db.room_members = db.room_members.filter(m => m.user_id !== mine);
+        db.rooms = db.rooms.filter(r => !was.includes(r.id) || db.room_members.some(m => m.room_id === r.id));
+        for (const t of ["entries","lists","list_items","reactions","replies","follows",
+                         "top_lists","top_list_items","club_members","club_votes","nows","handovers"])
+          db[t] = [];
+        db.profile = null; db.signedOut = true; save();
+        return Promise.resolve({ data:null, error:null }); }
       if (name === "leave_room") { db.room_members = db.room_members.filter(m => !(m.room_id === args.p_room_id && m.user_id === db.profile.id));
         if (!db.room_members.some(m => m.room_id === args.p_room_id)) {
           db.rooms = db.rooms.filter(r => r.id !== args.p_room_id);
@@ -5270,7 +5283,18 @@ async function openYou() { let top = { items:[] }; try { top = await ensureMyTop
       <div class="stack"><button class="btn" id="savePw">Save the password</button></div><p class="msg" id="pwMsg"></p></div>`}
     <div class="stack"><button class="btn ghost" id="paidBtn">What paying would get you</button>
       <button class="btn ghost" id="importBtn">Import from Letterboxd, Goodreads, Steam</button>
-      ${sb.__local?``:`<button class="btn ghost" id="takeout">Download everything</button>`}${sb.__local?`<button class="btn ghost" id="backup">Back up the log</button><button class="btn quiet" id="restore">Restore from a backup</button><input type="file" id="restoreFile" accept="application/json" hidden>`:""}<button class="btn quiet" id="signOut">${sb.__local?"Close the log":"Sign out"}</button><button class="btn quiet" id="sClose">Done</button></div><p class="msg" id="sMsg"></p>`);
+      ${sb.__local?``:`<button class="btn ghost" id="takeout">Download everything</button>`}${sb.__local?`<button class="btn ghost" id="backup">Back up the log</button><button class="btn quiet" id="restore">Restore from a backup</button><input type="file" id="restoreFile" accept="application/json" hidden>`:""}<button class="btn quiet" id="signOut">${sb.__local?"Close the log":"Sign out"}</button><button class="btn quiet" id="sClose">Done</button></div><p class="msg" id="sMsg"></p>
+    <details class="fold"><summary>${sb.__local ? "Delete this log" : "Close your account"}</summary>
+      <p class="sub">This deletes ${sb.__local ? "this log" : "your account"} and everything in it — every entry, every
+        rating, what you singled out, your ten, who you follow, and anything anybody handed
+        you. A room you started stays open if somebody else is still in it; a room with
+        nobody left in it closes. It cannot be undone and there is no copy.</p>
+      <p class="sub" style="margin-top:8px"><b>Take your log out first</b> if you want it —
+        ${sb.__local ? "Back up the log" : "Download everything"} is above.</p>
+      <div class="lbl">Type your handle to confirm</div>
+      <input id="delQ" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="${esc(me.handle)}">
+      <div class="stack"><button class="btn bad" id="delGo" disabled>${sb.__local ? "Delete the log" : "Delete my account"}</button></div>
+      <p class="msg" id="delMsg"></p></details>`);
   /* the shape picker */
   let av = Object.assign({}, avFor(me));
   const paintAv = () => {
@@ -5299,6 +5323,19 @@ async function openYou() { let top = { items:[] }; try { top = await ensureMyTop
       else await q(sb.from("profiles").update({ handle:h, bio:bio||null, avatar:av }).eq("id", me.id));
       me.handle = h; me.bio = bio; me.avatar = av; $("#meName").textContent = h; paintMeAv();
       $("#yMsg").textContent = "Saved"; refresh(); } catch (e) { $("#yMsg").textContent = e.message; } };
+  /* the one irreversible thing in the app, so it asks for the handle rather than an OK:
+     a confirm you can dismiss by reflex is not a confirmation of anything */
+  const dq = $("#delQ"), dg = $("#delGo");
+  if (dq && dg) { dq.oninput = () => { dg.disabled = lc(dq.value.trim()) !== lc(me.handle); };
+    dg.onclick = async () => { dg.disabled = true; $("#delMsg").textContent = "Closing it";
+      try { await q(sb.rpc("delete_me"));
+        try { await sb.auth.signOut(); } catch {}
+        try { localStorage.removeItem("rooms.prefs"); localStorage.removeItem("rooms.db"); } catch {}
+        location.reload(); }
+      catch (e) { dg.disabled = false;
+        $("#delMsg").textContent = /function|does not exist/i.test(String(e.message))
+          ? "The database hasn't run v19 yet — that's the migration this needs."
+          : e.message; } }; }
   const sp = $("#savePw"); if (sp) sp.onclick = async () => { const pw = $("#newPw").value;
     if (pw.length < 8) { $("#pwMsg").textContent = "at least eight characters"; return; }
     sp.disabled = true; $("#pwMsg").textContent = "saving";
@@ -5338,12 +5375,23 @@ async function openYou() { let top = { items:[] }; try { top = await ensureMyTop
    restores into an offline log — the data is yours in a form that opens. */
 async function exportEverything() {
   const grab = async (t, sel, col) => { try { return await q(sb.from(t).select(sel).eq(col, me.id)); } catch { return []; } };
-  const [entries, myReplies, myReactions, myFollows] = await Promise.all([
-    grab("entries", "*", "user_id"),
-    grab("replies", "*", "user_id"),
-    grab("reactions", "*", "user_id"),
-    grab("follows", "*", "follower"),
-  ]);
+  /* it said "everything" and fetched four tables out of seventeen. Clubs, votes, your
+     ten, what you are in the middle of and anything anybody handed you were all missing,
+     and the two lists that were there came out with their dates blanked. */
+  const [entries, myReplies, myReactions, myFollows, myNows, myHands, myTops, myVotes, myClubIn] =
+    await Promise.all([
+      grab("entries", "*", "user_id"),
+      grab("replies", "*", "user_id"),
+      grab("reactions", "*", "user_id"),
+      grab("follows", "*", "follower"),
+      grab("nows", "*", "user_id"),
+      (async () => { try { return await q(sb.from("handovers").select("*")
+        .or(`sender.eq.${me.id},recipient.eq.${me.id}`)); } catch { return []; } })(),
+      grab("top_lists", "*,top_list_items(*)", "owner"),
+      grab("club_votes", "*", "user_id"),
+      grab("club_members", "*", "user_id"),
+    ]);
+  const myClubs = [...clubs, ...openClubs].filter(c => myClubIn.some(m => m.club_id === c.id));
   const usedWorks = {};
   for (const id of new Set([...entries.map(e => e.work_id), ...lists.flatMap(l => l.items)]))
     if (works[id]) usedWorks[id] = works[id];
@@ -5354,12 +5402,19 @@ async function exportEverything() {
     works: usedWorks,
     entries: entries.map(e => { const { works:_w, profiles:_p, ...row } = e; return row; }),
     lists: lists.map(l => ({ id:l.id, owner:me.id, name:l.name, created_at:null })),
-    list_items: lists.flatMap(l => l.items.map((id, i) => ({ list_id:l.id, work_id:id, added_at:null, position:l.arranged ? i : null }))),
+    /* how long a thing has sat on the shelf is part of what the shelf knows, so it goes
+       out with it rather than being blanked */
+    list_items: lists.flatMap(l => l.items.map((id, i) => ({ list_id:l.id, work_id:id,
+      added_at:(l.added && l.added[id]) || null, position:l.arranged ? i : null }))),
     rooms: rooms.map(r => ({ id:r.id, name:r.name, code:r.code })),
     room_members: rooms.flatMap(r => r.members.map(m => ({ room_id:r.id, user_id:m.id }))),
-    clubs: [], club_members: [], club_votes: [],
+    clubs: myClubs.map(c => ({ id:c.id, room_id:c.room_id, name:c.name, label:c.label,
+      scope:c.scope, items:c.items, due:c.due, created_by:c.created_by, created_at:c.created_at })),
+    club_members: myClubIn, club_votes: myVotes,
     reactions: myReactions, replies: myReplies,
-    top_lists: [], top_list_items: [],
+    top_lists: myTops.map(t => { const { top_list_items:_i, ...row } = t; return row; }),
+    top_list_items: myTops.flatMap(t => t.top_list_items || []),
+    nows: myNows, handovers: myHands,
     follows: myFollows,
   };
 }
@@ -5379,7 +5434,7 @@ window.__rooms = { pullRefresh, openFind, setFollow, isFollowing, get follows(){
   CUTS, CARD_THEMES, cardTheme, spanData, tasteOf, reviewData, yearOf, roomPalmares, palmares, byPerson, spinN, SPIN_SIZES,
   loadNow, startNow, stopNow, nowOf, nowFor, nowLine, get myNow(){return myNow},
   bestOf, bestGenres, dealBest, loadBest, pickFrom, seenMode, keepSeen, get bestPool(){return bestPool}, get bestHand(){return bestHand},
-  newestFirst, sortEntries, loadMine, loadRooms, openEntry, sayUndo, openCover, compFlip, showOffline, drawTogether, openHand, openCuts, sayWords, settleIn, endLine, closeGap, gridPlaces, strikeRing, removeFromShelf, paintHere, tickTo, dealIn, flyTo, leaveOut, rollLine, fillChip, paintTheme,
+  newestFirst, sortEntries, loadMine, loadRooms, exportEverything, openYou, openEntry, sayUndo, openCover, compFlip, showOffline, drawTogether, openHand, openCuts, sayWords, settleIn, endLine, closeGap, gridPlaces, strikeRing, removeFromShelf, paintHere, tickTo, dealIn, flyTo, leaveOut, rollLine, fillChip, paintTheme,
   joinMeChannel, leaveMeChannel, onLiveHand, onFollowEntry, dropInSlip,
   get meCh(){return meCh}, secondThoughts, againLine, apart, shelfAge, waited, openProfile, openWork,
   setSkin:k => { P.cardSkin = k; saveP(); }, get deckItems(){return deckItems},
