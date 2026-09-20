@@ -167,6 +167,21 @@ header .wrap{display:flex;align-items:center;justify-content:space-between;heigh
   0%{transform:none;opacity:1}
   28%{transform:scale(.975) rotate(-.7deg);opacity:.85}
   100%{transform:scale(.9) rotate(-1.4deg);opacity:0;height:0;padding-top:0;padding-bottom:0;margin-top:0}}
+/* 32 how close the two of you end up IS the match, so the number needs no legend */
+.twin.pairing .av{transition:transform .7s cubic-bezier(.16,1,.3,1)}
+.twin.pairing .ring{transition:opacity .4s .45s,transform .4s .45s;opacity:0;transform:translateX(10px)}
+.twin.pairing.drawn .ring{opacity:1;transform:none}
+/* 34 giving one is the same gesture as taking one, in reverse */
+.twin.given{animation:givenPop .34s cubic-bezier(.3,1.5,.5,1)}
+@keyframes givenPop{0%{transform:none}45%{transform:scale(1.06)}100%{transform:none}}
+/* 37 an export becomes a reveal */
+.cuts button.drawing{opacity:0}
+.cuts button.drawn{animation:cutIn .5s cubic-bezier(.16,1,.3,1) both}
+@keyframes cutIn{from{opacity:0;transform:translateY(12px) scale(.97)}to{opacity:1;transform:none}}
+/* 39 an empty room should look empty */
+.chips .chip.seat{animation:seatIn .45s cubic-bezier(.3,1.5,.5,1) both}
+@keyframes seatIn{from{opacity:0;transform:scale(.4)}to{opacity:1;transform:none}}
+
 /* ---- ten you drive ---- */
 /* 21 the fill is under your finger, so it cannot lag behind it */
 .rate{touch-action:none}
@@ -926,7 +941,10 @@ body.demo header{padding-top:34px}
   .chip.filling:before,.leaving,.booting>*,::view-transition-new(root),
   .saying .w,.here .face.went,.settled,.struck svg.strike circle,.endline,
   .undoclock .v{animation:none!important}
-  .comprow,.po,header .wrap,header .logo,.offline,.panel.springing{transition:none}
+  .comprow,.po,header .wrap,header .logo,.offline,.panel.springing,
+  .twin.pairing .av,.twin.pairing .ring{transition:none}
+  .twin.given,.cuts button.drawn,.chips .chip.seat{animation:none!important}
+  .cuts button.drawing{opacity:1}
   .club .tr i,.grid .cell,.trio i.meter,html,body,header,nav,.po,.seg{transition:none}
   .cell.shoved .po,.tiles .tile,[data-like].popped,[data-like].popped:before,
   .sheet.on .av.meet svg > g > *,.sheet.on .av.big svg > g > *,.av.new svg > g > *,.av.new .eyes,.av .eyes,
@@ -1830,6 +1848,8 @@ document.addEventListener("visibilitychange", () => { if (!document.hidden) pain
 let feedTurn = 0;
 /* what each club's bar was at the last time you looked, so it has somewhere to travel from */
 const clubWas = {}, clubDone = {};
+/* how many were in each room the last time you drew it */
+const roomSeen = {};
 let booting = false;
 /* ---------- the four small tools the ten moments share ----------
    A number that changes in place, a row that is dealt rather than dropped, a thing that
@@ -2003,6 +2023,24 @@ function openCover(from) {
         opacity:0 }],
       { duration:420, easing:"cubic-bezier(.16,1,.3,1)" }).onfinish = () => f.remove();
     setTimeout(() => f.remove(), 600); }); }
+
+/* taste twins is the best idea in here and it was a list with a number on the end. The
+   two of you start apart and are pulled together by exactly as much as you share, so how
+   close they finish IS the match — forty per cent barely moves, ninety nearly overlaps. */
+function drawTogether(root) {
+  $$(".twin.pairing", root).forEach(row => {
+    const avs = $$(".av", row); if (avs.length < 2) return;
+    const m = Math.max(0, Math.min(100, +row.dataset.match || 0));
+    /* overlapped by the share: nothing in common sits a whole avatar apart */
+    const gap = Math.round(30 * (1 - m / 100));
+    avs[1].style.marginLeft = "-14px";
+    if (REDUCED) { avs[0].style.transform = "none"; avs[1].style.transform = `translateX(${gap}px)`;
+      row.classList.add("drawn"); return; }
+    avs[0].style.transform = `translateX(-${18 + gap}px)`;
+    avs[1].style.transform = `translateX(${34 + gap}px)`;
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      avs[0].style.transform = "none"; avs[1].style.transform = `translateX(${gap}px)`;
+      row.classList.add("drawn"); })); }); }
 
 /* every feed simply stopped. A line that rises when you reach the end says you have seen
    everything, rather than that the app ran out — and it is the natural place to say how
@@ -2750,7 +2788,7 @@ async function renderRoomFeed(fb, R) {
   es.forEach(e => remember(e.works)); const comp = competition(es, 6);
   const pick = P.picked && !logged(P.picked) && works[P.picked];
   fb.innerHTML = `<div class="card"><div class="h"><span>${esc(R.name)}</span><span class="tag dim">${R.members.length} in here · ${esc(R.code)}</span></div>
-      <div class="chips" style="margin-top:8px">${R.members.map(m => `<span class="chip ${m.id===me.id?"on":""}" data-prof="${esc(m.id)}">${esc(m.handle)}</span>`).join("")}<button class="chip" id="invite">+ bring someone in</button><button class="chip" id="leaveRoom">Leave</button></div>
+      <div class="chips" id="roomSeats" style="margin-top:8px">${R.members.map(m => `<span class="chip ${m.id===me.id?"on":""}" data-prof="${esc(m.id)}">${esc(m.handle)}</span>`).join("")}<button class="chip" id="invite">+ bring someone in</button><button class="chip" id="leaveRoom">Leave</button></div>
       <div class="here" id="hereRow" aria-live="polite"><small>Nobody else in here right now</small></div>
       <div class="nowrow" id="roomNow"></div>
       ${R.members.length < 2 ? `<div class="alone"><b>It's just you in here.</b>
@@ -2777,6 +2815,15 @@ async function renderRoomFeed(fb, R) {
     <div class="stack"><button class="btn quiet" id="newRoom">Open another room</button><button class="btn quiet" id="joinRoom">Join with a code</button></div><p class="msg" id="roomMsg"></p>`;
   endLine(fb, es, 60);
   compFlip(fb);
+  /* who is in here, arriving. Only when the room has actually grown since you last
+     looked — a room that refills itself on every redraw is a room that never settles. */
+  (() => { const seats = $("#roomSeats"); if (!seats || REDUCED) return;
+    const was = roomSeen[R.id];
+    roomSeen[R.id] = R.members.length;
+    if (was == null || R.members.length <= was) return;
+    $$(".chip[data-prof]", seats).slice(was).forEach((c, i) => {
+      c.style.animationDelay = (i * 90) + "ms"; c.classList.add("seat");
+      setTimeout(() => { c.classList.remove("seat"); c.style.animationDelay = ""; }, 700 + i * 90); }); })();
   wireSlips(fb, es); revealIn(fb); wireRoomButtons(); joinRoomChannel(R);
   /* presence says who is here; this says what they are actually in the middle of */
   paintRoomNow(R);
@@ -2813,12 +2860,13 @@ async function renderFollowingFeed(fb) {
   fb.innerHTML = (ids.length ? `<div class="chips" style="margin-top:6px">${follows.map(f => `<button class="chip" data-prof="${esc(f.followee)}">${esc(f.profiles?.handle||"")}</button>`).join("")}</div>` : "")
     + `<div id="folTop"></div>`
     + (es.length ? es.map(e => slipHTML(e)).join("") : blank("var(--lilac)","✦","Nobody yet","Following is for taste, not for friends. Find someone whose sensibility interests you and their entries land here.",[]))
-    + (twins.length ? `<div class="card"><div class="h"><span>Taste twins</span><span class="tag dim">by what you single out</span></div>${twins.map(t => `<div class="twin" data-prof="${esc(t.p.id)}">${avatar(t.p)}<div class="t"><b>${esc(t.p.handle)}</b><small>${esc(t.top.join(" · "))}</small></div><span class="ring">${t.match}</span></div>`).join("")}</div>`
+    + (twins.length ? `<div class="card"><div class="h"><span>Taste twins</span><span class="tag dim">by what you single out</span></div>${twins.map(t => `<div class="twin pairing" data-prof="${esc(t.p.id)}" data-match="${parseInt(t.match) || 0}">${avatar(me)}${avatar(t.p)}<div class="t"><b>${esc(t.p.handle)}</b><small>${esc(t.top.join(" · "))}</small></div><span class="ring">${t.match}</span></div>`).join("")}</div>`
       : (tasteOf(myEntries).tagged < 3
         ? blank("var(--mint)","✧","Twins need a taste","Single out what you loved on three entries and we can find the people who go for the same things.",[["twinAdd","Log something"]])
         : blank("var(--mint)","✧","No twins yet","Nobody else here has tagged enough for a match. As the hall fills up, this is where the people who think like you show up.",[])));
   endLine(fb, es, 60);
   wireSlips(fb, es); revealIn(fb); $$("[data-prof]", fb).forEach(x => x.onclick = () => openProfile(x.dataset.prof));
+  drawTogether(fb);
   const tw = $("#twinAdd"); if (tw) tw.onclick = openAdd;
 }
 async function tasteTwins(limit) { let ps = []; try { ps = await q(sb.from("profiles").select("id,handle,bio,avatar").neq("id", me.id).limit(200)); } catch { return []; }
@@ -3340,8 +3388,10 @@ async function paintRoomNow(R) {
 function openHand(w) {
   const people = reachable(); const pick = new Set();
   const sentTo = new Set(handOut.filter(h => h.work_id === w.id).map(h => h.recipient));
-  openSheet(`<h3>Who should ${esc(K(w.kind).verb === "read" ? "read" : "see")} it?</h3>
-    <p class="sub">Goes to them, not to the room. They can take it or leave it, and you won't be told which.</p>
+  openSheet(`<div class="head">${cover(w)}<div class="hh">
+      <h3>Who should ${esc(K(w.kind).verb === "read" ? "read" : "see")} it?</h3>
+      <p class="sub">${esc(w.title)}${w.year ? " · " + esc(w.year) : ""}</p></div></div>
+    <p class="sub" style="margin-top:12px">Goes to them, not to the room. They can take it or leave it, and you won't be told which.</p>
     <div class="card" style="margin-top:12px">${people.map(p => `<div class="twin" data-hand="${esc(p.id)}" style="cursor:pointer">
       ${avatar(p)}<div class="t"><b>${esc(p.handle)}</b>${sentTo.has(p.id) ? `<small>already sent</small>` : ""}</div>
       <span class="chip" data-tick="${esc(p.id)}">${sentTo.has(p.id) ? "Sent" : "Send"}</span></div>`).join("")}</div>
@@ -3359,6 +3409,12 @@ function openHand(w) {
     sync(); });
   $("#handNo").onclick = closeSheet;
   $("#handGo").onclick = async () => { const b = $("#handGo"); b.disabled = true;
+    /* taking one already flies to the Library tab; giving one is the same gesture in
+       reverse and had nothing at all — you pressed a name and a message said you did */
+    if (!REDUCED) [...pick].forEach((id, i) => { const row = $(`[data-hand="${CSS.escape(id)}"]`);
+      const face = row && $(".av", row); if (!face) return;
+      setTimeout(() => { flyTo($(".head .co") || $(".head"), face, works[w.id]?.cover);
+        row.classList.remove("given"); void row.offsetWidth; row.classList.add("given"); }, i * 110); });
     try { await handTo([...pick], w, $("#handNote").value.trim());
       closeSheet(); say(pick.size > 1 ? "Handed over" : `Sent to ${people.find(p => p.id === [...pick][0])?.handle || "them"}`); }
     catch (e) { $("#handMsg").textContent = e.message; b.disabled = false; } }; }
@@ -4345,7 +4401,12 @@ async function openCuts(kind, data, title) {
   const paidNote = () => { const el = $("#skinNote"); if (!el) return;
     const t = cardTheme(); el.hidden = !t.paid;
     el.textContent = t.paid ? `${t.name} is part of Rooms paid. Free while that's still being made.` : ""; };
+  /* an export appeared finished. It assembles once, before the Save button matters. */
+  if (!REDUCED) $$("#cutRow button").forEach(b => b.classList.add("drawing"));
   await drawAll(); paidNote();
+  if (!REDUCED) $$("#cutRow button").forEach((b, i) => {
+    b.classList.remove("drawing"); b.style.animationDelay = (i * 140) + "ms"; b.classList.add("drawn");
+    setTimeout(() => { b.classList.remove("drawn"); b.style.animationDelay = ""; }, 900 + i * 140); });
   $$("[data-skin]").forEach(b => b.onclick = async () => { P.cardSkin = b.dataset.skin; saveP();
     $$("[data-skin]").forEach(x2 => x2.classList.toggle("on", x2 === b)); paidNote(); await drawAll(); });
   $$("[data-cut]").forEach(b => b.onclick = () => { chosen = +b.dataset.cut;
@@ -5043,17 +5104,19 @@ function openLog(w, edit = null) { const cfg = K(w.kind); const loved = edit?.lo
      your finger is the only feedback that is exactly as fast as you are, so it tracks and
      the settle waits until you let go. */
   const dragStars = () => { const row = $("#rateWrap .rate"); if (!row) return;
-    let on = false, last = score;
+    let on = false, last = score, startX = null;
     const at = e => { const r = row.getBoundingClientRect();
       const x = (e.clientX ?? 0) - r.left;
       return Math.max(1, Math.min(10, Math.round((x / r.width) * 10))); };
+    row.addEventListener("pointerdown", e => { startX = e.clientX; on = false; });
     const paint = v => { $$("#rateWrap button svg", row.parentElement).forEach((sv, i) =>
       sv.innerHTML = starPath(Math.max(0, Math.min(1, v / 2 - i)))); };
-    row.addEventListener("pointermove", e => { if (!(e.buttons & 1)) return;
-      if (!on && Math.abs(e.movementX) < 2) return;
+    row.addEventListener("pointermove", e => { if (!(e.buttons & 1) || startX == null) return;
+      /* six pixels of travel is a drag; anything less is a tap on its way to being one */
+      if (!on && Math.abs(e.clientX - startX) < 6) return;
       on = true; const v = at(e); if (v !== last) { last = v; paint(v);
         if (navigator.vibrate) navigator.vibrate(3); } });
-    row.addEventListener("pointerup", () => { if (!on) return; on = false;
+    row.addEventListener("pointerup", () => { startX = null; if (!on) return; on = false;
       score = last; $("#rateWrap").innerHTML = starRow(); wireStars(); dragStars();
       $("#wSave").disabled = false; drawLoved(); }); };
   wireStars(); dragStars(); drawLoved(); $("#wCancel").onclick = closeSheet;
@@ -5316,7 +5379,7 @@ window.__rooms = { pullRefresh, openFind, setFollow, isFollowing, get follows(){
   CUTS, CARD_THEMES, cardTheme, spanData, tasteOf, reviewData, yearOf, roomPalmares, palmares, byPerson, spinN, SPIN_SIZES,
   loadNow, startNow, stopNow, nowOf, nowFor, nowLine, get myNow(){return myNow},
   bestOf, bestGenres, dealBest, loadBest, pickFrom, seenMode, keepSeen, get bestPool(){return bestPool}, get bestHand(){return bestHand},
-  newestFirst, sortEntries, loadMine, openEntry, sayUndo, openCover, compFlip, showOffline, sayWords, settleIn, endLine, closeGap, gridPlaces, strikeRing, removeFromShelf, paintHere, tickTo, dealIn, flyTo, leaveOut, rollLine, fillChip, paintTheme,
+  newestFirst, sortEntries, loadMine, loadRooms, openEntry, sayUndo, openCover, compFlip, showOffline, drawTogether, openHand, openCuts, sayWords, settleIn, endLine, closeGap, gridPlaces, strikeRing, removeFromShelf, paintHere, tickTo, dealIn, flyTo, leaveOut, rollLine, fillChip, paintTheme,
   joinMeChannel, leaveMeChannel, onLiveHand, onFollowEntry, dropInSlip,
   get meCh(){return meCh}, secondThoughts, againLine, apart, shelfAge, waited, openProfile, openWork,
   setSkin:k => { P.cardSkin = k; saveP(); }, get deckItems(){return deckItems},
