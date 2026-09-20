@@ -167,6 +167,43 @@ header .wrap{display:flex;align-items:center;justify-content:space-between;heigh
   0%{transform:none;opacity:1}
   28%{transform:scale(.975) rotate(-.7deg);opacity:.85}
   100%{transform:scale(.9) rotate(-1.4deg);opacity:0;height:0;padding-top:0;padding-bottom:0;margin-top:0}}
+/* ---- ten you drive ---- */
+/* 21 the fill is under your finger, so it cannot lag behind it */
+.rate{touch-action:none}
+.rate button{position:relative}
+.rate .fill{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.rate .fill svg path{fill:var(--ink)}
+/* 22 a sheet you can push away */
+.panel.dragging{transition:none;cursor:grabbing}
+.panel.springing{transition:transform .34s cubic-bezier(.16,1.1,.3,1)}
+/* 23 the rows move rather than the list being redrawn */
+.comprow{transition:transform .45s cubic-bezier(.16,1,.3,1)}
+.comprow.rose{box-shadow:inset 0 0 0 2px var(--good)}
+.comprow.fell{box-shadow:inset 0 0 0 2px var(--line)}
+/* 24 the pill is attached to your finger */
+.navpill.tracking{transition:none}
+/* 26 a poster you can pick up */
+.po{transition:transform .3s cubic-bezier(.2,.9,.25,1),box-shadow .3s}
+.po.lifted{transform:scale(1.12) translateY(-5px);box-shadow:0 18px 30px -14px rgba(21,19,32,.55);z-index:4}
+/* 28 the header gives the feed twenty pixels back once you have left the top */
+header .wrap{transition:height .24s cubic-bezier(.2,.9,.25,1)}
+header .logo{transition:font-size .24s,gap .24s}
+header .logo .mark{transition:width .24s,height .24s}
+header.tight .wrap{height:44px}
+header.tight .logo{font-size:17px;gap:7px}
+header.tight .logo .mark{width:23px;height:23px}
+header.tight{box-shadow:0 1px 0 var(--line)}
+/* 29 the chip says how long you have to change your mind */
+.undoclock{width:18px;height:18px;flex:none;display:block}
+.undoclock circle{fill:none;stroke-width:3;stroke-linecap:round}
+.undoclock .t{stroke:currentColor;opacity:.28}
+.undoclock .v{stroke:currentColor;stroke-dasharray:47;stroke-dashoffset:0;
+  transform:rotate(-90deg);transform-origin:50% 50%;animation:drain var(--for,5s) linear forwards}
+@keyframes drain{to{stroke-dashoffset:47}}
+/* 30 you saw it break, so you see it mend */
+.offline{transition:transform .42s cubic-bezier(.16,1.1,.3,1),background .3s}
+.offline.good{background:var(--good)}
+
 /* 12 a sentence somebody wrote arrives a few words at a time. Memories and reviews only —
    in a feed it would be a gimmick; here, slowing you down is the point. */
 .saying .w{display:inline-block;animation:wordUp .46s cubic-bezier(.16,1,.3,1) both}
@@ -864,6 +901,10 @@ body.demo header{padding-top:34px}
   padding:11px 16px;border-radius:14px;box-shadow:0 14px 34px -14px rgba(21,19,32,.6);
   opacity:0;pointer-events:none;transition:opacity .22s ease,transform .3s cubic-bezier(.2,1.2,.4,1)}
 .toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.undo{opacity:1;transform:translateX(-50%) translateY(0);display:flex;align-items:center;gap:10px}
+.toast.undo button{background:none;border:0;color:var(--cream);opacity:.78;font-family:var(--head);
+  font-weight:800;font-size:12.5px;cursor:pointer;padding:0}
+.toast.undo button:hover,.toast.undo button:focus-visible{opacity:1}
 .toast.bad{background:var(--bad)}
 .toast.good{background:var(--good)}
 .searchlog{margin-top:10px}
@@ -883,7 +924,9 @@ body.demo header{padding-top:34px}
   .wash,.sheet.on .cuts button,.cell.dealt,.po .tick.swept,.po .tick.swept:after,.cell.landed .po,
   .themeveil,.feedOut,.feedIn,.likes .was,.likes.rolling>span,.folding,.dealt-in,
   .chip.filling:before,.leaving,.booting>*,::view-transition-new(root),
-  .saying .w,.here .face.went,.settled,.struck svg.strike circle,.endline{animation:none!important}
+  .saying .w,.here .face.went,.settled,.struck svg.strike circle,.endline,
+  .undoclock .v{animation:none!important}
+  .comprow,.po,header .wrap,header .logo,.offline,.panel.springing{transition:none}
   .club .tr i,.grid .cell,.trio i.meter,html,body,header,nav,.po,.seg{transition:none}
   .cell.shoved .po,.tiles .tile,[data-like].popped,[data-like].popped:before,
   .sheet.on .av.meet svg > g > *,.sheet.on .av.big svg > g > *,.av.new svg > g > *,.av.new .eyes,.av .eyes,
@@ -1317,6 +1360,22 @@ const setQueue = a => localStorage.setItem(QKEY, JSON.stringify(a));
 /* every failure used to vanish into an empty catch. They come out here now:
    one line, said plainly, and read aloud by a screen reader because the bar is a live region. */
 let toastT = null;
+/* the chip is only there so you can change your mind, so it should say how long you have.
+   The ring is the timer rather than a decoration on one. */
+function sayUndo(msg, undo, seconds = 5) {
+  const el = document.createElement("div");
+  el.className = "toast undo";
+  el.innerHTML = `<span>${esc(msg)}</span>` +
+    (REDUCED ? "" : `<svg class="undoclock" viewBox="0 0 20 20" aria-hidden="true" style="--for:${seconds}s">
+      <circle class="t" cx="10" cy="10" r="7.5"/><circle class="v" cx="10" cy="10" r="7.5"/></svg>`) +
+    `<button type="button">Undo</button>`;
+  document.body.appendChild(el);
+  let done = false;
+  const go = () => { if (done) return; done = true; el.remove(); };
+  $("button", el).onclick = () => { go(); undo?.(); };
+  setTimeout(go, seconds * 1000);
+  return go; }
+
 function say(msg, kind = "") {
   const el = document.getElementById("toast"); if (!el) return;
   clearTimeout(toastT);
@@ -1335,8 +1394,9 @@ function markLive(root = document) {
   root.querySelectorAll(".msg:not([role]), .offline:not([role])").forEach(el => {
     el.setAttribute("role", "status"); el.setAttribute("aria-live", "polite"); });
 }
-function showOffline(msg) { const el = document.getElementById("offline"); if (!el) return;
-  if (!msg) { el.classList.remove("on"); return; } el.textContent = msg; el.classList.add("on"); }
+function showOffline(msg, good) { const el = document.getElementById("offline"); if (!el) return;
+  if (!msg) { el.classList.remove("on", "good"); return; }
+  el.textContent = msg; el.classList.toggle("good", !!good); el.classList.add("on"); }
 async function saveEntry(row, editId) {
   try { if (editId) await q(sb.from("entries").update(row).eq("id", editId)); else await q(sb.from("entries").insert(row)); return true; }
   catch (e) { if (navigator.onLine && !/fetch|network|failed/i.test(String(e.message))) throw e;
@@ -1344,7 +1404,8 @@ async function saveEntry(row, editId) {
 async function flushQueue() { const a = queued(); if (!a.length) return; showOffline(`Syncing ${a.length}…`); const left = [];
   for (const it of a) { try { if (it.editId) await q(sb.from("entries").update(it.row).eq("id", it.editId)); else await q(sb.from("entries").insert(it.row)); } catch { left.push(it); } }
   setQueue(left);
-  if (left.length) showOffline(`${left.length} still waiting`); else { showOffline("Synced"); setTimeout(() => showOffline(null), 1800); await loadMine(); refresh(); } }
+  if (left.length) showOffline(`${left.length} still waiting`);
+  else { showOffline("Synced", true); setTimeout(() => showOffline(null), 1800); await loadMine(); refresh(); } }
 addEventListener("online", flushQueue);
 
 /* ============ state ============ */
@@ -1755,6 +1816,14 @@ function paintDay() {
   let band = "night"; for (const [from, name] of DAY_BANDS) if (h >= from) band = name;
   if (document.documentElement.dataset.day !== band) document.documentElement.dataset.day = band;
 }
+/* the header was the same height at the top and four hundred entries down. One step, at
+   24px, gives the feed twenty pixels back and says you have left the top without a
+   scrollbar — a continuous shrink would just be something moving while you read. */
+(() => { const h = $("header"); if (!h) return;
+  let tight = false;
+  addEventListener("scroll", () => { const want = window.scrollY > 24;
+    if (want !== tight) { tight = want; h.classList.toggle("tight", want); movePill(true); } },
+    { passive:true }); })();
 paintDay(); setInterval(paintDay, 6e5);
 document.addEventListener("visibilitychange", () => { if (!document.hidden) paintDay(); });
 
@@ -1916,6 +1985,25 @@ async function dropInSlip(row, anchorSel) {
   setTimeout(() => slip.classList.remove("warm"), 2600);
   return true;
 }
+/* the cover travels from the grid to where the sheet is about to put it. The sheet has
+   not been drawn yet, so it aims at where the sheet's cover lands rather than measuring it,
+   and gives up quietly if the sheet never arrives. */
+function openCover(from) {
+  if (REDUCED || !from) return;
+  const a = from.getBoundingClientRect(); if (!a.width) return;
+  const f = from.cloneNode(true); f.className = "flyer";
+  f.style.cssText = `position:fixed;z-index:30;left:${a.left}px;top:${a.top}px;width:${a.width}px;height:${a.height}px;border-radius:14px;overflow:hidden`;
+  document.body.appendChild(f);
+  requestAnimationFrame(() => {
+    const to = $(".panel .head .co") || $(".panel .head");
+    if (!to) { f.remove(); return; }
+    const b = to.getBoundingClientRect();
+    f.animate([{ transform:"none", opacity:1 },
+      { transform:`translate(${b.left - a.left}px,${b.top - a.top}px) scale(${b.width / a.width})`,
+        opacity:0 }],
+      { duration:420, easing:"cubic-bezier(.16,1,.3,1)" }).onfinish = () => f.remove();
+    setTimeout(() => f.remove(), 600); }); }
+
 /* every feed simply stopped. A line that rises when you reach the end says you have seen
    everything, rather than that the app ran out — and it is the natural place to say how
    far back you have got. */
@@ -2230,6 +2318,9 @@ async function pullRefresh() {
    rubber band still does what the phone expects — this only reads the gesture. */
 (() => {
   const TRIG = 72;
+  /* one-to-one up to the trigger, then resistance. Two hundred pixels of finger buys
+     forty more of chip, which is how a phone says there is nothing else to pull. */
+  const give = raw => raw <= TRIG ? raw : TRIG + Math.sqrt(raw - TRIG) * 5;
   let y0 = null, live = false, dist = 0, bar = null;
   const chip = () => bar ||= (() => { const d = document.createElement("div");
     d.className = "pull"; d.id = "pullBar"; d.textContent = "Pull down";
@@ -2246,7 +2337,7 @@ async function pullRefresh() {
     if (window.scrollY > 0) { y0 = null; if (live) { live = false; off(); } return; }
     dist = e.touches[0].clientY - y0;
     if (dist <= 6) { if (live) { live = false; off(); } return; }
-    live = true; const b = chip(), p = Math.min(1, dist / TRIG);
+    live = true; const b = chip(), p = Math.min(1.34, give(dist) / TRIG);
     b.style.setProperty("--p", p.toFixed(3));
     b.classList.add("on"); b.classList.toggle("ready", p >= 1);
     b.textContent = p >= 1 ? "Let go" : "Pull down";
@@ -2276,6 +2367,26 @@ function closeSheet() { const sh = $("#sheet"); if (!sh.classList.contains("on")
   sh.classList.add("out"); clearTimeout(sheetGoing);
   sheetGoing = setTimeout(() => { sh.classList.remove("on", "out"); sheetGoing = null; }, 200); }
 $("#sheet").onclick = e => { if (e.target === $("#sheet")) closeSheet(); };
+/* every phone expects a sheet to be pushable. It only takes the gesture from the top of
+   the panel, because the panel scrolls and a drag that started on the content is a scroll. */
+(() => {
+  const panel = $(".panel"); if (!panel) return;
+  let y0 = null, d = 0;
+  panel.addEventListener("pointerdown", e => {
+    if (REDUCED || panel.scrollTop > 2 || e.clientY - panel.getBoundingClientRect().top > 64) return;
+    y0 = e.clientY; d = 0; panel.classList.remove("springing"); panel.classList.add("dragging"); });
+  panel.addEventListener("pointermove", e => { if (y0 === null) return;
+    d = Math.max(0, e.clientY - y0);
+    panel.style.transform = `translateY(${d}px)`; });
+  const let_go = () => { if (y0 === null) return; y0 = null;
+    panel.classList.remove("dragging");
+    const h = panel.getBoundingClientRect().height;
+    panel.classList.add("springing");
+    if (d > h * 0.4 || d > 220) { panel.style.transform = ""; panel.classList.remove("springing"); closeSheet(); }
+    else { panel.style.transform = "translateY(0)";
+      setTimeout(() => { panel.classList.remove("springing"); panel.style.transform = ""; }, 360); } };
+  ["pointerup","pointercancel","pointerleave"].forEach(t => panel.addEventListener(t, let_go));
+})();
 
 /* ============ auth ============ */
 function renderAuth() {
@@ -2610,8 +2721,24 @@ function wireSlips(el, es) { const by = Object.fromEntries(es.map(e => [e.id, e]
     } catch (err) { oops(err, has ? "Couldn't take that back" : "Couldn't like that"); }
     finally { b.disabled = false; } });
   }
+/* In competition is the room's argument, ranked. Somebody logs and it was simply in a
+   different order next time you looked — which is the one thing you wanted to see. */
+const compWas = {};
+function compFlip(root) {
+  if (REDUCED || !root) return;
+  $$(".comprow", root).forEach(r => { const id = r.dataset.cw, from = compWas[id];
+    const now = r.getBoundingClientRect().top;
+    if (from != null && Math.abs(from - now) > 1) {
+      r.style.transition = "none"; r.style.transform = `translateY(${from - now}px)`;
+      r.classList.add(from > now ? "rose" : "fell");
+      requestAnimationFrame(() => { r.style.transition = ""; r.style.transform = ""; });
+      setTimeout(() => r.classList.remove("rose", "fell"), 1400); }
+    compWas[id] = now; }); }
+const compMark = root => { if (root) $$(".comprow", root).forEach(r =>
+  compWas[r.dataset.cw] = r.getBoundingClientRect().top); };
+
 function compRows(rows, onOpen) { return rows.map((f,i) => { const w = works[f.id] || {};
-  return `<div class="row" data-cw="${esc(f.id)}"><span class="rk">${i+1}</span><div class="t"><b>${esc(w.title||f.id)}</b>
+  return `<div class="row comprow" data-cw="${esc(f.id)}"><span class="rk">${i+1}</span><div class="t"><b>${esc(w.title||f.id)}</b>
     <small>${tag(kindOf(f.id))} ${f.agree === null ? (f.hi.user_id === me.id ? "only you" : "just " + esc(f.hi.profiles?.handle||"one")) : `<span class="${f.agree>=70?"good":"bad"}">${f.agree}% agree</span> · ${f.n} of you${f.split?` · ${esc(f.hi.profiles?.handle||"")} ${f.hi.score/2}, ${esc(f.lo.profiles?.handle||"")} ${f.lo.score/2}`:""}`}</small></div>
     <span class="n ${f.split?"bad":""}">${(f.avg/2).toFixed(1)}<small>of five</small></span></div>`; }).join(""); }
 async function renderRoomFeed(fb, R) {
@@ -2648,7 +2775,8 @@ async function renderRoomFeed(fb, R) {
         if (isNew && !shown) { shown = true; head = `<div class="newline">New since you were here</div>`; }
         return head + slipHTML(e, { talk:true }); }).join(""); })()}
     <div class="stack"><button class="btn quiet" id="newRoom">Open another room</button><button class="btn quiet" id="joinRoom">Join with a code</button></div><p class="msg" id="roomMsg"></p>`;
-  endLine($("#talkTop")?.parentElement === fb ? fb : fb, es, 60);
+  endLine(fb, es, 60);
+  compFlip(fb);
   wireSlips(fb, es); revealIn(fb); wireRoomButtons(); joinRoomChannel(R);
   /* presence says who is here; this says what they are actually in the middle of */
   paintRoomNow(R);
@@ -2793,7 +2921,15 @@ function renderShelf() { const L = activeList();
     if (left.length < 2 && pickFrom() !== "best") { P.pickFrom = "best"; saveP(); bestHand = []; }
     await openWheel(); };
   $$("[data-t]").forEach(b => b.onclick = e => { e.stopPropagation(); openLog(works[b.dataset.t]); });
-  $$("[data-w]").forEach(t => t.onclick = () => { if (!shelfEdit) openWork(t.dataset.w); });
+  /* the poster you tapped becomes the poster in the sheet, so you never lose which title
+     you opened; and holding one lifts it, which is the cheapest peek there is */
+  $$("[data-w]").forEach(t => { let hold = null;
+    const art = t.classList.contains("po") ? t : ($(".po", t) || t);
+    t.onclick = () => { if (shelfEdit) return; openCover(art); openWork(t.dataset.w); };
+    t.addEventListener("pointerdown", () => { if (shelfEdit || REDUCED) return;
+      hold = setTimeout(() => art.classList.add("lifted"), 240); });
+    ["pointerup","pointercancel","pointerleave"].forEach(ev => t.addEventListener(ev, () => {
+      clearTimeout(hold); art.classList.remove("lifted"); })); });
   /* the queue on the shelf is a to-do list, so an answered one genuinely leaves — unlike
      the bell, where the row stays and says what you did */
   $$("[data-yes],[data-no]").forEach(b => b.onclick = async e => { e.stopPropagation();
@@ -4897,13 +5033,30 @@ function openLog(w, edit = null) { const cfg = K(w.kind); const loved = edit?.lo
   $$("[data-who]").forEach(b => b.onclick = () => { roomOnly = b.dataset.who === "room";
     P.postTo = roomOnly ? "room" : "all"; saveP(); paintWho(); });
   paintWho();
-  const wireStars = () => $$("#rateWrap [data-i]").forEach(b => { let timer = null, fired = false; const set = half => { fired = true; score = half; $("#rateWrap").innerHTML = starRow(); wireStars(); $("#wSave").disabled = false; if (navigator.vibrate) navigator.vibrate(8);
+  const wireStars = () => $$("#rateWrap [data-i]").forEach(b => { let timer = null, fired = false; const set = half => { fired = true; score = half; $("#rateWrap").innerHTML = starRow(); wireStars(); dragStars(); $("#wSave").disabled = false; if (navigator.vibrate) navigator.vibrate(8);
       $$("#rateWrap button").slice(0, Math.ceil(half/2)).forEach((sb2, n) => setTimeout(() => { sb2.classList.add("pop"); setTimeout(() => sb2.classList.remove("pop"), 340); }, n*45));
       drawLoved(); }; const i = +b.dataset.i;
     b.addEventListener("pointerdown", e => { e.preventDefault(); fired = false; b.classList.add("holding"); timer = setTimeout(() => set(i*2+1), 300); });
     b.addEventListener("pointerup", e => { e.preventDefault(); b.classList.remove("holding"); if (timer) { clearTimeout(timer); timer = null; } if (!fired) set(i*2+2); });
     b.addEventListener("pointerleave", () => { b.classList.remove("holding"); if (timer) { clearTimeout(timer); timer = null; } }); b.addEventListener("contextmenu", e => e.preventDefault()); });
-  wireStars(); drawLoved(); $("#wCancel").onclick = closeSheet;
+  /* tap for a full, hold for a half, and now drag for all ten in one go. The fill under
+     your finger is the only feedback that is exactly as fast as you are, so it tracks and
+     the settle waits until you let go. */
+  const dragStars = () => { const row = $("#rateWrap .rate"); if (!row) return;
+    let on = false, last = score;
+    const at = e => { const r = row.getBoundingClientRect();
+      const x = (e.clientX ?? 0) - r.left;
+      return Math.max(1, Math.min(10, Math.round((x / r.width) * 10))); };
+    const paint = v => { $$("#rateWrap button svg", row.parentElement).forEach((sv, i) =>
+      sv.innerHTML = starPath(Math.max(0, Math.min(1, v / 2 - i)))); };
+    row.addEventListener("pointermove", e => { if (!(e.buttons & 1)) return;
+      if (!on && Math.abs(e.movementX) < 2) return;
+      on = true; const v = at(e); if (v !== last) { last = v; paint(v);
+        if (navigator.vibrate) navigator.vibrate(3); } });
+    row.addEventListener("pointerup", () => { if (!on) return; on = false;
+      score = last; $("#rateWrap").innerHTML = starRow(); wireStars(); dragStars();
+      $("#wSave").disabled = false; drawLoved(); }); };
+  wireStars(); dragStars(); drawLoved(); $("#wCancel").onclick = closeSheet;
   $("#wSave").onclick = async () => { if (!score) return; const e = { user_id:me.id, work_id:w.id, rated_on:$("#wDate").value || today(), score, note:$("#wNote").value.trim() || null, loved:loved.length?loved.slice():null, context:Object.keys(ctx).length?ctx:null, breakdown:null, room_only:roomOnly };
     $("#wSave").disabled = true; try { await saveEntry(e, edit?.id); await loadMine();
       const offShelf = !edit?.id && dropFromShelf(w.id);
@@ -4911,7 +5064,12 @@ function openLog(w, edit = null) { const cfg = K(w.kind); const loved = edit?.lo
       if (!edit?.id && nowOf(w.id)) stopNow(w.id);
       justSwept = w.id; inkWash(w.kind); recs = null; delete tagCache[w.id]; if (P.picked === w.id) { P.picked = null; saveP(); } closeSheet(); refresh();
       if (offShelf) say("Off the shelf");
-      const saved = (edit ? myEntries.find(x => x.id === edit.id) : myEntries.find(x => x.work_id === w.id)) || e; openEntry(saved, true); } catch (err) { $("#wMsg").textContent = err.message; $("#wSave").disabled = false; } }; }
+      const saved = (edit ? myEntries.find(x => x.id === edit.id) : myEntries.find(x => x.work_id === w.id)) || e;
+      /* a new entry is the one change worth offering back, and the ring says how long for */
+      if (!edit?.id && saved.id) sayUndo("Logged", async () => {
+        try { await q(sb.from("entries").delete().eq("id", saved.id)); await loadMine(); refresh();
+          say("Taken back"); } catch (err) { oops(err, "Couldn't take that back"); } });
+      openEntry(saved, true); } catch (err) { $("#wMsg").textContent = err.message; $("#wSave").disabled = false; } }; }
 
 /* ============ ENTRY PAGE ============ */
 function openEntry(e, justSaved = false) { const w = works[e.work_id] || e.works || {}; const cfg = K(w.kind || kindOf(e.work_id)); const mine = e.user_id === me.id;
@@ -5158,7 +5316,7 @@ window.__rooms = { pullRefresh, openFind, setFollow, isFollowing, get follows(){
   CUTS, CARD_THEMES, cardTheme, spanData, tasteOf, reviewData, yearOf, roomPalmares, palmares, byPerson, spinN, SPIN_SIZES,
   loadNow, startNow, stopNow, nowOf, nowFor, nowLine, get myNow(){return myNow},
   bestOf, bestGenres, dealBest, loadBest, pickFrom, seenMode, keepSeen, get bestPool(){return bestPool}, get bestHand(){return bestHand},
-  newestFirst, sortEntries, loadMine, openEntry, sayWords, settleIn, endLine, closeGap, gridPlaces, strikeRing, removeFromShelf, paintHere, tickTo, dealIn, flyTo, leaveOut, rollLine, fillChip, paintTheme,
+  newestFirst, sortEntries, loadMine, openEntry, sayUndo, openCover, compFlip, showOffline, sayWords, settleIn, endLine, closeGap, gridPlaces, strikeRing, removeFromShelf, paintHere, tickTo, dealIn, flyTo, leaveOut, rollLine, fillChip, paintTheme,
   joinMeChannel, leaveMeChannel, onLiveHand, onFollowEntry, dropInSlip,
   get meCh(){return meCh}, secondThoughts, againLine, apart, shelfAge, waited, openProfile, openWork,
   setSkin:k => { P.cardSkin = k; saveP(); }, get deckItems(){return deckItems},
