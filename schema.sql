@@ -641,3 +641,52 @@ end $$;
 
 revoke all on function delete_me() from public, anon;
 grant execute on function delete_me() to authenticated;
+
+-- ---------- v20: a show is a thing with things inside it ----------
+-- A season and an episode are works under a work, on the same namespacing the ids
+-- already use: tv:1396 -> tv:1396:s4 -> tv:1396:s4e7. That means entries needs no new
+-- column to point at one: the foreign key already lands on works.id.
+alter table works add column if not exists parent_id text references works(id) on delete cascade;
+create index if not exists works_parent_idx on works (parent_id) where parent_id is not null;
+
+-- Parts log, but they never broadcast. One binge is sixty rows, and a feed that carried
+-- them would be somebody's week of Severance and nothing else. Every feed filters on
+-- this, so it has to be cheap and it has to be indexable — which rules out joining works
+-- on every feed query. Hence a column on entries.
+--
+-- It is set by a trigger rather than by the client, because a flag the app is trusted to
+-- pass is a flag that will one day be passed wrong, and the wrong way round is a flood
+-- nobody can put back.
+alter table entries add column if not exists part boolean not null default false;
+
+create or replace function entries_mark_part() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  new.part := coalesce((select w.parent_id is not null from works w where w.id = new.work_id), false);
+  return new;
+end $$;
+
+drop trigger if exists entries_part_trg on entries;
+create trigger entries_part_trg before insert or update of work_id on entries
+  for each row execute function entries_mark_part();
+
+-- anything logged before v20 is a whole thing, which the default already says
+create index if not exists entries_whole_idx on entries (created_at desc) where not part;
+
+-- ---------- v20: seen ----------
+-- A tick is not an opinion. "I have watched up to here" is the thing a weekly show
+-- actually needs, and it is not a score — forcing it through entries would mean
+-- inventing a rating for an episode nobody wanted to rate.
+create table if not exists seen (
+  user_id uuid not null references profiles on delete cascade,
+  work_id text not null references works on delete cascade,
+  seen_on date not null default current_date,
+  primary key (user_id, work_id)
+);
+create index if not exists seen_user_idx on seen (user_id, seen_on desc);
+
+alter table seen enable row level security;
+drop policy if exists seen_mine on seen;
+-- where you are up to is yours. The show you logged is the part other people see.
+create policy seen_mine on seen for all to authenticated
+  using (user_id = auth.uid()) with check (user_id = auth.uid());

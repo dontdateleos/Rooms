@@ -399,6 +399,30 @@ textarea{min-height:76px;resize:none;line-height:1.45}
 .po.onit{box-shadow:0 0 0 2px var(--ink)}
 .cell .po.onit + .cap span:first-child{color:var(--ink);font-weight:600}
 .po{-webkit-touch-callout:none}
+/* seasons and episodes. Deliberately quieter than anything else on the page: the show
+   is the thing, and this is the thing's shape. A shelf of posters here would make a
+   five-season run look like five things you had watched. */
+.seas{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.sr{display:flex;align-items:center;gap:10px;padding:8px 10px;border:2px solid var(--line);
+  border-radius:14px;background:var(--card);cursor:pointer;text-align:left;width:100%;font:inherit;color:inherit}
+.sr .n{flex:1;min-width:0;font-family:var(--head);font-weight:800;font-size:14px}
+.sr .n small{display:block;font-family:var(--body);font-weight:600;font-size:11.5px;color:var(--mute);margin-top:2px}
+.sr .sc{font-family:var(--head);font-weight:900;font-size:15px;flex:none}
+.sr .sc.calc{color:var(--mute);font-weight:800}
+.sr .caret{flex:none;color:var(--mute);font-size:11px;transition:transform .22s}
+.sr[aria-expanded="true"] .caret{transform:rotate(90deg)}
+.eps{display:flex;flex-direction:column;margin:2px 0 8px 14px;padding-left:12px;border-left:2px solid var(--line)}
+.er{display:flex;align-items:center;gap:10px;padding:7px 0;font-size:13px}
+.er .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.er .t i{font-style:normal;color:var(--mute);font-weight:700;margin-right:6px}
+.er.seen .t{color:var(--mute)}
+.er .es{background:none;border:0;font-family:var(--head);font-weight:900;font-size:13px;color:var(--mute);cursor:pointer;padding:2px 4px;flex:none}
+.er .es.has{color:var(--ink)}
+.tick{width:22px;height:22px;border-radius:999px;border:2px solid var(--line);background:none;flex:none;
+  cursor:pointer;display:grid;place-items:center;padding:0;transition:background .18s,border-color .18s}
+.tick.on{background:var(--mint);border-color:var(--mint)}
+.tick svg{width:12px;height:12px;opacity:0;transition:opacity .18s;stroke:var(--onAccent);stroke-width:3.4;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.tick.on svg{opacity:1}
 .po .rm{position:absolute;top:6px;left:6px;width:26px;height:26px;border-radius:50%;border:0;background:var(--ink);color:var(--cream);font-size:18px;line-height:1;padding:0;z-index:4;cursor:pointer;display:grid;place-items:center;box-shadow:0 2px 8px -2px rgba(21,19,32,.5)}
 .grid.editing .po{animation:jiggle .34s ease-in-out infinite alternate}
 .grid.editing .cell:nth-child(3n+2) .po{animation-duration:.3s}
@@ -1244,6 +1268,70 @@ const SOURCES = {
     return g.map(x => ({ id:"game:"+x.id, kind:"game", title:x.name, year:x.first_release_date ? String(new Date(x.first_release_date*1000).getFullYear()) : "",
       creator:x.involved_companies?.[0]?.company?.name || "", cover:x.cover?.image_id ? `https://images.igdb.com/igdb/image/upload/t_cover_big/${x.cover.image_id}.jpg` : "" })); }
 };
+/* ---------- a show is a thing with things inside it ----------
+   The ids were already namespaced, so a season and an episode need no new shape:
+   tv:1396 is the show, tv:1396:s4 the season, tv:1396:s4e7 the episode. An entry points
+   at one of those with the foreign key it already has.
+
+   Everything here is about television. Nothing else has this problem: a book is a book
+   and a film is a film, and the one medium where "the thing" and "the things it is made
+   of" are both real is the one we are building for. */
+const showOf = id => String(id).split(":").slice(0, 2).join(":");
+const partOf = id => { const m = /^tv:\d+:s(\d+)(?:e(\d+))?$/.exec(String(id));
+  return m ? { season:+m[1], episode: m[2] ? +m[2] : null } : null; };
+const isPart = id => !!partOf(id);
+/* No isSeason here on purpose: a club already owns that word — a club with a deadline
+   is "a season" — and two meanings of season in one television app is how you end up
+   reading the wrong one. A part that is not an episode is a season, and saying it that
+   way needs one predicate rather than two. */
+const isEpisode = id => { const p = partOf(id); return !!p && p.episode !== null; };
+const seasonOf = id => { const p = partOf(id); return p ? `${showOf(id)}:s${p.season}` : null; };
+/* what to call one in a sentence, since every screen needs the same words */
+const partName = id => { const p = partOf(id); if (!p) return "";
+  return p.episode === null ? `Season ${p.season}` : `S${p.season}E${p.episode}`; };
+
+/* Seasons arrive free with the show — tv/{id} already carries them. Episodes are one
+   call per season, which the worker caches for a day, so opening the same season twice
+   costs nothing. Specials (season 0) are left out: they are not part of the run, and
+   putting them first is how every other app gets this wrong. */
+/* A part you have already rated is a row in the database, and it should not take a trip
+   to Los Angeles to find out its own name. Whatever is already known comes back first,
+   TMDB fills in the rest, and when TMDB cannot be reached — offline, no key, no worker —
+   you still get the seasons you have opinions about rather than an empty fold. */
+async function knownParts(parentId) {
+  let rows = []; try { rows = await q(sb.from("works").select("*").eq("parent_id", parentId)); } catch {}
+  return rows.map(remember).filter(Boolean);
+}
+const byPartNo = (a, b) => { const x = partOf(a.id) || {}, y = partOf(b.id) || {};
+  return (x.season - y.season) || ((x.episode || 0) - (y.episode || 0)); };
+const merge = (...lists) => { const by = {};
+  for (const l of lists) for (const w of l) if (w?.id) by[w.id] = works[w.id] || w;
+  return Object.values(by).sort(byPartNo); };
+
+async function loadSeasons(showId) {
+  const known = await knownParts(showId);
+  let fetched = [];
+  try { const d = await tmdb("tv/" + showId.split(":")[1]);
+    fetched = (d.seasons || []).filter(x => x.season_number > 0).map(x => remember({
+      id: `${showId}:s${x.season_number}`, parent_id: showId, kind:"tv",
+      title: x.name || `Season ${x.season_number}`,
+      year: (x.air_date || "").slice(0, 4), cover: TMDB_IMG(x.poster_path),
+      length: x.episode_count || 0, meta:{ overview:x.overview || "" } })); } catch {}
+  return merge(known, fetched);
+}
+async function loadEpisodes(seasonId) {
+  const p = partOf(seasonId); if (!p) return [];
+  const known = await knownParts(seasonId);
+  let fetched = [];
+  try { const d = await tmdb(`tv/${seasonId.split(":")[1]}/season/${p.season}`);
+    fetched = (d.episodes || []).map(x => remember({
+      id: `${showOf(seasonId)}:s${p.season}e${x.episode_number}`, parent_id: seasonId, kind:"tv",
+      title: x.name || `Episode ${x.episode_number}`,
+      year: (x.air_date || "").slice(0, 4), cover: TMDB_IMG(x.still_path),
+      length: x.runtime || 0, release: x.air_date || null, meta:{ overview:x.overview || "" } })); } catch {}
+  return merge(known, fetched);
+}
+
 const crewName = (c, ...jobs) => { const out = []; for (const j of jobs) for (const p of (c?.crew||[])) if (p.job === j && !out.includes(p.name)) out.push(p.name); return out.slice(0,2).join(", "); };
 /* ---------- faces ----------
    credits are stored as joined strings — "Michael Mann", "Pacino, De Niro, Kilmer" —
@@ -1288,10 +1376,15 @@ const DEMO = /(^|[#?&])demo\b/.test(location.hash + location.search);
 const LOCAL = !window.__mockSb && (DEMO || SUPABASE_URL.includes("YOUR-"));
 function makeLocalSb(seed) {
   const KEY = "rooms.db";
-  const blank = { profile:null, signedOut:false, works:{}, profiles:[], entries:[], lists:[], list_items:[], rooms:[], room_members:[], clubs:[], club_members:[], club_votes:[], reactions:[], replies:[], top_lists:[], top_list_items:[], follows:[], nows:[], handovers:[] };
+  const blank = { profile:null, signedOut:false, works:{}, profiles:[], entries:[], lists:[], list_items:[], rooms:[], room_members:[], clubs:[], club_members:[], club_votes:[], reactions:[], replies:[], top_lists:[], top_list_items:[], follows:[], nows:[], handovers:[], seen:[] };
   const db = Object.assign({}, blank, seed || JSON.parse(localStorage.getItem(KEY) || "{}"));
   if (!db.nows) db.nows = [];                 /* a log written before v15 has no such key */
   if (!db.handovers) db.handovers = [];       /* nor one written before v16 */
+  if (!db.seen) db.seen = [];                 /* nor one written before v20 */
+  /* v20 gave entries a part column with a default of false. A row written before that
+     has no such key, and the feeds now ask for part = false by name — so without this
+     every entry anybody already had would quietly stop appearing anywhere. */
+  db.entries.forEach(e => { e.part = !!e.part; });
   const save = () => { if (!seed) localStorage.setItem(KEY, JSON.stringify(db)); };
   const uid = () => (crypto.randomUUID ? crypto.randomUUID() : "id-" + Math.random().toString(36).slice(2));
   const now = () => new Date().toISOString();
@@ -1334,6 +1427,9 @@ function makeLocalSb(seed) {
       let out;
       if (st.upsert) { const rows = Array.isArray(st.upsert) ? st.upsert : [st.upsert];
         if (t === "works") rows.forEach(w => db.works[w.id] = Object.assign(db.works[w.id]||{}, w));
+        else if (t === "seen") rows.forEach(v => { const i = db.seen.findIndex(x => x.user_id === v.user_id && x.work_id === v.work_id);
+          const full = Object.assign({ seen_on:now().slice(0,10) }, i >= 0 ? db.seen[i] : {}, v);
+          if (i >= 0) db.seen[i] = full; else db.seen.push(full); });
         else if (t === "nows") rows.forEach(n => { const i = db.nows.findIndex(x => x.user_id === n.user_id && x.work_id === n.work_id);
           const full = Object.assign({ started_on:now().slice(0,10), at:null }, i >= 0 ? db.nows[i] : {}, n);
           if (i >= 0) db.nows[i] = full; else db.nows.push(full); });
@@ -1344,6 +1440,9 @@ function makeLocalSb(seed) {
           if (i >= 0) db.handovers[i] = full; else db.handovers.push(full); });
         out = rows; save(); }
       else if (st.ins) { const rows = (Array.isArray(st.ins) ? st.ins : [st.ins]).map(r => Object.assign({ id:uid(), created_at:now() }, r));
+        /* what entries_part_trg does in the real database: the flag comes from the work,
+           not from whoever is inserting, so it cannot be passed wrong */
+        if (t === "entries") rows.forEach(r => { r.part = !!db.works[r.work_id]?.parent_id; });
         if (t === "works") rows.forEach(w => db.works[w.id] = w); else db[t].push(...rows); out = Array.isArray(st.ins) ? rows : rows[0]; save(); }
       else if (st.up) { db[t].forEach((r,i) => { if (match(r)) db[t][i] = Object.assign({}, r, st.up); }); if (t === "profiles" && db.profile && match(db.profile)) Object.assign(db.profile, st.up); out = null; save(); }
       else if (st.del) { db[t] = db[t].filter(r => !match(r)); out = null; save(); }
@@ -1363,7 +1462,7 @@ function makeLocalSb(seed) {
         db.room_members = db.room_members.filter(m => m.user_id !== mine);
         db.rooms = db.rooms.filter(r => !was.includes(r.id) || db.room_members.some(m => m.room_id === r.id));
         for (const t of ["entries","lists","list_items","reactions","replies","follows",
-                         "top_lists","top_list_items","club_members","club_votes","nows","handovers"])
+                         "top_lists","top_list_items","club_members","club_votes","nows","handovers","seen"])
           db[t] = [];
         db.profile = null; db.signedOut = true; save();
         return Promise.resolve({ data:null, error:null }); }
@@ -1443,7 +1542,7 @@ async function flushQueue() { const a = queued(); if (!a.length) return; showOff
 addEventListener("online", flushQueue);
 
 /* ============ state ============ */
-let me = null; const works = {}; let lists = [], rooms = [], clubs = [], myEntries = [], follows = [], loggedIds = new Set();
+let me = null; const works = {}; let lists = [], rooms = [], clubs = [], myEntries = [], myParts = [], follows = [], loggedIds = new Set();
 const remember = w => { if (w?.id) works[w.id] = Object.assign(works[w.id]||{}, w); return w?.id ? works[w.id] : null; };
 const logged = id => loggedIds.has(id);
 const ENTRY_SEL = "id,user_id,work_id,rated_on,score,note,loved,breakdown,context,created_at,room_only,profiles!entries_user_id_fkey(id,handle,bio,avatar),works(*),reactions(user_id)";
@@ -1459,8 +1558,24 @@ async function loadLists() { const rows = await q(sb.from("lists").select("id,na
     added:Object.fromEntries((l.list_items||[]).map(i => [i.work_id, i.added_at])) }));
   if (!lists.length) { const l = await q(sb.from("lists").insert({ owner:me.id, name:"the shelf" }).select().single()); lists = [{ id:l.id, name:l.name, items:[] }]; }
   if (!lists.find(l => l.id === P.activeList)) { P.activeList = lists[0].id; saveP(); } }
-async function loadMine() { myEntries = await q(sb.from("entries").select("*,works(*)").eq("user_id", me.id).order("rated_on",{ascending:false}).order("created_at",{ascending:false}));
-  myEntries.forEach(e => remember(e.works)); loggedIds = new Set(myEntries.map(e => e.work_id));
+async function loadMine() {
+  const all = await q(sb.from("entries").select("*,works(*)").eq("user_id", me.id).order("rated_on",{ascending:false}).order("created_at",{ascending:false}));
+  all.forEach(e => remember(e.works));
+  /* The split happens once, here, rather than in each of the twenty places that read
+     your log. Everything downstream — your history, taste, the cuts, the reel, the ten,
+     memories, the shelf — was written against myEntries and means "things", so leaving
+     parts in it would put a season in your ten and let one binge decide what your taste
+     is. myParts is the other half, and only the show page asks for it. */
+  myEntries = all.filter(e => !isPart(e.work_id));
+  myParts   = all.filter(e =>  isPart(e.work_id));
+  /* a show you have rated two seasons of is not new to you, even with nothing on the
+     show itself — the spinner and the shelf both ask this question */
+  loggedIds = new Set([...myEntries.map(e => e.work_id), ...myParts.map(e => showOf(e.work_id))]);
+  /* An entry hands back its own work, so a season entry hands back the season and the
+     show it belongs to is nowhere — which left a show you had rated two seasons of with
+     no title, no poster and no row anywhere. Fetch the shows the parts point at. */
+  const need = [...new Set(myParts.map(e => showOf(e.work_id)))].filter(id => !works[id]);
+  if (need.length) { try { (await q(sb.from("works").select("*").in("id", need))).forEach(remember); } catch {} }
   myRing(); }
 /* your own ring, from the log that has just landed. No club query and no taste match —
    both need a round trip, and the two marks that want them light up when you open your
@@ -1607,6 +1722,62 @@ function competition(es, limit = 8) { const by = {}; for (const e of es) (by[e.w
   if (!per.length) return [];
   const mean = per.reduce((a,f)=>a+f.avg,0)/per.length, KW = 1.5;
   return per.map(f => Object.assign(f, { w:(f.n*f.avg + KW*mean)/(f.n+KW) })).sort((a,b) => b.w - a.w || b.n - a.n).slice(0, limit); }
+/* ---------- what a show is worth ----------
+   You can log the show, a season, an episode, or any mixture, and the show still has to
+   show one number. The rule is that a number you gave beats a number we worked out: an
+   average that quietly overwrote what you said would make what you said unrecoverable,
+   and this app keeps a history of you changing your mind rather than a single current
+   opinion. So your own score on the show wins whenever there is one.
+
+   With no score on the show, the parts stand in, coarsest layer first. A season you
+   rated counts as that; a season you did not rate but watched some of counts as the mean
+   of the episodes you rated in it. Then the show is the mean across seasons — equal
+   weight each, not weighted by episode count, because "the seasons went 8, 9, 4, 7" is
+   how people hold a show, and a twenty-two episode season is not three times the opinion
+   of a six.
+
+   It is marked as worked out wherever it is shown. It is not a thing you said. */
+function partScores(entries, showId) {
+  const latest = {};                          /* one per part: the most recent thing you said */
+  for (const e of entries) {
+    if (!isPart(e.work_id) || showOf(e.work_id) !== showId) continue;
+    const cur = latest[e.work_id];
+    if (!cur || newestFirst(e, cur) < 0) latest[e.work_id] = e;
+  }
+  const seasons = {};
+  for (const [id, e] of Object.entries(latest)) {
+    const sid = isEpisode(id) ? seasonOf(id) : id;
+    const s = seasons[sid] ||= { own:null, eps:[] };
+    if (isEpisode(id)) s.eps.push(e.score); else s.own = e.score;
+  }
+  return seasons;
+}
+function derivedScore(entries, showId) {
+  const seasons = partScores(entries, showId);
+  const vals = Object.values(seasons)
+    .map(s => s.own != null ? s.own : s.eps.length ? s.eps.reduce((a,b)=>a+b,0) / s.eps.length : null)
+    .filter(v => v != null);
+  if (!vals.length) return null;
+  return { score: vals.reduce((a,b)=>a+b,0) / vals.length, seasons: vals.length,
+    parts: Object.values(seasons).reduce((n,s) => n + (s.own != null ? 1 : 0) + s.eps.length, 0) };
+}
+/* the one number the show wears, and whether it is yours or ours */
+function showScore(whole, parts, showId) {
+  const own = whole.filter(e => e.work_id === showId).sort(newestFirst)[0];
+  if (own) return { score:own.score, said:true, entry:own };
+  const d = derivedScore(parts, showId);
+  return d ? { score:d.score, said:false, from:d } : null;
+}
+/* worth saying out loud only when it is a real distance — half a star is the noise of
+   rating a season on a different evening, the same threshold second thoughts uses */
+function scoreGap(whole, parts, showId) {
+  const own = whole.filter(e => e.work_id === showId).sort(newestFirst)[0];
+  const d = derivedScore(parts, showId);
+  if (!own || !d) return null;
+  const gap = own.score - d.score;
+  return Math.abs(gap) < 2 ? null : { gap, own:own.score, parts:d.score, seasons:d.seasons };
+}
+
 function tasteOf(entries) { const craft = {}, people = {}, kinds = {}; for (const e of entries) { const w = works[e.work_id]; if (!w) continue; kinds[w.kind] = (kinds[w.kind]||0)+1;
     for (const l of (e.loved||[])) { if (l.startsWith("person:")) { people[l.slice(7)] = (people[l.slice(7)]||0)+1; continue; } const c = craft[l] ||= { total:0, by:{} }; c.total += e.score/10; c.by[w.kind] = (c.by[w.kind]||0) + e.score/10; } }
   return { craft:Object.entries(craft).sort((a,b)=>b[1].total-a[1].total), people:Object.entries(people).sort((a,b)=>b[1]-a[1]), kinds, tagged:entries.filter(e=>e.loved?.length).length, n:entries.length }; }
@@ -2102,8 +2273,11 @@ function rollLine(el, text) {
   if (text) { const now = document.createElement("span"); now.textContent = text; el.appendChild(now); }
   el.classList.add("rolling"); setTimeout(() => el.classList.remove("rolling"), 480); }
 
+/* A socket hands over the bare table row, part column and all. The feed queries filter
+   on it, and so must these, or the one path into the feed that is not a query becomes
+   the one that floods it. */
 const onLiveEntry = (row, memberIds) =>
-  row && memberIds.has(row.user_id) ? dropInSlip(row, "#talkTop") : Promise.resolve(false);
+  row && !row.part && memberIds.has(row.user_id) ? dropInSlip(row, "#talkTop") : Promise.resolve(false);
 
 /* ---------- the channel that is about you rather than a room ----------
    A room channel dies when you leave the room, which is right for presence and wrong
@@ -2153,7 +2327,7 @@ async function onLiveHand(row) {
 /* somebody you follow logged something. Only worth dropping in if that is the feed you
    are actually looking at; anywhere else the next render picks it up. */
 function onFollowEntry(row) {
-  if (!row || row.user_id === me.id || !followSet().has(row.user_id)) return;
+  if (!row || row.part || row.user_id === me.id || !followSet().has(row.user_id)) return;
   if (currentTab() !== "doors" || P.feed !== "following") return;
   dropInSlip(row, "#folTop"); }
 
@@ -2181,7 +2355,7 @@ async function checkNew() {
   if (R) { try { const ids = R.members.map(m => m.id).filter(i => i !== me.id);
     /* limit(100) with no order is an arbitrary hundred rows, so in a busy room the
        newest entries were the ones it could silently fail to count */
-    if (ids.length) { const es = await q(sb.from("entries").select("id,user_id,created_at,work_id,profiles!entries_user_id_fkey(handle)").in("user_id", ids).order("created_at",{ascending:false}).limit(100));
+    if (ids.length) { const es = await q(sb.from("entries").select("id,user_id,created_at,work_id,profiles!entries_user_id_fkey(handle)").eq("part", false).in("user_id", ids).order("created_at",{ascending:false}).limit(100));
       unseen.entries = es.filter(e => String(e.created_at) > since); } } catch {} }
   /* a count could only ever say "somebody". Keeping who lets the row say their name
      and offer the one thing anybody wants to do about it. */
@@ -2535,7 +2709,7 @@ async function enter() {
   $("#meBtn").hidden = false; $("#meName").textContent = me.handle; paintMeAv();
   $("#nav").classList.add("on"); $("#add").classList.add("live"); $("#cogBtn").hidden = false;
   $("#bellBtn").hidden = false;
-  await Promise.all([loadLists(), loadMine(), loadRooms(), loadFollows(), loadFounders(), loadNow(), loadFollowsMe()]); await loadClubs(); await loadHand();
+  await Promise.all([loadLists(), loadMine(), loadRooms(), loadFollows(), loadFounders(), loadNow(), loadFollowsMe(), loadSeen()]); await loadClubs(); await loadHand();
   await useInvite();
   booting = true;
   switchTab("doors"); movePill(true); checkNew(); joinMeChannel();
@@ -2799,7 +2973,7 @@ async function renderRoomFeed(fb, R) {
   if (!R) { leaveRoomChannel(); fb.innerHTML = `<h2>Your <span class="hl" style="background:var(--pink)">room</span></h2><p class="empty">A room is five to twenty friends and a six-character code. It shows what everyone rated, how much you agree, and what each of you said about it. ${sb.__local ? "Rooms need the hosted setup — everything else works now." : ""}</p>
       <div class="stack"><button class="btn blue" id="newRoom">Open a room</button><button class="btn ghost" id="joinRoom">Join with a code</button></div><p class="msg" id="roomMsg"></p>`; wireRoomButtons(); return; }
   const ids = R.members.map(m => m.id); let es = [];
-  try { es = await q(sb.from("entries").select(ENTRY_SEL).in("user_id", ids).order("created_at",{ascending:false}).limit(60)); } catch (e) { fb.innerHTML = `<p class="empty">${esc(e.message)}</p>`; return; }
+  try { es = await q(sb.from("entries").select(ENTRY_SEL).eq("part", false).in("user_id", ids).order("created_at",{ascending:false}).limit(60)); } catch (e) { fb.innerHTML = `<p class="empty">${esc(e.message)}</p>`; return; }
   es.sort(newestFirst);
   es.forEach(e => remember(e.works)); const comp = competition(es, 6);
   const pick = P.picked && !logged(P.picked) && works[P.picked];
@@ -2868,7 +3042,7 @@ function wireRoomButtons() { const nr = $("#newRoom"), jr = $("#joinRoom");
   if (jr) jr.onclick = async () => { const code = (prompt("The six-character code") || "").trim(); if (!code) return; try { const r = await q(sb.rpc("join_room", { p_code:code })); await loadRooms(); if (r?.id) P.activeRoom = r.id; saveP(); await loadClubs(); renderDoors(); } catch (e) { $("#roomMsg").textContent = e.message; } }; }
 async function renderFollowingFeed(fb) {
   const ids = follows.map(f => f.followee); let es = [];
-  if (ids.length) { try { es = await q(sb.from("entries").select(ENTRY_SEL).in("user_id", ids).order("created_at",{ascending:false}).limit(60)); }
+  if (ids.length) { try { es = await q(sb.from("entries").select(ENTRY_SEL).eq("part", false).in("user_id", ids).order("created_at",{ascending:false}).limit(60)); }
     catch (err) { oops(err, "Couldn't load the following feed"); } }
   es.sort(newestFirst);
   es.forEach(e => remember(e.works));
@@ -2887,7 +3061,7 @@ async function renderFollowingFeed(fb) {
 }
 async function tasteTwins(limit) { let ps = []; try { ps = await q(sb.from("profiles").select("id,handle,bio,avatar").neq("id", me.id).limit(200)); } catch { return []; }
   const mine = tasteOf(myEntries); if (mine.tagged < 3) return []; const out = [];
-  for (const p of ps) { if (isFollowing(p.id)) continue; let es = []; try { es = await q(sb.from("entries").select("work_id,score,loved").eq("user_id", p.id).limit(200)); } catch { continue; }
+  for (const p of ps) { if (isFollowing(p.id)) continue; let es = []; try { es = await q(sb.from("entries").select("work_id,score,loved").eq("part", false).eq("user_id", p.id).limit(200)); } catch { continue; }
     const t = tasteOf(es); const m = tasteMatch(mine, t); if (m === null || t.tagged < 2) continue; out.push({ p, match:m, top:t.craft.slice(0,3).map(c => c[0]) }); }
   return out.sort((a,b) => b.match - a.match).slice(0, limit); }
 function feedSort(es) { const myTaste = tasteOf(myEntries); P.feedSort = P.feedSort || "momentum";
@@ -2896,7 +3070,7 @@ function feedSort(es) { const myTaste = tasteOf(myEntries); P.feedSort = P.feedS
 function wireFeedSort(el, again) { $$("[data-fs]", el).forEach(b => b.onclick = () => { P.feedSort = b.dataset.fs; saveP(); again(); }); }
 
 async function renderEveryoneFeed(fb) {
-  let es = []; try { es = await q(sb.from("entries").select(ENTRY_SEL).order("created_at",{ascending:false}).limit(300)); } catch (e) { fb.innerHTML = `<p class="empty">${esc(e.message)}</p>`; return; }
+  let es = []; try { es = await q(sb.from("entries").select(ENTRY_SEL).eq("part", false).order("created_at",{ascending:false}).limit(300)); } catch (e) { fb.innerHTML = `<p class="empty">${esc(e.message)}</p>`; return; }
   es.forEach(e => remember(e.works));
   if (!es.length) { fb.innerHTML = `<h2>The <span class="hl" style="background:var(--sky)">hall</span></h2>` +
     blank("var(--sky)","◎","Nothing here yet","The hall fills up as people log things — everyone's scores, how much they agree, and what they loved. Be the first.",[["hallAdd","Log something"]]);
@@ -2975,7 +3149,7 @@ function renderShelf() { const L = activeList();
     <div class="lbl">Coming soon · add to the shelf</div><div id="waitBody"><p class="msg">Loading what's coming</p></div>
     <p class="sub" style="margin-top:6px;font-size:12px">Films, shows and games with a date on them.
       Books don't appear here — no book source publishes a forthcoming list.</p>
-    ${logBlock("shelfLog", { label:`Off the shelf · ${myEntries.length} logged` })}`;
+    ${logBlock("shelfLog", { label:`Off the shelf · ${logCount()} logged` })}`;
   $$("[data-sk]").forEach(b => b.onclick = () => { const k = b.dataset.sk; if (P.kinds.includes(k)) { if (P.kinds.length > 1) P.kinds = P.kinds.filter(x => x !== k); } else P.kinds = [...P.kinds, k]; saveP(); renderShelf(); });
   const sf = $("#shelfFocus"); if (sf) sf.onclick = () => $("#search")?.focus();
   $$("[data-kt]").forEach(b => b.onclick = () => { P.kinds = [b.dataset.kt]; saveP(); renderShelf(); $("#search")?.focus(); });
@@ -3794,6 +3968,27 @@ async function doSearch(term, onPick, resEl, msgEl, box, acts = null) { msgEl.te
 async function ensureWork(hit) { if (works[hit.id]?.credits) return works[hit.id]; const raw = hit.id.split(":")[1]; const extra = await DETAIL[hit.kind](raw).catch(() => ({}));
   const w = Object.assign({ id:hit.id, kind:hit.kind, title:hit.title, year:hit.year, cover:hit.cover, creator:hit.creator||"", length:hit.length||0 }, extra);
   if (hit.release) w.release = hit.release; await q(sb.from("works").upsert(w)); works[hit.id] = w; return w; }
+const savedParts = new Set();
+/* A part cannot be saved on its own: the foreign key points at its parent, and the
+   parent's at the show. So the chain goes in from the top down, and an episode saved
+   before its season would be a constraint error rather than a missing row you find out
+   about weeks later. ensureWork is no help here — it would take "tv:1396:s4", split on
+   the colon, ask TMDB about the show, and write the show's title over the season's. */
+async function ensurePart(w) {
+  if (!w?.id || !isPart(w.id)) return null;
+  const chain = isEpisode(w.id) ? [showOf(w.id), seasonOf(w.id), w.id] : [showOf(w.id), w.id];
+  for (const id of chain) {
+    const it = works[id]; if (!it) continue;
+    if (savedParts.has(id)) continue;
+    await q(sb.from("works").upsert({ id, kind:"tv", title:it.title, year:it.year || "",
+      cover:it.cover || "", creator:it.creator || "", length:it.length || 0,
+      parent_id: isPart(id) ? (isEpisode(id) ? seasonOf(id) : showOf(id)) : null,
+      meta:it.meta || null }));
+    savedParts.add(id);
+  }
+  return works[w.id];
+}
+
 async function addToShelf(id) { const L = activeList(), hit = window.__hits?.[id] || works[id]; if (!L || !hit) return; const m = $("#msg"); if (m) m.textContent = "Adding";
   try { const w = await ensureWork(hit); if (!L.items.includes(w.id)) { await q(sb.from("list_items").insert({ list_id:L.id, work_id:w.id })); L.items.push(w.id); (L.added ||= {})[w.id] = new Date().toISOString(); justDealt = w.id; }
     /* re-rendering the tab would take the field, the results and the keyboard with it,
@@ -3929,7 +4124,7 @@ function openAdd() {
     ${shelf.length ? `<div class="lbl">On your shelf</div><div class="card" style="margin-top:0">${shelf.map(w => `<div class="row" data-aw="${esc(w.id)}">${cover(w)}<div class="t"><b>${esc(w.title)}</b><small>${tag(w.kind)} ${esc(w.year||"")}</small></div><span class="chip">Log</span></div>`).join("")}</div>` : ""}
     ${recent.length ? `<div class="lbl">Again</div><div class="card" style="margin-top:0">${recent.map(e => { const w = works[e.work_id]||{};
       return `<div class="row" data-aw="${esc(e.work_id)}">${cover(w)}<div class="t"><b>${esc(w.title)}</b><small>${tag(w.kind)} last ${K(w.kind).verb} ${when(e.rated_on)}</small></div><span class="chip">Again</span></div>`; }).join("")}</div>` : ""}
-    ${logBlock("addLog", { label:`Your log · ${myEntries.length}` })}
+    ${logBlock("addLog", { label:`Your log · ${logCount()}` })}
     <div class="stack"><button class="btn quiet" id="aClose">Not now</button></div>`);
   $("#aClose").onclick = closeSheet;
   $$("[data-ak]").forEach(b => b.onclick = () => { const k = b.dataset.ak; if (P.kinds.includes(k)) { if (P.kinds.length > 1) P.kinds = P.kinds.filter(x => x !== k); } else P.kinds = [...P.kinds, k]; saveP(); b.classList.toggle("on"); });
@@ -4504,9 +4699,28 @@ function roomPalmares(es) {
 }
 
 /* your log, grouped: one row per thing, with the arc of what you gave it */
+/* A show you have only rated in seasons had nowhere to appear: the log is built from
+   entries, and a season is not one of the things the log is about. But you have said
+   what you think of it, and a log that hides that is a log that lost something. So it
+   gets a row of its own, carrying the worked-out number and dated by the last thing you
+   said about it, and it opens the show rather than an entry — because there is no entry,
+   which is the whole point of the row. */
+function showsFromParts(qtext = "", already = new Set()) {
+  const out = [];
+  for (const e of myParts) { const sid = showOf(e.work_id);
+    if (already.has(sid) || out.some(x => x[0] === sid)) continue;
+    const w = works[sid]; if (!w) continue;
+    if (qtext && !lc([w.title, w.creator, "TV"].filter(Boolean).join(" ")).includes(qtext)) continue;
+    const d = derivedScore(myParts, sid); if (!d) continue;
+    out.push([sid, d, myParts.filter(x => showOf(x.work_id) === sid).sort(newestFirst)[0]]); }
+  return out; }
+/* how many things are in your log, which is not the same as how many entries you have */
+const logCount = () => myEntries.length + showsFromParts().length;
+
 function logBlock(id, opts = {}) {
-  return `${opts.label !== false ? `<div class="lbl">${opts.label || `Your log · ${myEntries.length}`}</div>` : ""}
-    ${myEntries.length ? `<input id="${id}-q" class="searchlog" type="search" placeholder="Find something you logged" autocomplete="off" value="${esc(P.logQ||"")}">
+  const n = logCount();
+  return `${opts.label !== false ? `<div class="lbl">${opts.label || `Your log · ${n}`}</div>` : ""}
+    ${n ? `<input id="${id}-q" class="searchlog" type="search" placeholder="Find something you logged" autocomplete="off" value="${esc(P.logQ||"")}">
       <div id="${id}"></div>` : ""}`; }
 function wireLog(id, limit) {
   paintLog(id, limit);
@@ -4518,20 +4732,28 @@ function paintLog(id = "logRows", limit = 0) {
     if (qtext) { const hay = lc([w.title, w.creator, K(w.kind).label, ...(e.loved||[]).map(k => k.startsWith("person:")?k.slice(7):k), e.note].filter(Boolean).join(" "));
       if (!hay.includes(qtext)) continue; }
     (groups[e.work_id] ||= []).push(e); }
+  const partOnly = showsFromParts(qtext, new Set(Object.keys(groups)));
   const all = Object.entries(groups).sort((a,b) => String(b[1][0].rated_on).localeCompare(String(a[1][0].rated_on)));
   const rows = limit ? all.slice(0, limit) : all;
-  if (!rows.length) { el.innerHTML = `<p class="empty">Nothing matches “${esc(P.logQ)}”.</p>`; return; }
+  /* a log made only of seasons is still a log, and returning here on an empty rows
+     list would have thrown those rows away before they were ever drawn */
+  if (!rows.length && !partOnly.length) { el.innerHTML = `<p class="empty">Nothing matches “${esc(P.logQ)}”.</p>`; return; }
   el.innerHTML = `<div class="card" style="margin-top:8px">${rows.map(([id, es]) => { const w = works[id] || {}; const last = es[0]; const arc = es.slice().reverse();
     return `<div class="row" data-e="${last.id}" data-group="${esc(id)}">${cover(w)}<div class="t"><b>${esc(w.title)}</b>
       <small>${tag(w.kind)} ${when(last.rated_on)}${es.length > 1 ? ` · ${es.length} times` : ""}</small></div>
       ${es.length > 1 ? `<div class="arc">${arc.map((e,i) => `<i class="${i===arc.length-1?"last":""}" style="height:${4 + e.score*1.8}px"></i>`).join("")}</div>` : stars(last.score,"sm")}</div>`; }).join("")}
+    ${partOnly.map(([sid, d, last]) => { const w = works[sid] || {};
+      return `<div class="row" data-show="${esc(sid)}">${cover(w)}<div class="t"><b>${esc(w.title)}</b>
+        <small>${tag("tv")} ${when(last.rated_on)} · ${d.seasons === 1 ? "one season" : d.seasons + " seasons"}</small></div>
+        ${stars(Math.round(d.score),"sm")}</div>`; }).join("")}
     ${limit && all.length > limit ? `<div class="row" style="justify-content:center;color:var(--mute);font-weight:700;font-size:13px" data-logmore>Everything you've logged · ${all.length}</div>` : ""}</div>`;
   const more = $("[data-logmore]", el); if (more) more.onclick = () => openWholeLog();
   $$("[data-e]", el).forEach(r => r.onclick = () => { const g = groups[r.dataset.group]; if (g.length === 1) return openEntry(g[0]);
     openSheet(`<h3>${esc(works[r.dataset.group]?.title||"")}</h3><p class="sub">${g.length} entries</p>
       <div class="card">${g.map(e => `<div class="row" data-ge="${e.id}"><div class="t"><b>${when(e.rated_on)}</b><small>${e.note?esc(String(e.note).slice(0,60)):""}</small></div>${stars(e.score,"sm")}</div>`).join("")}</div>
       <div class="stack"><button class="btn quiet" id="gClose">Close</button></div>`);
-    $("#gClose").onclick = closeSheet; $$("[data-ge]").forEach(x => x.onclick = () => openEntry(g.find(e => e.id === x.dataset.ge))); }); }
+    $("#gClose").onclick = closeSheet; $$("[data-ge]").forEach(x => x.onclick = () => openEntry(g.find(e => e.id === x.dataset.ge))); });
+  $$("[data-show]", el).forEach(r => r.onclick = () => openWork(r.dataset.show)); }
 
 /* the whole thing, in a sheet */
 function openWholeLog() {
@@ -4806,18 +5028,28 @@ async function openWork(id) { let w = works[id]; if (!w) { try { const rows = aw
     <div class="stack"><button class="btn ${isSoon(w)?"ghost":""}" id="wLog">${logged(w.id)?"Log it again":isSoon(w)?"Log it anyway":cfg.verb.replace(/^./,c=>c.toUpperCase())+" it"}</button><button class="btn ghost" id="wShelf">${activeList()?.items.includes(w.id)?"Take it off the shelf":"Put it on the shelf"}</button>${
       reachable().length ? `<button class="btn quiet" id="wHand">Tell someone to ${cfg.verb === "read" ? "read" : cfg.verb === "played" ? "play" : "watch"} it</button>` : ""}</div>
     <div class="card"><div class="h"><span>Details</span></div>${Object.entries(w.credits||{}).filter(([k,v]) => v).map(([r,n]) => `<div class="kv"><span>${r === "dp" ? "camerawork" : r}</span>${esc(n)}</div>`).join("")}${w.meta?.genres?.length?`<div class="kv"><span>genres</span>${esc(w.meta.genres.join(", "))}</div>`:""}</div>
+    ${w.kind === "tv" && !isPart(w.id) ? `<details class="fold" id="wParts"><summary>Seasons and episodes</summary>
+      <div id="wSeasons"><p class="empty" style="padding:12px 0">Looking</p></div></details>` : ""}
     <div id="wEntries"></div><div class="stack"><button class="btn soft" id="wCard">Save the card</button><button class="btn quiet" id="wClose">Close</button></div>`);
   $("#wClose").onclick = closeSheet; $("#wLog").onclick = () => openLog(w); $("#wShelf").onclick = async () => { const b = $("#wShelf"); b.disabled = true;
     const on = activeList()?.items.includes(w.id);
     try { if (on) await removeFromShelf(w.id); else await addToShelf(w.id); } finally {
       b.textContent = activeList()?.items.includes(w.id) ? "Take it off the shelf" : "Put it on the shelf"; b.disabled = false; } };
+  /* the fold costs nothing until it is opened, which is the whole point of it */
+  const pf = $("#wParts");
+  if (pf) pf.addEventListener("toggle", () => { if (pf.open && !pf.dataset.done) { pf.dataset.done = "1"; paintParts(w); } });
   let es = []; try { es = (await q(sb.from("entries").select(ENTRY_SEL).eq("work_id", w.id).order("created_at",{ascending:false}).limit(200))).sort(newestFirst); }
   catch (err) { oops(err, "Couldn't load what people said"); }
   const mine = es.filter(e => e.user_id === me.id), room = activeRoom() ? es.filter(e => activeRoom().members.some(m => m.id === e.user_id)) : [], fol = es.filter(e => isFollowing(e.user_id));
   const avg = list => { const best = {}; list.forEach(r => { if (!best[r.user_id] || r.rated_on > best[r.user_id].rated_on) best[r.user_id] = r; }); const v = Object.values(best); return v.length ? (v.reduce((a,r)=>a+r.score,0)/v.length/2).toFixed(1) : "—"; };
   const agree = agreement(es.map(e => e.score));
-  if ($("#wNumbers")) { const vals = [["You",mine.length?(mine[0].score/2).toFixed(1):"—"],["Your room",avg(room)],["Following",avg(fol)],["Everyone",avg(es)]];
-    $("#wNumbers").innerHTML = vals.map(([l]) => `<div><b>—</b><span>${l}</span></div>`).join("");
+  /* what you think of a show you have only rated in pieces. Your own number beats the
+     worked-out one whenever there is one; with none, the seasons stand in and the cell
+     says so rather than passing it off as something you said. */
+  const derived = !mine.length && w.kind === "tv" && !isPart(w.id) ? derivedScore(myParts, w.id) : null;
+  if ($("#wNumbers")) { const vals = [["You", mine.length ? (mine[0].score/2).toFixed(1) : derived ? (derived.score/2).toFixed(1) : "—"],["Your room",avg(room)],["Following",avg(fol)],["Everyone",avg(es)]];
+    $("#wNumbers").innerHTML = vals.map(([l],i) => `<div><b>—</b><span>${
+      i === 0 && derived ? `From ${derived.seasons === 1 ? "a season" : derived.seasons + " seasons"}` : l}</span></div>`).join("");
     $$("#wNumbers b").forEach((b,i) => countUp(b, vals[i][1])); }
   if ($("#wTrio")) { $("#wTrio").innerHTML = `<div><b id="tScore">—</b><span>Score</span></div><div><b id="tCount">—</b><span>Logged it</span></div>
       <div class="agree ${agree !== null && agree < 70 ? "low" : ""}"><span class="gauge">
@@ -4848,6 +5080,14 @@ async function openWork(id) { let w = works[id]; if (!w) { try { const rows = aw
   const ag = $("#wAgain");
   if (ag) { const bits = [];
     const again = againLine(mine); if (again) bits.push(again);
+    /* The distance between what you gave the show and what its seasons come to is the
+       one thing this feature knows that nothing else does. Upwards is somebody who
+       rates a show for what it added up to; downwards is somebody who loved the ride
+       and thought the ending let it down. Only said when it is a real gap — half a star
+       is the noise of rating a season on a different evening. */
+    const gap = w.kind === "tv" && !isPart(w.id) ? scoreGap(myEntries, myParts, w.id) : null;
+    if (gap) bits.push(`You gave it <b>${(gap.own/2).toFixed(1)}</b>. Your ${
+      gap.seasons === 1 ? "season" : "seasons"} come to <b>${(gap.parts/2).toFixed(1)}</b>.`);
     const days = shelfAge(w.id); if (days) bits.push(`It's been on your shelf ${waited(days)}.`);
     if (bits.length) { ag.innerHTML = bits.join(" "); ag.hidden = false; } }
   /* the middle state: neither meaning to, nor done with */
@@ -5020,10 +5260,93 @@ async function paintWatch(w, target = "wWatch", compact = false) {
     <p class="sub" style="margin-top:10px;font-size:11px">Availability from JustWatch, via TMDB.</p></div>`;
 }
 
+/* ---------- the shape of a show ----------
+   Folded away, and fetched only when opened: a show you logged once and never think
+   about again should cost nothing and look exactly as it did before any of this existed.
+
+   A season row carries the number you gave it, or — in grey — the one its episodes add
+   up to. An episode carries a tick, because "I have seen this" and "this was a seven"
+   are different sentences and making people say the second to mean the first is how a
+   log starts feeling like homework. */
+const TICK_SVG = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 13l4.5 4.5L19 7"/></svg>`;
+let mySeen = new Set();
+async function loadSeen() {
+  if (!me) return;
+  try { const rows = await q(sb.from("seen").select("work_id").eq("user_id", me.id));
+    mySeen = new Set(rows.map(r => r.work_id)); } catch {}
+}
+async function tickEpisode(w, on) {
+  await ensurePart(w);
+  if (on) { mySeen.add(w.id); try { await q(sb.from("seen").upsert({ user_id:me.id, work_id:w.id })); } catch { mySeen.delete(w.id); throw 0; } }
+  else { mySeen.delete(w.id); try { await q(sb.from("seen").delete().eq("user_id", me.id).eq("work_id", w.id)); } catch { mySeen.add(w.id); throw 0; } }
+}
+/* your latest word on one part, which is what its row shows */
+const myPartScore = id => { const es = myParts.filter(e => e.work_id === id).sort(newestFirst); return es.length ? es[0].score : null; };
+
+async function paintParts(show) {
+  const box = $("#wSeasons"); if (!box) return;
+  const seasons = await loadSeasons(show.id);
+  if (!seasons.length) { box.innerHTML = `<p class="empty" style="padding:12px 0">No seasons listed for this one.</p>`; return; }
+  const byS = partScores(myParts, show.id);
+  box.innerHTML = `<div class="seas">${seasons.map(sn => {
+    const own = myPartScore(sn.id);
+    const from = byS[sn.id];
+    const calc = own == null && from && from.eps.length ? from.eps.reduce((a,b)=>a+b,0) / from.eps.length : null;
+    const n = own != null ? (own/2).toFixed(1) : calc != null ? (calc/2).toFixed(1) : "—";
+    return `<button class="sr" data-season="${esc(sn.id)}" aria-expanded="false">
+      <span class="n">${esc(sn.title)}<small>${sn.length ? sn.length + " episodes" : "\u2014"}${
+        sn.year ? " · " + esc(sn.year) : ""}</small></span>
+      <span class="sc ${own == null && calc != null ? "calc" : ""}">${n}</span>
+      <span class="caret">\u203A</span></button>
+      <div class="eps" id="eps-${esc(sn.id).replace(/[:.]/g,"_")}" hidden></div>`; }).join("")}</div>
+    <div class="stack" style="margin-top:12px"><button class="btn ghost" id="rateSeason">Rate a season</button></div>`;
+
+  $$("[data-season]").forEach(b => b.onclick = async () => {
+    const id = b.dataset.season, box2 = $("#eps-" + id.replace(/[:.]/g,"_"));
+    const open = b.getAttribute("aria-expanded") === "true";
+    b.setAttribute("aria-expanded", String(!open));
+    if (open) { box2.hidden = true; return; }
+    box2.hidden = false;
+    if (!box2.dataset.done) { box2.innerHTML = `<p class="empty" style="padding:8px 0">Looking</p>`;
+      const eps = await loadEpisodes(id);
+      box2.dataset.done = "1";
+      box2.innerHTML = eps.length ? eps.map(ep => epRow(ep)).join("")
+        : `<p class="empty" style="padding:8px 0">No episodes listed.</p>`;
+      wireEps(box2, show); }
+  });
+  const rs = $("#rateSeason");
+  if (rs) rs.onclick = async () => {
+    const open = $$("[data-season]").find(b => b.getAttribute("aria-expanded") === "true");
+    const id = open ? open.dataset.season : seasons[0].id;
+    const w = works[id]; if (!w) return;
+    await ensurePart(w); openLog(w);
+  };
+}
+const epRow = ep => { const sc = myPartScore(ep.id), on = mySeen.has(ep.id);
+  return `<div class="er ${on ? "seen" : ""}" data-ep="${esc(ep.id)}">
+    <button class="tick ${on ? "on" : ""}" data-tick="${esc(ep.id)}" aria-pressed="${on}"
+      aria-label="${on ? "Seen" : "Mark as seen"}">${TICK_SVG}</button>
+    <span class="t"><i>${esc(partName(ep.id))}</i>${esc(ep.title)}</span>
+    <button class="es ${sc != null ? "has" : ""}" data-rate="${esc(ep.id)}"
+      aria-label="Rate this episode">${sc != null ? (sc/2).toFixed(1) : "rate"}</button></div>`; };
+function wireEps(box, show) {
+  $$("[data-tick]", box).forEach(b => b.onclick = async () => {
+    const w = works[b.dataset.tick]; if (!w) return;
+    const on = !mySeen.has(w.id);
+    b.classList.toggle("on", on); b.setAttribute("aria-pressed", String(on));
+    b.closest(".er")?.classList.toggle("seen", on);
+    try { await tickEpisode(w, on); } catch { b.classList.toggle("on", !on); b.closest(".er")?.classList.toggle("seen", !on); }
+  });
+  $$("[data-rate]", box).forEach(b => b.onclick = async () => {
+    const w = works[b.dataset.rate]; if (!w) return;
+    await ensurePart(w); openLog(w);
+  });
+}
+
 /* ============ PROFILE PAGE ============ */
 async function openProfile(userId) { const self = userId === me.id;
   let p = self ? me : null; if (!p) { try { const rows = await q(sb.from("profiles").select("id,handle,bio,avatar").eq("id", userId).limit(1)); p = rows[0]; } catch {} } if (!p) return;
-  let es = []; try { es = (await q(sb.from("entries").select(ENTRY_SEL).eq("user_id", userId).order("created_at",{ascending:false}).limit(200))).sort(newestFirst); } catch {} es.forEach(e => remember(e.works));
+  let es = []; try { es = (await q(sb.from("entries").select(ENTRY_SEL).eq("part", false).eq("user_id", userId).order("created_at",{ascending:false}).limit(200))).sort(newestFirst); } catch {} es.forEach(e => remember(e.works));
   const t = tasteOf(es), mine = tasteOf(myEntries), match = tasteMatch(mine, t);
   let top = null; try { top = await loadTop(userId); } catch {}
   const theirTens = {}; for (const [k] of TENS) { if (k === "all time") continue; try { const l = await loadTop(userId, k); if (l?.items.length) theirTens[k] = l.items; } catch {} }
@@ -5112,7 +5435,8 @@ function openLog(w, edit = null) { const cfg = K(w.kind); const loved = edit?.lo
     ${/* room_only has been in the schema since v13 and nothing ever set it, so every
           entry anybody has ever written is public. Only worth offering when there is a
           room to keep it in. */""}
-    ${rooms.length ? `<div class="lbl">Who sees this</div><div class="seg" id="wWho">${
+    ${isPart(w.id) ? `<p class="sub" style="margin-top:14px">Seasons and episodes live on the show's page. They never go in anybody's feed \u2014 only the show does.</p>` : ""}
+    ${rooms.length && !isPart(w.id) ? `<div class="lbl">Who sees this</div><div class="seg" id="wWho">${
       [["all","Everyone"],["room","Just the room"]].map(([k,l]) =>
         `<button data-who="${k}" class="${(edit ? (edit.room_only ? "room" : "all") : (P.postTo === "room" ? "room" : "all")) === k ? "on" : ""}">${l}</button>`).join("")}</div>
       <p class="sub" id="whoNote"></p>` : ""}
@@ -5425,7 +5749,7 @@ async function exportEverything() {
   /* it said "everything" and fetched four tables out of seventeen. Clubs, votes, your
      ten, what you are in the middle of and anything anybody handed you were all missing,
      and the two lists that were there came out with their dates blanked. */
-  const [entries, myReplies, myReactions, myFollows, myNows, myHands, myTops, myVotes, myClubIn] =
+  const [entries, myReplies, myReactions, myFollows, myNows, myHands, myTops, myVotes, myClubIn, mySeenRows] =
     await Promise.all([
       grab("entries", "*", "user_id"),
       grab("replies", "*", "user_id"),
@@ -5437,6 +5761,7 @@ async function exportEverything() {
       grab("top_lists", "*,top_list_items(*)", "owner"),
       grab("club_votes", "*", "user_id"),
       grab("club_members", "*", "user_id"),
+      grab("seen", "*", "user_id"),
     ]);
   const myClubs = [...clubs, ...openClubs].filter(c => myClubIn.some(m => m.club_id === c.id));
   const usedWorks = {};
@@ -5461,7 +5786,7 @@ async function exportEverything() {
     reactions: myReactions, replies: myReplies,
     top_lists: myTops.map(t => { const { top_list_items:_i, ...row } = t; return row; }),
     top_list_items: myTops.flatMap(t => t.top_list_items || []),
-    nows: myNows, handovers: myHands,
+    nows: myNows, handovers: myHands, seen: mySeenRows,
     follows: myFollows,
   };
 }
@@ -5478,7 +5803,10 @@ window.__rooms = { pullRefresh, openFind, setFollow, isFollowing, get follows(){
   say, oops, markLive, takeInvite, dropInvite, inviteLink, useInvite, exportEverything,
   watchOn, paintWatch, REGION,
   drawDeck, resetDeck, pickMode, candidates, pickPool, pickBase, pickFacets, facetsOf,
-  HOW_LONG, howLong, keepLong, inBand, pickKind, dropFromShelf, loadRecs, recsCached:() => recs !== null, reviewOf, agreement,
+  HOW_LONG, howLong, keepLong, inBand, pickKind,
+  showOf, partOf, isPart, isEpisode, seasonOf, partName, loadSeasons, loadEpisodes,
+  partScores, derivedScore, showScore, scoreGap, paintParts, tickEpisode, ensurePart,
+  get myParts(){return myParts}, get mySeen(){return mySeen}, logged, dropFromShelf, loadRecs, recsCached:() => recs !== null, reviewOf, agreement,
   CUTS, CARD_THEMES, cardTheme, spanData, tasteOf, reviewData, yearOf, roomPalmares, palmares, byPerson, spinN, SPIN_SIZES,
   loadNow, startNow, stopNow, nowOf, nowFor, nowLine, get myNow(){return myNow},
   bestOf, bestGenres, dealBest, loadBest, pickFrom, seenMode, keepSeen, get bestPool(){return bestPool}, get bestHand(){return bestHand},
