@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Rooms — what happens to your log</title>
+<meta name="description" content="What Rooms keeps, what it never keeps, who else can see it, and how to take it all out or close it for good.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23FFF7EC'/%3E%3Crect x='20' y='30.4' width='37.2' height='37.2' rx='8.9' fill='%23FFB36B'/%3E%3Crect x='36.8' y='30.4' width='37.2' height='37.2' rx='8.9' fill='%238FD3FF' opacity='.85'/%3E%3C/svg%3E">
+<link href="vendor/type.css" rel="stylesheet">
+<style>
+:root{--ink:#151320;--cream:#FFF7EC;--card:#FFFFFF;--line:#EFE6D8;--mute:#7A7590;
+  --apricot:#FFB36B;--sky:#8FD3FF;--mint:#9EF0C9;--butter:#FFE86A;--bad:#E0407F;--onAccent:#151320;
+  --head:Outfit,sans-serif;--body:Inter,system-ui,sans-serif}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;
+  --ink:#F4EDE2;--cream:#16131C;--card:#242030;--line:#2B2733;--mute:#A099B4}}
+:root[data-theme="dark"]{color-scheme:dark;
+  --ink:#F4EDE2;--cream:#16131C;--card:#242030;--line:#2B2733;--mute:#A099B4}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--cream);color:var(--ink);font-family:var(--body);font-size:16px;
+  line-height:1.62;-webkit-text-size-adjust:100%}
+.wrap{max-width:660px;margin:0 auto;padding:40px 16px 90px}
+.logo{display:flex;align-items:center;gap:9px;font-family:var(--head);font-weight:900;font-size:22px;
+  letter-spacing:-.03em;margin-bottom:34px}
+.mark{width:30px;height:20px;position:relative;flex:0 0 auto}
+.mark i{position:absolute;top:0;width:20px;height:20px;border-radius:5px;display:block}
+.mark i:first-child{left:0;background:var(--apricot)}
+.mark i:last-child{left:9px;background:var(--sky);opacity:.85}
+h1{font-family:var(--head);font-weight:900;letter-spacing:-.03em;line-height:1.04;font-size:34px;margin:0 0 10px}
+h2{font-family:var(--head);font-weight:800;letter-spacing:-.02em;font-size:21px;margin:40px 0 10px}
+h3{font-family:var(--head);font-weight:800;font-size:15px;margin:22px 0 6px}
+.stand{font-size:18px;color:var(--mute);margin:0 0 6px}
+.when{font-family:var(--head);font-weight:800;font-size:11.5px;letter-spacing:.05em;text-transform:uppercase;
+  color:var(--mute);margin:0 0 30px}
+p{margin:0 0 14px}
+ul{margin:0 0 14px;padding-left:0;list-style:none}
+li{position:relative;padding-left:20px;margin-bottom:7px}
+li::before{content:"";position:absolute;left:2px;top:.72em;width:7px;height:7px;border-radius:2px;background:var(--apricot)}
+b{font-family:var(--head);font-weight:800}
+a{color:inherit;text-decoration-color:var(--apricot);text-underline-offset:3px;text-decoration-thickness:2px}
+.card{background:var(--card);border:2px solid var(--line);border-radius:18px;padding:18px 20px;margin:18px 0}
+.card h3:first-child{margin-top:0}
+.card p:last-child,.card ul:last-child{margin-bottom:0}
+.tag{font-family:var(--head);font-weight:800;font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;
+  padding:4px 8px;border-radius:999px;display:inline-block;color:var(--onAccent);background:var(--mint);line-height:1.2}
+.fill{background:var(--butter);color:#151320;padding:1px 7px;border-radius:6px;font-family:var(--head);
+  font-weight:800;font-size:14px;white-space:nowrap}
+.foot{margin-top:48px;padding-top:20px;border-top:2px solid var(--line);color:var(--mute);font-size:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="logo"><span class="mark"><i></i><i></i></span>Rooms</div>
+
+<h1>What happens to your log</h1>
+<p class="stand">The short version: what you write down is yours, it is shown to the people
+you chose and to nobody else, nothing about you is measured or sold, and you can take all of
+it out or delete all of it from inside the app.</p>
+<p class="when">Last updated 20 September 2026</p>
+
+<p>Rooms is a place to write down the films, television, books and games you have finished,
+and to see what a few friends made of the same things. This page says exactly what it keeps,
+where that sits, who else ever sees it, and how to end it. It is written to be read rather
+than to be defensible.</p>
+
+<h2>Who is responsible for it</h2>
+<div class="card">
+<p>Rooms is run by <span class="fill">COMPANY NAME</span>, who decides what is collected and
+why, and is the data controller for it.</p>
+<p>Anything on this page, including a request to see, correct or delete what is held about you:
+<span class="fill">CONTACT EMAIL</span>. We answer within a month.</p>
+</div>
+
+<h2>What Rooms keeps</h2>
+<p>All of it is something you typed or tapped. There is no category here you did not put
+there yourself.</p>
+
+<h3>To have an account at all</h3>
+<ul>
+<li><b>Your email address.</b> Held by the sign-in service, not in the app's own tables. It is
+used to send you a six-digit code or a confirmation link, and to let you back in. It is never
+shown to other people, and it is not used to send anything else.</li>
+<li><b>A password</b>, if you set one, so you do not have to wait for an email. It is stored
+hashed by the sign-in service; nobody, including us, can read it back.</li>
+<li><b>Your handle</b> — the short name other people see — and <b>a line under your name</b>
+if you write one.</li>
+<li><b>An avatar</b>, which is three choices: a shape, a pair of eyes and a colour. It is stored
+as those three values and drawn by your phone. Rooms has no way to accept a photograph of you
+and never asks for one.</li>
+</ul>
+
+<h3>What you log</h3>
+<ul>
+<li><b>Entries</b>: the title, your score, the date, anything you wrote about it, the parts you
+singled out, and the tickboxes for that kind of thing — first watch or rewatch, at the cinema
+or at home, paper or audio, finished or dropped.</li>
+<li><b>Your shelf and any other lists</b>, including the date each thing went on, and the order
+if you arranged them.</li>
+<li><b>Your ten</b> — the titles in it and their positions.</li>
+<li><b>What you are in the middle of</b>, and where you are up to if you said.</li>
+<li><b>Handovers</b>: what you passed to somebody, what they passed to you, any line that came
+with it, and whether it was taken up.</li>
+<li><b>Who you follow</b>, and the likes you gave to other people's entries.</li>
+<li><b>Rooms and clubs</b> you are in, and how you voted in a club.</li>
+<li><b>When each of those happened.</b> Times are how the feeds are ordered and how "new since
+you last looked" is worked out.</li>
+</ul>
+
+<h3>Kept on your device only</h3>
+<p>These never leave the phone or the browser you are using. They are settings, not records.</p>
+<ul>
+<li>Your theme, which tab you were on, the filters and chips you last picked on the spinner.</li>
+<li>A two-letter country code, so "where can I watch this" can answer for the right country.
+It is guessed from your phone's language setting unless you change it, and it is sent with a
+streaming-availability lookup and nowhere else.</li>
+<li>A key or a proxy address, if you chose to put in your own.</li>
+<li>Anything queued while you were offline, until it goes through.</li>
+<li>If you use Rooms without an account, <b>the entire log</b> — all of the above sits in your
+browser and no server ever sees it.</li>
+</ul>
+
+<h2>What Rooms does not keep</h2>
+<div class="card">
+<ul>
+<li><b>No analytics.</b> There is no analytics service in the app, no tag manager, no session
+recorder, no crash reporter, no advertising kit, no pixel and no beacon. Nobody is counting
+your taps, because nothing is there to count them.</li>
+<li><b>No tracking across other apps or sites</b>, and nothing is shared with a data broker.
+There is no advertising in Rooms, so there is no profile to build for it.</li>
+<li><b>Nothing is sold.</b> Not now, and if that ever changes it is a different app with a
+different notice and your consent first, not a quiet edit to this page.</li>
+<li><b>No location.</b> The app never asks for it and could not use it.</li>
+<li><b>No contacts, camera, microphone or photo library.</b> The app asks for none of these
+permissions.</li>
+<li><b>No adverts, so no advertising identifier.</b></li>
+</ul>
+</div>
+
+<h2>Who else can see what you wrote</h2>
+<p>This is the part that matters most, because Rooms is a thing you do with other people.</p>
+<ul>
+<li><b>Anyone in a room with you</b> sees the entries you put in that room: the score, what you
+wrote, and the parts you singled out. That is what a room is for.</li>
+<li><b>Anyone at all</b> can see an entry you did not mark room-only, and can like it. When you
+post, the app says which of the two you are doing, and you choose.</li>
+<li><b>People who follow you</b> see your entries in their feed on the same rule.</li>
+<li><b>Anyone in a room with you</b> can see what you are in the middle of, and that you are in
+the room right now, while you have it open. That last one is live and stops the moment you
+close the app — it is not stored.</li>
+<li><b>Whoever you hand something to</b> sees that you handed it and any line you sent with it.</li>
+<li><b>Your handle, your line and your avatar</b> are visible to anyone who can find you.</li>
+</ul>
+<p>A like is visible to the person whose entry it was and to anyone else who can see that entry.
+Names are shown — "mo and two others liked this" — so nothing about a like is anonymous.</p>
+
+<h2>Where it is, and who holds it</h2>
+<p>Four companies are involved, and it is worth being exact about what each one gets.</p>
+
+<div class="card">
+<h3>Supabase <span class="tag">holds the log</span></h3>
+<p>The database, the sign-in and the live connections. They hold everything in the two lists
+above that is not device-only, including your email address. The project is hosted in
+<b>Sydney, Australia</b>. They process it on our instructions and do not
+use it for anything of their own.</p>
+
+<h3>Cloudflare <span class="tag">looks things up</span></h3>
+<p>A small proxy that asks the film, book and game sources about titles, so that the sources
+never see you. It caches answers about <em>titles</em> — never anything about a person — and
+receives ordinary web request logs in the course of serving the request.</p>
+
+<h3>GitHub <span class="tag">serves the page</span></h3>
+<p>Rooms is a single file served by GitHub Pages. GitHub sees the request for that file,
+including your IP address, as any web host would.</p>
+
+<h3>TMDB, Open Library and IGDB <span class="tag">the covers</span></h3>
+<p>Searches go through the proxy, so these services do not see you. <b>Cover images are the
+exception</b>: posters and jackets load straight from those services to your device, so they can
+see your IP address and which covers your device asked for. We would rather that were not true
+and it may change; today it is true and you should know it.</p>
+</div>
+
+<p>Nothing else is loaded from anywhere else. The type and the sign-in library are served from
+the app's own address rather than from a content delivery network, on purpose, so that opening
+Rooms does not announce you to a company you have never heard of. There is a test in the
+repository that fails if anybody adds one back.</p>
+
+<h2>If you are in the UK or the EU</h2>
+<p>Your log is held in Australia, which the European Commission has not declared to have
+equivalent data protection law, and which the UK has not either. That makes storing it there an
+international transfer, and it needs a safeguard rather than an assurance.</p>
+<p>The safeguard is the data processing agreement with Supabase, which includes the European
+Commission's Standard Contractual Clauses and the UK's addendum to them. It is the standard
+mechanism and it binds them contractually to protect your data to the same standard it would
+have in Europe. You can ask for a copy of what we have signed.</p>
+<p>In practice what crosses is the same small set of things listed above — your email address,
+your handle and what you wrote down. No special-category data is collected by Rooms at all.</p>
+
+<h2>How long it is kept</h2>
+<p>Until you delete it. An entry stays until you remove it, and your account stays until you
+close it. Nothing expires on its own and nothing is archived somewhere you cannot reach.</p>
+<p>Two practical exceptions. Backups of the database exist for a short window, so something
+deleted can persist in a backup for a few days before ageing out. And caches — the proxy's, your
+browser's, other people's copies of a feed — clear on their own timers.</p>
+
+<h2>Taking it out</h2>
+<p>In <b>Settings → Download everything</b>. It is one file, in JSON, containing every table your
+account touches: your profile, your entries, your lists and when things went on them, your ten,
+your rooms and who is in them, your clubs and votes, your likes, what you are in the middle of,
+your handovers, and who you follow. It restores into a device-only log, so it is a file that
+opens again rather than a file that proves a point.</p>
+
+<h2>Closing it for good</h2>
+<p>In <b>Settings → Close your account</b>. You type your own handle to confirm, because this
+cannot be undone and there is no copy kept anywhere.</p>
+<p>What actually happens, exactly:</p>
+<ul>
+<li>Your account is deleted, and every row that hangs off it goes with it — entries, lists, your
+ten, likes, follows, what you are in the middle of, handovers, club memberships and votes.</li>
+<li>You are taken out of every room you were in.</li>
+<li><b>A room you started stays open if anybody else is still in it.</b> The room and the other
+people's entries are theirs, not yours, and taking them would be taking something from them.</li>
+<li><b>A room with nobody left in it closes behind you.</b></li>
+<li>Anything stored on the device you did it from is wiped, and the app puts you out.</li>
+</ul>
+<p>Take your log out first if you want it. Afterwards there is nothing to ask us for.</p>
+
+<h2>What you can ask for</h2>
+<p>Depending on where you live you may have the right to see what is held about you, correct it,
+have it deleted, get a copy in a portable form, object to how it is used, or complain to a
+regulator. The app does the first four itself, immediately, without asking anyone — that is what
+Download everything and Close your account are. For anything else, or if either of those does
+not work for you, write to the address at the top and we will answer within a month.</p>
+<p>The lawful bases, where that framing applies: performing the agreement to give you the app for
+everything needed to run your account and show your entries to the people you chose; legitimate
+interests for keeping the service working and secure; and consent, asked for separately, for
+anything that ever falls outside those. There is no legitimate-interests claim hiding any
+marketing or profiling here, because there is none.</p>
+
+<h2>Children</h2>
+<p>Rooms is not for children under <b>16</b>, and accounts are not
+knowingly created for them. If you believe a child has made one, write to the address at the top
+and it will be removed.</p>
+
+<h2>If something goes wrong</h2>
+<p>Access is enforced by the database itself rather than by the app being polite — a row you are
+not allowed to read is not sent to your device in the first place. If a breach happens anyway that
+puts you at risk, you will be told, and so will the relevant regulator, without waiting to be
+asked.</p>
+
+<h2>Changes to this page</h2>
+<p>The date at the top changes when this does. If a change means Rooms starts doing something
+materially different with what you wrote, you will be told in the app before it takes effect, not
+after. The history of this page is public in the repository, so you can read what changed and when.</p>
+
+<div class="foot">
+<p>Rooms · <a href="./index.html">back to the app</a></p>
+</div>
+</div>
+</body>
+</html>

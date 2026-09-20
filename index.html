@@ -19,9 +19,10 @@
 <link rel="apple-touch-icon" href="./icons/rooms-180.png">
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23FFF7EC'/%3E%3Crect x='20' y='30.4' width='37.2' height='37.2' rx='8.9' fill='%23FFB36B'/%3E%3Crect x='36.8' y='30.4' width='37.2' height='37.2' rx='8.9' fill='%238FD3FF' opacity='.85'/%3E%3C/svg%3E">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!-- the type is served from here. Fetching it from Google handed fonts.gstatic.com an
+     IP address every time somebody opened the app, which bought us nothing and cost a
+     paragraph of the privacy policy. Same files, same subsets. -->
+<link href="vendor/type.css" rel="stylesheet">
 <style>
 :root{--blue:#1F4FE0;--ink:#151320;--cream:#FFF7EC;--cream2:#FDEFDD;--card:#FFFFFF;--line:#EFE6D8;--mute:#7A7590;
   /* --onAccent is the one colour that never flips: it is the ink that sits ON a pastel,
@@ -1381,7 +1382,9 @@ let sb = window.__mockSb;
 if (!sb) {
   if (DEMO) { const { demoSeed } = await import("./demo.js"); sb = makeLocalSb(demoSeed()); sb.__demo = true; }
   else if (LOCAL) sb = makeLocalSb(window.__seed || null);
-  else { const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2"); sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY); } }
+  /* still loaded on demand, so a device-only log never fetches 200KB it has no use
+     for — but from here now rather than from a CDN. See vendor/supabase.js. */
+  else { const { createClient } = await import("./vendor/supabase.js"); sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY); } }
 const q = async p => { const { data, error } = await p; if (error) throw error; return data; };
 
 /* ---------- writes survive a dead connection ---------- */
@@ -5336,7 +5339,9 @@ async function openYou() { let top = { items:[] }; try { top = await ensureMyTop
       <div class="lbl">Type your handle to confirm</div>
       <input id="delQ" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="${esc(me.handle)}">
       <div class="stack"><button class="btn bad" id="delGo" disabled>${sb.__local ? "Delete the log" : "Delete my account"}</button></div>
-      <p class="msg" id="delMsg"></p></details>`);
+      <p class="msg" id="delMsg"></p></details>
+    <p class="sub" style="text-align:center;margin-top:18px">
+      <a href="privacy.html" target="_blank" rel="noopener" id="privacyLink">What happens to your log</a></p>`);
   /* the shape picker */
   let av = Object.assign({}, avFor(me));
   const paintAv = () => {
