@@ -65,7 +65,7 @@ html{transition:background-color 2.4s linear}
 body{transition:background-color 2.4s linear}
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{background:var(--cream);color:var(--ink);font-family:var(--body);font-size:16px;-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}
-body{min-height:100dvh;padding-bottom:calc(124px + env(safe-area-inset-bottom));overflow-x:clip}
+body{min-height:100dvh;padding-bottom:calc(108px + env(safe-area-inset-bottom));overflow-x:clip}
 html{overflow-x:clip}
 main{overflow-x:clip}                 /* the deal-in travels 30px; keep it inside the page */
 .wrap{overflow-x:clip}
@@ -534,14 +534,8 @@ nav{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--veil);back
 nav.on{display:block}
 nav .in{max-width:560px;margin:0 auto;padding:9px 12px 9px;display:grid;grid-template-columns:1fr 1fr 84px 1fr 1fr;gap:4px;align-items:center}
 nav{overflow:visible}
-nav button{background:none;border:0;padding:8px 4px 9px;border-radius:99px;font-family:var(--head);font-weight:800;font-size:11.5px;
-  letter-spacing:-.01em;color:var(--mute);cursor:pointer;white-space:nowrap;transition:background .18s,color .18s,transform .14s;
-  display:grid;justify-items:center;gap:3px;line-height:1}
-/* one weight for the whole set, so no tab pulls the eye harder than its neighbours.
-   The fingerprint is the exception: three arcs that close up unless the pen is finer. */
-.tabi{width:22px;height:22px;display:block;fill:none;stroke:currentColor;stroke-width:1.8;
-  stroke-linecap:round;stroke-linejoin:round}
-.tabi.thin{stroke-width:1.7}
+nav button{background:none;border:0;padding:12px 4px;border-radius:99px;font-family:var(--head);font-weight:800;font-size:13px;
+  letter-spacing:-.01em;color:var(--mute);cursor:pointer;white-space:nowrap;transition:background .18s,color .18s,transform .14s}
 nav button i{display:none}
 nav button.on{background:var(--ink);color:var(--cream)}
 @keyframes tabPop{0%{transform:scale(.92)}55%{transform:scale(1.05)}100%{transform:scale(1)}}
@@ -838,11 +832,11 @@ body.demo header{padding-top:34px}
 </main>
 
 <nav id="nav"><div class="in"><span class="navpill" id="navPill"></span>
-  <button data-tab="doors"><svg class="tabi" viewBox="0 0 24 24" aria-hidden="true"><path d="M5.5 20.5V6.2a1.7 1.7 0 0 1 1.3-1.65l8-1.9a1.7 1.7 0 0 1 2.1 1.65v16.2"/><path d="M3.6 20.5h17"/><circle cx="14.2" cy="12.4" r=".95" fill="currentColor" stroke="none"/></svg><span>Rooms</span></button>
-  <button data-tab="shelf"><svg class="tabi" viewBox="0 0 24 24" aria-hidden="true"><path d="M4.6 19.4V6.6a1.4 1.4 0 0 1 1.4-1.4h1.4a1.4 1.4 0 0 1 1.4 1.4v12.8z"/><path d="M9.8 19.4V6.6a1.4 1.4 0 0 1 1.4-1.4h1.4A1.4 1.4 0 0 1 14 6.6v12.8z"/><path d="m15.6 19.4 2.9-12.5a1.4 1.4 0 0 1 1.7-1l.6.15"/><path d="M3.2 19.4h17.6"/></svg><span>Library</span></button>
+  <button data-tab="doors">Rooms</button>
+  <button data-tab="shelf">Library</button>
   <button id="add" aria-label="Log something"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
-  <button data-tab="taste"><svg class="tabi thin" viewBox="0 0 24 24" aria-hidden="true"><path d="M4.2 11.2a7.8 7.8 0 0 1 15.6.8c0 3-.7 5.9-2 8.5"/><path d="M8 19.8a16 16 0 0 0 1.6-7 2.4 2.4 0 0 1 4.8 0c0 2-.2 4-.7 5.9"/></svg><span>Taste</span></button>
-  <button data-tab="clubs"><svg class="tabi" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5.4" r="2.25"/><circle cx="18.28" cy="9.96" r="2.25"/><circle cx="15.88" cy="17.34" r="2.25"/><circle cx="8.12" cy="17.34" r="2.25"/><circle cx="5.72" cy="9.96" r="2.25"/></svg><span>Clubs</span></button>
+  <button data-tab="taste">Taste</button>
+  <button data-tab="clubs">Clubs</button>
 </div></nav>
 <div class="demobar" id="demobar" hidden>Demo &middot; invented people &middot; nothing is saved</div>
 <div class="offline" id="offline" role="status" aria-live="polite"></div>
