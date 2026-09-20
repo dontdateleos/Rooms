@@ -61,8 +61,7 @@ html[data-theme="dark"] .slip,
 html[data-theme="dark"] .club,
 html[data-theme="dark"] .card,
 html[data-theme="dark"] .blank{box-shadow:0 0 0 1px var(--line)}
-html{transition:background-color 2.4s linear}
-body{transition:background-color 2.4s linear}
+
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{background:var(--cream);color:var(--ink);font-family:var(--body);font-size:16px;-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}
 body{min-height:100dvh;padding-bottom:calc(108px + env(safe-area-inset-bottom));overflow-x:clip}
@@ -168,6 +167,39 @@ header .wrap{display:flex;align-items:center;justify-content:space-between;heigh
   0%{transform:none;opacity:1}
   28%{transform:scale(.975) rotate(-.7deg);opacity:.85}
   100%{transform:scale(.9) rotate(-1.4deg);opacity:0;height:0;padding-top:0;padding-bottom:0;margin-top:0}}
+/* 12 a sentence somebody wrote arrives a few words at a time. Memories and reviews only —
+   in a feed it would be a gimmick; here, slowing you down is the point. */
+.saying .w{display:inline-block;animation:wordUp .46s cubic-bezier(.16,1,.3,1) both}
+@keyframes wordUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+/* 13 arriving and leaving must not look the same */
+.here .face.went{animation:faceGo .26s ease-in forwards}
+@keyframes faceGo{to{opacity:0;transform:scale(.7)}}
+/* 14 the sheet arrives with weight instead of being positioned */
+@keyframes sheetUp2{0%{transform:translateY(26px);opacity:0}72%{transform:translateY(-6px);opacity:1}
+  100%{transform:translateY(0);opacity:1}}
+/* 15 the grid is one thing that moved, not a new grid */
+.grid .cell{transition:transform .4s cubic-bezier(.16,1,.3,1)}
+.grid.settling .cell{will-change:transform}
+/* 16 an answer arriving, rather than a flash */
+.settled{animation:resIn .34s cubic-bezier(.16,1,.3,1) both}
+@keyframes resIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+/* 17 the agreement number is a measurement, so let it resolve */
+.trio i.meter{display:block;height:5px;border-radius:99px;background:var(--good);width:0;margin-top:6px;
+  transition:width .9s cubic-bezier(.16,1,.3,1)}
+/* 18 a ring is the one thing in here that cannot be bought, so it gets drawn in front of you */
+.struck{position:relative}
+.struck svg.strike{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg);z-index:3;
+  pointer-events:none}
+.struck svg.strike circle{fill:none;stroke-width:5;stroke-linecap:round;
+  stroke-dasharray:var(--c);stroke-dashoffset:var(--c);animation:strike .8s cubic-bezier(.2,.7,.3,1) forwards}
+@keyframes strike{to{stroke-dashoffset:0}}
+/* 19 the room changes while you are sitting in it */
+html,body,header,nav{transition:background-color 90s linear,border-color 90s linear}
+.po,.seg,.tag.dim,.skel{transition:background-color 90s linear}
+/* 20 you have seen everything, rather than the app running out */
+.endline{text-align:center;font-family:var(--head);font-weight:800;font-size:12.5px;color:var(--mute);
+  padding:20px 0 4px;animation:endUp .6s cubic-bezier(.16,1,.3,1) both}
+@keyframes endUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
 /* 10 the room assembles, once a session */
 .booting>*{animation:bootIn .46s cubic-bezier(.16,1,.3,1) both}
 @keyframes bootIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
@@ -666,7 +698,7 @@ nav button:active{transform:scale(.95)}
 .auth .say b{display:block;margin-top:6px;font-family:var(--head);font-weight:800;font-size:19px}
 .auth .note{font-size:13.5px;margin-top:10px}
 /* ---- motion: only where it explains something ---- */
-@keyframes sheetUp{from{transform:translateY(26px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes sheetUp{0%{transform:translateY(26px);opacity:0}72%{transform:translateY(-6px);opacity:1}100%{transform:translateY(0);opacity:1}}
 @keyframes sheetDown{from{transform:translateY(0);opacity:1}to{transform:translateY(30px);opacity:0}}
 @keyframes fadeOut{from{opacity:1}to{opacity:0}}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
@@ -850,8 +882,9 @@ body.demo header{padding-top:34px}
   img.co,.po img,.slot.full img,.ttl img{opacity:1;transform:none;transition:none}
   .wash,.sheet.on .cuts button,.cell.dealt,.po .tick.swept,.po .tick.swept:after,.cell.landed .po,
   .themeveil,.feedOut,.feedIn,.likes .was,.likes.rolling>span,.folding,.dealt-in,
-  .chip.filling:before,.leaving,.booting>*,::view-transition-new(root){animation:none!important}
-  .club .tr i{transition:none}
+  .chip.filling:before,.leaving,.booting>*,::view-transition-new(root),
+  .saying .w,.here .face.went,.settled,.struck svg.strike circle,.endline{animation:none!important}
+  .club .tr i,.grid .cell,.trio i.meter,html,body,header,nav,.po,.seg{transition:none}
   .cell.shoved .po,.tiles .tile,[data-like].popped,[data-like].popped:before,
   .sheet.on .av.meet svg > g > *,.sheet.on .av.big svg > g > *,.av.new svg > g > *,.av.new .eyes,.av .eyes,
   .newline,.newline:before,.newline:after{animation:none}
@@ -1338,8 +1371,32 @@ async function loadMine() { myEntries = await q(sb.from("entries").select("*,wor
    both need a round trip, and the two marks that want them light up when you open your
    own profile, which is the one place anybody goes looking. */
 function myRing() {
-  try { ringCache[me.id] = ringFromMarks(marksFor(me, myEntries, tasteOf(myEntries), null, {})); }
-  catch { ringCache[me.id] = null; } }
+  let marks = [];
+  try { marks = marksFor(me, myEntries, tasteOf(myEntries), null, {}) || []; } catch {}
+  try { ringCache[me.id] = ringFromMarks(marks); } catch { ringCache[me.id] = null; }
+  /* a ring is the one thing in here that cannot be bought, and it used to simply be there
+     the next time you looked. The first time you have earned one, it is drawn in front of
+     you — once, and then never again. */
+  const keys = marks.map(m => m && (m.key || m.id || m.name)).filter(Boolean).sort();
+  const seen = new Set(P.marksSeen || []);
+  const fresh = keys.filter(k => !seen.has(k));
+  if (fresh.length) { P.marksSeen = [...new Set([...seen, ...keys])]; saveP();
+    /* nothing to strike on the first load ever — a new arrival would get one for each mark
+       at once, which is not a ceremony, it is a light show. Only what is new after that. */
+    if (!REDUCED && seen.size) strikeRing(markColour(marks)); } }
+const markColour = marks => { const held = new Set(marks.map(m => m.key));
+  for (const k of RING_ORDER) if (held.has(k) && MARK_RING[k]) return MARK_RING[k][1];
+  return "var(--bad)"; };
+/* the arc is drawn over your own avatar, wherever it happens to be on screen */
+function strikeRing(col = "var(--bad)") {
+  setTimeout(() => {
+    const host = $("#meAv")?.parentElement; if (!host) return;
+    host.classList.add("struck");
+    const r = 21, c = Math.round(2 * Math.PI * r);
+    host.insertAdjacentHTML("beforeend",
+      `<svg class="strike" viewBox="0 0 46 46" style="--c:${c}" aria-hidden="true"><circle cx="23" cy="23" r="${r}" stroke="${esc(col)}"/></svg>`);
+    setTimeout(() => { host.classList.remove("struck"); $(".strike", host)?.remove(); }, 1600);
+  }, 900); }
 async function loadRooms() { const rs = await q(sb.from("rooms").select("id,name,code,room_members(user_id,profiles(id,handle,bio,avatar))").order("created_at"));
   rooms = rs.map(r => ({ id:r.id, name:r.name, code:r.code, members:(r.room_members||[]).map(m => m.profiles).filter(Boolean).sort((a,b)=>a.handle.localeCompare(b.handle)) }));
   if (!rooms.find(r => r.id === P.activeRoom)) { P.activeRoom = rooms[0]?.id || null; saveP(); } }
@@ -1792,6 +1849,15 @@ function paintHere() {
   const el = $("#hereRow"); if (!el) return;
   const others = hereNow.filter(p => p.id !== me.id);
   const seen = new Set([...el.querySelectorAll(".face")].map(f => f.dataset.who));
+  /* somebody leaving used to be the same redraw as somebody arriving. It fades out where
+     an arrival pops in, so you can tell which happened without looking straight at it. */
+  if (!REDUCED && seen.size) {
+    const here = new Set(others.map(p => p.id));
+    [...el.querySelectorAll(".face")].forEach(f => {
+      if (here.has(f.dataset.who)) return;
+      const ghost = f.cloneNode(true); ghost.classList.add("went");
+      ghost.style.position = "absolute"; ghost.style.pointerEvents = "none";
+      f.after(ghost); setTimeout(() => ghost.remove(), 300); }); }
   el.innerHTML = others.length
     ? `<span class="dot"></span><span class="faces">${others.map(p =>
         `<span class="face${seen.size && !seen.has(p.id) ? " came" : ""}" data-who="${esc(p.id)}"
@@ -1850,6 +1916,26 @@ async function dropInSlip(row, anchorSel) {
   setTimeout(() => slip.classList.remove("warm"), 2600);
   return true;
 }
+/* every feed simply stopped. A line that rises when you reach the end says you have seen
+   everything, rather than that the app ran out — and it is the natural place to say how
+   far back you have got. */
+function endLine(fb, es, limit) {
+  if (!fb || !es.length || es.length >= limit) return;
+  const last = es[es.length - 1];
+  const d = String(last.rated_on || "").slice(0, 10);
+  fb.insertAdjacentHTML("beforeend",
+    `<div class="endline">That's everything${d ? " since " + esc(stampDate(d)) : ""}</div>`); }
+
+/* a sentence somebody wrote, arriving a few words at a time. Only where slowing you down
+   is the point — a memory, a year — never in a feed, where it would be a gimmick. */
+function sayWords(el, text) {
+  if (!el) return;
+  if (REDUCED) { el.textContent = text; return; }
+  el.classList.add("saying");
+  el.innerHTML = String(text).split(/\s+/).filter(Boolean)
+    .map((w, i) => `<span class="w" style="animation-delay:${i * 55}ms">${esc(w)}</span>`).join(" ");
+  setTimeout(() => el.classList.remove("saying"), 600 + text.split(/\s+/).length * 55); }
+
 /* a chip that changes word and colour in one frame looks like a glitch until you read it.
    Filled from the left, with the word turning over under the fill, it reads as something
    you did. */
@@ -2366,7 +2452,7 @@ async function renderDoors() {
         mem.kind === "still" ? "and never went back" : when(mem.when || mem.entries[0].rated_on)}</span></div>
       ${mem.entries.slice(0,3).map(e => { const w = works[e.work_id] || e.works || {};
         return `<div class="row" data-w="${esc(e.work_id)}">${cover(w)}<div class="t"><b>${esc(w.title||"")}</b>
-          <small>${tag(w.kind)} ${(e.score/2).toFixed(1)}${e.note ? ` · “${esc(e.note)}”` : ""}</small></div></div>`; }).join("")}
+          <small>${tag(w.kind)} ${(e.score/2).toFixed(1)}${e.note ? ` · <span class="said">“${esc(e.note)}”</span>` : ""}</small></div></div>`; }).join("")}
       ${mem.entries.length > 3 ? `<p class="sub">and ${said(mem.entries.length - 3)} more that day.</p>` : ""}
       <div class="stack"><button class="btn soft" id="memShare">Share it</button><button class="btn quiet" id="memGo">Not now</button></div></div>` : ""}
     <div class="seg">${[["room","Your room"],["following","Following"],["everyone","Everyone"]].map(([k,l]) => `<button data-feed="${k}" class="${P.feed===k?"on":""}">${l}</button>`).join("")}</div>
@@ -2381,6 +2467,8 @@ async function renderDoors() {
   const ms = $("#memShare"); if (ms) ms.onclick = () => openCuts("span",
     spanOf(mem.entries, lc(mem.head), stampDate(mem.when || mem.entries[0].rated_on)), "Share it");
   $$("#memCard [data-w]", body).forEach(x => x.onclick = () => openWork(x.dataset.w));
+  /* the one line somebody wrote, in the one place the app is asking you to sit with it */
+  const memSay = $("#memCard .said"); if (memSay) sayWords(memSay, memSay.textContent);
   /* the three feeds sit in a row, so moving between them should read as a move. The old one
      leaves the way you came from and the new one arrives from the other side — the same
      rule the tabs already follow. */
@@ -2442,6 +2530,7 @@ function openFind() {
             <button class="chip ${isFollowing(p.id) ? "on" : ""}" data-fnd="${esc(p.id)}">${
               isFollowing(p.id) ? "Following" : "Follow"}</button></div>`).join("")}</div>`
         : `<p class="empty">Nobody called “${esc(v)}”.</p>`;
+      settleIn(res, ".twin");
       $$("[data-fnd]", res).forEach(b => b.onclick = async ev => { ev.stopPropagation();
         const id = b.dataset.fnd, on = !isFollowing(id); b.disabled = true;
         if (await setFollow(id, on)) { b.classList.toggle("on", on); b.textContent = on ? "Following" : "Follow"; }
@@ -2559,6 +2648,7 @@ async function renderRoomFeed(fb, R) {
         if (isNew && !shown) { shown = true; head = `<div class="newline">New since you were here</div>`; }
         return head + slipHTML(e, { talk:true }); }).join(""); })()}
     <div class="stack"><button class="btn quiet" id="newRoom">Open another room</button><button class="btn quiet" id="joinRoom">Join with a code</button></div><p class="msg" id="roomMsg"></p>`;
+  endLine($("#talkTop")?.parentElement === fb ? fb : fb, es, 60);
   wireSlips(fb, es); revealIn(fb); wireRoomButtons(); joinRoomChannel(R);
   /* presence says who is here; this says what they are actually in the middle of */
   paintRoomNow(R);
@@ -2599,6 +2689,7 @@ async function renderFollowingFeed(fb) {
       : (tasteOf(myEntries).tagged < 3
         ? blank("var(--mint)","✧","Twins need a taste","Single out what you loved on three entries and we can find the people who go for the same things.",[["twinAdd","Log something"]])
         : blank("var(--mint)","✧","No twins yet","Nobody else here has tagged enough for a match. As the hall fills up, this is where the people who think like you show up.",[])));
+  endLine(fb, es, 60);
   wireSlips(fb, es); revealIn(fb); $$("[data-prof]", fb).forEach(x => x.onclick = () => openProfile(x.dataset.prof));
   const tw = $("#twinAdd"); if (tw) tw.onclick = openAdd;
 }
@@ -2618,6 +2709,7 @@ async function renderEveryoneFeed(fb) {
   if (!es.length) { fb.innerHTML = `<h2>The <span class="hl" style="background:var(--sky)">hall</span></h2>` +
     blank("var(--sky)","◎","Nothing here yet","The hall fills up as people log things — everyone's scores, how much they agree, and what they loved. Be the first.",[["hallAdd","Log something"]]);
     $("#hallAdd").onclick = openAdd; return; }
+  let shown = [];
   const weekAgo = new Date(Date.now() - 7*864e5).toISOString().slice(0,10); const recent = es.filter(e => e.rated_on >= weekAgo);
   const pool = recent.length >= 5 ? recent : es; const comp = competition(pool, 40);
   const byKind = {}; for (const f of comp) (byKind[kindOf(f.id)] ||= []).push(f);
@@ -2625,7 +2717,9 @@ async function renderEveryoneFeed(fb) {
   fb.innerHTML = `<h2>The <span class="hl" style="background:var(--sky)">hall</span></h2><p class="sub">${es.length} entries · ${recent.length} this week</p>
     ${Object.keys(KINDS).filter(k => byKind[k]).map(k => `<div class="card"><div class="h"><span>${K(k).plural}</span>${tag(k)}</div>${compRows(byKind[k].slice(0,5))}</div>`).join("")}
     ${divisive.length ? `<div class="card"><div class="h"><span>Most divisive</span><span class="tag dim">bring these into a room</span></div>${compRows(divisive)}</div>` : ""}
-    <div class="lbl">What people said</div>${(() => { const f = feedSort(es); return f.html + f.rows.slice(0,20).map(e => slipHTML(e)).join(""); })()}`;
+    <div class="lbl">What people said</div>${(() => { const f = feedSort(es);
+      shown = f.rows.slice(0, 20); return f.html + shown.map(e => slipHTML(e)).join(""); })()}`;
+  endLine(fb, shown, 20);
   wireSlips(fb, es); revealIn(fb); wireFeedSort(fb, renderDoors); $$("[data-cw]", fb).forEach(x => x.onclick = () => openWork(x.dataset.cw));
 }
 
@@ -3041,6 +3135,12 @@ function markReel(idx) {
    wrote its result behind the sheet, where nobody could see it. The sheet's own wins
    whenever there is one. */
 const resultEl = () => $("#sheetBody #resultArea") || $("#resultArea");
+/* results replaced the shimmer all at once, which is a flash. Fifty milliseconds apart
+   they read as an answer arriving, and cover the covers still loading. */
+function settleIn(root, sel = ".row,.pick", gap = 50) {
+  if (REDUCED || !root) return;
+  $$(sel, root).slice(0, 8).forEach((r, i) => {
+    r.style.animationDelay = (i * gap) + "ms"; r.classList.add("settled"); }); }
 function spin() { const n = wheelItems.length; if (!n || spinning) return;
   spinning = true; $("#spinBtn").disabled = true;
   const ra0 = resultEl(); if (ra0) ra0.innerHTML = "";
@@ -3432,6 +3532,7 @@ async function doSearch(term, onPick, resEl, msgEl, box, acts = null) { msgEl.te
     : `<div class="row" data-add="${esc(h.id)}">${inner(h)}<span class="chip">Add</span></div>`;
   resEl.innerHTML = hits.map(rowHTML).join("")
     + (byThem.length ? `<div class="lbl">${esc(person.role)} ${esc(person.name)}</div>` + byThem.map(rowHTML).join("") : "");
+  settleIn(resEl);
   $$("[data-add]", resEl).forEach(r => {
     r.addEventListener("mousedown", e => e.preventDefault());
     if (!acts) { r.onclick = () => { onPick(r, null); box?.focus(); }; return; }
@@ -3456,11 +3557,30 @@ async function addToShelf(id) { const L = activeList(), hit = window.__hits?.[id
   } catch (e) { if (m) m.textContent = ""; oops(e, "Couldn't add that to the shelf"); } }
 async function removeFromShelf(id) { const L = activeList(); if (!L || !L.items.includes(id)) return;
   const cell = $(`[data-cell="${CSS.escape(id)}"]`);
+  /* where every other cell was before the grid re-laid, so the rest can be seen sliding
+     into the space rather than appearing one place along */
+  const was = gridPlaces();
   if (cell && !REDUCED) { cell.classList.add("going"); await new Promise(r => setTimeout(r, 190)); }
   const back = L.items.slice(); L.items = L.items.filter(x => x !== id);
   try { await q(sb.from("list_items").delete().eq("list_id", L.id).eq("work_id", id)); }
   catch (e) { L.items = back; const m = $("#msg"); if (m) m.textContent = e.message; }
-  if (currentTab() === "shelf") renderShelf(); }
+  if (currentTab() === "shelf") { renderShelf(); closeGap(was); } }
+/* first and last: measure, let the browser re-lay, put everything back where it was, then
+   let go. Cheaper and steadier than working out which cell moved where. */
+function gridPlaces() {
+  const out = {}; $$("#shelfGrid .cell").forEach(c => { const r = c.getBoundingClientRect();
+    out[c.dataset.cell] = { x:r.left, y:r.top }; }); return out; }
+function closeGap(was) {
+  if (REDUCED || !was) return;
+  const g = $("#shelfGrid"); if (!g) return;
+  g.classList.add("settling");
+  $$(".cell", g).forEach(c => { const from = was[c.dataset.cell]; if (!from) return;
+    const now = c.getBoundingClientRect();
+    const dx = from.x - now.left, dy = from.y - now.top;
+    if (!dx && !dy) return;
+    c.style.transition = "none"; c.style.transform = `translate(${dx}px,${dy}px)`;
+    requestAnimationFrame(() => { c.style.transition = ""; c.style.transform = ""; }); });
+  setTimeout(() => g.classList.remove("settling"), 460); }
 /* Logging something is the whole reason it was on the shelf, so finishing it takes it
    off — it moves down into "Off the shelf" rather than sitting in the grid with a tick
    waiting to be tidied away. Editing an old entry isn't finishing anything, so that
@@ -5038,7 +5158,7 @@ window.__rooms = { pullRefresh, openFind, setFollow, isFollowing, get follows(){
   CUTS, CARD_THEMES, cardTheme, spanData, tasteOf, reviewData, yearOf, roomPalmares, palmares, byPerson, spinN, SPIN_SIZES,
   loadNow, startNow, stopNow, nowOf, nowFor, nowLine, get myNow(){return myNow},
   bestOf, bestGenres, dealBest, loadBest, pickFrom, seenMode, keepSeen, get bestPool(){return bestPool}, get bestHand(){return bestHand},
-  newestFirst, sortEntries, loadMine, openEntry, tickTo, dealIn, flyTo, leaveOut, rollLine, fillChip, paintTheme,
+  newestFirst, sortEntries, loadMine, openEntry, sayWords, settleIn, endLine, closeGap, gridPlaces, strikeRing, removeFromShelf, paintHere, tickTo, dealIn, flyTo, leaveOut, rollLine, fillChip, paintTheme,
   joinMeChannel, leaveMeChannel, onLiveHand, onFollowEntry, dropInSlip,
   get meCh(){return meCh}, secondThoughts, againLine, apart, shelfAge, waited, openProfile, openWork,
   setSkin:k => { P.cardSkin = k; saveP(); }, get deckItems(){return deckItems},
