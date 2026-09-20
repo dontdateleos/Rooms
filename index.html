@@ -124,6 +124,53 @@ header .wrap{display:flex;align-items:center;justify-content:space-between;heigh
 .acts button.lk{color:var(--mute2,#9a94ad)}
 .acts button.lk.on{color:var(--bad)}
 .likes{font-size:12.5px;font-weight:600;color:var(--mute);margin-top:8px}
+/* ---- ten moments that used to snap ---- */
+/* 01 the theme wipes rather than inverting between two frames */
+::view-transition-old(root){animation:none}
+::view-transition-new(root){animation:themeWipe .62s cubic-bezier(.65,0,.35,1)}
+@keyframes themeWipe{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}
+.themeveil{position:fixed;inset:0;z-index:40;pointer-events:none;background:var(--cream);
+  clip-path:inset(0 100% 0 0);animation:themeWipe .62s cubic-bezier(.65,0,.35,1) forwards}
+/* 02 the feed leaves the way you came from */
+.feedOut{animation:feedOut .3s cubic-bezier(.4,0,1,1) forwards}
+.feedIn{animation:feedIn .38s cubic-bezier(0,0,.2,1) both}
+@keyframes feedOut{to{opacity:0;transform:translateX(var(--fx,-26px))}}
+@keyframes feedIn{from{opacity:0;transform:translateX(calc(var(--fx,-26px) * -1))}to{opacity:1;transform:none}}
+/* 03 the line of names rolls over */
+.likes{position:relative;min-height:16px}
+.likes.rolling{overflow:hidden}
+.likes .was{position:absolute;inset:0;animation:lineDown .32s cubic-bezier(.4,0,1,1) forwards;pointer-events:none}
+.likes.rolling>span:not(.was){animation:lineUp .4s .06s cubic-bezier(.16,1,.3,1) both}
+@keyframes lineDown{to{opacity:0;transform:translateY(14px)}}
+@keyframes lineUp{from{opacity:0;transform:translateY(-14px)}to{opacity:1;transform:none}}
+/* 04 numbers that change count to the new one */
+.ticking{font-variant-numeric:tabular-nums}
+/* 05 a progress bar travels from where it was */
+.club .tr i{transition:width .8s cubic-bezier(.16,1,.3,1)}
+/* 06 something handed to you goes somewhere you can find it */
+.flyer{position:fixed;z-index:30;border-radius:6px;pointer-events:none;
+  box-shadow:0 8px 20px -8px rgba(21,19,32,.5);background:var(--cream2);overflow:hidden}
+.flyer img{width:100%;height:100%;object-fit:cover;display:block}
+.folding{overflow:hidden;animation:foldUp .44s cubic-bezier(.6,0,.4,1) forwards}
+@keyframes foldUp{to{height:0;opacity:0;padding-top:0;padding-bottom:0;margin-top:0;margin-bottom:0}}
+/* 07 four things that happened are four events, not a wall */
+.dealt-in{animation:dealDown .42s cubic-bezier(.16,1,.3,1) both}
+@keyframes dealDown{from{opacity:0;transform:translateY(-12px) scale(.97)}to{opacity:1;transform:none}}
+/* 08 following somebody is something you did */
+.chip.filling{position:relative;overflow:hidden;isolation:isolate}
+.chip.filling>span{position:relative;z-index:1}
+.chip.filling:before{content:"";position:absolute;inset:0;background:var(--ink);z-index:0;
+  transform:scaleX(0);transform-origin:left;animation:sweepFill .42s cubic-bezier(.65,0,.35,1) forwards}
+@keyframes sweepFill{to{transform:scaleX(1)}}
+/* 09 a deleted entry leaves rather than vanishing */
+.leaving{overflow:hidden;animation:leaveOut .5s cubic-bezier(.6,0,.35,1) forwards;pointer-events:none}
+@keyframes leaveOut{
+  0%{transform:none;opacity:1}
+  28%{transform:scale(.975) rotate(-.7deg);opacity:.85}
+  100%{transform:scale(.9) rotate(-1.4deg);opacity:0;height:0;padding-top:0;padding-bottom:0;margin-top:0}}
+/* 10 the room assembles, once a session */
+.booting>*{animation:bootIn .46s cubic-bezier(.16,1,.3,1) both}
+@keyframes bootIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
 .likes:empty{display:none}
 /* the two fields almost nobody needs, folded away rather than deleted */
 .fold{margin-top:18px;border-top:1px solid var(--line);padding-top:6px}
@@ -802,6 +849,9 @@ body.demo header{padding-top:34px}
   html,body{transition:none}
   img.co,.po img,.slot.full img,.ttl img{opacity:1;transform:none;transition:none}
   .wash,.sheet.on .cuts button,.cell.dealt,.po .tick.swept,.po .tick.swept:after,.cell.landed .po,
+  .themeveil,.feedOut,.feedIn,.likes .was,.likes.rolling>span,.folding,.dealt-in,
+  .chip.filling:before,.leaving,.booting>*,::view-transition-new(root){animation:none!important}
+  .club .tr i{transition:none}
   .cell.shoved .po,.tiles .tile,[data-like].popped,[data-like].popped:before,
   .sheet.on .av.meet svg > g > *,.sheet.on .av.big svg > g > *,.av.new svg > g > *,.av.new .eyes,.av .eyes,
   .newline,.newline:before,.newline:after{animation:none}
@@ -1651,21 +1701,82 @@ function paintDay() {
 paintDay(); setInterval(paintDay, 6e5);
 document.addEventListener("visibilitychange", () => { if (!document.hidden) paintDay(); });
 
+let feedTurn = 0;
+/* what each club's bar was at the last time you looked, so it has somewhere to travel from */
+const clubWas = {}, clubDone = {};
+let booting = false;
+/* ---------- the four small tools the ten moments share ----------
+   A number that changes in place, a row that is dealt rather than dropped, a thing that
+   flies to where it has gone, and a thing that leaves rather than vanishing. */
+function tickTo(el, to, suffix = "") {
+  if (!el) return;
+  const from = parseFloat(String(el.textContent).replace(/[^\d.-]/g, "")) || 0;
+  if (REDUCED || from === to) { el.textContent = to + suffix; return; }
+  el.classList.add("ticking");
+  const t0 = performance.now(), ms = 700;
+  const step = t => { const p = Math.min(1, (t - t0) / ms), e = 1 - Math.pow(1 - p, 3);
+    el.textContent = Math.round(from + (to - from) * e) + suffix;
+    if (p < 1) requestAnimationFrame(step); };
+  requestAnimationFrame(step); }
+
+/* 70ms apart: far enough to read as four things, close enough that the fourth is not a wait */
+function dealIn(rows, gap = 70) {
+  if (REDUCED) return;
+  rows.forEach((r, i) => { r.style.animationDelay = (i * gap) + "ms"; r.classList.add("dealt-in"); }); }
+
+/* the cover leaves the row it was in and lands on the tab that now holds it, so you learn
+   where the thing went rather than being told */
+function flyTo(fromEl, toEl, src) {
+  if (REDUCED || !fromEl || !toEl) return;
+  const a = fromEl.getBoundingClientRect(), b = toEl.getBoundingClientRect();
+  if (!a.width || !b.width) return;
+  const f = document.createElement("div"); f.className = "flyer";
+  f.style.cssText += `left:${a.left}px;top:${a.top}px;width:${a.width}px;height:${a.height}px`;
+  if (src) f.innerHTML = `<img src="${esc(src)}" alt="">`;
+  document.body.appendChild(f);
+  const dx = b.left + b.width/2 - a.left - a.width/2, dy = b.top + b.height/2 - a.top - a.height/2;
+  const anim = f.animate([{ transform:"none", opacity:1 },
+    { transform:`translate(${dx}px,${dy}px) scale(.26)`, opacity:0 }],
+    { duration:520, easing:"cubic-bezier(.6,0,.35,1)" });
+  anim.onfinish = () => { f.remove();
+    toEl.animate([{transform:"none"},{transform:"translateY(-4px) scale(1.06)"},{transform:"none"}],
+      { duration:340, easing:"cubic-bezier(.3,1.5,.5,1)" }); }; }
+
+/* height has to be pinned before it can be animated to nothing */
+function leaveOut(el, after) {
+  if (!el) { after?.(); return; }
+  if (REDUCED) { el.remove(); after?.(); return; }
+  el.style.height = el.offsetHeight + "px";
+  el.classList.add("leaving");
+  setTimeout(() => { el.remove(); after?.(); }, 520); }
+
 /* ---------- lights on, lights off ----------
    The inline script in the head has already set this before first paint. This is what
    changes it afterwards, and the one thing the head script cannot do: keep following
    the phone while you leave it on Auto. */
 const DARK_Q = matchMedia("(prefers-color-scheme: dark)");
 const themeNow = () => P.theme === "light" || P.theme === "dark" ? P.theme : (DARK_Q.matches ? "dark" : "light");
-function paintTheme() { const t = themeNow();
-  document.documentElement.dataset.theme = t;
+function paintTheme(animate) { const t = themeNow();
+  if (document.documentElement.dataset.theme === t) { paintThemeColour(); return; }
+  /* a wipe, not a flip. View transitions do it properly where they exist; everywhere else a
+     veil of the incoming ground sweeps across and the swap happens underneath it. */
+  if (animate && !REDUCED && document.startViewTransition) {
+    document.startViewTransition(() => { document.documentElement.dataset.theme = t; paintThemeColour(); });
+    return; }
+  if (animate && !REDUCED) {
+    const veil = document.createElement("div"); veil.className = "themeveil";
+    document.documentElement.dataset.theme = t;
+    document.body.appendChild(veil);
+    setTimeout(() => veil.remove(), 640); paintThemeColour(); return; }
+  document.documentElement.dataset.theme = t; paintThemeColour(); }
+function paintThemeColour() {
   /* the phone paints the status bar and the URL bar from this, and a cream strip above
      a dark app is the tell that a theme was bolted on */
   const m = document.querySelector('meta[name="theme-color"]');
   if (m) { const c = getComputedStyle(document.documentElement).getPropertyValue("--cream").trim();
     if (c) m.content = c; } }
 paintTheme();
-DARK_Q.addEventListener?.("change", () => { if (!P.theme) paintTheme(); });
+DARK_Q.addEventListener?.("change", () => { if (!P.theme) paintTheme(true); });
 /* the ground colour moves with the hour, so the status bar has to be repainted with it */
 const paintDayAndTheme = () => { paintDay(); paintTheme(); };
 setInterval(paintDayAndTheme, 6e5);
@@ -1739,6 +1850,30 @@ async function dropInSlip(row, anchorSel) {
   setTimeout(() => slip.classList.remove("warm"), 2600);
   return true;
 }
+/* a chip that changes word and colour in one frame looks like a glitch until you read it.
+   Filled from the left, with the word turning over under the fill, it reads as something
+   you did. */
+function fillChip(b, on, label) {
+  if (!b) return;
+  if (REDUCED || !on) { b.classList.toggle("on", on); b.textContent = label; return; }
+  b.innerHTML = `<span>${esc(b.textContent.trim())}</span>`;
+  b.classList.add("filling");
+  setTimeout(() => { const sp = $("span", b); if (sp) sp.textContent = label; }, 190);
+  setTimeout(() => { b.classList.remove("filling"); b.classList.add("on"); b.textContent = label; }, 460); }
+
+/* the sentence does not swap characters — the old one falls out and the new one rises in,
+   so you can see that it was you who changed it */
+function rollLine(el, text) {
+  const was = el.textContent;
+  if (was === text) return;
+  if (REDUCED) { el.innerHTML = ""; if (text) { const n = document.createElement("span");
+    n.textContent = text; el.appendChild(n); } return; }
+  el.innerHTML = "";
+  if (was) { const old = document.createElement("span"); old.className = "was"; old.textContent = was;
+    el.appendChild(old); setTimeout(() => old.remove(), 340); }
+  if (text) { const now = document.createElement("span"); now.textContent = text; el.appendChild(now); }
+  el.classList.add("rolling"); setTimeout(() => el.classList.remove("rolling"), 480); }
+
 const onLiveEntry = (row, memberIds) =>
   row && memberIds.has(row.user_id) ? dropInSlip(row, "#talkTop") : Promise.resolve(false);
 
@@ -1904,6 +2039,7 @@ function openNotes() {
          or hands you a title, it lands here.</p>`}</div>
     <div class="stack"><button class="btn quiet" id="noteClose">Close</button></div>`);
   $("#noteClose").onclick = closeSheet;
+  dealIn($$("#noteBody .note"));
   wireNotes(ns);
   /* marked read on open, not on close — you have seen them, and a badge that survives
      you looking at it is the reason people stop looking */
@@ -1914,14 +2050,17 @@ function wireNotes(ns) {
   const by = Object.fromEntries(ns.map(n => [n.id, n]));
   $$("[data-back]", el).forEach(b => b.onclick = async ev => { ev.stopPropagation();
     const id = b.dataset.back, on = !isFollowing(id); b.disabled = true;
-    if (await setFollow(id, on)) { b.classList.toggle("on", on); b.textContent = on ? "Following" : "Follow back"; }
+    if (await setFollow(id, on)) fillChip(b, on, on ? "Following" : "Follow back");
     b.disabled = false; });
   $$("[data-yes],[data-no]", el).forEach(b => b.onclick = async ev => { ev.stopPropagation();
     const yes = "yes" in b.dataset, h = handIn.find(x => x.id === (b.dataset.yes || b.dataset.no));
     if (!h) return; b.textContent = "…";
+    const row = b.closest(".note"), face = row && $(".av", row);
     if (await answerHand(h, yes)) { say(yes ? "On the shelf" : "Gone");
-      /* only the row it was: the list must not jump under the thumb that answered it */
-      const row = b.closest(".note"); if (row) { row.classList.remove("fresh");
+      /* taken means it went somewhere, so show it going: onto the Library tab, which is
+         where it now is. Declined just folds away. */
+      if (yes) flyTo(face, $('nav button[data-tab="shelf"]'), works[h.work_id]?.cover);
+      if (row) { row.classList.remove("fresh");
         const a = $(".acts", row); if (a) a.outerHTML = `<span class="tag dim">${yes ? "taken" : "gone"}</span>`; }
       paintDot(); if (currentTab() === "shelf") renderShelf(); } });
   $$("[data-note]", el).forEach(x => x.onclick = ev => {
@@ -2147,6 +2286,7 @@ async function enter() {
   $("#bellBtn").hidden = false;
   await Promise.all([loadLists(), loadMine(), loadRooms(), loadFollows(), loadFounders(), loadNow(), loadFollowsMe()]); await loadClubs(); await loadHand();
   await useInvite();
+  booting = true;
   switchTab("doors"); movePill(true); checkNew(); joinMeChannel();
   if (!P.onboarded && !myEntries.length) setTimeout(openOnboarding, 400);
 }
@@ -2241,9 +2381,29 @@ async function renderDoors() {
   const ms = $("#memShare"); if (ms) ms.onclick = () => openCuts("span",
     spanOf(mem.entries, lc(mem.head), stampDate(mem.when || mem.entries[0].rated_on)), "Share it");
   $$("#memCard [data-w]", body).forEach(x => x.onclick = () => openWork(x.dataset.w));
-  $$("[data-feed]", body).forEach(b => b.onclick = () => { P.feed = b.dataset.feed; saveP(); renderDoors(); });
+  /* the three feeds sit in a row, so moving between them should read as a move. The old one
+     leaves the way you came from and the new one arrives from the other side — the same
+     rule the tabs already follow. */
+  const FEED_ORDER = ["room", "following", "everyone"];
+  $$("[data-feed]", body).forEach(b => b.onclick = () => {
+    const was = FEED_ORDER.indexOf(P.feed), now = FEED_ORDER.indexOf(b.dataset.feed);
+    if (was === now) return;
+    P.feed = b.dataset.feed; saveP(); feedTurn = now > was ? -26 : 26; renderDoors(); });
   $("#findPeople").onclick = openFind;
+  /* once a session, on the way in: the room's name, then who is in it, then what they said.
+     Never on a redraw — a screen that reassembles every time you come back is a screen that
+     never settles. */
+  if (booting && !REDUCED) { booting = false;
+    const kids = [...body.children].filter(el => el.offsetParent !== null).slice(0, 5);
+    kids.forEach((el, i) => { el.style.animationDelay = (i * 120) + "ms"; });
+    body.classList.add("booting");
+    setTimeout(() => { body.classList.remove("booting");
+      kids.forEach(el => el.style.animationDelay = ""); }, 1400); }
+  booting = false;
   const fb = $("#feedBody");
+  if (feedTurn && !REDUCED) { fb.style.setProperty("--fx", feedTurn + "px");
+    fb.classList.add("feedIn"); setTimeout(() => fb.classList.remove("feedIn"), 420); }
+  feedTurn = 0;
   /* the dot existed and nothing ever cleared it: markSeen was written and never called,
      so every visit counted the same three days of entries again */
   markSeen();
@@ -2335,7 +2495,7 @@ function slipHTML(e, opts = {}) { const w = remember(e.works) || works[e.work_id
     ${e.loved?.length?`<div class="loved">${e.loved.slice(0,4).map(k => `<span>${esc(k.startsWith("person:")?lc(k.slice(7)):k)}</span>`).join("")}</div>`:""}
     <div class="foot"><div class="acts">${mine ? "" : `<button data-like="${e.id}" class="lk ${same?"on":""}" aria-pressed="${same}" aria-label="${same ? "Liked — tap to take it back" : "Like this"}">${heartSVG(same)}</button>`
       }${mine && e.room_only ? `<span class="tag dim">room only</span>` : ""}</div>${stars(e.score,"sm")}</div>
-    <div class="likes" data-likes="${e.id}">${likeLine(e)}</div></div>`; }
+    <div class="likes" data-likes="${e.id}">${(() => { const l = likeLine(e); return l ? `<span>${l}</span>` : ""; })()}</div></div>`; }
 function wireSlips(el, es) { const by = Object.fromEntries(es.map(e => [e.id, e]));
   $$("[data-more]", el).forEach(b => b.onclick = ev => { ev.stopPropagation();
     const qd = b.previousElementSibling; qd.classList.toggle("clip"); b.textContent = qd.classList.contains("clip") ? "More" : "Less"; });
@@ -2355,7 +2515,7 @@ function wireSlips(el, es) { const by = Object.fromEntries(es.map(e => [e.id, e]
       /* the line under it is the other half of the same fact, and it is the only other
          thing that moves — the list must not be rebuilt under the thumb that tapped */
       const line = el.querySelector(`[data-likes="${CSS.escape(e.id)}"]`) || document.querySelector(`[data-likes="${CSS.escape(e.id)}"]`);
-      if (line) line.textContent = likeLine(e);
+      if (line) rollLine(line, likeLine(e));
       if (!has && !REDUCED) requestAnimationFrame(() => { const nb = $(`[data-like="${CSS.escape(e.id)}"]`);
         if (nb) { nb.classList.add("popped"); setTimeout(() => nb.classList.remove("popped"), 520); } });
     } catch (err) { oops(err, has ? "Couldn't take that back" : "Couldn't like that"); }
@@ -2540,10 +2700,16 @@ function renderShelf() { const L = activeList();
     await openWheel(); };
   $$("[data-t]").forEach(b => b.onclick = e => { e.stopPropagation(); openLog(works[b.dataset.t]); });
   $$("[data-w]").forEach(t => t.onclick = () => { if (!shelfEdit) openWork(t.dataset.w); });
+  /* the queue on the shelf is a to-do list, so an answered one genuinely leaves — unlike
+     the bell, where the row stays and says what you did */
   $$("[data-yes],[data-no]").forEach(b => b.onclick = async e => { e.stopPropagation();
     const yes = "yes" in b.dataset, h = handIn.find(x => x.id === (b.dataset.yes || b.dataset.no));
     if (!h) return; b.textContent = "…";
-    if (await answerHand(h, yes)) { say(yes ? "On the shelf" : "Gone"); renderShelf(); } });
+    const row = b.closest(".row") || b.parentElement;
+    if (await answerHand(h, yes)) { say(yes ? "On the shelf" : "Gone");
+      if (yes) flyTo(row, $('nav button[data-tab="shelf"]'), works[h.work_id]?.cover);
+      if (row && !REDUCED) { row.classList.add("folding");
+        setTimeout(renderShelf, yes ? 600 : 460); } else renderShelf(); } });
   const dn = $("#shelfDone"); if (dn) dn.onclick = () => { shelfEdit = false; renderShelf(); };
   if (!rows.length) shelfEdit = false;
   if (!REDUCED) {
@@ -4009,11 +4175,24 @@ async function renderClubs() { const body = $("#clubsBody"), R = activeRoom();
       <div class="top"><span class="tag" style="background:${c.scope === "open" ? "var(--lilac)" : "var(--cream2)"}">${esc(c.label)}</span>
         <span class="deadline ${d !== null && d <= 7 ? "soon" : ""}">${d === null ? "rolling" : d < 0 ? "finished" : d === 0 ? "ends today" : d + " days left"}</span></div>
       <b>${esc(c.name)}</b>
-      <div class="tr"><i style="width:${pct}%"></i></div>
-      <div class="pr">${done} of ${items.length}${pct === 100 ? " · you finished it" : ""} ${ks.map(tag).join(" ")}</div>
+      <div class="tr"><i data-pct="${pct}" style="width:${clubWas[c.id] != null ? clubWas[c.id] : pct}%"></i></div>
+      <div class="pr"><b data-done="${done}">${clubDone[c.id] != null ? clubDone[c.id] : done}</b> of ${items.length}${pct === 100 ? " · you finished it" : ""} ${ks.map(tag).join(" ")}</div>
       ${ballotClosed(c) ? `<div class="pr" style="color:var(--good)">Results are in</div>` : ""}
       <div class="who" id="who-${c.id}"></div>
       ${c.scope === "open" && !joined ? `<div class="stack"><button class="btn soft" data-join="${c.id}">Join</button></div>` : ""}</div>`; };
+
+  /* a bar drawn at its final width was always there. Drawn at the width it had last time
+     and then let go, it shows you the one you just finished moving. */
+  const paintBars = () => $$("#clubsBody .club").forEach(el => {
+    const id = el.dataset.c, bar = $(".tr i", el); if (!bar) return;
+    const to = +bar.dataset.pct || 0, from = clubWas[id];
+    if (REDUCED || from == null || from === to) { bar.style.width = to + "%"; clubWas[id] = to;
+      const n0 = $(".pr b", el); if (n0) { n0.textContent = +n0.dataset.done || 0; clubDone[id] = +n0.dataset.done || 0; }
+      return; }
+    bar.style.transition = "none"; bar.style.width = from + "%";
+    requestAnimationFrame(() => { bar.style.transition = ""; bar.style.width = to + "%"; });
+    const n = $(".pr b", el); if (n) tickTo(n, +n.dataset.done || 0);
+    clubWas[id] = to; if (n) clubDone[id] = +n.dataset.done || 0; });
 
   const yours = [...clubs, ...openClubs.filter(c => myClubIds.has(c.id))];
   const open = openClubs.filter(c => !myClubIds.has(c.id));
@@ -4034,6 +4213,7 @@ async function renderClubs() { const body = $("#clubsBody"), R = activeRoom();
     const so = $("#clubStartOpen"); if (so) so.onclick = () => openClubEditor(null, "open");
     return; }
   el.innerHTML = list.map(c => clubCard(c, myClubIds.has(c.id))).join("");
+  requestAnimationFrame(paintBars);
   $$("[data-c]", el).forEach(x => x.onclick = e => { if (e.target.closest("[data-join]")) return;
     openClub([...clubs, ...openClubs].find(c => c.id === x.dataset.c)); });
   $$("[data-join]", el).forEach(b => b.onclick = async e => { e.stopPropagation();
@@ -4622,7 +4802,13 @@ function openEntry(e, justSaved = false) { const w = works[e.work_id] || e.works
     <div class="stack"><button class="btn soft" id="eCard">Save the card</button><button class="btn ghost" id="eWork">Open ${esc(w.title)}</button>${mine && e.id?`<button class="btn quiet" id="eEdit">Edit</button><button class="btn quiet" id="eDel">Delete</button>`:""}<button class="btn quiet" id="eClose">Close</button></div>`);
   $("#eCard").onclick = () => openCuts("review", e, "Share this review");
   $("#eClose").onclick = closeSheet; $("#eWork").onclick = () => openWork(e.work_id); const ed = $("#eEdit"); if (ed) ed.onclick = () => openLog(w, e);
-  const d = $("#eDel"); if (d) d.onclick = async () => { if (!confirm("Delete this entry?")) return; try { await q(sb.from("entries").delete().eq("id", e.id)); await loadMine(); closeSheet(); refresh(); say("Entry deleted"); } catch (err) { oops(err, "Couldn't delete that entry"); } }; }
+  const d = $("#eDel"); if (d) d.onclick = async () => { if (!confirm("Delete this entry?")) return;
+    try { await q(sb.from("entries").delete().eq("id", e.id)); await loadMine(); closeSheet();
+      /* the row leaves rather than being replaced by the one under it — which is the half
+         second in which you find out you meant the other one */
+      const slip = e.id && $(`[data-slip="${CSS.escape(e.id)}"]`);
+      if (slip) leaveOut(slip, refresh); else refresh();
+      say("Entry deleted"); } catch (err) { oops(err, "Couldn't delete that entry"); } }; }
 
 /* ---------- import ----------
    letterboxd: Date,Name,Year,Letterboxd URI,Rating   · goodreads: Title,Author,My Rating,Date Read
@@ -4787,7 +4973,7 @@ async function openYou() { let top = { items:[] }; try { top = await ensureMyTop
   $("#workerUrl").onchange = e => { P.workerUrl = e.target.value.trim(); saveP(); upcoming = null; }; $("#tmdbKey").onchange = e => { P.tmdbKey = e.target.value.trim(); saveP(); upcoming = null; };
   $$("[data-ct]").forEach(b => b.onclick = () => { P.cardTheme = b.dataset.ct; saveP(); $$("[data-ct]").forEach(x => x.classList.toggle("on", x === b)); });
   $$("[data-th]").forEach(b => b.onclick = () => { P.theme = b.dataset.th; saveP();
-    $$("[data-th]").forEach(x => x.classList.toggle("on", x === b)); paintTheme(); });
+    $$("[data-th]").forEach(x => x.classList.toggle("on", x === b)); paintTheme(true); });
   /* a key you cannot read back is a key you cannot check against the dashboard you
      copied it from */
   const pk = $("#tmdbPeek"); if (pk) pk.onclick = () => { const i = $("#tmdbKey");
@@ -4852,7 +5038,8 @@ window.__rooms = { pullRefresh, openFind, setFollow, isFollowing, get follows(){
   CUTS, CARD_THEMES, cardTheme, spanData, tasteOf, reviewData, yearOf, roomPalmares, palmares, byPerson, spinN, SPIN_SIZES,
   loadNow, startNow, stopNow, nowOf, nowFor, nowLine, get myNow(){return myNow},
   bestOf, bestGenres, dealBest, loadBest, pickFrom, seenMode, keepSeen, get bestPool(){return bestPool}, get bestHand(){return bestHand},
-  newestFirst, sortEntries, joinMeChannel, leaveMeChannel, onLiveHand, onFollowEntry, dropInSlip,
+  newestFirst, sortEntries, loadMine, openEntry, tickTo, dealIn, flyTo, leaveOut, rollLine, fillChip, paintTheme,
+  joinMeChannel, leaveMeChannel, onLiveHand, onFollowEntry, dropInSlip,
   get meCh(){return meCh}, secondThoughts, againLine, apart, shelfAge, waited, openProfile, openWork,
   setSkin:k => { P.cardSkin = k; saveP(); }, get deckItems(){return deckItems},
   addToShelf, __isSoon:isSoon, __list:activeList,
