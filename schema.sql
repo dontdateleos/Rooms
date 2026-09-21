@@ -690,3 +690,117 @@ drop policy if exists seen_mine on seen;
 -- where you are up to is yours. The show you logged is the part other people see.
 create policy seen_mine on seen for all to authenticated
   using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+-- ---------- v21: blocking and reporting ----------
+-- Apple's guideline 1.2 asks for four things from an app that carries what people write:
+-- a way to filter what goes up, a way to report it, a way to block a person, and a way
+-- to reach whoever runs it. Three of them are here; the fourth is on the privacy page.
+--
+-- Blocking belongs in the row policies and not in the drawing. A block enforced by the
+-- app is a block that still delivers every row to the blocked-from person's device and
+-- merely declines to paint it — which is not blocking, it is a curtain. Everything below
+-- is written so the rows never leave the database.
+create table if not exists blocks (
+  blocker uuid not null references profiles on delete cascade,
+  blocked uuid not null references profiles on delete cascade,
+  created_at timestamptz default now(),
+  primary key (blocker, blocked),
+  check (blocker <> blocked)
+);
+create index if not exists blocks_blocked_idx on blocks (blocked);
+
+alter table blocks enable row level security;
+drop policy if exists blocks_mine on blocks;
+-- you can see and change who you have blocked. You cannot see who has blocked you:
+-- a list of that is a list of people to go and find.
+create policy blocks_mine on blocks for all to authenticated
+  using (blocker = auth.uid()) with check (blocker = auth.uid());
+
+-- Symmetrical on purpose. If blocking only worked one way, the person blocked would
+-- keep seeing everything and only wonder why the replies stopped — and the person who
+-- blocked them would still be reading them, which is not what they asked for.
+create or replace function apart_from(other uuid)
+returns boolean language sql security definer stable set search_path = public as $$
+  select exists (select 1 from blocks b
+    where (b.blocker = auth.uid() and b.blocked = other)
+       or (b.blocker = other      and b.blocked = auth.uid()))
+$$;
+revoke all on function apart_from(uuid) from public, anon;
+grant execute on function apart_from(uuid) to authenticated;
+
+-- every door a person's writing comes through
+drop policy if exists entries_read on entries;
+create policy entries_read on entries for select to authenticated
+  using ((user_id = auth.uid() or (not room_only) or shares_room(user_id))
+    and not apart_from(user_id));
+
+drop policy if exists reactions_read on reactions;
+create policy reactions_read on reactions for select to authenticated
+  using (not apart_from(reactions.user_id) and exists (
+    select 1 from entries e where e.id = reactions.entry_id
+      and (e.user_id = auth.uid() or (not e.room_only) or shares_room(e.user_id))
+      and not apart_from(e.user_id)));
+
+drop policy if exists replies_read on replies;
+create policy replies_read on replies for select to authenticated
+  using (not apart_from(replies.user_id) and exists (
+    select 1 from entries e where e.id = replies.entry_id
+      and (e.user_id = auth.uid() or (not e.room_only) or shares_room(e.user_id))
+      and not apart_from(e.user_id)));
+
+drop policy if exists nows_read on nows;
+create policy nows_read on nows for select to authenticated
+  using ((user_id = auth.uid() or shares_room(user_id)) and not apart_from(user_id));
+
+drop policy if exists handovers_read on handovers;
+create policy handovers_read on handovers for select to authenticated
+  using ((sender = auth.uid() or recipient = auth.uid())
+    and not apart_from(case when sender = auth.uid() then recipient else sender end));
+
+-- and the one that stops it happening again rather than hiding it afterwards
+create or replace function can_hand_to(target uuid)
+returns boolean language sql security definer stable set search_path = public as $$
+  select target <> auth.uid() and not apart_from(target) and (
+    shares_room(target)
+    or (exists (select 1 from follows where follower = auth.uid() and followee = target)
+        and exists (select 1 from follows where follower = target and followee = auth.uid())))
+$$;
+
+-- a block is also an undoing: whatever following there was between you stops
+create or replace function block_them(target uuid) returns void
+language plpgsql security definer set search_path = public as $$
+declare me uuid := auth.uid();
+begin
+  if me is null or target is null or target = me then raise exception 'no'; end if;
+  insert into blocks (blocker, blocked) values (me, target) on conflict do nothing;
+  delete from follows where (follower = me and followee = target)
+                         or (follower = target and followee = me);
+  delete from handovers where (sender = me and recipient = target)
+                           or (sender = target and recipient = me);
+end $$;
+revoke all on function block_them(uuid) from public, anon;
+grant execute on function block_them(uuid) to authenticated;
+
+-- ---------- v21: reports ----------
+-- Insert-only from the app. Nobody reads these through the API — not even the person
+-- who sent one, because a readable report is a report somebody can check the status of
+-- and then go and argue about. They are read in the SQL editor, by a person, and acted
+-- on within a day, which is what the store asks for and what the privacy page says.
+create table if not exists reports (
+  id uuid primary key default gen_random_uuid(),
+  -- nullable on purpose: a report outlives the person who sent it. "not null" here
+  -- with "on delete set null" would have made closing your own account fail outright.
+  reporter uuid references profiles on delete set null,
+  about_user uuid references profiles on delete cascade,
+  about_entry uuid references entries on delete cascade,
+  reason text not null check (reason in ('abuse','hate','sexual','violence','spam','spoiler','other')),
+  note text check (note is null or length(note) <= 400),
+  created_at timestamptz default now(),
+  check (about_user is not null or about_entry is not null)
+);
+create index if not exists reports_new_idx on reports (created_at desc);
+
+alter table reports enable row level security;
+drop policy if exists reports_send on reports;
+create policy reports_send on reports for insert to authenticated
+  with check (reporter = auth.uid());

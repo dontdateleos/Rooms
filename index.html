@@ -292,6 +292,10 @@ textarea{min-height:76px;resize:none;line-height:1.45}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;font-family:var(--head);font-weight:800;font-size:16px;padding:14px 18px;border-radius:999px;background:var(--ink);color:var(--cream);border:0;cursor:pointer}
 .btn.soft{background:var(--butter);color:var(--onAccent)}
 .btn.bad{background:var(--bad);color:#fff}
+/* the quietest thing on a sheet, because it should be findable and never inviting */
+.linky{background:none;border:0;padding:0;font:inherit;font-weight:700;font-size:13px;
+  color:var(--mute);text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.linky:hover{color:var(--ink)}
 .btn.bad:disabled{opacity:.45;cursor:default}
 .btn.ghost{background:transparent;color:var(--ink);border:2px solid var(--line)}
 .btn.quiet{background:transparent;color:var(--mute)}
@@ -1376,11 +1380,12 @@ const DEMO = /(^|[#?&])demo\b/.test(location.hash + location.search);
 const LOCAL = !window.__mockSb && (DEMO || SUPABASE_URL.includes("YOUR-"));
 function makeLocalSb(seed) {
   const KEY = "rooms.db";
-  const blank = { profile:null, signedOut:false, works:{}, profiles:[], entries:[], lists:[], list_items:[], rooms:[], room_members:[], clubs:[], club_members:[], club_votes:[], reactions:[], replies:[], top_lists:[], top_list_items:[], follows:[], nows:[], handovers:[], seen:[] };
+  const blank = { profile:null, signedOut:false, works:{}, profiles:[], entries:[], lists:[], list_items:[], rooms:[], room_members:[], clubs:[], club_members:[], club_votes:[], reactions:[], replies:[], top_lists:[], top_list_items:[], follows:[], nows:[], handovers:[], seen:[], blocks:[], reports:[] };
   const db = Object.assign({}, blank, seed || JSON.parse(localStorage.getItem(KEY) || "{}"));
   if (!db.nows) db.nows = [];                 /* a log written before v15 has no such key */
   if (!db.handovers) db.handovers = [];       /* nor one written before v16 */
   if (!db.seen) db.seen = [];                 /* nor one written before v20 */
+  if (!db.blocks) db.blocks = []; if (!db.reports) db.reports = [];   /* nor before v21 */
   /* v20 gave entries a part column with a default of false. A row written before that
      has no such key, and the feeds now ask for part = false by name — so without this
      every entry anybody already had would quietly stop appearing anywhere. */
@@ -1462,7 +1467,7 @@ function makeLocalSb(seed) {
         db.room_members = db.room_members.filter(m => m.user_id !== mine);
         db.rooms = db.rooms.filter(r => !was.includes(r.id) || db.room_members.some(m => m.room_id === r.id));
         for (const t of ["entries","lists","list_items","reactions","replies","follows",
-                         "top_lists","top_list_items","club_members","club_votes","nows","handovers","seen"])
+                         "top_lists","top_list_items","club_members","club_votes","nows","handovers","seen","blocks"])
           db[t] = [];
         db.profile = null; db.signedOut = true; save();
         return Promise.resolve({ data:null, error:null }); }
@@ -1530,7 +1535,34 @@ function markLive(root = document) {
 function showOffline(msg, good) { const el = document.getElementById("offline"); if (!el) return;
   if (!msg) { el.classList.remove("on", "good"); return; }
   el.textContent = msg; el.classList.toggle("good", !!good); el.classList.add("on"); }
+/* ---------- what will not go up ----------
+   The fourth thing the store asks for, and the one it is easy to be dishonest about. A
+   word list is a crude instrument: it cannot read a sentence, it will not catch anything
+   said carefully, and it will occasionally stop something harmless. It is not moderation
+   and this app does not pretend it is — reporting and blocking are what actually work,
+   and a person reads the reports.
+
+   What it does do is refuse the obvious at the point of writing, which is worth having
+   for the same reason a door has a lock: not because it stops everybody, but because it
+   means nobody wanders in by accident. Slurs only — no profanity list, because "this
+   film is fucking great" is a review and treating it as abuse would teach people the app
+   is stupid and to write around it.
+
+   Written as patterns rather than a literal list so the source is not itself a wall of
+   slurs, and so the obvious spacings and substitutions do not walk straight through. */
+const NOPE = [
+  "n[i1!]+gg?[e3]+r", "n[i1!]+gg?a", "f[a@4]+gg?[o0]+t", "k[i1!]+k[e3]", "sp[i1!]+ck",
+  "ch[i1!]+nk", "tr[a@4]+nn[yie]+", "r[e3]+t[a@4]+rd", "c[o0]+[o0]+n[s]?\\b",
+  "w[e3]+tb[a@4]+ck", "g[o0]+[o0]+k\\b", "b[e3]+[a@4]+n[e3]+r\\b",
+].map(x => new RegExp(x, "i"));
+/* strip the usual dressing-up before looking: spaces, dots and stars between letters */
+const bare = t => String(t || "").toLowerCase().replace(/[\s._*\-]+/g, "");
+const willNotPost = t => { const b = bare(t); return NOPE.some(re => re.test(b)); };
+/* exposed so the suite can prove both halves: that it catches, and that it lets an
+   ordinary sweary review through */
+
 async function saveEntry(row, editId) {
+  if (willNotPost(row.note)) throw new Error("That word doesn't go up here. Say it another way.");
   try { if (editId) await q(sb.from("entries").update(row).eq("id", editId)); else await q(sb.from("entries").insert(row)); return true; }
   catch (e) { if (navigator.onLine && !/fetch|network|failed/i.test(String(e.message))) throw e;
     const a = queued(); a.push({ row, editId }); setQueue(a); showOffline(`Saved here · ${a.length} waiting to sync`); return false; } }
@@ -1693,6 +1725,54 @@ async function clubProgress(club) {
   let es = []; try { es = await q(sb.from("entries").select("user_id,work_id").in("work_id", club.items || [])); } catch {}
   const per = {}; for (const e of es) { if (!ids.includes(e.user_id)) continue; (per[e.user_id] ||= new Set()).add(e.work_id); }
   return per; }
+/* ---------- apart ----------
+   The database is what actually keeps two people apart: v21 puts apart_from() into
+   every read policy, so a blocked person's rows never reach this device. What is here
+   is the other two thirds of the job — the app has to stop drawing what is already on
+   screen the moment you block somebody, and the device-only build has no row policies
+   at all, so without this the whole thing would be untestable and untrue offline.
+
+   Symmetrical, like the policy: blocking somebody takes you out of their view as well
+   as them out of yours. A block that only worked one way would leave them reading you
+   and wondering why you had gone quiet. */
+let blocked = new Set();
+async function loadBlocks() {
+  if (!me) return;
+  try { const rows = await q(sb.from("blocks").select("blocked").eq("blocker", me.id));
+    blocked = new Set(rows.map(r => r.blocked)); } catch { blocked = new Set(); }
+}
+const isApart = id => !!id && blocked.has(id);
+/* every list of other people's things passes through here */
+const notApart = rows => rows.filter(r => !isApart(r.user_id ?? r.follower ?? r.followee ?? r.id));
+
+async function blockThem(id) {
+  if (!id || id === me.id) return;
+  blocked.add(id);
+  try {
+    if (sb.__local) { const db = sb.__db;
+      db.blocks = [...(db.blocks || []), { blocker:me.id, blocked:id, created_at:new Date().toISOString() }];
+      db.follows = db.follows.filter(f => !((f.follower === me.id && f.followee === id) || (f.follower === id && f.followee === me.id)));
+      db.handovers = db.handovers.filter(h => !((h.sender === me.id && h.recipient === id) || (h.sender === id && h.recipient === me.id)));
+      sb.__save(); }
+    else await q(sb.rpc("block_them", { target:id }));
+  } catch (err) { blocked.delete(id); throw err; }
+  await Promise.all([loadFollows().catch(()=>{}), loadFollowsMe().catch(()=>{}), loadHand().catch(()=>{})]);
+}
+async function unblockThem(id) {
+  blocked.delete(id);
+  try { await q(sb.from("blocks").delete().eq("blocker", me.id).eq("blocked", id)); }
+  catch (err) { blocked.add(id); throw err; }
+}
+const REPORT_WHY = [["abuse","Harassment or bullying"],["hate","Hate speech"],
+  ["sexual","Sexual content"],["violence","Violence or threats"],["spam","Spam"],
+  ["spoiler","Spoilers, unmarked"],["other","Something else"]];
+async function sendReport(row) {
+  if (sb.__local) { const db = sb.__db;
+    db.reports = [...(db.reports || []), Object.assign({ id:String(Math.random()).slice(2), created_at:new Date().toISOString() }, row)];
+    sb.__save(); return; }
+  await q(sb.from("reports").insert(row));
+}
+
 async function loadFollows() { try { follows = await q(sb.from("follows").select("followee,profiles!follows_followee_fkey(id,handle,bio,avatar)").eq("follower", me.id)); }
   catch (err) { follows = []; oops(err, "Couldn't load who you follow"); } }
 const activeList = () => lists.find(l => l.id === P.activeList) || lists[0];
@@ -2277,7 +2357,7 @@ function rollLine(el, text) {
    on it, and so must these, or the one path into the feed that is not a query becomes
    the one that floods it. */
 const onLiveEntry = (row, memberIds) =>
-  row && !row.part && memberIds.has(row.user_id) ? dropInSlip(row, "#talkTop") : Promise.resolve(false);
+  row && !row.part && !isApart(row.user_id) && memberIds.has(row.user_id) ? dropInSlip(row, "#talkTop") : Promise.resolve(false);
 
 /* ---------- the channel that is about you rather than a room ----------
    A room channel dies when you leave the room, which is right for presence and wrong
@@ -2327,7 +2407,7 @@ async function onLiveHand(row) {
 /* somebody you follow logged something. Only worth dropping in if that is the feed you
    are actually looking at; anywhere else the next render picks it up. */
 function onFollowEntry(row) {
-  if (!row || row.part || row.user_id === me.id || !followSet().has(row.user_id)) return;
+  if (!row || row.part || isApart(row.user_id) || row.user_id === me.id || !followSet().has(row.user_id)) return;
   if (currentTab() !== "doors" || P.feed !== "following") return;
   dropInSlip(row, "#folTop"); }
 
@@ -2355,7 +2435,7 @@ async function checkNew() {
   if (R) { try { const ids = R.members.map(m => m.id).filter(i => i !== me.id);
     /* limit(100) with no order is an arbitrary hundred rows, so in a busy room the
        newest entries were the ones it could silently fail to count */
-    if (ids.length) { const es = await q(sb.from("entries").select("id,user_id,created_at,work_id,profiles!entries_user_id_fkey(handle)").eq("part", false).in("user_id", ids).order("created_at",{ascending:false}).limit(100));
+    if (ids.length) { const es = notApart(await q(sb.from("entries").select("id,user_id,created_at,work_id,profiles!entries_user_id_fkey(handle)").eq("part", false).in("user_id", ids).order("created_at",{ascending:false}).limit(100)));
       unseen.entries = es.filter(e => String(e.created_at) > since); } } catch {} }
   /* a count could only ever say "somebody". Keeping who lets the row say their name
      and offer the one thing anybody wants to do about it. */
@@ -2709,7 +2789,7 @@ async function enter() {
   $("#meBtn").hidden = false; $("#meName").textContent = me.handle; paintMeAv();
   $("#nav").classList.add("on"); $("#add").classList.add("live"); $("#cogBtn").hidden = false;
   $("#bellBtn").hidden = false;
-  await Promise.all([loadLists(), loadMine(), loadRooms(), loadFollows(), loadFounders(), loadNow(), loadFollowsMe(), loadSeen()]); await loadClubs(); await loadHand();
+  await Promise.all([loadLists(), loadMine(), loadRooms(), loadFollows(), loadFounders(), loadNow(), loadFollowsMe(), loadSeen(), loadBlocks()]); await loadClubs(); await loadHand();
   await useInvite();
   booting = true;
   switchTab("doors"); movePill(true); checkNew(); joinMeChannel();
@@ -2973,7 +3053,7 @@ async function renderRoomFeed(fb, R) {
   if (!R) { leaveRoomChannel(); fb.innerHTML = `<h2>Your <span class="hl" style="background:var(--pink)">room</span></h2><p class="empty">A room is five to twenty friends and a six-character code. It shows what everyone rated, how much you agree, and what each of you said about it. ${sb.__local ? "Rooms need the hosted setup — everything else works now." : ""}</p>
       <div class="stack"><button class="btn blue" id="newRoom">Open a room</button><button class="btn ghost" id="joinRoom">Join with a code</button></div><p class="msg" id="roomMsg"></p>`; wireRoomButtons(); return; }
   const ids = R.members.map(m => m.id); let es = [];
-  try { es = await q(sb.from("entries").select(ENTRY_SEL).eq("part", false).in("user_id", ids).order("created_at",{ascending:false}).limit(60)); } catch (e) { fb.innerHTML = `<p class="empty">${esc(e.message)}</p>`; return; }
+  try { es = notApart(await q(sb.from("entries").select(ENTRY_SEL).eq("part", false).in("user_id", ids).order("created_at",{ascending:false}).limit(60))); } catch (e) { fb.innerHTML = `<p class="empty">${esc(e.message)}</p>`; return; }
   es.sort(newestFirst);
   es.forEach(e => remember(e.works)); const comp = competition(es, 6);
   const pick = P.picked && !logged(P.picked) && works[P.picked];
@@ -3042,7 +3122,7 @@ function wireRoomButtons() { const nr = $("#newRoom"), jr = $("#joinRoom");
   if (jr) jr.onclick = async () => { const code = (prompt("The six-character code") || "").trim(); if (!code) return; try { const r = await q(sb.rpc("join_room", { p_code:code })); await loadRooms(); if (r?.id) P.activeRoom = r.id; saveP(); await loadClubs(); renderDoors(); } catch (e) { $("#roomMsg").textContent = e.message; } }; }
 async function renderFollowingFeed(fb) {
   const ids = follows.map(f => f.followee); let es = [];
-  if (ids.length) { try { es = await q(sb.from("entries").select(ENTRY_SEL).eq("part", false).in("user_id", ids).order("created_at",{ascending:false}).limit(60)); }
+  if (ids.length) { try { es = notApart(await q(sb.from("entries").select(ENTRY_SEL).eq("part", false).in("user_id", ids).order("created_at",{ascending:false}).limit(60))); }
     catch (err) { oops(err, "Couldn't load the following feed"); } }
   es.sort(newestFirst);
   es.forEach(e => remember(e.works));
@@ -3059,7 +3139,7 @@ async function renderFollowingFeed(fb) {
   drawTogether(fb);
   const tw = $("#twinAdd"); if (tw) tw.onclick = openAdd;
 }
-async function tasteTwins(limit) { let ps = []; try { ps = await q(sb.from("profiles").select("id,handle,bio,avatar").neq("id", me.id).limit(200)); } catch { return []; }
+async function tasteTwins(limit) { let ps = []; try { ps = notApart(await q(sb.from("profiles").select("id,handle,bio,avatar").neq("id", me.id).limit(200))); } catch { return []; }
   const mine = tasteOf(myEntries); if (mine.tagged < 3) return []; const out = [];
   for (const p of ps) { if (isFollowing(p.id)) continue; let es = []; try { es = await q(sb.from("entries").select("work_id,score,loved").eq("part", false).eq("user_id", p.id).limit(200)); } catch { continue; }
     const t = tasteOf(es); const m = tasteMatch(mine, t); if (m === null || t.tagged < 2) continue; out.push({ p, match:m, top:t.craft.slice(0,3).map(c => c[0]) }); }
@@ -3070,7 +3150,7 @@ function feedSort(es) { const myTaste = tasteOf(myEntries); P.feedSort = P.feedS
 function wireFeedSort(el, again) { $$("[data-fs]", el).forEach(b => b.onclick = () => { P.feedSort = b.dataset.fs; saveP(); again(); }); }
 
 async function renderEveryoneFeed(fb) {
-  let es = []; try { es = await q(sb.from("entries").select(ENTRY_SEL).eq("part", false).order("created_at",{ascending:false}).limit(300)); } catch (e) { fb.innerHTML = `<p class="empty">${esc(e.message)}</p>`; return; }
+  let es = []; try { es = notApart(await q(sb.from("entries").select(ENTRY_SEL).eq("part", false).order("created_at",{ascending:false}).limit(300))); } catch (e) { fb.innerHTML = `<p class="empty">${esc(e.message)}</p>`; return; }
   es.forEach(e => remember(e.works));
   if (!es.length) { fb.innerHTML = `<h2>The <span class="hl" style="background:var(--sky)">hall</span></h2>` +
     blank("var(--sky)","◎","Nothing here yet","The hall fills up as people log things — everyone's scores, how much they agree, and what they loved. Be the first.",[["hallAdd","Log something"]]);
@@ -3663,9 +3743,10 @@ function openHand(w) {
 let handAll = [], handIn = [], handOut = [];
 const HAND_SEL = "id,sender,recipient,work_id,note,created_at,acted_at,accepted";
 async function loadHand() {
-  try { const rows = await q(sb.from("handovers")
+  try { const rows = (await q(sb.from("handovers")
       .select(HAND_SEL + ",works(*),sender_p:profiles!handovers_sender_fkey(id,handle,avatar)")
-      .or(`sender.eq.${me.id},recipient.eq.${me.id}`).order("created_at", { ascending:false }).limit(200));
+      .or(`sender.eq.${me.id},recipient.eq.${me.id}`).order("created_at", { ascending:false }).limit(200)))
+      .filter(h => !isApart(h.sender === me.id ? h.recipient : h.sender));
     rows.forEach(h => remember(h.works));
     /* the answered ones leave the queue but not the record — an accepted handover is the
        only thing that knows where a title on your shelf came from */
@@ -3681,6 +3762,8 @@ function reachable() {
   for (const r of rooms) for (const m of r.members) if (m.id !== me.id) out.set(m.id, m);
   for (const f of follows) { const p = f.profiles; if (!p || p.id === me.id) continue;
     if (followsMe.has(p.id)) out.set(p.id, p); }
+  /* sharing a room with somebody is not a way round having been blocked */
+  for (const id of blocked) out.delete(id);
   return [...out.values()].sort((a,b) => a.handle.localeCompare(b.handle)); }
 /* a Map, not a Set: it used to hold ids alone, and a name you cannot look up is a
    person who shows up in "and three others" although you know exactly who they are */
@@ -3691,6 +3774,7 @@ async function loadFollowsMe() {
     followsMe = new Map(rows.map(r => [r.follower, r.profiles || null])); }
   catch { followsMe = new Map(); } }
 async function handTo(ids, w, note) {
+  if (willNotPost(note)) throw new Error("That word doesn't go up here. Say it another way.");
   const rows = ids.map(id => ({ sender:me.id, recipient:id, work_id:w.id, note:note || null }));
   await q(sb.from("works").upsert({ id:w.id, kind:w.kind, title:w.title, year:w.year,
     cover:w.cover, creator:w.creator || "", length:w.length || 0 }));
@@ -5038,7 +5122,7 @@ async function openWork(id) { let w = works[id]; if (!w) { try { const rows = aw
   /* the fold costs nothing until it is opened, which is the whole point of it */
   const pf = $("#wParts");
   if (pf) pf.addEventListener("toggle", () => { if (pf.open && !pf.dataset.done) { pf.dataset.done = "1"; paintParts(w); } });
-  let es = []; try { es = (await q(sb.from("entries").select(ENTRY_SEL).eq("work_id", w.id).order("created_at",{ascending:false}).limit(200))).sort(newestFirst); }
+  let es = []; try { es = notApart(await q(sb.from("entries").select(ENTRY_SEL).eq("work_id", w.id).order("created_at",{ascending:false}).limit(200))).sort(newestFirst); }
   catch (err) { oops(err, "Couldn't load what people said"); }
   const mine = es.filter(e => e.user_id === me.id), room = activeRoom() ? es.filter(e => activeRoom().members.some(m => m.id === e.user_id)) : [], fol = es.filter(e => isFollowing(e.user_id));
   const avg = list => { const best = {}; list.forEach(r => { if (!best[r.user_id] || r.rated_on > best[r.user_id].rated_on) best[r.user_id] = r; }); const v = Object.values(best); return v.length ? (v.reduce((a,r)=>a+r.score,0)/v.length/2).toFixed(1) : "—"; };
@@ -5371,7 +5455,12 @@ async function openProfile(userId) { const self = userId === me.id;
       ${Object.entries(theirTens).map(([k,items]) => `<div class="lbl" style="margin-top:10px">${K(k).plural}</div>
         <div class="chips">${items.slice(0,5).map((id,i) => `<span class="chip" data-work="${esc(id)}">${i+1}. ${esc(works[id]?.title||"")}</span>`).join("")}</div>`).join("")}</div>` : ""}
     <div class="lbl">Entries</div>${es.length ? es.slice(0,20).map(e => slipHTML(e)).join("") : `<p class="empty">Nothing logged yet.</p>`}
-    <div class="stack"><button class="btn soft" id="pCard">Save the card</button><button class="btn quiet" id="pClose">Close</button></div>`);
+    <div class="stack"><button class="btn soft" id="pCard">Save the card</button><button class="btn quiet" id="pClose">Close</button></div>
+    ${self ? "" : `<p class="sub" style="text-align:center;margin-top:16px">
+      <button class="linky" id="pReport">Report ${esc(p.handle)}</button> \u00b7
+      <button class="linky" id="pBlock">Block ${esc(p.handle)}</button></p>`}`);
+  const pr = $("#pReport"); if (pr) pr.onclick = () => openReport({ about_user:userId, who:p.handle });
+  const pb = $("#pBlock"); if (pb) pb.onclick = () => openBlock(userId, p.handle);
   $("#pCard").onclick = () => openCuts("taste", { p, t }, "Share this taste");
   $("#pClose").onclick = closeSheet; wireSlips($("#sheetBody"), es); revealIn($("#sheetBody")); $$("#sheetBody .four [data-work]").forEach(x => x.onclick = () => openWork(x.dataset.work));
   const fb = $("#followBtn"); if (fb) fb.onclick = async () => {
@@ -5517,13 +5606,59 @@ function openLog(w, edit = null) { const cfg = K(w.kind); const loved = edit?.lo
       openEntry(saved, true); } catch (err) { $("#wMsg").textContent = err.message; $("#wSave").disabled = false; } }; }
 
 /* ============ ENTRY PAGE ============ */
+/* ---------- reporting and blocking ----------
+   Two different needs that get muddled together. Reporting is "somebody should look at
+   this", and it goes to a person, not to a filter. Blocking is "I do not want to see
+   them again", which is immediate and needs nobody's agreement — so it takes effect the
+   moment it is tapped rather than waiting on anything being reviewed.
+
+   The confirm step on blocking is there because it is symmetrical and it undoes a
+   follow: worth one sentence before it happens, not a dialog people learn to dismiss. */
+function openReport({ about_entry = null, about_user = null, who = "" }) {
+  let why = null;
+  openSheet(`<h3>Report ${about_entry ? "this entry" : esc(who || "this person")}</h3>
+    <p class="sub">A person reads these, within a day. Tell us which it is.</p>
+    <div class="chips" id="whyChips" style="margin-top:14px">${REPORT_WHY.map(([k,l]) =>
+      `<button class="chip" data-why="${k}">${l}</button>`).join("")}</div>
+    <div class="lbl">Anything else</div>
+    <textarea id="repNote" maxlength="400" placeholder="Optional \u2014 what should they know?"></textarea>
+    <div class="stack"><button class="btn bad" id="repGo" disabled>Send the report</button>
+      <button class="btn quiet" id="repCancel">Not now</button></div><p class="msg" id="repMsg"></p>`);
+  $$("[data-why]").forEach(b => b.onclick = () => { why = b.dataset.why;
+    $$("[data-why]").forEach(x => x.classList.toggle("on", x === b)); $("#repGo").disabled = false; });
+  $("#repCancel").onclick = closeSheet;
+  $("#repGo").onclick = async () => { const g = $("#repGo"); g.disabled = true; $("#repMsg").textContent = "Sending";
+    try { await sendReport({ reporter:me.id, about_entry, about_user, reason:why,
+        note:($("#repNote").value || "").trim() || null });
+      closeSheet(); say("Reported \u2014 somebody will look at it"); }
+    catch (err) { g.disabled = false; $("#repMsg").textContent = err.message || "That didn't send"; } };
+}
+function openBlock(id, who = "") {
+  if (!id || id === me.id) return;
+  openSheet(`<h3>Block ${esc(who || "them")}?</h3>
+    <p class="sub">You will not see anything they write, and they will not see anything you
+      write. If either of you follows the other, that stops. Anything either of you handed
+      the other goes. You can undo this in settings.</p>
+    <div class="stack"><button class="btn bad" id="blkGo">Block ${esc(who || "them")}</button>
+      <button class="btn quiet" id="blkCancel">Not now</button></div><p class="msg" id="blkMsg"></p>`);
+  $("#blkCancel").onclick = closeSheet;
+  $("#blkGo").onclick = async () => { const g = $("#blkGo"); g.disabled = true; $("#blkMsg").textContent = "Blocking";
+    try { await blockThem(id); closeSheet(); say(`Blocked ${who || "them"}`); refresh(); }
+    catch (err) { g.disabled = false; $("#blkMsg").textContent = err.message || "That didn't work"; } };
+}
+
 function openEntry(e, justSaved = false) { const w = works[e.work_id] || e.works || {}; const cfg = K(w.kind || kindOf(e.work_id)); const mine = e.user_id === me.id;
   openSheet(`${justSaved?`<span class="tag savedchip" style="background:var(--mint)">Saved</span>`:""}<div class="head" style="margin-top:10px">${cover(w)}<div class="hh"><h3>${esc(w.title)}</h3><p class="sub">${tag(w.kind)} ${esc(w.year||"")} · ${esc(mine?"you":e.profiles?.handle||"")} ${cfg.verb} ${when(e.rated_on)}${mine && e.room_only ? ` · <span class="tag dim">room only</span>` : ""}</p><div style="margin-top:10px">${stars(e.score,"big")}</div></div></div>
     ${e.context ? `<div class="ticks">${Object.entries(e.context).filter(([k,v]) => v).map(([k,v]) => `<span class="tk on">${k==="with"?"With "+esc(v):esc(v)}</span>`).join("")}</div>` : ""}
     ${e.loved?.length?`<div class="chips" style="margin-top:12px">${e.loved.map(k => `<span class="chip ${k.startsWith("person:")?"who on":"on"}">${esc(k.startsWith("person:")?lc(k.slice(7)):k)}</span>`).join("")}</div>`:""}
     ${e.note?`<div class="card"><div class="say" style="font-size:19px;margin:0">“${esc(e.note)}”</div></div>`:""}
-    <div class="stack"><button class="btn soft" id="eCard">Save the card</button><button class="btn ghost" id="eWork">Open ${esc(w.title)}</button>${mine && e.id?`<button class="btn quiet" id="eEdit">Edit</button><button class="btn quiet" id="eDel">Delete</button>`:""}<button class="btn quiet" id="eClose">Close</button></div>`);
+    <div class="stack"><button class="btn soft" id="eCard">Save the card</button><button class="btn ghost" id="eWork">Open ${esc(w.title)}</button>${mine && e.id?`<button class="btn quiet" id="eEdit">Edit</button><button class="btn quiet" id="eDel">Delete</button>`:""}<button class="btn quiet" id="eClose">Close</button></div>
+    ${!mine && e.user_id ? `<p class="sub" style="text-align:center;margin-top:16px">
+      <button class="linky" id="eReport">Report this</button> \u00b7
+      <button class="linky" id="eBlock">Block ${esc(e.profiles?.handle || "them")}</button></p>` : ""}`);
   $("#eCard").onclick = () => openCuts("review", e, "Share this review");
+  const rb = $("#eReport"); if (rb) rb.onclick = () => openReport({ about_entry:e.id, about_user:e.user_id, who:e.profiles?.handle });
+  const bb = $("#eBlock"); if (bb) bb.onclick = () => openBlock(e.user_id, e.profiles?.handle);
   $("#eClose").onclick = closeSheet; $("#eWork").onclick = () => openWork(e.work_id); const ed = $("#eEdit"); if (ed) ed.onclick = () => openLog(w, e);
   const d = $("#eDel"); if (d) d.onclick = async () => { if (!confirm("Delete this entry?")) return;
     try { await q(sb.from("entries").delete().eq("id", e.id)); await loadMine(); closeSheet();
@@ -5653,6 +5788,10 @@ async function openYou() { let top = { items:[] }; try { top = await ensureMyTop
     <div class="stack"><button class="btn ghost" id="paidBtn">What paying would get you</button>
       <button class="btn ghost" id="importBtn">Import from Letterboxd, Goodreads, Steam</button>
       ${sb.__local?``:`<button class="btn ghost" id="takeout">Download everything</button>`}${sb.__local?`<button class="btn ghost" id="backup">Back up the log</button><button class="btn quiet" id="restore">Restore from a backup</button><input type="file" id="restoreFile" accept="application/json" hidden>`:""}<button class="btn quiet" id="signOut">${sb.__local?"Close the log":"Sign out"}</button><button class="btn quiet" id="sClose">Done</button></div><p class="msg" id="sMsg"></p>
+    ${blocked.size ? `<details class="fold" id="blockFold"><summary>Blocked \u00b7 ${blocked.size}</summary>
+      <p class="sub">Neither of you sees the other. Letting somebody back in does not put
+        back the following that blocking undid.</p>
+      <div id="blockList" class="card" style="margin-top:10px"></div></details>` : ""}
     <details class="fold"><summary>${sb.__local ? "Delete this log" : "Close your account"}</summary>
       <p class="sub">This deletes ${sb.__local ? "this log" : "your account"} and everything in it — every entry, every
         rating, what you singled out, your ten, who you follow, and anything anybody handed
@@ -5690,12 +5829,29 @@ async function openYou() { let top = { items:[] }; try { top = await ensureMyTop
     paintAv(); paintMeAv(); refresh(); };
 
   $("#ySave").onclick = async () => { const h = lc($("#yHandle").value.trim()), bio = $("#yBio").value.trim(); if (!/^[a-z0-9_]{2,24}$/.test(h)) { $("#yMsg").textContent = "two to twenty-four, lowercase, no spaces"; return; }
+    if (willNotPost(h) || willNotPost(bio)) { $("#yMsg").textContent = "That word doesn't go up here."; return; }
     try { if (sb.__local) { Object.assign(sb.__db.profile, { handle:h, bio, avatar:av }); sb.__save(); }
       else await q(sb.from("profiles").update({ handle:h, bio:bio||null, avatar:av }).eq("id", me.id));
       me.handle = h; me.bio = bio; me.avatar = av; $("#meName").textContent = h; paintMeAv();
       $("#yMsg").textContent = "Saved"; refresh(); } catch (e) { $("#yMsg").textContent = e.message; } };
   /* the one irreversible thing in the app, so it asks for the handle rather than an OK:
      a confirm you can dismiss by reflex is not a confirmation of anything */
+  /* Blocking has to be undoable, and undoable somewhere a person can find without
+     going looking for the person they blocked. */
+  const bl = $("#blockList");
+  if (bl) { const paintBlocks = async () => {
+      const ids = [...blocked];
+      if (!ids.length) { $("#blockFold")?.remove(); return; }
+      let who = [];
+      try { who = await q(sb.from("profiles").select("id,handle,avatar").in("id", ids)); } catch {}
+      const byId = Object.fromEntries(who.map(p => [p.id, p]));
+      bl.innerHTML = ids.map(id => { const p = byId[id];
+        return `<div class="row"><div class="t"><b>${esc(p?.handle || "somebody")}</b></div>
+          <button class="btn quiet" data-unblock="${esc(id)}" style="width:auto;padding:8px 14px">Unblock</button></div>`; }).join("");
+      $$("[data-unblock]", bl).forEach(b => b.onclick = async () => { b.disabled = true;
+        try { await unblockThem(b.dataset.unblock); await paintBlocks(); refresh(); }
+        catch { b.disabled = false; } }); };
+    paintBlocks(); }
   const dq = $("#delQ"), dg = $("#delGo");
   if (dq && dg) { dq.oninput = () => { dg.disabled = lc(dq.value.trim()) !== lc(me.handle); };
     dg.onclick = async () => { dg.disabled = true; $("#delMsg").textContent = "Closing it";
@@ -5749,7 +5905,7 @@ async function exportEverything() {
   /* it said "everything" and fetched four tables out of seventeen. Clubs, votes, your
      ten, what you are in the middle of and anything anybody handed you were all missing,
      and the two lists that were there came out with their dates blanked. */
-  const [entries, myReplies, myReactions, myFollows, myNows, myHands, myTops, myVotes, myClubIn, mySeenRows] =
+  const [entries, myReplies, myReactions, myFollows, myNows, myHands, myTops, myVotes, myClubIn, mySeenRows, myBlocks] =
     await Promise.all([
       grab("entries", "*", "user_id"),
       grab("replies", "*", "user_id"),
@@ -5762,6 +5918,7 @@ async function exportEverything() {
       grab("club_votes", "*", "user_id"),
       grab("club_members", "*", "user_id"),
       grab("seen", "*", "user_id"),
+      grab("blocks", "*", "blocker"),
     ]);
   const myClubs = [...clubs, ...openClubs].filter(c => myClubIn.some(m => m.club_id === c.id));
   const usedWorks = {};
@@ -5786,7 +5943,7 @@ async function exportEverything() {
     reactions: myReactions, replies: myReplies,
     top_lists: myTops.map(t => { const { top_list_items:_i, ...row } = t; return row; }),
     top_list_items: myTops.flatMap(t => t.top_list_items || []),
-    nows: myNows, handovers: myHands, seen: mySeenRows,
+    nows: myNows, handovers: myHands, seen: mySeenRows, blocks: myBlocks,
     follows: myFollows,
   };
 }
@@ -5810,6 +5967,8 @@ window.__rooms = { pullRefresh, openFind, setFollow, isFollowing, get follows(){
   CUTS, CARD_THEMES, cardTheme, spanData, tasteOf, reviewData, yearOf, roomPalmares, palmares, byPerson, spinN, SPIN_SIZES,
   loadNow, startNow, stopNow, nowOf, nowFor, nowLine, get myNow(){return myNow},
   bestOf, bestGenres, dealBest, loadBest, pickFrom, seenMode, keepSeen, get bestPool(){return bestPool}, get bestHand(){return bestHand},
+  willNotPost, saveEntry, blockThem, unblockThem, isApart, notApart, loadBlocks, openReport, openBlock, sendReport, REPORT_WHY,
+  get blocked(){return blocked},
   newestFirst, sortEntries, loadMine, loadRooms, exportEverything, openYou, openEntry, sayUndo, openCover, compFlip, showOffline, drawTogether, openHand, openCuts, sayWords, settleIn, endLine, closeGap, gridPlaces, strikeRing, removeFromShelf, paintHere, tickTo, dealIn, flyTo, leaveOut, rollLine, fillChip, paintTheme,
   joinMeChannel, leaveMeChannel, onLiveHand, onFollowEntry, dropInSlip,
   get meCh(){return meCh}, secondThoughts, againLine, apart, shelfAge, waited, openProfile, openWork,

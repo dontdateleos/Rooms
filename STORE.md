@@ -66,23 +66,35 @@ is fetched from a CDN at runtime; `offsite.test.mjs` is the test that keeps it t
 
 ## 2. Guideline 1.2 — User-Generated Content
 
-**This is a rejection today, and it is the largest piece of work left.**
+Built in v21. All four are in place; the last one needs your contact address.
 
-An entry that is not marked room-only is visible to anyone, and anyone can like it.
-Handles, bios and handover notes are user-written and visible to strangers. That makes
-Rooms a UGC app, and Apple requires all four of the following:
-
-- [ ] **A way to filter objectionable material** before it is posted.
-- [ ] **A way to report an entry or a person**, with the report acted on within 24 hours.
-- [ ] **A way to block an abusive user** — their entries, likes and handovers gone from
-      your view, and no way for them to reach you.
+- [x] **A way to filter objectionable material** before it is posted. A slur list, checked
+      at the point of writing, on entries, handover notes, handles and bios. Slurs only —
+      no profanity list, because "this film is fucking great" is a review and refusing it
+      would teach people the app is stupid and to write around it.
+- [x] **A way to report an entry or a person.** A Report link on every entry that is not
+      yours and on every profile that is not yours. Seven reasons and a free line. Rows
+      land in `reports`, which nothing can read through the API — **you read them in the
+      SQL editor.** The privacy page promises a person looks within a day; that promise
+      is yours to keep.
+- [x] **A way to block.** Symmetrical: neither of you sees the other, any following
+      between you ends, and anything either handed the other goes. Enforced by
+      `apart_from()` inside every read policy, so the rows never leave the database — not
+      a curtain over something still being delivered. Undone in Settings → Blocked.
 - [ ] **Published contact information** reachable from inside the app. The privacy page's
-      contact line covers this once it is filled in.
+      contact line covers this the moment the two blanks are filled in.
 
-None of the first three exist in the code today. Blocking is the one with real design
-weight: it has to hold in the feed, in rooms, in handovers, in the bell and in the live
-subscriptions, and it belongs in the database policies rather than in the UI, or a blocked
-person's rows still arrive and are merely not drawn.
+**What you have to actually do:** check the `reports` table. A report mechanism with
+nobody reading it is worse than none, and the page says within a day.
+
+```sql
+select r.created_at, r.reason, r.note,
+       p.handle as about, q.handle as from
+  from reports r
+  left join profiles p on p.id = r.about_user
+  left join profiles q on q.id = r.reporter
+ order by r.created_at desc;
+```
 
 ---
 
@@ -92,7 +104,7 @@ person's rows still arrive and are merely not drawn.
 | --- | --- |
 | **5.1.1(v)** In-app account deletion | **Done.** Settings → Close your account. Needs schema v19 run. |
 | **5.1.1(ii)** Data minimisation | Fine. Nothing collected that the app does not use. |
-| **1.2** User-generated content | **Not started.** See above. |
+| **1.2** User-generated content | **Done** in v21, bar the contact address. See above. |
 | **4.2** Minimum functionality | A wrapped website is the risk. Push notifications, the native share sheet and haptics are the usual answer, and the 34 animations help. |
 | **4.8** Sign in with Apple | **Probably not required.** 4.8 bites when an app offers a *third-party or social* login. Rooms has its own email and password account through Supabase, which is first-party, so the requirement should not attach. Worth a second opinion before you rely on it. |
 | **3.1.1** In-app purchase | Applies the day you charge. Digital content sold to users must go through Apple's IAP, at Apple's cut. |
@@ -106,8 +118,8 @@ person's rows still arrive and are merely not drawn.
       is red until you do.
 - [ ] Accept Supabase's data processing agreement. The privacy page says a signed one
       exists; make that true.
-- [ ] Run schema **v17**, **v18** and **v19** in the SQL editor.
-- [ ] Build the four UGC requirements above.
+- [ ] Run schema **v17** to **v21** in the SQL editor.
+- [ ] Set yourself a way of seeing new reports. Nothing notifies you today.
 - [ ] 1024×1024 icon, no alpha channel, no rounded corners.
 - [ ] Wrap it — Capacitor — and get it running on a real device.
 - [ ] Watch the 34 animations on real hardware. A phone is not a headless Chromium.
