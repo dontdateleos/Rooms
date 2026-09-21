@@ -748,6 +748,23 @@ nav button:active{transform:scale(.95)}
 
 /* sheets */
 .sheet{position:fixed;inset:0;background:rgba(21,19,32,.45);display:none;align-items:flex-end;z-index:10}
+/* Above the sheet rather than instead of it. There is one sheet and no stack, so asking
+   a question by opening another one would throw away whatever was being filled in —
+   which is exactly what happens when you ask "who with?" halfway through an entry. */
+.bigcode{font-family:var(--head);font-weight:900;font-size:40px;letter-spacing:.16em;
+  line-height:1.1;padding:6px 0 2px;user-select:all;-webkit-user-select:all}
+.ask{position:fixed;inset:0;background:rgba(21,19,32,.5);display:none;align-items:center;
+  justify-content:center;z-index:20;padding:22px}
+.ask.on{display:flex}
+.askbox{background:var(--cream);border-radius:22px;width:100%;max-width:380px;padding:22px 20px 18px;
+  box-shadow:0 30px 60px -20px rgba(21,19,32,.5)}
+.ask.on .askbox{animation:askIn .26s cubic-bezier(.16,1,.3,1)}
+@keyframes askIn{from{opacity:0;transform:scale(.94) translateY(10px)}to{opacity:1;transform:none}}
+.askbox h3{margin:0 0 6px;font-size:21px}
+.askbox .sub{margin:0 0 4px}
+.askbox input{margin-top:12px}
+.askbox .stack{margin-top:16px}
+@media (prefers-reduced-motion:reduce){.ask.on .askbox{animation:none}}
 .sheet.on{display:flex}
 .panel{background:var(--cream);border-radius:26px 26px 0 0;width:100%;max-height:94dvh;overflow-y:auto;overflow-x:hidden;
   overscroll-behavior:contain;padding:14px 18px calc(24px + env(safe-area-inset-bottom))}
@@ -1018,6 +1035,7 @@ body.demo header{padding-top:34px}
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-hidden="true"><div class="panel"><div class="in" id="sheetBody"></div></div></div>
+<div class="ask" id="ask" role="dialog" aria-modal="true" aria-hidden="true"><div class="askbox" id="askBox"></div></div>
 
 <script type="module">
 /* ============ Rooms — one log for film, tv, books and games ============
@@ -1221,7 +1239,7 @@ const cover = (w, cls = "co") => w?.cover ? `<img class="${cls}" src="${esc(w.co
 /* ============ prefs + sources ============ */
 const WORKER = "https://rooms.jordandf1.workers.dev";
 const proxy = () => (P.workerUrl || WORKER).replace(/\/+$/, "");
-const P = Object.assign({ workerUrl:"", tmdbKey:"", activeList:null, activeRoom:null, picked:null, kinds:["film","tv","book","game"], shelfFilter:"", pickTag:"", pickFrom:"shelf", bestGenre:{}, howLong:"", spinN:20, seen:"", cardSkin:"", feed:"room", theme:"" },
+const P = Object.assign({ workerUrl:"", tmdbKey:"", activeList:null, activeRoom:null, picked:null, kinds:["film","tv","book","game"], shelfFilter:"", pickTag:"", pickFrom:"shelf", bestGenre:{}, howLong:"", spinN:20, feedPicked:false, seen:"", cardSkin:"", feed:"room", theme:"" },
   JSON.parse(localStorage.getItem("rooms.prefs") || "{}"));
 const saveP = () => localStorage.setItem("rooms.prefs", JSON.stringify(P));
 async function tmdb(path, params = {}) {
@@ -2124,7 +2142,7 @@ async function useInvite() {
   try {
     const r = await q(sb.rpc("join_room", { p_code:code }));
     dropInvite(); await loadRooms();
-    if (r?.id) { P.activeRoom = r.id; P.feed = "room"; saveP(); }
+    if (r?.id) { P.activeRoom = r.id; P.feed = "room"; P.feedPicked = true; saveP(); }
     await loadClubs();
     say(`You're in ${rooms.find(x => x.id === r?.id)?.name || "the room"}`, "good");
     return true;
@@ -2447,7 +2465,7 @@ async function onLiveHand(row) {
    are actually looking at; anywhere else the next render picks it up. */
 function onFollowEntry(row) {
   if (!row || row.part || isApart(row.user_id) || row.user_id === me.id || !followSet().has(row.user_id)) return;
-  if (currentTab() !== "doors" || P.feed !== "following") return;
+  if (currentTab() !== "doors" || feedNow() !== "following") return;
   dropInSlip(row, "#folTop"); }
 
 /* ---------- what's happened since you were last here ----------
@@ -2704,6 +2722,55 @@ function inkWash(kind) { if (REDUCED) return;
   el.style.setProperty("--k", `var(--${kind || "mint"})`);
   document.body.appendChild(el); setTimeout(() => el.remove(), 900); }
 
+/* ---------- asking something, in the app's own voice ----------
+   prompt() and confirm() work, wrapped or not, but they arrive as a system alert with
+   the app's name on top and none of its type or colour — and the first one a new person
+   ever meets is the box that asks them to name their room, which is a poor introduction.
+
+   Both return a promise, both close on Escape and on the backdrop, and both hand focus
+   to the thing you are meant to touch. */
+let askGo = null;
+function closeAsk(v) { const a = $("#ask"); if (!a.classList.contains("on")) return;
+  a.classList.remove("on"); a.setAttribute("aria-hidden", "true"); $("#askBox").innerHTML = "";
+  const f = askGo; askGo = null; f?.(v); }
+function openAsk(html, wire) {
+  return new Promise(res => {
+    closeAsk(null);                       /* one at a time, and the old one answers null */
+    askGo = res;
+    const a = $("#ask"); $("#askBox").innerHTML = html;
+    a.classList.add("on"); a.setAttribute("aria-hidden", "false");
+    wire(v => closeAsk(v));
+  });
+}
+function askText({ title, sub = "", label = "", value = "", placeholder = "", ok = "Save", max = 0, upper = false }) {
+  return openAsk(`<h3>${esc(title)}</h3>${sub ? `<p class="sub">${sub}</p>` : ""}
+    ${label ? `<div class="lbl">${esc(label)}</div>` : ""}
+    <input id="askIn" value="${esc(value)}" placeholder="${esc(placeholder)}" autocomplete="off"
+      ${max ? `maxlength="${max}"` : ""}${upper ? ` autocapitalize="characters" spellcheck="false" style="text-transform:uppercase"` : ""}>
+    <div class="stack"><button class="btn" id="askOk">${esc(ok)}</button>
+      <button class="btn quiet" id="askNo">Not now</button></div>`, done => {
+    const inp = $("#askIn");
+    const go = () => { const v = (inp.value || "").trim(); if (v) done(v); };
+    $("#askOk").onclick = go;
+    $("#askNo").onclick = () => done(null);
+    inp.onkeydown = e => { if (e.key === "Enter") { e.preventDefault(); go(); } };
+    setTimeout(() => { if (inp.isConnected) { inp.focus(); inp.select(); } }, 60);
+  });
+}
+/* Always a boolean, never a null. Escape and the backdrop go through the same door as
+   "not now", and a caller written as `if (!await askYesNo(...)) return` cannot tell the
+   difference — but one written as `=== false` could, and would be wrong about it. */
+function askYesNo(opts) { return askYesNoRaw(opts).then(v => v === true); }
+function askYesNoRaw({ title, sub = "", ok = "Yes", no = "Not now", bad = false }) {
+  return openAsk(`<h3>${esc(title)}</h3>${sub ? `<p class="sub">${sub}</p>` : ""}
+    <div class="stack"><button class="btn ${bad ? "bad" : ""}" id="askOk">${esc(ok)}</button>
+      <button class="btn quiet" id="askNo">${esc(no)}</button></div>`, done => {
+    $("#askOk").onclick = () => done(true);
+    $("#askNo").onclick = () => done(false);
+    setTimeout(() => $("#askNo")?.focus(), 60);
+  });
+}
+
 function openSheet(html) { clearTimeout(sheetGoing); sheetGoing = null;
   $("#sheet").setAttribute("aria-hidden", "false");
   $("#sheetBody").innerHTML = `<div class="grab"></div>` + html;
@@ -2714,6 +2781,11 @@ function closeSheet() { const sh = $("#sheet"); if (!sh.classList.contains("on")
   sh.classList.add("out"); clearTimeout(sheetGoing);
   sheetGoing = setTimeout(() => { sh.classList.remove("on", "out"); sheetGoing = null; }, 200); }
 $("#sheet").onclick = e => { if (e.target === $("#sheet")) closeSheet(); };
+$("#ask").onclick = e => { if (e.target === $("#ask")) closeAsk(null); };
+/* escape answers the question, and only the question — a sheet underneath stays put */
+addEventListener("keydown", e => { if (e.key !== "Escape") return;
+  if ($("#ask").classList.contains("on")) { e.preventDefault(); closeAsk(null); }
+  else if ($("#sheet").classList.contains("on")) closeSheet(); });
 /* every phone expects a sheet to be pushable. It only takes the gesture from the top of
    the panel, because the panel scrolls and a drag that started on the content is a scroll. */
 (() => {
@@ -2914,7 +2986,7 @@ async function renderDoors() {
           <small>${tag(w.kind)} ${(e.score/2).toFixed(1)}${e.note ? ` · <span class="said">“${esc(e.note)}”</span>` : ""}</small></div></div>`; }).join("")}
       ${mem.entries.length > 3 ? `<p class="sub">and ${said(mem.entries.length - 3)} more that day.</p>` : ""}
       <div class="stack"><button class="btn soft" id="memShare">Share it</button><button class="btn quiet" id="memGo">Not now</button></div></div>` : ""}
-    <div class="seg">${[["room","Your room"],["following","Following"],["everyone","Everyone"]].map(([k,l]) => `<button data-feed="${k}" class="${P.feed===k?"on":""}">${l}</button>`).join("")}</div>
+    <div class="seg">${[["room","Your room"],["following","Following"],["everyone","Everyone"]].map(([k,l]) => `<button data-feed="${k}" class="${feedNow()===k?"on":""}">${l}</button>`).join("")}</div>
     <div class="findrow"><button class="chip" id="findPeople">Find someone by handle</button></div>
     <div id="feedBody">${skeleton(3)}</div>`;
   const rg = $("#revGo"); if (rg) rg.onclick = () => rev.kind === "year"
@@ -2933,9 +3005,9 @@ async function renderDoors() {
      rule the tabs already follow. */
   const FEED_ORDER = ["room", "following", "everyone"];
   $$("[data-feed]", body).forEach(b => b.onclick = () => {
-    const was = FEED_ORDER.indexOf(P.feed), now = FEED_ORDER.indexOf(b.dataset.feed);
+    const was = FEED_ORDER.indexOf(feedNow()), now = FEED_ORDER.indexOf(b.dataset.feed);
     if (was === now) return;
-    P.feed = b.dataset.feed; saveP(); feedTurn = now > was ? -26 : 26; renderDoors(); });
+    P.feed = b.dataset.feed; P.feedPicked = true; saveP(); feedTurn = now > was ? -26 : 26; renderDoors(); });
   $("#findPeople").onclick = openFind;
   /* once a session, on the way in: the room's name, then who is in it, then what they said.
      Never on a redraw — a screen that reassembles every time you come back is a screen that
@@ -2954,9 +3026,9 @@ async function renderDoors() {
   /* the dot existed and nothing ever cleared it: markSeen was written and never called,
      so every visit counted the same three days of entries again */
   markSeen();
-  if (P.feed === "room") return renderRoomFeed(fb, R);
+  if (feedNow() === "room") return renderRoomFeed(fb, R);
   leaveRoomChannel();
-  if (P.feed === "following") return renderFollowingFeed(fb);
+  if (feedNow() === "following") return renderFollowingFeed(fb);
   return renderEveryoneFeed(fb);
 }
 /* ---------- finding anybody ----------
@@ -3089,9 +3161,52 @@ function compRows(rows, onOpen) { return rows.map((f,i) => { const w = works[f.i
   return `<div class="row comprow" data-cw="${esc(f.id)}"><span class="rk">${i+1}</span><div class="t"><b>${esc(w.title||f.id)}</b>
     <small>${tag(kindOf(f.id))} ${f.agree === null ? (f.hi.user_id === me.id ? "only you" : "just " + esc(f.hi.profiles?.handle||"one")) : `<span class="${f.agree>=70?"good":"bad"}">${f.agree}% agree</span> · ${f.n} of you${f.split?` · ${esc(f.hi.profiles?.handle||"")} ${f.hi.score/2}, ${esc(f.lo.profiles?.handle||"")} ${f.lo.score/2}`:""}`}</small></div>
     <span class="n ${f.split?"bad":""}">${(f.avg/2).toFixed(1)}<small>of five</small></span></div>`; }).join(""); }
+/* ---------- bringing somebody in ----------
+   For a while every new person arrives because somebody sent them a link, which makes
+   this the most load-bearing screen in the app and it was a share sheet with a prompt
+   behind it — a text box you copy out of by hand.
+
+   Both ways out, in one place: the link, which opens straight into the room, and the
+   code, set big enough to read down a phone to somebody. */
+function inviteText(R) {
+  return `Come into ${R.name} on Rooms \u2014 this link takes you straight in.\n${inviteLink(R.code)}\n\n(Or join with the code ${R.code}.)`;
+}
+function openInvite(R) {
+  openSheet(`<h3>Bring someone in</h3>
+    <p class="sub">Five to twenty of you. Anybody with the link or the code is in.</p>
+    <div class="card" style="margin-top:14px;text-align:center">
+      <div class="lbl" style="margin-top:0">The code</div>
+      <div class="bigcode" id="bigCode">${esc(R.code)}</div>
+      <p class="sub" style="margin-top:2px">They put this into <b>Join with a code</b>.</p></div>
+    <div class="stack">
+      ${navigator.share ? `<button class="btn blue" id="invShare">Send the link</button>` : ""}
+      <button class="btn ${navigator.share ? "ghost" : "blue"}" id="invCopy">Copy the link</button>
+      <button class="btn quiet" id="invCode">Copy just the code</button>
+      <button class="btn quiet" id="invClose">Done</button></div><p class="msg" id="invMsg"></p>`);
+  $("#invClose").onclick = closeSheet;
+  const done = (b, was, msg) => { b.textContent = "Copied"; say(msg, "good");
+    setTimeout(() => { if (b.isConnected) b.textContent = was; }, 1600); };
+  /* clipboard is refused in more places than people expect — a file:// page, an insecure
+     origin, a webview that has not been granted it. Selecting it is the fallback that
+     always works, because it hands the job back to the person. */
+  const copy = async (text, b, msg) => { const was = b.textContent;
+    try { await navigator.clipboard.writeText(text); done(b, was, msg); return; } catch {}
+    const sel = getSelection(); const r = document.createRange();
+    r.selectNodeContents($("#bigCode")); sel.removeAllRanges(); sel.addRange(r);
+    $("#invMsg").textContent = "Couldn't copy it for you \u2014 it's selected, copy it from there."; };
+  const sh = $("#invShare");
+  if (sh) sh.onclick = async () => { try { await navigator.share({ text:inviteText(R) }); }
+    catch { /* they closed the share sheet; nothing to say about that */ } };
+  $("#invCopy").onclick = e => copy(inviteText(R), e.currentTarget, "Invite copied");
+  $("#invCode").onclick = e => copy(R.code, e.currentTarget, "Code copied");
+}
+
 async function renderRoomFeed(fb, R) {
   if (!R) { leaveRoomChannel(); fb.innerHTML = `<h2>Your <span class="hl" style="background:var(--pink)">room</span></h2><p class="empty">A room is five to twenty friends and a six-character code. It shows what everyone rated, how much you agree, and what each of you said about it. ${sb.__local ? "Rooms need the hosted setup — everything else works now." : ""}</p>
-      <div class="stack"><button class="btn blue" id="newRoom">Open a room</button><button class="btn ghost" id="joinRoom">Join with a code</button></div><p class="msg" id="roomMsg"></p>`; wireRoomButtons(); return; }
+      <div class="stack"><button class="btn blue" id="newRoom">Open a room</button><button class="btn ghost" id="joinRoom">Join with a code</button>
+        ${/* both of the above need somebody else. This one does not, and on a first day
+              it is the only one of the three that answers the question. */""}
+        <button class="btn quiet" id="goEveryone">See what everyone's watching</button></div><p class="msg" id="roomMsg"></p>`; wireRoomButtons(); return; }
   const ids = R.members.map(m => m.id); let es = [];
   try { es = notApart(await q(sb.from("entries").select(ENTRY_SEL).eq("part", false).in("user_id", ids).order("created_at",{ascending:false}).limit(60))); } catch (e) { fb.innerHTML = `<p class="empty">${esc(e.message)}</p>`; return; }
   es.sort(newestFirst);
@@ -3146,20 +3261,20 @@ async function renderRoomFeed(fb, R) {
   const pl = $("#pickLog"); if (pl) pl.onclick = () => openLog(works[P.picked]);
   const lv = $("#leaveRoom"); if (lv) lv.onclick = async () => {
     const last = R.members.length <= 1;
-    if (!confirm(last ? `You're the last one in ${R.name}. Leaving closes the room for good.` : `Leave ${R.name}?`)) return;
+    if (!await askYesNo({ title:`Leave ${esc(R.name)}?`, sub:last ? "You're the last one in it, so leaving closes the room for good." : "You can come back with the code.", ok:last ? "Leave and close it" : "Leave", bad:true })) return;
     try { await q(sb.rpc("leave_room", { p_room_id:R.id })); await loadRooms(); await loadClubs(); renderDoors(); }
     catch (e) { const m = $("#roomMsg"); if (m) m.textContent = e.message; else alert(e.message); } };
   const ai = $("#aloneInvite"); if (ai) ai.onclick = () => $("#invite")?.click();
-  const inv = $("#invite"); if (inv) inv.onclick = async () => {
-    const text = `Come into ${R.name} on Rooms — this link takes you straight in.\n${inviteLink(R.code)}\n\n(Or join with the code ${R.code}.)`;
-    if (navigator.share) { try { await navigator.share({ text }); return; } catch {} }
-    try { await navigator.clipboard.writeText(text); inv.textContent = "link copied"; say("Invite link copied", "good");
-      setTimeout(() => { inv.textContent = "+ bring someone in"; }, 2600); }
-    catch { prompt("Send them this", inviteLink(R.code)); } };
+  const inv = $("#invite"); if (inv) inv.onclick = () => openInvite(R);
 }
 function wireRoomButtons() { const nr = $("#newRoom"), jr = $("#joinRoom");
-  if (nr) nr.onclick = async () => { const name = (prompt("Name the room") || "").trim(); if (!name) return; try { const r = await q(sb.rpc("create_room", { p_name:name })); await loadRooms(); if (r?.id) P.activeRoom = r.id; saveP(); await loadClubs(); renderDoors(); } catch (e) { $("#roomMsg").textContent = e.message; } };
-  if (jr) jr.onclick = async () => { const code = (prompt("The six-character code") || "").trim(); if (!code) return; try { const r = await q(sb.rpc("join_room", { p_code:code })); await loadRooms(); if (r?.id) P.activeRoom = r.id; saveP(); await loadClubs(); renderDoors(); } catch (e) { $("#roomMsg").textContent = e.message; } }; }
+  if (nr) nr.onclick = async () => {
+    const name = await askText({ title:"Name the room", sub:"Something the five of you will recognise. You can change it later.", label:"Name", placeholder:"The Pit", ok:"Open it", max:40 });
+    if (!name) return; try { const r = await q(sb.rpc("create_room", { p_name:name })); await loadRooms(); if (r?.id) P.activeRoom = r.id; saveP(); await loadClubs(); renderDoors(); } catch (e) { $("#roomMsg").textContent = e.message; } };
+  const ge = $("#goEveryone"); if (ge) ge.onclick = () => { P.feed = "everyone"; P.feedPicked = true; saveP(); renderDoors(); };
+  if (jr) jr.onclick = async () => {
+    const code = await askText({ title:"Join a room", sub:"Whoever is already in it can find the code under the room's name.", label:"The six-character code", placeholder:"PIT123", ok:"Join", max:12, upper:true });
+    if (!code) return; try { const r = await q(sb.rpc("join_room", { p_code:code })); await loadRooms(); if (r?.id) P.activeRoom = r.id; saveP(); await loadClubs(); renderDoors(); } catch (e) { $("#roomMsg").textContent = e.message; } }; }
 async function renderFollowingFeed(fb) {
   const ids = follows.map(f => f.followee); let es = [];
   if (ids.length) { try { es = notApart(await q(sb.from("entries").select(ENTRY_SEL).eq("part", false).in("user_id", ids).order("created_at",{ascending:false}).limit(60))); }
@@ -3184,6 +3299,19 @@ async function tasteTwins(limit) { let ps = []; try { ps = notApart(await q(sb.f
   for (const p of ps) { if (isFollowing(p.id)) continue; let es = []; try { es = await q(sb.from("entries").select("work_id,score,loved").eq("part", false).eq("user_id", p.id).limit(200)); } catch { continue; }
     const t = tasteOf(es); const m = tasteMatch(mine, t); if (m === null || t.tagged < 2) continue; out.push({ p, match:m, top:t.craft.slice(0,3).map(c => c[0]) }); }
   return out.sort((a,b) => b.match - a.match).slice(0, limit); }
+/* Where a first day lands. The feed remembers what you last chose, and what it shipped
+   with was "your room" — so the screen straight after onboarding was an empty room and
+   two buttons that both need somebody else. Everyone is the one feed with anything in it
+   and there was no reason to go and look.
+
+   Not a new default: a preference you have never expressed is not a preference. Once you
+   open or join a room, or follow one person, your room is yours again. Choosing a feed
+   by hand writes it down and this stops guessing for good. */
+const feedNow = () => {
+  if (P.feedPicked) return P.feed;
+  if (!rooms.length && !follows.length) return "everyone";
+  return P.feed; };
+
 function feedSort(es) { const myTaste = tasteOf(myEntries); P.feedSort = P.feedSort || "momentum";
   return { html: `<div class="seg">${Object.entries(SORTS).map(([k,l]) => `<button data-fs="${k}" class="${P.feedSort===k?"on":""}">${l}</button>`).join("")}</div>`,
     rows: sortEntries(es, P.feedSort, myTaste) }; }
@@ -4987,11 +5115,11 @@ async function openClub(c) {
   const cf = $("#clubFill"); if (cf) cf.onclick = () => openClubEditor(c);
   const pc = $("#pickClub"); if (pc) pc.onclick = () => { const w = left[Math.floor(Math.random()*left.length)]; openLog(w); };
   const ec = $("#editClub"); if (ec) ec.onclick = () => openClubEditor(c);
-  const dc = $("#delClub"); if (dc) dc.onclick = async () => { if (!confirm("Delete this club? Entries stay.")) return; try { await q(sb.from("clubs").delete().eq("id", c.id)); await loadClubs(); closeSheet(); renderClubs(); } catch (err) { oops(err, "Couldn't delete the club"); } };
+  const dc = $("#delClub"); if (dc) dc.onclick = async () => { if (!await askYesNo({ title:"Delete this club?", sub:"Everything anybody logged for it stays in their log. Only the club goes.", ok:"Delete it", bad:true })) return; try { await q(sb.from("clubs").delete().eq("id", c.id)); await loadClubs(); closeSheet(); renderClubs(); } catch (err) { oops(err, "Couldn't delete the club"); } };
   const jc = $("#joinClub"); if (jc) jc.onclick = async () => { try { await q(sb.from("club_members").insert({ club_id:c.id, user_id:me.id })); await loadClubs(); closeSheet(); renderClubs(); } catch (e) { alert(e.message); } };
   const lc2 = $("#leaveClub"); if (lc2) lc2.onclick = async () => { try { await q(sb.from("club_members").delete().eq("club_id", c.id).eq("user_id", me.id)); await loadClubs(); closeSheet(); renderClubs(); } catch (err) { oops(err, "Couldn't leave the club"); } };
   const ra = $("#runAgain"); if (ra) ra.onclick = async () => {
-    if (!confirm("Start this club again? Your entries stay; the progress bar resets from today.")) return;
+    if (!await askYesNo({ title:"Run it again?", sub:"Your entries stay where they are. The progress starts over from today.", ok:"Start again" })) return;
     try { await q(sb.from("club_members").update({ started_at:new Date().toISOString(), finished_at:null }).eq("club_id", c.id).eq("user_id", me.id));
       await loadClubs(); openClub(c); } catch (e) { alert(e.message); } };
   const bb = $("#ballotBtn"); if (bb) bb.onclick = () => openBallot(c);
@@ -5025,7 +5153,7 @@ async function openClub(c) {
       </div></div>`;
     const pv2 = $("#palVote"); if (pv2) pv2.onclick = () => openBallot(c);
     const cb = $("#closeBallot"); if (cb) cb.onclick = async () => {
-      if (!confirm(`Close the ballot? ${voters} ${voters === 1 ? "person has" : "people have"} voted. Nobody can vote after this.`)) return;
+      if (!await askYesNo({ title:"Call it?", sub:`${voters} ${voters === 1 ? "person has" : "people have"} voted. Nobody can vote after this, and everybody sees the standings.`, ok:"Open the results" })) return;
       try { await q(sb.from("clubs").update({ closed_at:new Date().toISOString() }).eq("id", c.id)); await loadClubs();
         openClub([...clubs, ...openClubs].find(x => x.id === c.id) || Object.assign({}, c, { closed_at:new Date().toISOString() })); }
       catch (e) { alert(e.message); } };
@@ -5571,7 +5699,7 @@ function openLog(w, edit = null) { const cfg = K(w.kind); const loved = edit?.lo
       <p class="sub" id="whoNote"></p>` : ""}
     <div class="stack"><button class="btn" id="wSave" ${edit?"":"disabled"}>${edit?"Save changes":"Save the entry"}</button><button class="btn quiet" id="wCancel">Not now</button></div><p class="msg" id="wMsg"></p>`);
   const drawTicks = () => { $("#tickRow").innerHTML = cfg.ticks.flatMap(([key,a,b]) => [`<button class="tk ${ctx[key]===a?"on":""}" data-tk="${key}|${a}">${a}</button>`,`<button class="tk ${ctx[key]===b?"on":""}" data-tk="${key}|${b}">${b}</button>`]).join("") + `<button class="tk ${ctx.with?"on":""}" data-tk="with|">${ctx.with?"With "+esc(ctx.with):"With…"}</button>`;
-    $$("[data-tk]").forEach(b => b.onclick = () => { const [key,val] = b.dataset.tk.split("|"); if (key === "with") ctx.with = (prompt("Who with?", ctx.with||"")||"").trim(); else ctx[key] = ctx[key] === val ? null : val; drawTicks(); }); }; drawTicks();
+    $$("[data-tk]").forEach(b => b.onclick = async () => { const [key,val] = b.dataset.tk.split("|"); if (key === "with") { const v = await askText({ title:"Who with?", label:"Their name", value:ctx.with || "", placeholder:"Anybody, however you say it", ok:"That's them", max:40 }); if (v !== null) ctx.with = v; } else ctx[key] = ctx[key] === val ? null : val; drawTicks(); }); }; drawTicks();
   let stats = { n:0, counts:{}, share:() => 0, hot:() => false };
   let faces = w.meta?.faces || {};
   const chip = (key, label, cls = "") => { const who = cls.includes("who") && key.startsWith("person:") ? key.slice(7) : null;
@@ -5700,7 +5828,10 @@ function openEntry(e, justSaved = false) { const w = works[e.work_id] || e.works
   const rb = $("#eReport"); if (rb) rb.onclick = () => openReport({ about_entry:e.id, about_user:e.user_id, who:e.profiles?.handle });
   const bb = $("#eBlock"); if (bb) bb.onclick = () => openBlock(e.user_id, e.profiles?.handle);
   $("#eClose").onclick = closeSheet; $("#eWork").onclick = () => openWork(e.work_id); const ed = $("#eEdit"); if (ed) ed.onclick = () => openLog(w, e);
-  const d = $("#eDel"); if (d) d.onclick = async () => { if (!confirm("Delete this entry?")) return;
+  const d = $("#eDel"); if (d) d.onclick = async () => {
+    /* asked rather than undone: deleting an entry takes the likes on it with it, and
+       putting the row back would put back a different row with nobody's likes on it */
+    if (!await askYesNo({ title:"Delete this entry?", sub:"What you wrote and anything anybody liked about it goes with it. It cannot be undone.", ok:"Delete it", bad:true })) return;
     try { await q(sb.from("entries").delete().eq("id", e.id)); await loadMine(); closeSheet();
       /* the row leaves rather than being replaced by the one under it — which is the half
          second in which you find out you meant the other one */
@@ -6105,7 +6236,7 @@ async function openYou() { let top = { items:[] }; try { top = await ensureMyTop
     catch (e) { oops(e, "Couldn't build the file"); }
     finally { tk.textContent = was; tk.disabled = false; } };
   const bk = $("#backup"); if (bk) bk.onclick = () => { const blob = new Blob([localStorage.getItem("rooms.db")||"{}"], { type:"application/json" }); const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `rooms-${me.handle}-${today()}.json`; a.click(); };
-  const rs = $("#restore"); if (rs) rs.onclick = () => $("#restoreFile").click(); const rf = $("#restoreFile"); if (rf) rf.onchange = async () => { const f = rf.files[0]; if (!f) return; try { const j = JSON.parse(await f.text()); if (!j.entries || !j.works) throw new Error("That isn't a Rooms backup"); if (!confirm(`Replace this log with the backup? ${j.entries.length} entries.`)) return; localStorage.setItem("rooms.db", JSON.stringify(j)); location.reload(); } catch (e) { $("#sMsg").textContent = e.message; } }; }
+  const rs = $("#restore"); if (rs) rs.onclick = () => $("#restoreFile").click(); const rf = $("#restoreFile"); if (rf) rf.onchange = async () => { const f = rf.files[0]; if (!f) return; try { const j = JSON.parse(await f.text()); if (!j.entries || !j.works) throw new Error("That isn't a Rooms backup"); if (!await askYesNo({ title:"Replace this log?", sub:`Everything here goes, and the backup's ${j.entries.length} ${j.entries.length === 1 ? "entry" : "entries"} take its place. Bring another log into this one, below, adds instead of replacing.`, ok:"Replace it", bad:true })) return; localStorage.setItem("rooms.db", JSON.stringify(j)); location.reload(); } catch (e) { $("#sMsg").textContent = e.message; } }; }
 
 /* ---------- everything you have ever put in, in one file ----------
    backup was gated to local mode, so a hosted account had no way out at all. This
@@ -6178,6 +6309,7 @@ window.__rooms = { pullRefresh, openFind, setFollow, isFollowing, get follows(){
   CUTS, CARD_THEMES, cardTheme, spanData, tasteOf, reviewData, yearOf, roomPalmares, palmares, byPerson, spinN, SPIN_SIZES,
   loadNow, startNow, stopNow, nowOf, nowFor, nowLine, get myNow(){return myNow},
   bestOf, bestGenres, dealBest, loadBest, pickFrom, seenMode, keepSeen, get bestPool(){return bestPool}, get bestHand(){return bestHand},
+  askText, askYesNo, openAsk, closeAsk, feedNow, openInvite, inviteText,
   willNotPost, addPatterns, setReasons, loadSettings, get NOPE(){return NOPE}, get REPORT_WHY(){return REPORT_WHY},
   saveEntry, readBackup, bringOver, openBringOver, loadLists, loadSeen, blockThem, unblockThem, isApart, notApart, loadBlocks, openReport, openBlock, sendReport, REPORT_WHY,
   get blocked(){return blocked},
