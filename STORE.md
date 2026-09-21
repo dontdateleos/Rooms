@@ -118,8 +118,13 @@ select r.created_at, r.reason, r.note,
       is red until you do.
 - [ ] Accept Supabase's data processing agreement. The privacy page says a signed one
       exists; make that true.
-- [ ] Run schema **v17** to **v21** in the SQL editor.
+- [ ] Run schema **v17** to **v22** in the SQL editor.
 - [ ] Set yourself a way of seeing new reports. Nothing notifies you today.
+- [ ] Decide what goes in `settings` before the first build. Anything you might want to
+      change in a hurry belongs there, because after the first release a one-word change
+      costs a build, an upload and a day or two of review. Two keys exist: `nope` (extra
+      slur patterns, added to the bundled list) and `report_reasons` (the wording on the
+      report form). Neither can weaken what shipped — a bad row is ignored, not obeyed.
 - [ ] 1024×1024 icon, no alpha channel, no rounded corners.
 - [ ] Wrap it — Capacitor — and get it running on a real device.
 - [ ] Watch the 34 animations on real hardware. A phone is not a headless Chromium.

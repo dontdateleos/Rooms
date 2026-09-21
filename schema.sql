@@ -804,3 +804,31 @@ alter table reports enable row level security;
 drop policy if exists reports_send on reports;
 create policy reports_send on reports for insert to authenticated
   with check (reporter = auth.uid());
+
+-- ---------- v22: the things you will want to change in a hurry ----------
+-- Once this is in an App Store, a one-word change costs a build, an upload and a day or
+-- two of review — and a slur list you can only update through App Review is a slur list
+-- that is out of date the first time somebody finds a word it does not know. The same
+-- goes for the reasons on a report form and for the address on the privacy page.
+--
+-- So they live in a row instead. The app reads this at startup and falls back to what is
+-- baked into the file when it cannot — offline, first paint, or a project where nobody
+-- has run this migration. The bundled copy is the floor, never the ceiling.
+create table if not exists settings (
+  key text primary key,
+  value jsonb not null,
+  updated_at timestamptz default now()
+);
+
+alter table settings enable row level security;
+drop policy if exists settings_read on settings;
+-- readable by anyone signed in, writable by nobody through the API. These are edited in
+-- the SQL editor, running as postgres, for the same reason the founder flag is.
+create policy settings_read on settings for select to authenticated using (true);
+
+-- seeded empty. Add a word without shipping anything:
+--   insert into settings (key, value) values ('nope', '["some","patterns"]'::jsonb)
+--   on conflict (key) do update set value = excluded.value, updated_at = now();
+-- The patterns are case-insensitive regular expressions, matched against the text with
+-- spaces, dots, stars and hyphens stripped out. They are ADDED to the bundled list,
+-- never replace it, so a bad row here cannot switch the filter off.
