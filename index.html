@@ -830,6 +830,16 @@ section.on > div > *{animation:rise .38s cubic-bezier(.2,1.2,.38,1) both}
 .alone b{font-family:var(--head);font-weight:800;font-size:14.5px}
 .alone span{font-size:13px;line-height:1.5;color:var(--mute)}
 .alone .btn{margin-top:4px}
+/* Held back on purpose: it has to be legible and obviously not yours. Dimmed rather
+   than blurred, because a blur reads as something being withheld from you. */
+.demo{margin-top:12px;background:var(--card);border:2px dashed var(--line);border-radius:14px;
+  padding:10px 12px 8px;opacity:.72;pointer-events:none}
+.demoh{display:flex;justify-content:space-between;align-items:center;gap:8px;font-family:var(--head);
+  font-weight:800;font-size:13px;padding-bottom:8px;border-bottom:2px solid var(--line);margin-bottom:2px}
+.demo .row{padding:7px 0;cursor:default}
+.demo .row b{font-size:14px}
+.demofoot{margin:6px 0 2px;font-size:11.5px;font-weight:600;color:var(--mute);text-align:center}
+@media (prefers-reduced-motion:no-preference){.demo{transition:opacity .3s}}
 @keyframes cometTurn{to{transform:rotate(360deg)}}
 svg .comet{transform-box:fill-box;transform-origin:center;animation:cometTurn 4.2s linear infinite}
 .tier{border:1.5px solid var(--line);border-radius:22px;padding:16px 18px;margin-top:12px}
@@ -1239,7 +1249,7 @@ const cover = (w, cls = "co") => w?.cover ? `<img class="${cls}" src="${esc(w.co
 /* ============ prefs + sources ============ */
 const WORKER = "https://rooms.jordandf1.workers.dev";
 const proxy = () => (P.workerUrl || WORKER).replace(/\/+$/, "");
-const P = Object.assign({ workerUrl:"", tmdbKey:"", activeList:null, activeRoom:null, picked:null, kinds:["film","tv","book","game"], shelfFilter:"", pickTag:"", pickFrom:"shelf", bestGenre:{}, howLong:"", spinN:20, feedPicked:false, seen:"", cardSkin:"", feed:"room", theme:"" },
+const P = Object.assign({ workerUrl:"", tmdbKey:"", activeList:null, activeRoom:null, picked:null, kinds:["film","tv","book","game"], shelfFilter:"", pickTag:"", pickFrom:"shelf", bestGenre:{}, howLong:"", spinN:20, feedPicked:false, weekSeen:"", seen:"", cardSkin:"", feed:"room", theme:"" },
   JSON.parse(localStorage.getItem("rooms.prefs") || "{}"));
 const saveP = () => localStorage.setItem("rooms.prefs", JSON.stringify(P));
 async function tmdb(path, params = {}) {
@@ -1280,14 +1290,14 @@ async function watchOn(w) {
 }
 const SOURCES = {
   async film(t) { const d = await tmdb("search/movie", { query:t, include_adult:"false" });
-    return (d.results||[]).slice(0,6).map(r => ({ id:"film:"+r.id, kind:"film", title:r.title, year:(r.release_date||"").slice(0,4), cover:TMDB_IMG(r.poster_path) })); },
+    return known(d.results, t, r => r.title).slice(0,6).map(r => ({ id:"film:"+r.id, kind:"film", title:r.title, year:(r.release_date||"").slice(0,4), cover:TMDB_IMG(r.poster_path) })); },
   async tv(t) { const d = await tmdb("search/tv", { query:t, include_adult:"false" });
-    return (d.results||[]).slice(0,6).map(r => ({ id:"tv:"+r.id, kind:"tv", title:r.name, year:(r.first_air_date||"").slice(0,4), cover:TMDB_IMG(r.poster_path) })); },
-  async book(t) { const d = await ol("/search.json", { q:t, limit:"6", fields:"key,title,author_name,first_publish_year,cover_i,number_of_pages_median" });
-    return (d.docs||[]).map(b => ({ id:"book:"+String(b.key).replace("/works/",""), kind:"book", title:b.title, year:String(b.first_publish_year||""),
+    return known(d.results, t, r => r.name).slice(0,6).map(r => ({ id:"tv:"+r.id, kind:"tv", title:r.name, year:(r.first_air_date||"").slice(0,4), cover:TMDB_IMG(r.poster_path) })); },
+  async book(t) { const d = await ol("/search.json", { q:t, limit:"12", fields:"key,title,author_name,first_publish_year,cover_i,number_of_pages_median,edition_count" });
+    return known(d.docs, t, b => b.title, b => +b.edition_count || 0).slice(0,6).map(b => ({ id:"book:"+String(b.key).replace("/works/",""), kind:"book", title:b.title, year:String(b.first_publish_year||""),
       creator:(b.author_name||[])[0]||"", length:b.number_of_pages_median||0, cover:b.cover_i ? `https://covers.openlibrary.org/b/id/${b.cover_i}-M.jpg` : "" })); },
-  async game(t) { const g = await igdb("games", `search "${t.replace(/"/g,"")}"; fields name,first_release_date,cover.image_id,involved_companies.company.name; limit 6;`);
-    return g.map(x => ({ id:"game:"+x.id, kind:"game", title:x.name, year:x.first_release_date ? String(new Date(x.first_release_date*1000).getFullYear()) : "",
+  async game(t) { const g = await igdb("games", `search "${t.replace(/"/g,"")}"; fields name,first_release_date,cover.image_id,involved_companies.company.name,total_rating_count; limit 12;`);
+    return known(g, t, x => x.name, x => +x.total_rating_count || 0).slice(0,6).map(x => ({ id:"game:"+x.id, kind:"game", title:x.name, year:x.first_release_date ? String(new Date(x.first_release_date*1000).getFullYear()) : "",
       creator:x.involved_companies?.[0]?.company?.name || "", cover:x.cover?.image_id ? `https://images.igdb.com/igdb/image/upload/t_cover_big/${x.cover.image_id}.jpg` : "" })); }
 };
 /* ---------- a show is a thing with things inside it ----------
@@ -1354,6 +1364,26 @@ async function loadEpisodes(seasonId) {
   return merge(known, fetched);
 }
 
+/* ---------- the one you meant ----------
+   Six results in whatever order the source felt like. Searching "heat" put documentaries
+   about heat above Heat, which is the app being unhelpful in the one place it cannot
+   afford to be: the first thing anybody does is look for something they have seen.
+
+   An exact title match wins outright — somebody typing the whole name of a thing knows
+   what they want. After that it is how well known it is, which is the only signal any of
+   these sources offers that tracks "the one a person probably means". The source order
+   is the last word, so a tie changes nothing. */
+const known = (rows, term, titleOf, weight = r => +r.popularity || 0) => {
+  const want = lc(String(term || "").trim());
+  return (rows || []).map((r, i) => ({ r, i })).sort((a, b) => {
+    const ea = lc(titleOf(a.r) || "") === want ? 1 : 0;
+    const eb = lc(titleOf(b.r) || "") === want ? 1 : 0;
+    if (ea !== eb) return eb - ea;
+    const d = weight(b.r) - weight(a.r);
+    return d || a.i - b.i;                       /* the source order is the last word */
+  }).map(x => x.r);
+};
+
 const crewName = (c, ...jobs) => { const out = []; for (const j of jobs) for (const p of (c?.crew||[])) if (p.job === j && !out.includes(p.name)) out.push(p.name); return out.slice(0,2).join(", "); };
 /* ---------- faces ----------
    credits are stored as joined strings — "Michael Mann", "Pacino, De Niro, Kilmer" —
@@ -1398,13 +1428,14 @@ const DEMO = /(^|[#?&])demo\b/.test(location.hash + location.search);
 const LOCAL = !window.__mockSb && (DEMO || SUPABASE_URL.includes("YOUR-"));
 function makeLocalSb(seed) {
   const KEY = "rooms.db";
-  const blank = { profile:null, signedOut:false, works:{}, profiles:[], entries:[], lists:[], list_items:[], rooms:[], room_members:[], clubs:[], club_members:[], club_votes:[], reactions:[], replies:[], top_lists:[], top_list_items:[], follows:[], nows:[], handovers:[], seen:[], blocks:[], reports:[], settings:[] };
+  const blank = { profile:null, signedOut:false, works:{}, profiles:[], entries:[], lists:[], list_items:[], rooms:[], room_members:[], clubs:[], club_members:[], club_votes:[], reactions:[], replies:[], top_lists:[], top_list_items:[], follows:[], nows:[], handovers:[], seen:[], blocks:[], reports:[], settings:[], handles:[] };
   const db = Object.assign({}, blank, seed || JSON.parse(localStorage.getItem(KEY) || "{}"));
   if (!db.nows) db.nows = [];                 /* a log written before v15 has no such key */
   if (!db.handovers) db.handovers = [];       /* nor one written before v16 */
   if (!db.seen) db.seen = [];                 /* nor one written before v20 */
   if (!db.blocks) db.blocks = []; if (!db.reports) db.reports = [];   /* nor before v21 */
   if (!db.settings) db.settings = [];                                 /* nor before v22 */
+  if (!db.handles) db.handles = [];                                   /* nor before v23 */
   /* v20 gave entries a part column with a default of false. A row written before that
      has no such key, and the feeds now ask for part = false by name — so without this
      every entry anybody already had would quietly stop appearing anywhere. */
@@ -1477,6 +1508,28 @@ function makeLocalSb(seed) {
     return b; };
   return { __local:true, __db:db, __save:save, from,
     rpc: (name, args) => {
+      /* the two v23 functions, doing here what they do there */
+      if (name === "claim_handle") { const want = String(args.want || "").toLowerCase().trim();
+        const row = db.handles.find(h => h.handle === want);
+        /* a reserved name has no owner, and "no owner" is not "yours for the taking" —
+           which is what checking row.owner for truthiness quietly said */
+        if (row && row.owner !== db.profile?.id)
+          return Promise.resolve({ data:null, error:new Error("that handle is taken") });
+        const had = db.profile?.handle;
+        if (!row) db.handles.push({ handle:want, owner:db.profile?.id, taken_at:now() });
+        else row.owner = db.profile?.id;
+        if (db.profile) db.profile.handle = want;
+        if (had && had !== want) { const old2 = db.handles.find(h => h.handle === had);
+          if (old2) old2.owner = db.profile?.id; else db.handles.push({ handle:had, owner:db.profile?.id, taken_at:now() }); }
+        save(); return Promise.resolve({ data:null, error:null }); }
+      if (name === "peek_room") { const code = String(args.p_code || "").trim().toUpperCase();
+        const r = db.rooms.find(x => String(x.code).toUpperCase() === code);
+        if (!r) return Promise.resolve({ data:[], error:null });
+        const ids = db.room_members.filter(m => m.room_id === r.id).map(m => m.user_id);
+        const hs = ids.map(id => id === db.profile?.id ? db.profile?.handle : db.profiles.find(p => p.id === id)?.handle)
+          .filter(Boolean).sort();
+        return Promise.resolve({ data:[{ name:r.name, members:ids.length,
+          logged:db.entries.filter(e => ids.includes(e.user_id) && !e.part).length, handles:hs }], error:null }); }
       if (name === "create_room") { const r = { id:uid(), name:args.p_name, code:Math.random().toString(36).slice(2,8), created_at:now() }; db.rooms.push(r); db.room_members.push({ room_id:r.id, user_id:db.profile.id }); save(); return Promise.resolve({ data:r, error:null }); }
       if (name === "join_room") return Promise.resolve({ data:null, error:new Error("joining a room needs the hosted setup") });
       /* the local mock has no auth user to delete, but it can do the same thing to the
@@ -1486,7 +1539,7 @@ function makeLocalSb(seed) {
         db.room_members = db.room_members.filter(m => m.user_id !== mine);
         db.rooms = db.rooms.filter(r => !was.includes(r.id) || db.room_members.some(m => m.room_id === r.id));
         for (const t of ["entries","lists","list_items","reactions","replies","follows",
-                         "top_lists","top_list_items","club_members","club_votes","nows","handovers","seen","blocks"])
+                         "top_lists","top_list_items","club_members","club_votes","nows","handovers","seen","blocks","handles"])
           db[t] = [];
         db.profile = null; db.signedOut = true; save();
         return Promise.resolve({ data:null, error:null }); }
@@ -2823,12 +2876,24 @@ function renderAuth() {
   const invited = takeInvite();
   b.innerHTML = `<h1>Every room<br>you’ve <span>been in.</span></h1>
     <p class="say">You used to be able to stand in someone’s front room and know them. The shelves told you. Nothing tells you now. <b>This does.</b></p>
-    ${invited ? `<p class="note"><b>Someone’s put you on the list.</b> Make an account and you'll go straight into their room — the invite waits for you.</p>` : ""}
+    ${invited ? `<p class="note" id="invNote"><b>Someone’s put you on the list.</b> Make an account and you'll go straight into their room — the invite waits for you.</p>` : ""}
     <div class="lbl">Email</div><input id="email" type="email" inputmode="email" autocapitalize="none" autocorrect="off" placeholder="you@somewhere">
     <div class="lbl">Password</div><input id="pw" type="password" autocomplete="current-password" placeholder="at least eight characters">
     <div class="stack"><button class="btn blue" id="signIn">Sign in</button><button class="btn ghost" id="signUp">Make an account</button></div>
     <div class="stack"><button class="btn quiet" id="send">Email me a code instead</button></div>
     <div id="codeStep"></div><p class="msg" id="authMsg"></p>`;
+
+  /* Somebody arriving on a link should see what they were sent before being asked for an
+     email. Asked for after the screen is up, and only written in if it comes back — a
+     sign-in form that waits on a network call is a sign-in form that hangs. */
+  if (invited) peekRoom(invited).then(r => { const el = $("#invNote"); if (!r || !el) return;
+    const who = (r.handles || []).slice(0, 4);
+    el.innerHTML = `<b>${esc(who[0] || "Someone")} has put you on the list.</b>
+      <span style="display:block;margin-top:6px">You're being let into <b>${esc(r.name)}</b> \u2014 ${
+        r.members === 1 ? "one person" : `${r.members} people`}${
+        who.length ? `, ${esc(who.join(", "))}${r.members > who.length ? " and others" : ""}` : ""}, ${
+        +r.logged ? `${r.logged} ${+r.logged === 1 ? "thing" : "things"} logged between them` : "nothing logged yet"}.</span>
+      <span style="display:block;margin-top:6px">Make an account and you go straight in.</span>`; });
 
   /* the code matters on a home screen app: a link opens in the browser, which keeps its own
      storage, so the session would land somewhere the installed app can never read */
@@ -2877,6 +2942,30 @@ function renderAuth() {
     finally { $("#send").disabled = false; } };
 }
 /* signed in, but no profile row yet — the id waiting for a handle */
+/* ---------- one handle each ----------
+   A handle is the only name anybody has here, and until v23 it was free to change and
+   free to drop — change yours and the old one went back in the pool, so somebody could
+   take the name your friends know you by and be mistaken for you in a room.
+
+   So a handle stays with whoever had it. The check here is only so the app can say no
+   before you press anything; claim_handle is what actually decides, in one statement,
+   because two people pressing save at the same moment must not both be told yes. */
+async function handleTaken(h) {
+  try { const rows = await q(sb.from("handles").select("handle").eq("handle", lc(h)).limit(1));
+    return rows.length > 0; } catch { return false; }
+}
+
+/* ---------- looking at a room before you are in it ----------
+   A link from a friend asked for an account before it would show anything, which is a
+   strange order to do it in: sign up, then find out whether it was worth it. This says
+   who is in there and how much they have between them. Not a word anybody wrote — the
+   code is fair proof that a room is real, and not a licence to publish what is in it. */
+async function peekRoom(code) {
+  try { const rows = await q(sb.rpc("peek_room", { p_code:code }));
+    const r = Array.isArray(rows) ? rows[0] : rows;
+    return r && r.name ? r : null; } catch { return null; }
+}
+
 let pendingUser = null;
 function renderClaim() { const b = $("#authBody");
   b.innerHTML = `<h1>One more<br><span>thing.</span></h1>
@@ -2886,7 +2975,10 @@ function renderClaim() { const b = $("#authBody");
   const claim = async () => { const h = lc($("#handle").value.trim());
     if (!/^[a-z0-9_]{2,24}$/.test(h)) { $("#authMsg").textContent = "two to twenty-four, lowercase, no spaces"; return; }
     $("#claim").disabled = true; $("#authMsg").textContent = "";
-    try { await q(sb.from("profiles").insert({ id:pendingUser, handle:h })); if (await loadMe()) enter(); }
+    try { if (await handleTaken(h)) throw new Error("someone already has that one");
+      await q(sb.from("profiles").insert({ id:pendingUser, handle:h }));
+      try { await q(sb.from("handles").insert({ handle:h, owner:pendingUser })); } catch {}
+      if (await loadMe()) enter(); }
     catch (e) { $("#authMsg").textContent = /duplicate|unique/i.test(e.message) ? "someone already has that one" : e.message;
       $("#claim").disabled = false; } };
   $("#claim").onclick = claim;
@@ -2955,14 +3047,23 @@ function openOnboarding() {
       $("#onbProg").style.width = (20 + 60*(i+1)/picks.length) + "%"; $("#onbStat").textContent = `${w.title} · done`; }
     /* their ten starts as these three */
     try { const top = await ensureMyTop(); if (!top.items.length) await q(sb.from("top_list_items").insert(picks.map((w,i) => ({ top_list_id:top.id, work_id:w.id, rank:i+1 })))); } catch {}
+    /* Naming a room you are alone in is a poor first decision to be asked for: it is
+       the one thing on that screen that needs an answer and the answer does not matter
+       yet. So it already exists, called after you, and renaming it becomes the thing you
+       do when somebody arrives — which is when a name is worth thinking about. */
+    if (!rooms.length) { $("#onbStat").textContent = "Opening a room for you";
+      try { const r = await q(sb.rpc("create_room", { p_name:`${me.handle}'s room` }));
+        await loadRooms(); if (r?.id) { P.activeRoom = r.id; P.feed = "room"; P.feedPicked = true; saveP(); } } catch {} }
     await loadMine(); $("#onbProg").style.width = "100%";
     const t = tasteOf(myEntries); const top3 = t.craft.slice(0,3).map(c => c[0]);
     P.onboarded = true; saveP();
     setTimeout(() => { openSheet(`<div class="onb"><h3>You're in.</h3>
       ${top3.length ? `<div class="say" style="margin-top:14px">You go for <span class="hl" style="background:var(--butter)">${esc(top3[0])}</span>${top3[1]?`, ${esc(top3[1])}`:""}${top3[2]?` and ${esc(top3[2])}`:""}.</div>` : ""}
       <p class="sub">That's your profile. It sharpens every time you log something.</p>
-      <div class="stack"><button class="btn blue" id="onbRoom">Open a room for your friends</button><button class="btn ghost" id="onbShelf">Fill the shelf first</button></div></div>`);
-      $("#onbRoom").onclick = () => { closeSheet(); switchTab("doors"); setTimeout(() => $("#newRoom")?.click(), 300); };
+      ${rooms.length ? `<p class="sub"><b>${esc(rooms[0].name)}</b> is open and waiting. Rooms only does anything with other people in it — one person is enough.</p>` : ""}
+      <div class="stack"><button class="btn blue" id="onbRoom">${rooms.length ? "Bring somebody in" : "Open a room for your friends"}</button><button class="btn ghost" id="onbShelf">Fill the shelf first</button></div></div>`);
+      $("#onbRoom").onclick = () => { closeSheet(); switchTab("doors");
+        setTimeout(() => { if (rooms.length) openInvite(rooms[0]); else $("#newRoom")?.click(); }, 300); };
       $("#onbShelf").onclick = () => { closeSheet(); switchTab("shelf"); };
     }, 500);
   }
@@ -2973,11 +3074,52 @@ function blank(colour, mark, title, body, actions = []) {
     ${actions.length ? `<div class="stack">${actions.map(([id,label,cls]) => `<button class="btn ${cls||"soft"}" id="${id}">${label}</button>`).join("")}</div>` : ""}</div>`; }
 const skeleton = (n = 3) => Array.from({length:n}, () => `<div class="skel"><i class="t"></i><i></i><i class="s"></i></div>`).join("");
 
+/* ---------- the week you have had ----------
+   The reel, the cuts and the memories all need a history — a year of it, in places — so
+   for the first month the app has nothing to say to somebody who has not just finished
+   something. This needs seven days.
+
+   Shown once a week and then put away for a week, whether or not it was opened: a card
+   that comes back every time you open the app is not a moment, it is wallpaper. Two
+   entries at least, because "you logged one thing" is not a week worth reporting. */
+const WEEK_KEY = () => { const d = new Date(); d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+  return d.toISOString().slice(0, 10); };                 /* the Monday just gone */
+function weekPast() {
+  const from = new Date(); from.setDate(from.getDate() - 7);
+  const since = from.toISOString().slice(0, 10);
+  const es = myEntries.filter(e => String(e.rated_on) >= since);
+  if (es.length < 2) return null;
+  const kinds = {}; es.forEach(e => { const k = kindOf(e.work_id); kinds[k] = (kinds[k] || 0) + 1; });
+  const best = es.slice().sort((a, b) => b.score - a.score)[0];
+  const loved = {}; es.forEach(e => (e.loved || []).forEach(l => { if (!l.startsWith("person:")) loved[l] = (loved[l] || 0) + 1; }));
+  const top = Object.entries(loved).sort((a, b) => b[1] - a[1])[0];
+  const first = myEntries.length === es.length;             /* nothing before this week */
+  return { n:es.length, kinds, best, top:top && top[1] > 1 ? top[0] : null, first, es };
+}
+function weekCard() {
+  if (P.weekSeen === WEEK_KEY()) return "";
+  const w = weekPast(); if (!w) return "";
+  const bw = works[w.best.work_id] || {};
+  /* K().label lowercased turns TV into "tv", and K().plural for television is "TV", so
+     "1 tv" and "2 TV" were both wrong in different ways. In a sentence a television
+     programme is a show. */
+  const ONE = { film:"film", tv:"show", book:"book", game:"game" };
+  const spread = Object.entries(w.kinds).sort((a,b) => b[1]-a[1])
+    .map(([k,n]) => `${n} ${ONE[k] || k}${n === 1 ? "" : "s"}`);
+  return `<div class="card look" id="weekCard"><div class="h">
+      <span>${w.first ? "Your first week" : "Your week"}</span><span class="tag dim">${w.n} logged</span></div>
+    <div class="say" style="margin-top:10px">${esc(spread.join(" \u00b7 "))}.${
+      bw.title ? ` The one you went highest on was <b>${esc(bw.title)}</b>.` : ""}${
+      w.top ? ` You singled out <span class="hl" style="background:var(--butter)">${esc(w.top)}</span> more than anything else.` : ""}</div>
+    <div class="stack"><button class="btn soft" id="weekGo">Look back at it</button>
+      <button class="btn quiet" id="weekNo">Not now</button></div></div>`;
+}
+
 /* ============ HOME: your room · following · everyone ============ */
 async function renderDoors() {
   const body = $("#doorsBody"); const R = activeRoom();
   const mem = memories()[0], rev = dueReview();
-  body.innerHTML = `${rev ? `<div class="card look" id="revCard"><div class="h"><span>${esc(rev.head)}</span><span class="tag dim">${rev.kind === "year" ? "the year" : "last month"}</span></div>
+  body.innerHTML = `${weekCard()}${rev ? `<div class="card look" id="revCard"><div class="h"><span>${esc(rev.head)}</span><span class="tag dim">${rev.kind === "year" ? "the year" : "last month"}</span></div>
       <div class="stack"><button class="btn soft" id="revGo">Have a look</button></div></div>` : ""}
     ${mem ? `<div class="card look" id="memCard"><div class="h"><span>${esc(mem.head)}</span><span class="tag dim">${
         mem.kind === "still" ? "and never went back" : when(mem.when || mem.entries[0].rated_on)}</span></div>
@@ -2989,6 +3131,17 @@ async function renderDoors() {
     <div class="seg">${[["room","Your room"],["following","Following"],["everyone","Everyone"]].map(([k,l]) => `<button data-feed="${k}" class="${feedNow()===k?"on":""}">${l}</button>`).join("")}</div>
     <div class="findrow"><button class="chip" id="findPeople">Find someone by handle</button></div>
     <div id="feedBody">${skeleton(3)}</div>`;
+  /* Either way it is put away for the week: looking at it and deciding not to are both
+     answers, and asking the same question tomorrow would be the app not listening. */
+  const tuckWeek = () => { P.weekSeen = WEEK_KEY(); saveP(); $("#weekCard")?.remove(); };
+  const wg = $("#weekGo"); if (wg) wg.onclick = () => { const w = weekPast(); tuckWeek();
+    if (!w) return;
+    /* the same shape the month card hands over, so the card that comes out is the one
+       everything else already knows how to draw */
+    const days = w.es.map(e => String(e.rated_on)).sort();
+    openCuts("span", spanOf(w.es, w.first ? "your first week" : "your week",
+      `${stampDate(days[0])} — ${stampDate(days[days.length - 1])}`), "Share your week"); };
+  const wn = $("#weekNo"); if (wn) wn.onclick = tuckWeek;
   const rg = $("#revGo"); if (rg) rg.onclick = () => rev.kind === "year"
     ? openCuts("year", Object.assign(reviewData(yearOf(myEntries, rev.year)), { year:rev.year }), "Share your year")
     : openCuts("span", spanOf(rev.entries, lc(rev.head.split(",")[0]),
@@ -3157,6 +3310,23 @@ function compFlip(root) {
 const compMark = root => { if (root) $$(".comprow", root).forEach(r =>
   compWas[r.dataset.cw] = r.getBoundingClientRect().top); };
 
+/* ---------- what it turns into ----------
+   The alone card explains a room in three lines of prose, which is the right length and
+   the wrong medium: the thing it is describing is a table, and a table shown is worth
+   three sentences about a table. So here is one, greyed out and labelled, with names
+   nobody has — because a made-up example that looks real is worse than no example, and
+   somebody has to be able to tell at a glance that these are not their friends. */
+const SHOWCASE = [
+  { title:"Heat", kind:"film", n:4, avg:8.6, agree:91, said:"mo 4.5, ali 4.0" },
+  { title:"Severance", kind:"tv", n:3, avg:9.0, agree:64, said:"mo 5.0, jae 3.5" },
+  { title:"Dune", kind:"book", n:2, avg:7.0, agree:78, said:"ali 3.5, jae 3.5" } ];
+const showcase = () => `<div class="demo" aria-hidden="true">
+  <div class="demoh"><span>In competition</span><span class="tag dim">example</span></div>
+  ${SHOWCASE.map((r, i) => `<div class="row"><span class="rk">${i+1}</span><div class="t"><b>${esc(r.title)}</b>
+    <small>${tag(r.kind)} <span class="${r.agree >= 70 ? "good" : "bad"}">${r.agree}% agree</span> · ${r.n} of you · ${esc(r.said)}</small></div>
+    <span class="n">${r.avg.toFixed(1)}<small>of five</small></span></div>`).join("")}
+  <p class="demofoot">Not real — this is what yours looks like once somebody joins.</p></div>`;
+
 function compRows(rows, onOpen) { return rows.map((f,i) => { const w = works[f.id] || {};
   return `<div class="row comprow" data-cw="${esc(f.id)}"><span class="rk">${i+1}</span><div class="t"><b>${esc(w.title||f.id)}</b>
     <small>${tag(kindOf(f.id))} ${f.agree === null ? (f.hi.user_id === me.id ? "only you" : "just " + esc(f.hi.profiles?.handle||"one")) : `<span class="${f.agree>=70?"good":"bad"}">${f.agree}% agree</span> · ${f.n} of you${f.split?` · ${esc(f.hi.profiles?.handle||"")} ${f.hi.score/2}, ${esc(f.lo.profiles?.handle||"")} ${f.lo.score/2}`:""}`}</small></div>
@@ -3219,7 +3389,8 @@ async function renderRoomFeed(fb, R) {
       ${R.members.length < 2 ? `<div class="alone"><b>It's just you in here.</b>
         <span>Rooms only does anything with other people in it — agreement, the year, the arguments.
         Send one person the link and the whole thing switches on.</span>
-        <button class="btn blue" id="aloneInvite">Send the invite link</button></div>` : ""}
+        <button class="btn blue" id="aloneInvite">Send the invite link</button>
+        ${showcase()}</div>` : ""}
       ${rooms.length>1?`<div class="chips">${rooms.map(r => `<button class="chip ${r.id===R.id?"on":""}" data-rc="${r.id}">${esc(r.name)}</button>`).join("")}</div>`:""}</div>
     ${pick ? `<div class="result"><small>Tonight's pick</small><b>${esc(pick.title)}</b><div class="stack" style="margin-top:10px"><button class="btn" id="pickLog">${K(pick.kind).verb} it</button></div></div>` : ""}
     <div class="card"><div class="h"><span>In competition</span><span class="tag dim">weighted</span></div>${comp.length ? compRows(comp) : blank("var(--butter)","%","No scores yet","Once two of you have rated the same thing, the agreement number appears here.",[["compAdd","Log something"]])}</div>
@@ -4150,8 +4321,15 @@ function apart(mineEs, theirs) {
 function shelfAge(id) { const L = activeList(), at = L?.added?.[id]; if (!at) return null;
   const days = Math.floor((Date.now() - new Date(at)) / 864e5);
   return days >= 30 ? days : null; }
-const waited = d => d >= 365 ? `${said(Math.floor(d / 365))} year${d >= 730 ? "s" : ""}`
-  : `${said(Math.max(1, Math.round(d / 30)))} months`;
+/* Everything under two months used to come out as "one months", which is wrong twice:
+   no singular, and a fortnight is not a month. Days, then weeks, then months, then
+   years — and nothing is ever one of anything plural. */
+const waited = d =>
+  d >= 365 ? `${said(Math.floor(d / 365))} year${d >= 730 ? "s" : ""}`
+  : d >= 60 ? `${said(Math.round(d / 30))} months`
+  : d >= 14 ? `${said(Math.round(d / 7))} weeks`
+  : d <= 1  ? "a day"
+  : `${said(d)} days`;
 
 /* ---------- looking for a person, not a title ----------
    "Michael Mann" is not the name of anything, so a title search has nothing to give
@@ -5687,7 +5865,13 @@ function faceEl(name, path) {
 function openLog(w, edit = null) { const cfg = K(w.kind); const loved = edit?.loved ? edit.loved.slice() : []; const ctx = Object.assign({}, edit?.context); let score = edit ? edit.score : 0;
   const starRow = () => `<div class="rate">${[0,1,2,3,4].map(i => `<button data-i="${i}" aria-label="${i+1} stars"><svg viewBox="0 0 24 24">${starPath(Math.max(0,Math.min(1,score/2-i)))}</svg></button>`).join("")}</div><div class="hint">Tap for a full star, hold for a half</div>`;
   openSheet(`<div class="head">${cover(w)}<div class="hh"><h3>${esc(w.title)}</h3><p class="sub">${tag(w.kind)} ${esc(w.year||"")}${w.creator?" · "+esc(w.creator):""}</p></div></div>
-    <div class="lbl">Date ${cfg.verb}</div><input type="date" id="wDate" value="${edit?esc(edit.rated_on):today()}"><div class="lbl">Your rating</div><div id="rateWrap">${starRow()}</div><div class="ticks" id="tickRow"></div><div id="lovedWrap"></div>
+    <div class="lbl">Date ${cfg.verb}</div><input type="date" id="wDate" value="${edit?esc(edit.rated_on):today()}">
+    ${/* You told the app when you started. It has said nothing about it since, and the
+          date here says today — right when you have just finished, wrong when you are
+          logging something you put down a fortnight ago. So it offers what it knows. */""}
+    ${(() => { const n = !edit && nowOf(w.id); if (!n) return "";
+      const d = dayNo(today()) - dayNo(n.started_on); if (!(d > 0)) return "";
+      return `<div class="chips" style="margin-top:8px"><button class="chip" id="useStart" type="button">Started ${when(n.started_on)} \u00b7 ${waited(d)}</button></div>`; })()}<div class="lbl">Your rating</div><div id="rateWrap">${starRow()}</div><div class="ticks" id="tickRow"></div><div id="lovedWrap"></div>
     <div class="lbl">Add a note</div><textarea id="wNote" placeholder="One line, if you want">${edit?.note?esc(edit.note):""}</textarea>
     ${/* room_only has been in the schema since v13 and nothing ever set it, so every
           entry anybody has ever written is public. Only worth offering when there is a
@@ -5696,8 +5880,12 @@ function openLog(w, edit = null) { const cfg = K(w.kind); const loved = edit?.lo
     ${rooms.length && !isPart(w.id) ? `<div class="lbl">Who sees this</div><div class="seg" id="wWho">${
       [["all","Everyone"],["room","Just the room"]].map(([k,l]) =>
         `<button data-who="${k}" class="${(edit ? (edit.room_only ? "room" : "all") : (P.postTo === "room" ? "room" : "all")) === k ? "on" : ""}">${l}</button>`).join("")}</div>
-      <p class="sub" id="whoNote"></p>` : ""}
+      <p class="sub" id="whoNote"></p>
+      <p class="sub" style="margin-top:4px">Everyone means anybody with an account, not just people you know. Just the room means the ${rooms.length === 1 ? esc(rooms[0].name) : "room you are in"} and nobody else.</p>` : ""}
     <div class="stack"><button class="btn" id="wSave" ${edit?"":"disabled"}>${edit?"Save changes":"Save the entry"}</button><button class="btn quiet" id="wCancel">Not now</button></div><p class="msg" id="wMsg"></p>`);
+  const us = $("#useStart");
+  if (us) us.onclick = () => { const n = nowOf(w.id); if (!n) return;
+    $("#wDate").value = n.started_on; us.classList.add("on"); us.textContent = "Using that date"; us.disabled = true; };
   const drawTicks = () => { $("#tickRow").innerHTML = cfg.ticks.flatMap(([key,a,b]) => [`<button class="tk ${ctx[key]===a?"on":""}" data-tk="${key}|${a}">${a}</button>`,`<button class="tk ${ctx[key]===b?"on":""}" data-tk="${key}|${b}">${b}</button>`]).join("") + `<button class="tk ${ctx.with?"on":""}" data-tk="with|">${ctx.with?"With "+esc(ctx.with):"With…"}</button>`;
     $$("[data-tk]").forEach(b => b.onclick = async () => { const [key,val] = b.dataset.tk.split("|"); if (key === "with") { const v = await askText({ title:"Who with?", label:"Their name", value:ctx.with || "", placeholder:"Anybody, however you say it", ok:"That's them", max:40 }); if (v !== null) ctx.with = v; } else ctx[key] = ctx[key] === val ? null : val; drawTicks(); }); }; drawTicks();
   let stats = { n:0, counts:{}, share:() => 0, hot:() => false };
@@ -6171,8 +6359,10 @@ async function openYou() { let top = { items:[] }; try { top = await ensureMyTop
 
   $("#ySave").onclick = async () => { const h = lc($("#yHandle").value.trim()), bio = $("#yBio").value.trim(); if (!/^[a-z0-9_]{2,24}$/.test(h)) { $("#yMsg").textContent = "two to twenty-four, lowercase, no spaces"; return; }
     if (willNotPost(h) || willNotPost(bio)) { $("#yMsg").textContent = "That word doesn't go up here."; return; }
+    if (h !== lc(me.handle) && await handleTaken(h)) { $("#yMsg").textContent = "someone already has that one"; return; }
     try { if (sb.__local) { Object.assign(sb.__db.profile, { handle:h, bio, avatar:av }); sb.__save(); }
-      else await q(sb.from("profiles").update({ handle:h, bio:bio||null, avatar:av }).eq("id", me.id));
+      else { if (h !== lc(me.handle)) await q(sb.rpc("claim_handle", { want:h }));
+        await q(sb.from("profiles").update({ bio:bio||null, avatar:av }).eq("id", me.id)); }
       me.handle = h; me.bio = bio; me.avatar = av; $("#meName").textContent = h; paintMeAv();
       $("#yMsg").textContent = "Saved"; refresh(); } catch (e) { $("#yMsg").textContent = e.message; } };
   /* the one irreversible thing in the app, so it asks for the handle rather than an OK:
@@ -6247,7 +6437,7 @@ async function exportEverything() {
   /* it said "everything" and fetched four tables out of seventeen. Clubs, votes, your
      ten, what you are in the middle of and anything anybody handed you were all missing,
      and the two lists that were there came out with their dates blanked. */
-  const [entries, myReplies, myReactions, myFollows, myNows, myHands, myTops, myVotes, myClubIn, mySeenRows, myBlocks] =
+  const [entries, myReplies, myReactions, myFollows, myNows, myHands, myTops, myVotes, myClubIn, mySeenRows, myBlocks, myHandles] =
     await Promise.all([
       grab("entries", "*", "user_id"),
       grab("replies", "*", "user_id"),
@@ -6261,6 +6451,7 @@ async function exportEverything() {
       grab("club_members", "*", "user_id"),
       grab("seen", "*", "user_id"),
       grab("blocks", "*", "blocker"),
+      grab("handles", "*", "owner"),
     ]);
   const myClubs = [...clubs, ...openClubs].filter(c => myClubIn.some(m => m.club_id === c.id));
   const usedWorks = {};
@@ -6285,7 +6476,7 @@ async function exportEverything() {
     reactions: myReactions, replies: myReplies,
     top_lists: myTops.map(t => { const { top_list_items:_i, ...row } = t; return row; }),
     top_list_items: myTops.flatMap(t => t.top_list_items || []),
-    nows: myNows, handovers: myHands, seen: mySeenRows, blocks: myBlocks,
+    nows: myNows, handovers: myHands, seen: mySeenRows, blocks: myBlocks, handles: myHandles,
     follows: myFollows,
   };
 }
@@ -6310,6 +6501,7 @@ window.__rooms = { pullRefresh, openFind, setFollow, isFollowing, get follows(){
   loadNow, startNow, stopNow, nowOf, nowFor, nowLine, get myNow(){return myNow},
   bestOf, bestGenres, dealBest, loadBest, pickFrom, seenMode, keepSeen, get bestPool(){return bestPool}, get bestHand(){return bestHand},
   askText, askYesNo, openAsk, closeAsk, feedNow, openInvite, inviteText,
+  known, showcase, weekPast, weekCard, WEEK_KEY, handleTaken, peekRoom, SHOWCASE,
   willNotPost, addPatterns, setReasons, loadSettings, get NOPE(){return NOPE}, get REPORT_WHY(){return REPORT_WHY},
   saveEntry, readBackup, bringOver, openBringOver, loadLists, loadSeen, blockThem, unblockThem, isApart, notApart, loadBlocks, openReport, openBlock, sendReport, REPORT_WHY,
   get blocked(){return blocked},

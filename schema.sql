@@ -832,3 +832,85 @@ create policy settings_read on settings for select to authenticated using (true)
 -- The patterns are case-insensitive regular expressions, matched against the text with
 -- spaces, dots, stars and hyphens stripped out. They are ADDED to the bundled list,
 -- never replace it, so a bad row here cannot switch the filter off.
+
+-- ---------- v23: one handle each ----------
+-- A handle is the only name anybody has here, and it was free to change and free to
+-- drop. Change yours and the old one went back in the pool — so anybody could take the
+-- name your friends know you by and be mistaken for you in a room. That is the whole
+-- attack and it costs nothing to run.
+--
+-- So a handle stays with whoever had it. Changing yours takes the new one and keeps the
+-- old, and nobody else can ever have either.
+create table if not exists handles (
+  handle text primary key check (handle ~ '^[a-z0-9_]{2,24}$'),
+  owner uuid references profiles on delete set null,
+  taken_at timestamptz default now()
+);
+create index if not exists handles_owner_idx on handles (owner);
+
+alter table handles enable row level security;
+drop policy if exists handles_read on handles;
+-- readable so the app can say "that one is taken" before you press anything. It says
+-- nothing about who has it: the owner column is not in what the app asks for, and
+-- knowing a name is spoken for is not knowing whose it is.
+create policy handles_read on handles for select to authenticated using (true);
+
+-- Names nobody gets. Not a moral list — these are the ones that let somebody pass for
+-- the app itself, which is the only impersonation that works on everybody at once.
+insert into handles (handle, owner) values
+  ('rooms', null), ('admin', null), ('support', null), ('help', null), ('team', null),
+  ('staff', null), ('official', null), ('moderator', null), ('mod', null), ('system', null),
+  ('root', null), ('security', null), ('billing', null), ('me', null), ('you', null),
+  ('anonymous', null), ('deleted', null), ('null', null), ('undefined', null)
+on conflict (handle) do nothing;
+
+-- every handle already in use belongs to whoever is using it
+insert into handles (handle, owner)
+  select handle, id from profiles on conflict (handle) do nothing;
+
+-- Taking one, in a single statement, so two people pressing save at the same moment
+-- cannot both be told yes. Raises rather than returning false, because the caller has
+-- nothing useful to do with a quiet no.
+create or replace function claim_handle(want text) returns void
+language plpgsql security definer set search_path = public as $$
+declare me uuid := auth.uid(); holder uuid; had text;
+begin
+  if me is null then raise exception 'not signed in'; end if;
+  want := lower(trim(want));
+  if want !~ '^[a-z0-9_]{2,24}$' then raise exception 'two to twenty-four, lowercase, no spaces'; end if;
+  select owner into holder from handles where handle = want;
+  if found and holder is distinct from me then raise exception 'that handle is taken'; end if;
+  if not found then insert into handles (handle, owner) values (want, me); end if;
+  select handle into had from profiles where id = me;
+  update profiles set handle = want where id = me;
+  -- the old one is kept, owned, and unavailable: that is the point
+  if had is not null and had <> want then
+    insert into handles (handle, owner) values (had, me) on conflict (handle) do update set owner = me;
+  end if;
+end $$;
+revoke all on function claim_handle(text) from public, anon;
+grant execute on function claim_handle(text) to authenticated;
+
+-- ---------- v23: looking at a room before you are in it ----------
+-- An invite link asked for an account before it would show anything, which is a strange
+-- thing to ask of somebody who has been sent a link by a friend: sign up, then find out
+-- whether it was worth it.
+--
+-- What comes back is who is in there and how much they have logged. Not a word anybody
+-- wrote. The code is the only thing guarding a room, and it is fair to let it prove the
+-- room is real — it is not fair to let it publish everybody's writing to anyone who is
+-- handed six characters.
+create or replace function peek_room(p_code text)
+returns table (name text, members int, logged bigint, handles text[])
+language sql security definer stable set search_path = public as $$
+  select r.name,
+         (select count(*)::int from room_members m where m.room_id = r.id),
+         (select count(*) from entries e
+            where e.user_id in (select m.user_id from room_members m where m.room_id = r.id)
+              and not e.part),
+         (select coalesce(array_agg(p.handle order by p.handle), '{}')
+            from room_members m join profiles p on p.id = m.user_id where m.room_id = r.id)
+  from rooms r where upper(r.code) = upper(trim(p_code)) limit 1
+$$;
+revoke all on function peek_room(text) from public;
+grant execute on function peek_room(text) to anon, authenticated;
