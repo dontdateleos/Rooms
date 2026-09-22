@@ -68,10 +68,20 @@ is fetched from a CDN at runtime; `offsite.test.mjs` is the test that keeps it t
 
 Built in v21. All four are in place; the last one needs your contact address.
 
-- [x] **A way to filter objectionable material** before it is posted. A slur list, checked
-      at the point of writing, on entries, handover notes, handles and bios. Slurs only —
-      no profanity list, because "this film is fucking great" is a review and refusing it
-      would teach people the app is stupid and to write around it.
+- [x] **A way to filter objectionable material** before it is posted. Three lists, checked
+      at the point of writing, on entries, replies, handover notes, handles, bios, room
+      names and club names. Slurs go from everything. Swearing goes from everything too,
+      with one exception: "this film is fucking great" is a review, and refusing it would
+      teach people the app is stupid and to write around it — so that one word stays in a
+      review and goes from a name, along with all the rest. A name is stricter because
+      everybody else has to read it and cannot look away from it.
+      Since v25 the same three lists are in the database as `bad_word()` and `bad_name()`,
+      enforced by `claim_handle()` and by check constraints on every name column, so the
+      filter is not just a sign on a door that anyone with a console can walk past.
+      Every pattern is anchored, and there is a short unanchored list for names only with
+      the innocent hosts taken out — Scunthorpe, Hitchcock, assassin, shiitake, Moby Dick,
+      Pissarro and Fukunaga are ordinary things to write about films, and a filter that
+      trips on them is worse than no filter. `names.test.mjs` holds every one of them.
 - [x] **A way to report an entry or a person.** A Report link on every entry that is not
       yours and on every profile that is not yours. Seven reasons and a free line. Rows
       land in `reports`, which nothing can read through the API — **you read them in the
@@ -122,9 +132,11 @@ select r.created_at, r.reason, r.note,
 - [ ] Set yourself a way of seeing new reports. Nothing notifies you today.
 - [ ] Decide what goes in `settings` before the first build. Anything you might want to
       change in a hurry belongs there, because after the first release a one-word change
-      costs a build, an upload and a day or two of review. Two keys exist: `nope` (extra
-      slur patterns, added to the bundled list) and `report_reasons` (the wording on the
-      report form). Neither can weaken what shipped — a bad row is ignored, not obeyed.
+      costs a build, an upload and a day or two of review. Four keys exist: `nope` (extra
+      slur patterns), `foul` (swearing, refused in a review as well as a name), `name_only`
+      (refused in a name only) and `report_reasons` (the wording on the report form). None
+      can weaken what shipped — extra patterns are added to the bundled lists, never
+      substituted, and a bad row is ignored, not obeyed.
 - [ ] 1024×1024 icon, no alpha channel, no rounded corners.
 - [ ] Wrap it — Capacitor — and get it running on a real device.
 - [ ] Watch the 34 animations on real hardware. A phone is not a headless Chromium.

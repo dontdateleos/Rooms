@@ -1559,6 +1559,9 @@ function makeLocalSb(seed) {
     rpc: (name, args) => {
       /* the two v23 functions, doing here what they do there */
       if (name === "claim_handle") { const want = String(args.want || "").toLowerCase().trim();
+        /* v25 refuses it in the function, not only in the app, so the mock does too */
+        if (willNotName(want))
+          return Promise.resolve({ data:null, error:new Error("that name does not go up here") });
         const row = db.handles.find(h => h.handle === want);
         /* a reserved name has no owner, and "no owner" is not "yours for the taking" —
            which is what checking row.owner for truthiness quietly said */
@@ -1771,23 +1774,103 @@ const NOPE_BUILT_IN = [
   "ch[i1!]+nk", "tr[a@4]+nn[yie]+", "r[e3]+t[a@4]+rd", "c[o0]+[o0]+n[s]?\\b",
   "w[e3]+tb[a@4]+ck", "g[o0]+[o0]+k\\b", "b[e3]+[a@4]+n[e3]+r\\b",
 ];
+/* ---------- and the swearing ----------
+   Slurs are one thing. Swearing is another, and the two do not deserve the same answer.
+
+   What a person writes about a film is their own voice, and the app is not their mother.
+   But a handle, a room name or a club name is a label everybody else has to read, on
+   every screen it appears on, with no way to look away from it — and it is the first
+   thing a store reviewer sees. So a name is held to a stricter rule than a sentence.
+
+   Within the swearing there is one word that carries no target and does most of the
+   honest work in a review — "this is fucking magnificent" is a compliment and refusing
+   it would teach people the app is stupid, which is the fastest way to stop them writing
+   at all. So it stays in a review, and not in a name. Everything else goes from both.
+
+   Each pattern is anchored at both ends on purpose. Scunthorpe, Hitchcock, assassin,
+   classic, shiitake, Moby Dick and Pissarro are all ordinary things to write about
+   films, and a filter that trips on them is worse than no filter. The suite holds every
+   one of those. For the same reason "dick" and "cock" only appear here as compounds:
+   alone they are a surname, a hitchcock and a peacock more often than they are an
+   insult. */
+const FOUL_BUILT_IN = [
+  "\\bc+u+n+t+(s|y|ish)?\\b", "\\b(bull|horse|dog|bat|ape|dip)?s+h+i+t+(e|s|y|ty|ter|ting|ed|head|hole|bag|faced)?\\b",
+  "\\bb+i+t+c+h+(es|y|in|ing|ed)?\\b", "\\bb+a+s+t+a+r+d+s?\\b",
+  "\\bw+a+n+k+(er|ers|ing|ed|s)?\\b", "\\bt+w+a+t+s?\\b", "\\bb+o+l+l+o+c+k+(s|ed|ing)?\\b",
+  "\\bp+i+s+s+(ed|ing|er|es|take)?\\b", "\\b(ars|ass)e?(hole|holes|wipe|hat|clown)\\b", "\\barses?\\b",
+  "\\bwh+o+r+e+(s|house)?\\b", "\\bsluts?\\b", "\\bdouche(bag)?s?\\b", "\\bpricks?\\b",
+  "\\bdick(head|heads|face|wad|weed)\\b", "\\bcock(head|sucker|suckers|face)\\b",
+  "\\bjerk\\s*off\\b", "\\bsc+u+m+bag+s?\\b",
+];
+/* the one that stays in a review */
+const FUCK_BUILT_IN = [
+  "\\b(mother|cluster)?f+u+c+k+(s|er|ers|ing|in|ed|up|ups|off|wit|wits|face|head|tard|tards)?\\b",
+  "\\bf+u+k+(s|ing|er)?\\b", "\\bfck\\b", "\\bstfu\\b",
+];
+/* A handle is one word with no spaces in it, so word boundaries have nothing to hold on
+   to: fuckinglegend and shitposter walk straight past a list that is anchored at both
+   ends, and they are exactly what somebody picking a handle will try.
+
+   So a name gets a second pass with no anchors at all — and that pass has to be a much
+   shorter list, because without anchors every innocent word that happens to contain one
+   of these becomes a refusal. These are the cores with no innocent host word: no ass
+   (assassin, classic), no cock (Hitchcock, peacock), no dick (Moby Dick, Dickens), no
+   piss (Pissarro), no fuk (Fukunaga), and no elongation, because s+h+i+t+ matches
+   shiitake and plain "shit" does not. The two towns are here because they are the
+   oldest joke in this business and somebody really is from one of them. */
+const NAKED_BUILT_IN = [
+  "cunt", "shit", "bitch", "bastard", "wank", "twat", "bollock", "arsehole",
+  "asshole", "whore", "slut", "douche", "prick", "dickhead", "cocksucker", "scumbag",
+];
+/* the same trick, for the one word that is a name's problem and not a review's */
+const NAKED_FUCK = ["fuck"];
+/* Taken out of the text before the unanchored pass runs. Every one of these is a real
+   word or a real place that happens to contain one of the cores above, and a filter that
+   refuses somebody from Scunthorpe or a review of a prickly character is worse than no
+   filter at all. */
+const INNOCENT = /scunthorpe|penistone|lightwater|shiitake|pissarro|assassin|mishit|prickly/g;
 /* Bundled is the floor. v22 adds a settings row the app reads at startup, so a word can
    be added without a build — which matters the moment this is in a store and shipping
    anything costs a day. Extra patterns are ADDED, never substituted: a malformed row,
    an empty one, or no row at all leaves the list exactly as it is here, so nothing about
    the database can switch the filter off. A pattern that will not compile is dropped on
    its own rather than taking the rest of the list with it. */
-let NOPE = NOPE_BUILT_IN.map(x => new RegExp(x, "i"));
-function addPatterns(extra) {
-  if (!Array.isArray(extra)) return;
-  const out = NOPE_BUILT_IN.map(x => new RegExp(x, "i"));
-  for (const x of extra) { if (typeof x !== "string" || x.length > 200) continue;
+const compile = list => list.map(x => new RegExp(x, "i"));
+let NOPE = compile(NOPE_BUILT_IN), FOUL = compile(FOUL_BUILT_IN),
+    FOUL_NAME = compile(FUCK_BUILT_IN), NAKED = compile(NAKED_BUILT_IN);
+const LISTS = { slur:NOPE_BUILT_IN, foul:FOUL_BUILT_IN, name:FUCK_BUILT_IN, naked:NAKED_BUILT_IN };
+const NAKED_F = compile(NAKED_FUCK);
+function addPatterns(extra, which = "slur") {
+  const base = LISTS[which] || LISTS.slur;
+  const out = compile(base);
+  if (Array.isArray(extra)) for (const x of extra) {
+    if (typeof x !== "string" || x.length > 200) continue;
     try { out.push(new RegExp(x, "i")); } catch {} }
-  NOPE = out;
+  if (which === "foul") FOUL = out; else if (which === "name") FOUL_NAME = out;
+  else if (which === "naked") NAKED = out; else NOPE = out;
 }
 /* strip the usual dressing-up before looking: spaces, dots and stars between letters */
 const bare = t => String(t || "").toLowerCase().replace(/[\s._*\-]+/g, "");
-const willNotPost = t => { const b = bare(t); return NOPE.some(re => re.test(b)); };
+/* The same text with the dressing-up undone but the gaps between words kept, because an
+   anchored pattern needs somewhere to anchor. bare() removes the spaces, which is right
+   for a slur written out l i k e  t h i s and useless for a word that must not match
+   inside a longer one. So both are looked at, and each catches what the other cannot. */
+const flat = t => String(t || "").toLowerCase()
+  .replace(/[@4]/g, "a").replace(/3/g, "e").replace(/[1!|]/g, "i").replace(/0/g, "o")
+  .replace(/[$5]/g, "s").replace(/7/g, "t").replace(/[^a-z]+/g, " ");
+const anyOf = (res, t) => { const f = flat(t), b = bare(t);
+  return res.some(re => re.test(f) || re.test(b)); };
+/* The text with the innocent hosts taken out, ready for the unanchored pass. Both forms
+   are needed for the same reason as always: one keeps the gaps between words, the other
+   closes up a word somebody has spaced out. */
+const stripped = t => bare(t).replace(INNOCENT, "") + " " + flat(t).replace(INNOCENT, "");
+/* what a person writes */
+const willNotPost = t => NOPE.some(re => re.test(bare(t))) || anyOf(FOUL, t)
+  || NAKED.some(re => re.test(stripped(t)));
+/* what everybody else has to read: the same, and the one word a review is allowed */
+const willNotName = t => willNotPost(t) || anyOf(FOUL_NAME, t)
+  || NAKED_F.some(re => re.test(stripped(t)));
+const NAME_NO = "That name doesn't go up here. Everyone in the room has to read it.";
 /* exposed so the suite can prove both halves: that it catches, and that it lets an
    ordinary sweary review through */
 
@@ -2023,7 +2106,11 @@ async function loadSettings() {
   try { rows = await q(sb.from("settings").select("key,value")); }
   catch (e) { if (missingBit(e)) needs("v22", "the word list cannot change without a build"); return; }
   for (const r of rows) {
-    if (r.key === "nope") addPatterns(r.value);
+    if (r.key === "nope") addPatterns(r.value, "slur");
+    /* one row a list, so a word can be added to the right one without a build: "foul"
+       goes from a review as well as a name, "name_only" only from a name */
+    if (r.key === "foul") addPatterns(r.value, "foul");
+    if (r.key === "name_only") addPatterns(r.value, "name");
     if (r.key === "report_reasons") setReasons(r.value);
   }
 }
@@ -3025,7 +3112,9 @@ function renderAuth() {
       <div class="stack"><button class="btn blue" id="startLocal">Open my rooms</button></div>`}<p class="msg" id="authMsg"></p>`;
     const go = h => { sb.auth._localStart(h); loadMe().then(m => m && enter()); };
     if (prev) $("#cont").onclick = () => go(prev.handle); else $("#startLocal").onclick = () => { const h = lc($("#handle").value.trim());
-      if (!/^[a-z0-9_]{2,24}$/.test(h)) { $("#authMsg").textContent = "two to twenty-four, lowercase, no spaces"; return; } go(h); }; return; }
+      if (!/^[a-z0-9_]{2,24}$/.test(h)) { $("#authMsg").textContent = "two to twenty-four, lowercase, no spaces"; return; }
+      if (willNotName(h)) { $("#authMsg").textContent = NAME_NO; return; }
+      go(h); }; return; }
   const invited = takeInvite();
   b.innerHTML = `<h1>Every room<br>you’ve <span>been in.</span></h1>
     <p class="say">You used to be able to stand in someone’s front room and know them. The shelves told you. Nothing tells you now. <b>This does.</b></p>
@@ -3127,6 +3216,9 @@ function renderClaim() { const b = $("#authBody");
     <div class="stack"><button class="btn blue" id="claim">Open my rooms</button></div><p class="msg" id="authMsg"></p>`;
   const claim = async () => { const h = lc($("#handle").value.trim());
     if (!/^[a-z0-9_]{2,24}$/.test(h)) { $("#authMsg").textContent = "two to twenty-four, lowercase, no spaces"; return; }
+    /* the same rule as changing it later, and for the same reason: this is the name
+       everybody in the room reads, and the one nobody can look away from */
+    if (willNotName(h)) { $("#authMsg").textContent = NAME_NO; return; }
     $("#claim").disabled = true; $("#authMsg").textContent = "";
     try { if (await handleTaken(h)) throw new Error("someone already has that one");
       await q(sb.from("profiles").insert({ id:pendingUser, handle:h }));
@@ -3597,7 +3689,9 @@ async function renderRoomFeed(fb, R) {
 function wireRoomButtons() { const nr = $("#newRoom"), jr = $("#joinRoom");
   if (nr) nr.onclick = async () => {
     const name = await askText({ title:"Name the room", sub:"Something the five of you will recognise. You can change it later.", label:"Name", placeholder:"The Pit", ok:"Open it", max:40 });
-    if (!name) return; try { const r = await q(sb.rpc("create_room", { p_name:name })); await loadRooms(); if (r?.id) P.activeRoom = r.id; saveP(); await loadClubs(); renderDoors(); } catch (e) { $("#roomMsg").textContent = e.message; } };
+    if (!name) return;
+    if (willNotName(name)) { $("#roomMsg").textContent = NAME_NO; return; }
+    try { const r = await q(sb.rpc("create_room", { p_name:name })); await loadRooms(); if (r?.id) P.activeRoom = r.id; saveP(); await loadClubs(); renderDoors(); } catch (e) { $("#roomMsg").textContent = e.message; } };
   const ge = $("#goEveryone"); if (ge) ge.onclick = () => { P.feed = "everyone"; P.feedPicked = true; saveP(); renderDoors(); };
   if (jr) jr.onclick = async () => {
     const code = await askText({ title:"Join a room", sub:"Whoever is already in it can find the code under the room's name.", label:"The six-character code", placeholder:"PIT123", ok:"Join", max:12, upper:true });
@@ -5746,6 +5840,7 @@ function openClubEditor(existing = null, scope = "room") { const c = existing
         draw(); } catch (err) { $("#cMsg").textContent = err.message; } }, $("#cResults"), $("#cMsg"), $("#cSearch")), 400); };
   $("#cCancel").onclick = closeSheet;
   $("#cSave").onclick = async () => { c.name = $("#cName").value.trim(); c.due = $("#cDue").value || null; if (!c.name) { $("#cMsg").textContent = "It needs a name"; return; }
+    if (willNotName(c.name)) { $("#cMsg").textContent = NAME_NO; return; }
     try {
       if (existing) await q(sb.from("clubs").update({ name:c.name, label:c.label, due:c.due, items:c.items, scope:c.scope, room_id: c.scope === "open" ? null : (activeRoom()?.id || null) }).eq("id", existing.id));
       else { const row = await q(sb.from("clubs").insert({ room_id: c.scope === "open" ? null : (activeRoom()?.id || null), scope:c.scope,
@@ -6278,7 +6373,10 @@ function openLog(w, edit = null) { const cfg = K(w.kind); const loved = edit?.lo
   if (us) us.onclick = () => { const n = nowOf(w.id); if (!n) return;
     $("#wDate").value = n.started_on; us.classList.add("on"); us.textContent = "Using that date"; us.disabled = true; };
   const drawTicks = () => { $("#tickRow").innerHTML = cfg.ticks.flatMap(([key,a,b]) => [`<button class="tk ${ctx[key]===a?"on":""}" data-tk="${key}|${a}">${a}</button>`,`<button class="tk ${ctx[key]===b?"on":""}" data-tk="${key}|${b}">${b}</button>`]).join("") + `<button class="tk ${ctx.with?"on":""}" data-tk="with|">${ctx.with?"With "+esc(ctx.with):"With…"}</button>`;
-    $$("[data-tk]").forEach(b => b.onclick = async () => { const [key,val] = b.dataset.tk.split("|"); if (key === "with") { const v = await askText({ title:"Who with?", label:"Their name", value:ctx.with || "", placeholder:"Anybody, however you say it", ok:"That's them", max:40 }); if (v !== null) ctx.with = v; } else ctx[key] = ctx[key] === val ? null : val; drawTicks(); }); }; drawTicks();
+    $$("[data-tk]").forEach(b => b.onclick = async () => { const [key,val] = b.dataset.tk.split("|"); if (key === "with") { const v = await askText({ title:"Who with?", label:"Their name", value:ctx.with || "", placeholder:"Anybody, however you say it", ok:"That's them", max:40 });
+        /* a name, and one the room reads on your entry — held to the name rule, not the
+           review rule, because it is somebody else being called it */
+        if (v !== null) { if (willNotName(v)) { say(NAME_NO); } else ctx.with = v; } } else ctx[key] = ctx[key] === val ? null : val; drawTicks(); }); }; drawTicks();
   let stats = { n:0, counts:{}, share:() => 0, hot:() => false };
   let faces = w.meta?.faces || {};
   const chip = (key, label, cls = "") => { const who = cls.includes("who") && key.startsWith("person:") ? key.slice(7) : null;
@@ -6750,7 +6848,7 @@ async function openYou() { let top = { items:[] }; try { top = await ensureMyTop
     paintAv(); paintMeAv(); refresh(); };
 
   $("#ySave").onclick = async () => { const h = lc($("#yHandle").value.trim()), bio = $("#yBio").value.trim(); if (!/^[a-z0-9_]{2,24}$/.test(h)) { $("#yMsg").textContent = "two to twenty-four, lowercase, no spaces"; return; }
-    if (willNotPost(h) || willNotPost(bio)) { $("#yMsg").textContent = "That word doesn't go up here."; return; }
+    if (willNotName(h) || willNotName(bio)) { $("#yMsg").textContent = NAME_NO; return; }
     if (h !== lc(me.handle) && await handleTaken(h)) { $("#yMsg").textContent = "someone already has that one"; return; }
     try { if (sb.__local) { Object.assign(sb.__db.profile, { handle:h, bio, avatar:av }); sb.__save(); }
       else { if (h !== lc(me.handle)) await q(sb.rpc("claim_handle", { want:h }));
@@ -6895,7 +6993,7 @@ window.__rooms = { pullRefresh, openFind, setFollow, isFollowing, get follows(){
   askText, askYesNo, openAsk, closeAsk, feedNow, openInvite, inviteText,
   known, showcase, weekPast, weekCard, WEEK_KEY, handleTaken, peekRoom, SHOWCASE,
   tokenHTML, tokFace, tokEdge, cabinetRows, renderCabinet, cabView, TOK_DEPTH,
-  willNotPost, addPatterns, setReasons, loadSettings, get NOPE(){return NOPE}, get REPORT_WHY(){return REPORT_WHY},
+  willNotPost, willNotName, addPatterns, setReasons, get FOUL(){return FOUL}, get FOUL_NAME(){return FOUL_NAME}, get NAKED(){return NAKED}, loadSettings, get NOPE(){return NOPE}, get REPORT_WHY(){return REPORT_WHY},
   saveEntry, readBackup, bringOver, openBringOver, loadLists, loadSeen, blockThem, unblockThem, isApart, notApart, loadBlocks, openReport, openBlock, sendReport, REPORT_WHY,
   get blocked(){return blocked},
   newestFirst, sortEntries, loadMine, loadRooms, exportEverything, openYou, openEntry, sayUndo, openCover, compFlip, showOffline, drawTogether, openHand, openCuts, sayWords, settleIn, endLine, closeGap, gridPlaces, strikeRing, removeFromShelf, paintHere, tickTo, dealIn, flyTo, leaveOut, rollLine, fillChip, paintTheme,

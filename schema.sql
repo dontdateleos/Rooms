@@ -962,3 +962,106 @@ grant execute on function best_of(date, text, int) to authenticated;
 
 -- rated_on is what every window is measured against, and nothing was indexed on it
 create index if not exists entries_rated_idx on entries (rated_on desc) where not part;
+
+-- ---------- v25: names, and the rest of the swearing ----------
+-- The filter lived only in the app, which is one file served off a CDN with its source
+-- in a public repository. That is a sign on a door, not a lock: anybody who wants a
+-- handle the filter refuses can have one with a single line in a console. A name is the
+-- one piece of text everybody else has to read on every screen it appears on, so this
+-- is the half that has to hold.
+--
+-- Three lists, and the middle one is the point. Slurs go from everything. Swearing goes
+-- from everything too -- with one exception, because "this is fucking magnificent" is a
+-- compliment and refusing it teaches people the app is stupid, which is the fastest way
+-- to stop them writing at all. So that one word stays in a review and goes from a name.
+--
+-- Every pattern is anchored. Scunthorpe, Hitchcock, assassin, classic, shiitake, Moby
+-- Dick and Pissarro are ordinary things to write about films, and a filter that trips on
+-- them is worse than no filter. The app carries the same three lists and the same
+-- anchoring; if you change one, change the other.
+create or replace function flat_text(t text) returns text
+language sql immutable strict as $$
+  select regexp_replace(translate(lower(t), '@4310$57!|', 'aaeiosstii'), '[^a-z]+', ' ', 'g')
+$$;
+-- the dressing-up stripped out entirely: for a slur written l i k e  t h i s
+create or replace function bare_text(t text) returns text
+language sql immutable strict as $$
+  select regexp_replace(lower(t), '[^a-z0-9]+', '', 'g')
+$$;
+
+create or replace function bad_word(t text) returns boolean
+language sql immutable as $$
+  select case when t is null or t = '' then false else
+    bare_text(t) ~* '(n[i1!]+gg?[e3]+r|n[i1!]+gg?a|f[a@4]+gg?[o0]+t|k[i1!]+k[e3]|sp[i1!]+ck|ch[i1!]+nk|tr[a@4]+nn[yie]+|r[e3]+t[a@4]+rd|c[o0][o0]+ns?\y|w[e3]+tb[a@4]+ck|g[o0][o0]+k\y|b[e3]+[a@4]+n[e3]+r\y)'
+    or regexp_replace(flat_text(t) || ' ' || bare_text(t),
+         'scunthorpe|penistone|lightwater|shiitake|pissarro|assassin|mishit|prickly', '', 'g')
+       ~* '(cunt|shit|bitch|bastard|wank|twat|bollock|arsehole|asshole|whore|slut|douche|prick|dickhead|cocksucker|scumbag)'
+    or (flat_text(t) || ' ' || bare_text(t)) ~* '\y(c+u+n+t+(s|y|ish)?|(bull|horse|dog|bat|ape|dip)?s+h+i+t+(e|s|y|ty|ter|ting|ed|head|hole|bag|faced)?|b+i+t+c+h+(es|y|in|ing|ed)?|b+a+s+t+a+r+d+s?|w+a+n+k+(er|ers|ing|ed|s)?|t+w+a+t+s?|b+o+l+l+o+c+k+(s|ed|ing)?|p+i+s+s+(ed|ing|er|es|take)?|(ars|ass)e?(hole|holes|wipe|hat|clown)|arses?|wh+o+r+e+(s|house)?|sluts?|douche(bag)?s?|pricks?|dick(head|heads|face|wad|weed)|cock(head|sucker|suckers|face)|jerk *off|sc+u+m+bag+s?)\y'
+  end
+$$;
+-- A name is held to the stricter rule, because it is read by people who did not ask to.
+-- And a handle is one word with no spaces in it, so the anchors have nothing to hold on
+-- to: fuckinglegend and shitposter walk straight past a list anchored at both ends, and
+-- they are exactly what somebody picking a handle will try. So there is a second pass
+-- with no anchors, over a much shorter list -- the cores with no innocent host word. No
+-- ass (assassin, classic), no cock (Hitchcock, peacock), no dick (Moby Dick), no piss
+-- (Pissarro), no fuk (Fukunaga), and no elongation, because s+h+i+t+ matches shiitake
+-- and plain 'shit' does not. The towns are the oldest joke in this business and somebody
+-- really is from one of them.
+create or replace function bad_name(t text) returns boolean
+language sql immutable as $$
+  select case when t is null or t = '' then false else
+    bad_word(t)
+    or (flat_text(t) || ' ' || bare_text(t)) ~* '\y((mother|cluster)?f+u+c+k+(s|er|ers|ing|in|ed|up|ups|off|wit|wits|face|head|tard|tards)?|f+u+k+(s|ing|er)?|fck|stfu)\y'
+    or regexp_replace(flat_text(t) || ' ' || bare_text(t),
+         'scunthorpe|penistone|lightwater|shiitake|pissarro|assassin|mishit|prickly', '', 'g')
+       ~* 'fuck'
+  end
+$$;
+grant execute on function flat_text(text), bare_text(text), bad_word(text), bad_name(text) to authenticated, anon;
+
+-- Taking a handle goes through a function, so the check goes in the function. Raising
+-- rather than quietly refusing: the caller has nothing useful to do with a silent no.
+create or replace function claim_handle(want text) returns void
+language plpgsql security definer set search_path = public as $$
+declare me uuid := auth.uid(); holder uuid; had text;
+begin
+  if me is null then raise exception 'not signed in'; end if;
+  want := lower(trim(want));
+  if want !~ '^[a-z0-9_]{2,24}$' then raise exception 'two to twenty-four, lowercase, no spaces'; end if;
+  if bad_name(want) then raise exception 'that name does not go up here'; end if;
+  select owner into holder from handles where handle = want;
+  if found and holder is distinct from me then raise exception 'that handle is taken'; end if;
+  if not found then insert into handles (handle, owner) values (want, me); end if;
+  select handle into had from profiles where id = me;
+  update profiles set handle = want where id = me;
+  if had is not null and had <> want then
+    insert into handles (handle, owner) values (had, me) on conflict (handle) do update set owner = me;
+  end if;
+end $$;
+revoke all on function claim_handle(text) from public, anon;
+grant execute on function claim_handle(text) to authenticated;
+
+-- and the rest of it, where the row is written directly. `not valid` on purpose: these
+-- check what is written from now on and leave whatever is already there alone -- a name
+-- somebody has been using for a month is a job for reporting, not for a failed migration.
+alter table profiles drop constraint if exists profiles_handle_clean;
+alter table profiles add constraint profiles_handle_clean check (not bad_name(handle)) not valid;
+alter table profiles drop constraint if exists profiles_bio_clean;
+alter table profiles add constraint profiles_bio_clean check (not bad_name(bio)) not valid;
+alter table rooms drop constraint if exists rooms_name_clean;
+alter table rooms add constraint rooms_name_clean check (not bad_name(name)) not valid;
+alter table clubs drop constraint if exists clubs_name_clean;
+alter table clubs add constraint clubs_name_clean check (not bad_name(name)) not valid;
+alter table lists drop constraint if exists lists_name_clean;
+alter table lists add constraint lists_name_clean check (not bad_name(name)) not valid;
+alter table top_lists drop constraint if exists top_lists_name_clean;
+alter table top_lists add constraint top_lists_name_clean check (not bad_name(name)) not valid;
+-- what somebody wrote about a film is held to the looser rule, and still to that one
+alter table entries drop constraint if exists entries_note_clean;
+alter table entries add constraint entries_note_clean check (not bad_word(note)) not valid;
+alter table replies drop constraint if exists replies_note_clean;
+alter table replies add constraint replies_note_clean check (not bad_word(body)) not valid;
+-- a line you send with something you handed somebody is writing, not a name
+alter table handovers drop constraint if exists handovers_note_clean;
+alter table handovers add constraint handovers_note_clean check (not bad_word(note)) not valid;
