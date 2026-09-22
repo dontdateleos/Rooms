@@ -403,6 +403,42 @@ textarea{min-height:76px;resize:none;line-height:1.45}
 .po.onit{box-shadow:0 0 0 2px var(--ink)}
 .cell .po.onit + .cap span:first-child{color:var(--ink);font-weight:600}
 .po{-webkit-touch-callout:none}
+/* ---------- the cabinet ----------
+   A thing you have finished, as a thing: a box standing on a plinth. The poster is the
+   front, the spine is the left edge, the plinth is tinted by medium so a row says what
+   it is without a word of label. The shelf is what you have not got to; this is what you
+   have. Both live in the Library.
+
+   Nothing moves on its own. A grid of spinning cases is a grid where a quarter of them
+   are edge-on and therefore gone at any moment, which looks like an app with holes in
+   it. The turn belongs to the one you are touching — the same thing the memory card did,
+   and it gives the motion a job. */
+.tray{margin-top:18px}
+.tray>.lbl{margin:0 0 8px;display:flex;justify-content:space-between;align-items:baseline}
+.tray>.lbl em{font-family:var(--body);font-style:normal;font-weight:600;font-size:11px;
+  letter-spacing:0;text-transform:none;color:var(--mute)}
+.run{display:flex;align-items:flex-end;gap:10px;overflow-x:auto;padding:2px 2px 6px;
+  scrollbar-width:none;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity}
+.run::-webkit-scrollbar{display:none}
+.tok{position:relative;flex:none;background:none;border:0;padding:0;cursor:pointer;
+  perspective:620px;scroll-snap-align:start;color:var(--ink);-webkit-tap-highlight-color:transparent}
+.tok .ob{position:absolute;transform-style:preserve-3d;transform:rotateY(-14deg);
+  transition:transform .5s cubic-bezier(.2,.9,.25,1)}
+.tok .fc{position:absolute;overflow:hidden;backface-visibility:hidden;background:var(--cream2)}
+.tok .fc img{width:100%;height:100%;object-fit:cover;display:block;opacity:0;transition:opacity .3s}
+.tok .fc img.ok{opacity:1}
+.tok .fc svg{display:block;width:100%;height:100%}
+.tok .plinth{position:absolute;border-radius:50%;opacity:.72}
+.tok .halo{position:absolute;border-radius:50%;border:2px solid var(--ink);opacity:.38}
+.tok .nm{position:absolute;left:0;right:0;bottom:0;height:15px;line-height:15px;font-size:9.5px;font-weight:600;color:var(--mute);
+  text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tok:focus-visible{outline:none}
+.tok:focus-visible .ob,.tok.turning .ob{animation:tokTurn 1.1s cubic-bezier(.3,0,.2,1)}
+@keyframes tokTurn{from{transform:rotateY(-14deg)}to{transform:rotateY(346deg)}}
+.tok:focus-visible .plinth,.tok.turning .plinth{opacity:1}
+@media (hover:hover){.tok:hover .ob{transform:rotateY(-4deg) translateY(-2px)}}
+@media (prefers-reduced-motion:reduce){.tok .ob{transition:none}.tok.turning .ob,.tok:focus-visible .ob{animation:none}}
+.cabempty{text-align:center;padding:30px 0 10px}
 /* seasons and episodes. Deliberately quieter than anything else on the page: the show
    is the thing, and this is the thing's shape. A shelf of posters here would make a
    five-season run look like five things you had watched. */
@@ -1249,7 +1285,7 @@ const cover = (w, cls = "co") => w?.cover ? `<img class="${cls}" src="${esc(w.co
 /* ============ prefs + sources ============ */
 const WORKER = "https://rooms.jordandf1.workers.dev";
 const proxy = () => (P.workerUrl || WORKER).replace(/\/+$/, "");
-const P = Object.assign({ workerUrl:"", tmdbKey:"", activeList:null, activeRoom:null, picked:null, kinds:["film","tv","book","game"], shelfFilter:"", pickTag:"", pickFrom:"shelf", bestGenre:{}, howLong:"", spinN:20, feedPicked:false, weekSeen:"", seen:"", cardSkin:"", feed:"room", theme:"" },
+const P = Object.assign({ workerUrl:"", tmdbKey:"", activeList:null, activeRoom:null, picked:null, kinds:["film","tv","book","game"], shelfFilter:"", pickTag:"", pickFrom:"shelf", bestGenre:{}, howLong:"", spinN:20, feedPicked:false, weekSeen:"", view:"shelf", seen:"", cardSkin:"", feed:"room", theme:"" },
   JSON.parse(localStorage.getItem("rooms.prefs") || "{}"));
 const saveP = () => localStorage.setItem("rooms.prefs", JSON.stringify(P));
 async function tmdb(path, params = {}) {
@@ -3520,7 +3556,65 @@ const reelCopies = n => Math.max(1, Math.ceil((REEL.lead + 10) / n));
 /* item index -> a cell in the middle of the rendered strip */
 const reelHome = (n, copies, i) => Math.floor((copies - 1) / 2) * n + i;
 const isSoon = w => !!(w?.release && w.release > today());
-function renderShelf() { const L = activeList();
+/* ---------- the cabinet ----------
+   The shelf is what you mean to get to. This is what you got to. Grouped by medium,
+   because "everything I have read" is a question people actually ask and a row answers
+   it without counting. Newest first inside a tray, so the thing you just finished is the
+   thing you see.
+
+   A show you only ever rated in seasons belongs here too: you have said what you think
+   of it, and a cabinet that left it out would be missing something you own. */
+const CAB_ORDER = ["film", "tv", "book", "game"];
+function cabinetRows() {
+  const best = {};                       /* one token per thing, at your latest word */
+  for (const e of myEntries) { const w = works[e.work_id]; if (!w) continue;
+    const cur = best[e.work_id];
+    if (!cur || newestFirst(e, cur.e) < 0) best[e.work_id] = { w, e, score:e.score }; }
+  for (const [sid, d] of showsFromParts()) {
+    if (best[sid]) continue; const w = works[sid]; if (!w) continue;
+    best[sid] = { w, e:{ created_at:"", rated_on:"" }, score:d.score, worked:true }; }
+  return Object.values(best).sort((a, b) => newestFirst(a.e, b.e));
+}
+function renderCabinet() {
+  const body = $("#shelfBody"); if (!body) return;
+  const rows = cabinetRows();
+  const by = {}; rows.forEach(r => (by[r.w.kind] ||= []).push(r));
+  const kinds = CAB_ORDER.filter(k => by[k]?.length);
+  body.innerHTML = `<h2>Your <span class="hl" style="background:var(--mint)">cabinet</span></h2>
+    <p class="sub">${rows.length ? `${rows.length} finished${
+      kinds.length > 1 ? ` · ${kinds.map(k => `${by[k].length} ${lc(by[k].length === 1 ? K(k).label : K(k).plural)}`).join(" · ")}` : ""}`
+      : "Everything you finish stands here."}</p>
+    ${viewSeg()}
+    ${rows.length ? kinds.map(k => `<div class="tray"><div class="lbl">
+        <span>${esc(K(k).plural)}</span><em>${by[k].length}</em></div>
+      <div class="run">${by[k].map(r => tokenHTML(r.w, 52, r.score >= 10)).join("")}</div></div>`).join("")
+      : blank("var(--mint)", "▯", "Nothing in here yet",
+          "Log something and it stands here, with its own cover on it. The shelf is what you mean to get to; this is what you got to.",
+          [["cabShelf", "Back to the shelf", "soft"]])}`;
+  wireCabinet();
+}
+function wireCabinet() {
+  $$("[data-view]").forEach(b => b.onclick = () => { P.view = b.dataset.view; saveP(); renderShelf(); });
+  const bk = $("#cabShelf"); if (bk) bk.onclick = () => { P.view = "shelf"; saveP(); renderShelf(); };
+  /* the turn belongs to the one you touched. It runs once and then gets out of the way,
+     and the sheet opens as it finishes rather than after it, so nothing waits on a
+     flourish. */
+  $$("[data-tok]").forEach(b => b.onclick = () => {
+    const id = b.dataset.tok;
+    if (REDUCED) return openWork(id);
+    b.classList.remove("turning"); void b.offsetWidth; b.classList.add("turning");
+    setTimeout(() => { b.classList.remove("turning"); }, 1100);
+    setTimeout(() => openWork(id), 340);
+  });
+}
+const viewSeg = () => `<div class="seg" style="margin-top:12px">${
+  [["shelf", "The shelf"], ["cabinet", "The cabinet"]].map(([k, l]) =>
+    `<button data-view="${k}" class="${cabView() === k ? "on" : ""}">${l}</button>`).join("")}</div>`;
+/* the cabinet is only worth offering once there is something in it */
+const cabView = () => P.view === "cabinet" && myEntries.length ? "cabinet" : "shelf";
+
+function renderShelf() { if (cabView() === "cabinet") return renderCabinet();
+  const L = activeList();
   /* The shelf holds what you mean to get to; what you're in the middle of belongs with it
      and need never have been put there, so it joins the grid rather than sitting under it
      in a strip of its own. "Out now" then means out and not yet started, so the three
@@ -3544,6 +3638,7 @@ function renderShelf() { const L = activeList();
           ? `Can't decide? ${left.length} to pick from` : "Can't decide? Spin the best of something"}</button>`}</div>
     <div id="resultArea"></div>`;
   $("#shelfBody").innerHTML = `<h2>Your <span class="hl" style="background:var(--mint)">library</span></h2><p class="sub">${all.length ? `${left.length} to go${done ? ` · ${done} done` : ""}${soonCount ? ` · ${soonCount} coming` : ""}` : "Everything you meant to get to."}</p>
+    ${myEntries.length ? viewSeg() : ""}
     <input id="search" type="search" placeholder="Search film, TV, books, games" autocomplete="off" style="margin-top:12px">
     <div class="chips">${Object.keys(KINDS).map(k => `<button class="chip k ${P.kinds.includes(k)?"on":""}" data-sk="${k}">${K(k).label}</button>`).join("")}</div>
     <div class="msg" id="msg"></div><div id="results"></div>
@@ -3608,6 +3703,7 @@ function renderShelf() { const L = activeList();
   justDealt = justSwept = null;
   wireShelf(); if (shelfEdit) paintEdit();
   wireSearch(); wireLog("shelfLog", 8);
+  $$("[data-view]").forEach(b => b.onclick = () => { P.view = b.dataset.view; saveP(); renderShelf(); });
   if (P.picked && !logged(P.picked) && works[P.picked]) showResult(works[P.picked]); renderWaiting(); renderShelfRecs(); }
 /* The shelf is where you decide what's next, so what your taste suggests belongs here and
    not only on your own profile page — the same recommendations, one tap from landing. It
@@ -5690,6 +5786,57 @@ async function paintWatch(w, target = "wWatch", compact = false) {
     <p class="sub" style="margin-top:10px;font-size:11px">Availability from JustWatch, via TMDB.</p></div>`;
 }
 
+/* ---------- one token ----------
+   Every number here comes off the width of the poster, so a tray changes size by
+   changing one figure. The depth is the medium: a box set is fatter than a film, a book
+   is fatter than both and shows its pages down the right edge. */
+const TOK_DEPTH = { film:0.20, tv:0.34, book:0.28, game:0.24 };
+const TOK_TINT = { film:"var(--film)", tv:"var(--tv)", book:"var(--book)", game:"var(--game)" };
+/* a stand-in when there is no cover, which for books is most of the time. The same hash
+   and the same palette as the avatars, so it reads as part of the app rather than as a
+   picture that failed to load. */
+function tokFace(w) {
+  const h = avHash(w.id);
+  const base = AV_COLS[h % (AV_COLS.length - 1)], deep = avShade(base, -.42), lite = avShade(base, .26);
+  const k = h % 4;
+  const art = k === 0 ? `<circle cx="30" cy="34" r="15" fill="${base}"/><rect y="56" width="60" height="34" fill="${lite}" opacity=".5"/>`
+    : k === 1 ? `<path d="M0 60L60 24v18L0 78z" fill="${base}"/><circle cx="44" cy="66" r="7" fill="${lite}"/>`
+    : k === 2 ? `<rect x="18" y="16" width="24" height="58" rx="2" fill="${base}"/>`
+    : `<path d="M30 22c9 0 14 8 14 17 0 8-4 12-4 16l2 35H18l2-35c0-4-4-8-4-16 0-9 5-17 14-17z" fill="${base}"/>`;
+  return `<svg viewBox="0 0 60 90" aria-hidden="true"><rect width="60" height="90" fill="${deep}"/>${art}</svg>`;
+}
+const tokEdge = kind => kind === "book"
+  ? `<svg viewBox="0 0 60 90" preserveAspectRatio="none" aria-hidden="true"><rect width="60" height="90" fill="#efe6d4"/>${
+      Array.from({length:14}, (_, i) => `<rect y="${4+i*6.2}" width="60" height="1.8" fill="#d9cdb6"/>`).join("")}</svg>`
+  : `<svg viewBox="0 0 60 90" preserveAspectRatio="none" aria-hidden="true"><rect width="60" height="90" fill="var(--line)"/></svg>`;
+
+const TOK_NAME = 15;                      /* the band the title sits in, inside the box */
+function tokenHTML(w, face = 52, five = false) {
+  const fw = face, fh = Math.round(fw * 1.42);
+  const dep = Math.max(4, Math.round(fw * (TOK_DEPTH[w.kind] || .22)));
+  const pad = Math.round(fw * .30), sideL = Math.round((fw - dep) / 2);
+  /* the plinth is centred on the object's bottom edge: half of it is behind the thing
+     standing on it and half shows in front, which is what makes it read as a plinth
+     rather than as a bar under a picture */
+  const bw = Math.round(fw * 1.14), bh = Math.max(7, Math.round(fw * .22));
+  const box = fw + pad * 2, boxh = fh + Math.ceil(bh / 2);
+  const front = w.cover
+    ? `<img src="${esc(w.cover)}" alt="" onload="this.classList.add('ok')" onerror="this.replaceWith(document.createRange().createContextualFragment(this.dataset.fb))" data-fb="${esc(tokFace(w))}">`
+    : tokFace(w);
+  return `<button type="button" class="tok" data-tok="${esc(w.id)}" title="${esc(w.title)}"
+      style="width:${box}px;height:${boxh + TOK_NAME}px">
+    <span class="ob" style="left:${pad}px;top:0;width:${fw}px;height:${fh}px">
+      <span class="fc" style="inset:0;border-radius:2px 3px 3px 2px;transform:translateZ(${dep/2}px);
+        box-shadow:0 ${Math.round(fw*.09)}px ${Math.round(fw*.2)}px -${Math.round(fw*.08)}px rgba(21,19,32,.45)">${front}</span>
+      <span class="fc" style="inset:0;border-radius:3px 2px 2px 3px;transform:rotateY(180deg) translateZ(${dep/2}px);background:var(--line)"></span>
+      <span class="fc" style="left:${sideL}px;top:0;width:${dep}px;height:${fh}px;transform:rotateY(-90deg) translateZ(${fw/2}px);background:${TOK_TINT[w.kind]||"var(--line)"}"></span>
+      <span class="fc" style="left:${sideL}px;top:0;width:${dep}px;height:${fh}px;transform:rotateY(90deg) translateZ(${fw/2}px)">${tokEdge(w.kind)}</span>
+    </span>
+    <span class="plinth" style="left:${Math.round((box-bw)/2)}px;bottom:${TOK_NAME}px;width:${bw}px;height:${bh}px;background:${TOK_TINT[w.kind]||"var(--line)"}"></span>
+    ${five ? `<span class="halo" style="left:${Math.round((box-bw)/2)-5}px;bottom:${TOK_NAME-5}px;width:${bw+10}px;height:${bh+10}px"></span>` : ""}
+    <span class="nm">${esc(w.title)}</span></button>`;
+}
+
 /* ---------- the shape of a show ----------
    Folded away, and fetched only when opened: a show you logged once and never think
    about again should cost nothing and look exactly as it did before any of this existed.
@@ -6502,6 +6649,7 @@ window.__rooms = { pullRefresh, openFind, setFollow, isFollowing, get follows(){
   bestOf, bestGenres, dealBest, loadBest, pickFrom, seenMode, keepSeen, get bestPool(){return bestPool}, get bestHand(){return bestHand},
   askText, askYesNo, openAsk, closeAsk, feedNow, openInvite, inviteText,
   known, showcase, weekPast, weekCard, WEEK_KEY, handleTaken, peekRoom, SHOWCASE,
+  tokenHTML, tokFace, tokEdge, cabinetRows, renderCabinet, cabView, TOK_DEPTH,
   willNotPost, addPatterns, setReasons, loadSettings, get NOPE(){return NOPE}, get REPORT_WHY(){return REPORT_WHY},
   saveEntry, readBackup, bringOver, openBringOver, loadLists, loadSeen, blockThem, unblockThem, isApart, notApart, loadBlocks, openReport, openBlock, sendReport, REPORT_WHY,
   get blocked(){return blocked},
