@@ -796,10 +796,6 @@ nav button:active{transform:scale(.95)}
    which is exactly what happens when you ask "who with?" halfway through an entry. */
 .bigcode{font-family:var(--head);font-weight:900;font-size:40px;letter-spacing:.16em;
   line-height:1.1;padding:6px 0 2px;user-select:all;-webkit-user-select:all}
-.behind{position:fixed;left:12px;right:12px;bottom:calc(78px + env(safe-area-inset-bottom));z-index:13;
-  margin:0;background:var(--butter);color:#151320;border-radius:14px;padding:11px 14px;font-size:12.5px;
-  font-weight:600;line-height:1.45;box-shadow:0 12px 26px -14px rgba(21,19,32,.6)}
-.behind b{font-family:var(--head);font-weight:800;display:block}
 .ask{position:fixed;inset:0;background:rgba(21,19,32,.5);display:none;align-items:center;
   justify-content:center;z-index:20;padding:22px}
 .ask.on{display:flex}
@@ -1091,7 +1087,6 @@ body.demo header{padding-top:34px}
 <div class="offline" id="offline" role="status" aria-live="polite"></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<p class="behind" id="behind" hidden></p>
 <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-hidden="true"><div class="panel"><div class="in" id="sheetBody"></div></div></div>
 <div class="ask" id="ask" role="dialog" aria-modal="true" aria-hidden="true"><div class="askbox" id="askBox"></div></div>
 
@@ -1674,17 +1669,34 @@ function despite(what, p) {
     console.warn(`Rooms: ${what} did not load \u2014 ${why}`);
     trouble.set(what, why); paintBehind(); });
 }
-function paintBehind() {
-  const el = document.getElementById("behind"); if (!el) return;
-  if (!behind.size && !trouble.size) { el.hidden = true; return; }
-  el.hidden = false;
+/* This used to be a strip fixed above the nav, which is the right place for something
+   that has stopped you and the wrong place for something that has not: the app carries on
+   perfectly well with a database a version or two behind, and a banner over every tab
+   said otherwise all day. It is a closed fold in the settings now, and it is not there
+   at all when there is nothing to say. */
+function behindFold() {
+  if (!behind.size && !trouble.size) return "";
+  const vs = [...behind].sort();
+  const head = vs.length ? `This database is behind \u00b7 ${vs.join(", ")}`
+    : `Something didn't load`;
   const bits = [];
-  if (behind.size) bits.push(`<b>This database is behind the app.</b> Run ${[...behind].sort().join(", ")}
-    from schema.sql in the Supabase SQL editor. Everything still works; some of it is doing
-    the slow version until you do.`);
-  if (trouble.size) bits.push(`<b>Some of this didn't load:</b> ${esc([...trouble.keys()].join(", "))}.
-    The rest of the app is fine \u2014 pull down to try again.`);
-  el.innerHTML = bits.join(" ");
+  if (vs.length) bits.push(`<p class="sub">Run ${vs.join(", ")} from schema.sql in the Supabase
+    SQL editor. Everything works without them; some of it is doing the slow version until
+    you do \u2014 filtering on the device rather than in the query, and working the charts out
+    from what this device has fetched rather than from everything.</p>`);
+  if (trouble.size) bits.push(`<p class="sub"><b>Didn't load:</b> ${esc([...trouble.keys()].join(", "))}.
+    The rest of the app is fine \u2014 pull down on a feed to try again.</p>`);
+  return `<details class="fold" id="behindFold"><summary>${esc(head)}</summary>${bits.join("")}</details>`;
+}
+/* if the settings sheet is open when one of these turns up, it should turn up in it */
+function paintBehind() {
+  const old2 = document.getElementById("behindFold");
+  if (!old2) return;
+  const html = behindFold();
+  if (!html) { old2.remove(); return; }
+  const was = old2.open;
+  old2.outerHTML = html;
+  const now = document.getElementById("behindFold"); if (now) now.open = was;
 }
 /* one entries query, with the whole/part filter wherever the column exists to filter on */
 async function wholeEntries(build) {
@@ -6711,6 +6723,7 @@ async function openYou() { let top = { items:[] }; try { top = await ensureMyTop
       <input id="delQ" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="${esc(me.handle)}">
       <div class="stack"><button class="btn bad" id="delGo" disabled>${sb.__local ? "Delete the log" : "Delete my account"}</button></div>
       <p class="msg" id="delMsg"></p></details>
+    ${behindFold()}
     <p class="sub" style="text-align:center;margin-top:18px">
       <a href="privacy.html" target="_blank" rel="noopener" id="privacyLink">What happens to your log</a></p>`);
   /* the shape picker */
