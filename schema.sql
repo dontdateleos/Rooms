@@ -914,3 +914,51 @@ language sql security definer stable set search_path = public as $$
 $$;
 revoke all on function peek_room(text) from public;
 grant execute on function peek_room(text) to anon, authenticated;
+
+-- ---------- v24: the charts ----------
+-- Everybody could see what their room liked and nobody could see what the app liked.
+-- The hall worked its rankings out from the last three hundred entries it happened to
+-- have fetched, which is fine on the first day and a lie by the second: "the best films
+-- this year" computed from three hundred rows is the best of whatever was logged most
+-- recently, wearing the word year.
+--
+-- So the ranking happens where the rows are. One score per person per thing — the most
+-- recent word they said, not every rewatch — averaged, then pulled towards the overall
+-- mean by a constant, which is what stops a single ten from topping a chart. Rooms-only
+-- entries stay out of it, parts stay out of it, and anybody you have blocked stops
+-- counting towards what you see.
+--
+-- It returns no user, no note and no date. A chart is a number and a title.
+create or replace function best_of(p_since date default null, p_kind text default null,
+                                   p_limit int default 8)
+returns table (work_id text, n int, avg numeric, weighted numeric, spread numeric)
+language sql security definer stable set search_path = public as $$
+  with latest as (
+    select distinct on (e.user_id, e.work_id) e.user_id, e.work_id, e.score
+      from entries e
+     where not e.part and not e.room_only
+       and (p_since is null or e.rated_on >= p_since)
+       and not apart_from(e.user_id)
+     order by e.user_id, e.work_id, e.rated_on desc, e.created_at desc
+  ), per as (
+    select l.work_id, count(*)::int as n, avg(l.score)::numeric as a,
+           coalesce(stddev_pop(l.score), 0)::numeric as s
+      from latest l join works w on w.id = l.work_id
+     where (p_kind is null or w.kind = p_kind) and w.parent_id is null
+     group by l.work_id
+  ), m as (select avg(a) as mean from per)
+  -- Smoothing alone cannot stop a lone ten topping a chart: pulled towards the mean it
+  -- is still above everything the mean pulled down, whatever constant you pick. So there
+  -- is a floor of two people, and anything under it charts below everything over it
+  -- rather than not at all -- on the first week there is nothing else to show.
+  select p.work_id, p.n, round(p.a, 2),
+         round((p.n * p.a + 1.5 * m.mean) / (p.n + 1.5), 3), round(p.s, 2)
+    from per p, m
+   order by (p.n >= 2) desc, 4 desc, p.n desc, p.work_id
+   limit greatest(1, least(coalesce(p_limit, 8), 50))
+$$;
+revoke all on function best_of(date, text, int) from public, anon;
+grant execute on function best_of(date, text, int) to authenticated;
+
+-- rated_on is what every window is measured against, and nothing was indexed on it
+create index if not exists entries_rated_idx on entries (rated_on desc) where not part;

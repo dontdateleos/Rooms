@@ -1290,6 +1290,12 @@ const KINDS = {
     ticks:[["first","First play","Replay"],["where","Finished it","Dropped it"]] }
 };
 const K = k => KINDS[k] || KINDS.film;
+/* What to call a medium inside a sentence. K().label lowercased turns TV into "tv", and
+   K().plural for television is "TV", so "1 tv" and "2 TV" were both wrong in different
+   ways — and "Best tv" is wrong a third way. In a sentence a television programme is a
+   show, and the plural of it is shows. */
+const IN_WORDS = { film:"film", tv:"show", book:"book", game:"game" };
+const inWords = (k, n = 2) => `${IN_WORDS[k] || k}${n === 1 ? "" : "s"}`;
 const kindOf = id => String(id).split(":")[0];
 const tag = k => `<span class="tag ${k}">${K(k).label}</span>`;
 const cover = (w, cls = "co") => w?.cover ? `<img class="${cls}" src="${esc(w.cover)}" alt="" onload="this.classList.add('ok')" onerror="this.remove()">` : `<div class="${cls}"></div>`;
@@ -1297,7 +1303,7 @@ const cover = (w, cls = "co") => w?.cover ? `<img class="${cls}" src="${esc(w.co
 /* ============ prefs + sources ============ */
 const WORKER = "https://rooms.jordandf1.workers.dev";
 const proxy = () => (P.workerUrl || WORKER).replace(/\/+$/, "");
-const P = Object.assign({ workerUrl:"", tmdbKey:"", activeList:null, activeRoom:null, picked:null, kinds:["film","tv","book","game"], shelfFilter:"", pickTag:"", pickFrom:"shelf", bestGenre:{}, howLong:"", spinN:20, feedPicked:false, weekSeen:"", view:"shelf", seen:"", cardSkin:"", feed:"room", theme:"" },
+const P = Object.assign({ workerUrl:"", tmdbKey:"", activeList:null, activeRoom:null, picked:null, kinds:["film","tv","book","game"], shelfFilter:"", pickTag:"", pickFrom:"shelf", bestGenre:{}, howLong:"", spinN:20, feedPicked:false, weekSeen:"", view:"shelf", seen:"", cardSkin:"", feed:"room", theme:"", chart:"month", cabSort:"recent" },
   JSON.parse(localStorage.getItem("rooms.prefs") || "{}"));
 const saveP = () => localStorage.setItem("rooms.prefs", JSON.stringify(P));
 async function tmdb(path, params = {}) {
@@ -1596,6 +1602,35 @@ function makeLocalSb(seed) {
           db.rooms = db.rooms.filter(r => r.id !== args.p_room_id);
           db.clubs = db.clubs.filter(c => c.room_id !== args.p_room_id); }
         save(); return Promise.resolve({ data:null, error:null }); }
+      /* v24, doing here what it does there: one score per person per thing, averaged,
+         pulled towards the mean. The weighting has to match or the charts change
+         meaning depending on whether somebody ran the migration. */
+      if (name === "best_of") { const since = args.p_since || null, kind = args.p_kind || null;
+        const latest = {};
+        for (const e of db.entries) {
+          if (e.part || e.room_only) continue;
+          if (since && String(e.rated_on) < since) continue;
+          if (db.blocks.some(b => b.blocker === db.profile?.id && b.blocked === e.user_id)) continue;
+          const k = e.user_id + "\u0000" + e.work_id, cur = latest[k];
+          if (!cur || String(e.rated_on) > String(cur.rated_on)
+            || (e.rated_on === cur.rated_on && String(e.created_at) > String(cur.created_at))) latest[k] = e;
+        }
+        const per = {};
+        for (const e of Object.values(latest)) { const w = db.works[e.work_id];
+          if (!w || w.parent_id || (kind && w.kind !== kind)) continue;
+          (per[e.work_id] ||= []).push(e.score); }
+        const rows = Object.entries(per).map(([id, sc]) => {
+          const a = sc.reduce((x,y) => x+y, 0) / sc.length;
+          const v = sc.reduce((x,y) => x + (y-a)*(y-a), 0) / sc.length;
+          return { work_id:id, n:sc.length, avg:a, spread:Math.sqrt(v) }; });
+        if (!rows.length) return Promise.resolve({ data:[], error:null });
+        const mean = rows.reduce((x,r) => x + r.avg, 0) / rows.length;
+        rows.forEach(r => r.weighted = (r.n*r.avg + 1.5*mean) / (r.n + 1.5));
+        /* the same floor the SQL applies, or a chart changes meaning depending on
+           whether somebody ran the migration */
+        rows.sort((a,b) => (b.n >= 2) - (a.n >= 2) || b.weighted - a.weighted
+          || b.n - a.n || a.work_id.localeCompare(b.work_id));
+        return Promise.resolve({ data:rows.slice(0, Math.max(1, Math.min(args.p_limit || 8, 50))), error:null }); }
       return Promise.resolve({ data:null, error:new Error("unknown call") }); },
     auth: { getSession: async () => ({ data:{ session: db.profile && !db.signedOut ? { user:{ id:db.profile.id } } : null } }),
       getUser: async () => ({ data:{ user:{ id:db.profile?.id || "local" } } }), onAuthStateChange: () => {}, signOut: async () => { db.signedOut = true; save(); },
@@ -1759,6 +1794,11 @@ addEventListener("online", flushQueue);
 /* ============ state ============ */
 let me = null; const works = {}; let lists = [], rooms = [], clubs = [], myEntries = [], myParts = [], follows = [], loggedIds = new Set();
 const remember = w => { if (w?.id) works[w.id] = Object.assign(works[w.id]||{}, w); return w?.id ? works[w.id] : null; };
+/* a list of ids that came back without the thing attached — the charts return a work_id
+   and a number, and a chart of ids is no use to anybody */
+async function fillWorks(ids) { const need = [...new Set(ids)].filter(id => id && !works[id]?.title);
+  if (!need.length) return;
+  try { (await q(sb.from("works").select("*").in("id", need))).forEach(remember); } catch {} }
 const logged = id => loggedIds.has(id);
 const ENTRY_SEL = "id,user_id,work_id,rated_on,score,note,loved,breakdown,context,created_at,room_only,profiles!entries_user_id_fkey(id,handle,bio,avatar),works(*),reactions(user_id)";
 
@@ -3206,12 +3246,8 @@ function weekCard() {
   if (P.weekSeen === WEEK_KEY()) return "";
   const w = weekPast(); if (!w) return "";
   const bw = works[w.best.work_id] || {};
-  /* K().label lowercased turns TV into "tv", and K().plural for television is "TV", so
-     "1 tv" and "2 TV" were both wrong in different ways. In a sentence a television
-     programme is a show. */
-  const ONE = { film:"film", tv:"show", book:"book", game:"game" };
   const spread = Object.entries(w.kinds).sort((a,b) => b[1]-a[1])
-    .map(([k,n]) => `${n} ${ONE[k] || k}${n === 1 ? "" : "s"}`);
+    .map(([k,n]) => `${n} ${inWords(k, n)}`);
   return `<div class="card look" id="weekCard"><div class="h">
       <span>${w.first ? "Your first week" : "Your week"}</span><span class="tag dim">${w.n} logged</span></div>
     <div class="say" style="margin-top:10px">${esc(spread.join(" \u00b7 "))}.${
@@ -3600,6 +3636,53 @@ function feedSort(es) { const myTaste = tasteOf(myEntries); P.feedSort = P.feedS
     rows: sortEntries(es, P.feedSort, myTaste) }; }
 function wireFeedSort(el, again) { $$("[data-fs]", el).forEach(b => b.onclick = () => { P.feedSort = b.dataset.fs; saveP(); again(); }); }
 
+/* ---------- the charts ----------
+   What a room likes, the room could always see. What everybody likes, nobody could: the
+   hall ranked whatever three hundred entries it had happened to fetch, which reads as a
+   chart and is really a list of what was logged most recently.
+
+   Now the database does the ranking over the window you ask for, so "the best films this
+   year" is the best films this year. If it has not run the migration the old working-out
+   stands in, over what this device holds, and says so. */
+const CHART_WINDOWS = { week:["This week", 7], month:["This month", 31], year:["This year", 365], all:["All time", 0] };
+const chartSince = k => { const d = CHART_WINDOWS[k]?.[1] || 0;
+  return d ? new Date(Date.now() - d*864e5).toISOString().slice(0,10) : null; };
+const chartWin = () => CHART_WINDOWS[P.chart] ? P.chart : "month";
+/* Smoothing alone cannot stop a lone ten topping a chart: pulled towards a prior it is
+   still above everything the prior pulled down, whatever constant you choose. What stops
+   it is a floor — two people have to have said it. Below the floor things still chart,
+   underneath everything above it, because on the first week there is nothing else and an
+   empty chart teaches nobody anything. */
+const CHART_FLOOR = 2;
+const chartFloor = rows => rows.slice().sort((a, b) =>
+  (b.n >= CHART_FLOOR) - (a.n >= CHART_FLOOR) || b.w - a.w || b.n - a.n
+  || String(a.id).localeCompare(String(b.id)));
+async function chartFor(kind, since, limit, pool) {
+  if (!behind.has("v24")) {
+    try {
+      const rows = await q(sb.rpc("best_of", { p_since:since, p_kind:kind, p_limit:limit }));
+      await fillWorks(rows.map(r => r.work_id));
+      return rows.map(r => ({ id:r.work_id, n:+r.n, avg:+r.avg, w:+r.weighted }));
+    } catch (e) { if (!missingBit(e)) throw e;
+      needs("v24", "the charts are worked out from what this device has fetched"); }
+  }
+  /* room_only rows never leave the database to somebody outside the room, so this filter
+     is belt and braces against the day one arrives through a route that forgot — a chart
+     is the one screen where a leak would be permanent and public. */
+  const rows = competition(pool.filter(e => kindOf(e.work_id) === kind && !e.room_only
+    && !isPart(e.work_id) && (!since || String(e.rated_on) >= since)), 50)
+    .map(f => ({ id:f.id, n:f.n, avg:f.avg, w:f.w }));
+  return chartFloor(rows).slice(0, limit);
+}
+/* a chart row says the thing, the number and how many people stand behind it. Not who:
+   a stranger's handle next to a score is noise, and the whole point of a chart is that
+   it is nobody's opinion in particular. */
+function chartHTML(rows) { return rows.map((f, i) => { const w = works[f.id] || {};
+  return `<div class="row comprow" data-cw="${esc(f.id)}"><span class="rk">${i+1}</span>${cover(w)}
+    <div class="t"><b>${esc(w.title || f.id)}</b><small>${tag(kindOf(f.id))} ${esc(w.year || "")}${
+      w.year ? " \u00b7 " : ""}${f.n === 1 ? "one person" : f.n + " people"}</small></div>
+    <span class="n">${(f.avg/2).toFixed(1)}<small>of five</small></span></div>`; }).join(""); }
+
 async function renderEveryoneFeed(fb) {
   let es = []; try { es = notApart(await wholeEntries(f => { let x = sb.from("entries").select(ENTRY_SEL);
     if (f) x = x.eq("part", false);
@@ -3610,16 +3693,27 @@ async function renderEveryoneFeed(fb) {
     $("#hallAdd").onclick = openAdd; return; }
   let shown = [];
   const weekAgo = new Date(Date.now() - 7*864e5).toISOString().slice(0,10); const recent = es.filter(e => e.rated_on >= weekAgo);
-  const pool = recent.length >= 5 ? recent : es; const comp = competition(pool, 40);
-  const byKind = {}; for (const f of comp) (byKind[kindOf(f.id)] ||= []).push(f);
-  const divisive = comp.filter(f => f.n >= 2).sort((a,b) => (a.agree ?? 100) - (b.agree ?? 100)).slice(0, 5);
-  fb.innerHTML = `<h2>The <span class="hl" style="background:var(--sky)">hall</span></h2><p class="sub">${es.length} entries · ${recent.length} this week</p>
-    ${Object.keys(KINDS).filter(k => byKind[k]).map(k => `<div class="card"><div class="h"><span>${K(k).plural}</span>${tag(k)}</div>${compRows(byKind[k].slice(0,5))}</div>`).join("")}
+  const win = chartWin(), since = chartSince(win);
+  const kinds = Object.keys(KINDS);
+  const charts = await Promise.all(kinds.map(k => chartFor(k, since, 5, es).catch(() => [])));
+  const any = charts.some(c => c.length);
+  /* divisive stays worked out from what is here: it is about the argument, not the
+     ranking, and the rows it needs are the ones on this screen anyway */
+  const divisive = competition(recent.length >= 5 ? recent : es, 40)
+    .filter(f => f.n >= 2).sort((a,b) => (a.agree ?? 100) - (b.agree ?? 100)).slice(0, 5);
+  fb.innerHTML = `<h2>The <span class="hl" style="background:var(--sky)">hall</span></h2><p class="sub">What everybody rated highest, and what they're saying \u00b7 ${es.length} entries \u00b7 ${recent.length} this week</p>
+    <div class="seg" style="margin-top:12px">${Object.entries(CHART_WINDOWS).map(([k, [l]]) =>
+      `<button data-cwin="${k}" class="${win === k ? "on" : ""}">${l}</button>`).join("")}</div>
+    ${any ? kinds.map((k, i) => charts[i].length
+      ? `<div class="card"><div class="h"><span>Best ${inWords(k)}</span><span class="tag dim">${lc(CHART_WINDOWS[win][0])}</span></div>${chartHTML(charts[i])}</div>`
+      : "").join("")
+      : `<p class="empty">Nobody rated anything ${lc(CHART_WINDOWS[win][0])}. Try a longer stretch.</p>`}
     ${divisive.length ? `<div class="card"><div class="h"><span>Most divisive</span><span class="tag dim">bring these into a room</span></div>${compRows(divisive)}</div>` : ""}
     <div class="lbl">What people said</div>${(() => { const f = feedSort(es);
       shown = f.rows.slice(0, 20); return f.html + shown.map(e => slipHTML(e)).join(""); })()}`;
   endLine(fb, shown, 20);
   wireSlips(fb, es); revealIn(fb); wireFeedSort(fb, renderDoors); $$("[data-cw]", fb).forEach(x => x.onclick = () => openWork(x.dataset.cw));
+  $$("[data-cwin]", fb).forEach(b => b.onclick = () => { P.chart = b.dataset.cwin; saveP(); renderDoors(); });
 }
 
 /* ============ SHELF ============ */
@@ -3643,6 +3737,14 @@ const isSoon = w => !!(w?.release && w.release > today());
    A show you only ever rated in seasons belongs here too: you have said what you think
    of it, and a cabinet that left it out would be missing something you own. */
 const CAB_ORDER = ["film", "tv", "book", "game"];
+/* How you want to look at it. Recent is what it opens on — the thing you just finished
+   is the thing you want to see — but a cabinet you cannot sort is a pile, and "what did
+   I actually think was best" is the question the scores are there to answer. */
+const CAB_SORTS = { recent:"Recent", best:"Highest", az:"A\u2013Z", year:"By year" };
+const cabSort = () => CAB_SORTS[P.cabSort] ? P.cabSort : "recent";
+/* the sort is a preference and is kept; what you typed into the box is not. A search
+   remembered from last week is an empty cabinet with no explanation for it. */
+let cabQ = "";
 let cabSeen = null;
 function cabinetRows() {
   const best = {};                       /* one token per thing, at your latest word */
@@ -3651,29 +3753,69 @@ function cabinetRows() {
     if (!cur || newestFirst(e, cur.e) < 0) best[e.work_id] = { w, e, score:e.score }; }
   for (const [sid, d] of showsFromParts()) {
     if (best[sid]) continue; const w = works[sid]; if (!w) continue;
-    best[sid] = { w, e:{ created_at:"", rated_on:"" }, score:d.score, worked:true }; }
-  return Object.values(best).sort((a, b) => newestFirst(a.e, b.e));
+    best[sid] = { w, e:{ created_at:"", rated_on:"" }, score:d.score, worked:true };
+  }
+  let rows = Object.values(best);
+  const qtext = lc(cabQ).trim();
+  if (qtext) rows = rows.filter(r => lc([r.w.title, r.w.creator, r.w.year, K(r.w.kind).label]
+    .filter(Boolean).join(" ")).includes(qtext));
+  const how = cabSort();
+  /* every sort falls back to the one before it, so two things you rated the same come
+     out in a stable order rather than shuffling on each redraw */
+  const byNew = (a, b) => newestFirst(a.e, b.e);
+  const byName = (a, b) => String(a.w.title || "").localeCompare(String(b.w.title || ""),
+    undefined, { sensitivity:"base", numeric:true });
+  if (how === "best") rows.sort((a, b) => (b.score || 0) - (a.score || 0) || byNew(a, b));
+  else if (how === "az") rows.sort(byName);
+  else if (how === "year") rows.sort((a, b) =>
+    String(b.w.year || "").localeCompare(String(a.w.year || "")) || byName(a, b));
+  else rows.sort(byNew);
+  return rows;
 }
 function renderCabinet() {
   const body = $("#shelfBody"); if (!body) return;
+  const all = cabinetRows();
+  body.innerHTML = `<h2>Your <span class="hl" style="background:var(--mint)">cabinet</span></h2>
+    <p class="sub" id="cabSub"></p>
+    ${viewSeg()}
+    ${logCount() ? `<div class="seg" style="margin-top:8px">${Object.entries(CAB_SORTS).map(([k, l]) =>
+      `<button data-cs="${k}" class="${cabSort() === k ? "on" : ""}">${l}</button>`).join("")}</div>
+      <input id="cabQ" class="searchlog" type="search" placeholder="Find something in here" autocomplete="off" value="${esc(cabQ)}">` : ""}
+    <div id="cabTrays"></div>
+    ${logCount() ? `<div class="shelfbar"><button class="btn quiet" id="cabList">See it as a list \u00b7 ${logCount()} logged</button></div>` : ""}`;
+  paintTrays(); wireCabinet();
+}
+/* only the trays are redrawn as you type, because redrawing the box you are typing in
+   takes the cursor out of it */
+function paintTrays() {
+  const el = $("#cabTrays"); if (!el) return;
   const rows = cabinetRows();
   const by = {}; rows.forEach(r => (by[r.w.kind] ||= []).push(r));
   const kinds = CAB_ORDER.filter(k => by[k]?.length);
-  body.innerHTML = `<h2>Your <span class="hl" style="background:var(--mint)">cabinet</span></h2>
-    <p class="sub">${rows.length ? `${rows.length} finished${
-      kinds.length > 1 ? ` · ${kinds.map(k => `${by[k].length} ${lc(by[k].length === 1 ? K(k).label : K(k).plural)}`).join(" · ")}` : ""}`
-      : "Everything you finish stands here."}</p>
-    ${viewSeg()}
-    ${rows.length ? kinds.map(k => `<div class="tray"><div class="lbl">
+  const sub = $("#cabSub");
+  if (sub) sub.innerHTML = rows.length ? `${rows.length} ${cabQ ? "match" : "finished"}${
+      kinds.length > 1 ? ` \u00b7 ${kinds.map(k => `${by[k].length} ${inWords(k, by[k].length)}`).join(" \u00b7 ")}` : ""}`
+    : logCount() ? "Nothing in here matches that." : "Everything you finish stands here.";
+  el.innerHTML = rows.length ? kinds.map(k => `<div class="tray"><div class="lbl">
         <span>${esc(K(k).plural)}</span><em>${by[k].length}</em></div>
       <div class="run">${by[k].map(r => tokenHTML(r.w, 52, r.score >= 10)).join("")}</div></div>`).join("")
-      : blank("var(--mint)", "▯", "Nothing in here yet",
-          "Log something and it stands here, with its own cover on it. The shelf is what you mean to get to; this is what you got to.",
-          [["cabShelf", "Back to the shelf", "soft"]])}`;
-  wireCabinet();
+    : cabQ ? `<p class="empty">Nothing in here matches \u201c${esc(cabQ)}\u201d.</p>`
+    : blank("var(--mint)", "\u25af", "Nothing in here yet",
+        "Log something and it stands here, with its own cover on it. The shelf is what you mean to get to; this is what you got to.",
+        [["cabShelf", "Back to the shelf", "soft"]]);
+  wireTokens();
 }
 function wireCabinet() {
   $$("[data-view]").forEach(b => b.onclick = () => { P.view = b.dataset.view; saveP(); renderShelf(); });
+  $$("[data-cs]").forEach(b => b.onclick = () => { P.cabSort = b.dataset.cs; saveP();
+    $$("[data-cs]").forEach(x => x.classList.toggle("on", x === b)); paintTrays(); });
+  const q2 = $("#cabQ"); if (q2) { let t; q2.oninput = ev => { clearTimeout(t); cabQ = ev.target.value;
+    t = setTimeout(paintTrays, 180); }; }
+  /* the trays are the thing you look at; the list is the thing you search through and
+     the only place a rewatch shows as more than one word, so it stays one tap away */
+  const ls = $("#cabList"); if (ls) ls.onclick = () => openWholeLog();
+}
+function wireTokens() {
   const bk = $("#cabShelf"); if (bk) bk.onclick = () => { P.view = "shelf"; saveP(); renderShelf(); };
   /* the one you touch speeds up for a moment, the way picking something up spins it */
   $$("[data-tok]").forEach(b => b.onclick = () => {
@@ -3695,8 +3837,10 @@ function wireCabinet() {
 const viewSeg = () => `<div class="seg" style="margin-top:12px">${
   [["shelf", "The shelf"], ["cabinet", "The cabinet"]].map(([k, l]) =>
     `<button data-view="${k}" class="${cabView() === k ? "on" : ""}">${l}</button>`).join("")}</div>`;
-/* the cabinet is only worth offering once there is something in it */
-const cabView = () => P.view === "cabinet" && myEntries.length ? "cabinet" : "shelf";
+/* the cabinet is only worth offering once there is something in it — and a show you
+   only ever rated in seasons is something in it, which counting whole entries missed:
+   the one person whose log is all seasons had a cabinet and no way to reach it. */
+const cabView = () => P.view === "cabinet" && logCount() ? "cabinet" : "shelf";
 
 function renderShelf() { if (cabView() === "cabinet") return renderCabinet();
   const L = activeList();
@@ -3723,7 +3867,7 @@ function renderShelf() { if (cabView() === "cabinet") return renderCabinet();
           ? `Can't decide? ${left.length} to pick from` : "Can't decide? Spin the best of something"}</button>`}</div>
     <div id="resultArea"></div>`;
   $("#shelfBody").innerHTML = `<h2>Your <span class="hl" style="background:var(--mint)">library</span></h2><p class="sub">${all.length ? `${left.length} to go${done ? ` · ${done} done` : ""}${soonCount ? ` · ${soonCount} coming` : ""}` : "Everything you meant to get to."}</p>
-    ${myEntries.length ? viewSeg() : ""}
+    ${logCount() ? viewSeg() : ""}
     <input id="search" type="search" placeholder="Search film, TV, books, games" autocomplete="off" style="margin-top:12px">
     <div class="chips">${Object.keys(KINDS).map(k => `<button class="chip k ${P.kinds.includes(k)?"on":""}" data-sk="${k}">${K(k).label}</button>`).join("")}</div>
     <div class="msg" id="msg"></div><div id="results"></div>
@@ -3748,7 +3892,7 @@ function renderShelf() { if (cabView() === "cabinet") return renderCabinet();
     <div class="lbl">Coming soon · add to the shelf</div><div id="waitBody"><p class="msg">Loading what's coming</p></div>
     <p class="sub" style="margin-top:6px;font-size:12px">Films, shows and games with a date on them.
       Books don't appear here — no book source publishes a forthcoming list.</p>
-    ${logBlock("shelfLog", { label:`Off the shelf · ${logCount()} logged` })}`;
+`;
   $$("[data-sk]").forEach(b => b.onclick = () => { const k = b.dataset.sk; if (P.kinds.includes(k)) { if (P.kinds.length > 1) P.kinds = P.kinds.filter(x => x !== k); } else P.kinds = [...P.kinds, k]; saveP(); renderShelf(); });
   const sf = $("#shelfFocus"); if (sf) sf.onclick = () => $("#search")?.focus();
   $$("[data-kt]").forEach(b => b.onclick = () => { P.kinds = [b.dataset.kt]; saveP(); renderShelf(); $("#search")?.focus(); });
@@ -3787,7 +3931,7 @@ function renderShelf() { if (cabView() === "cabinet") return renderCabinet();
   }
   justDealt = justSwept = null;
   wireShelf(); if (shelfEdit) paintEdit();
-  wireSearch(); wireLog("shelfLog", 8);
+  wireSearch();
   $$("[data-view]").forEach(b => b.onclick = () => { P.view = b.dataset.view; saveP(); renderShelf(); });
   if (P.picked && !logged(P.picked) && works[P.picked]) showResult(works[P.picked]); renderWaiting(); renderShelfRecs(); }
 /* The shelf is where you decide what's next, so what your taste suggests belongs here and
@@ -5368,7 +5512,7 @@ function paintLog(id = "logRows", limit = 0) {
 
 /* the whole thing, in a sheet */
 function openWholeLog() {
-  openSheet(`<h3>Your log</h3><p class="sub">${myEntries.length} entries · rewatches grouped</p>
+  openSheet(`<h3>Your log</h3><p class="sub">${logCount()} logged · rewatches grouped</p>
     ${logBlock("wholeLog", { label:false })}
     <div class="stack"><button class="btn quiet" id="wlClose">Close</button></div>`);
   wireLog("wholeLog"); $("#wlClose").onclick = closeSheet; }
@@ -6746,7 +6890,8 @@ window.__rooms = { pullRefresh, openFind, setFollow, isFollowing, get follows(){
   get meCh(){return meCh}, secondThoughts, againLine, apart, shelfAge, waited, openProfile, openWork,
   setSkin:k => { P.cardSkin = k; saveP(); }, get deckItems(){return deckItems},
   addToShelf, __isSoon:isSoon, __list:activeList,
-  marksFor, openPaid, COMET, loadFounders, get founderIds(){return founderIds} };
+  marksFor, openPaid, COMET, loadFounders, get founderIds(){return founderIds},
+  CAB_SORTS, CAB_ORDER, cabinetRows, cabSort, CHART_WINDOWS, chartSince, chartWin, chartFor, competition };
 
 /* ============ boot ============ */
 if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("./sw.js", { scope: "./" }).catch(() => {});
