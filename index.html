@@ -301,6 +301,7 @@ textarea{min-height:76px;resize:none;line-height:1.45}
 .btn.quiet{background:transparent;color:var(--mute)}
 .btn.blue{background:var(--blue)}
 .btn:disabled{opacity:.35}
+button:focus-visible,.linky:focus-visible{outline:3px solid var(--blue);outline-offset:3px}
 .stack{display:flex;flex-direction:column;gap:9px;margin-top:14px}
 .seg{display:flex;background:var(--cream2);padding:4px;border-radius:999px;gap:2px;margin:6px 0 10px}
 .seg button{flex:1;background:none;border:0;font-family:var(--head);font-weight:800;font-size:13px;padding:9px 6px;border-radius:999px;color:var(--mute);cursor:pointer}
@@ -421,30 +422,43 @@ textarea{min-height:76px;resize:none;line-height:1.45}
   scrollbar-width:none;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity}
 .run::-webkit-scrollbar{display:none}
 .tok{position:relative;flex:none;background:none;border:0;padding:0;cursor:pointer;
-  perspective:620px;scroll-snap-align:start;color:var(--ink);-webkit-tap-highlight-color:transparent}
+  perspective:620px;scroll-snap-align:start;color:var(--ink);-webkit-tap-highlight-color:transparent;
+  transition:transform .28s cubic-bezier(.2,.9,.25,1)}
 /* They turn. I had them still, on the grounds that a case is nearly flat and a quarter
    of every rotation is an edge — which is true, and the answer to it is a spine with
    real width rather than no motion at all. Slowly, each from its own starting point, and
    only while it is on the screen: a hundred of these turning behind a scroll is a warm
    phone for nothing. */
 .tok .ob{position:absolute;transform-style:preserve-3d;transform:rotateY(-14deg);
-  animation:tokSpin 15s linear infinite;animation-delay:calc(var(--t, 0s) * -1);
-  animation-play-state:paused;will-change:transform}
+  animation:tokSpin 22s linear infinite;animation-delay:calc(var(--t, 0s) * -1);
+  animation-play-state:paused;will-change:transform;filter:drop-shadow(0 8px 7px rgba(21,19,32,.16));
+  transition:filter .28s ease}
 .tok.live .ob{animation-play-state:running}
-.tok.picked .ob{animation-duration:1.5s}
+.tok.picked{transform:translateY(-3px) scale(1.035)}
+.tok.picked .ob{animation-duration:2.4s;filter:drop-shadow(0 13px 9px rgba(21,19,32,.24))}
 @keyframes tokSpin{from{transform:rotateY(0deg)}to{transform:rotateY(360deg)}}
 .tok .fc{position:absolute;overflow:hidden;backface-visibility:hidden;background:var(--cream2)}
 .tok .fc img{width:100%;height:100%;object-fit:cover;display:block;opacity:0;transition:opacity .3s}
 .tok .fc img.ok{opacity:1}
 .tok .fc svg{display:block;width:100%;height:100%}
-.tok .plinth{position:absolute;border-radius:50%;opacity:.72}
+.tok .plinth{position:absolute;border-radius:50%;opacity:.72;
+  box-shadow:inset 0 2px 2px rgba(255,255,255,.42),0 7px 12px -7px rgba(21,19,32,.48);
+  transition:opacity .28s ease,transform .28s cubic-bezier(.2,.9,.25,1),box-shadow .28s ease}
 .tok .halo{position:absolute;border-radius:50%;border:2px solid var(--ink);opacity:.38}
 .tok .nm{position:absolute;left:0;right:0;bottom:0;height:15px;line-height:15px;font-size:9.5px;font-weight:600;color:var(--mute);
   text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.tok:focus-visible{outline:none}
+.tok:focus-visible{outline:3px solid var(--blue);outline-offset:3px;border-radius:12px}
 .tok:focus-visible .plinth,.tok.picked .plinth{opacity:1}
-@media (hover:hover){.tok:hover .ob{animation-duration:3.5s}}
-@media (prefers-reduced-motion:reduce){.tok .ob{animation:none;transform:rotateY(-14deg)}}
+@media (hover:hover){
+  .tok:hover{transform:translateY(-3px) scale(1.025)}
+  .tok:hover .ob{animation-duration:9s;filter:drop-shadow(0 13px 9px rgba(21,19,32,.22))}
+  .tok:hover .plinth{opacity:.92;transform:scale(1.05);box-shadow:inset 0 2px 2px rgba(255,255,255,.5),0 9px 14px -7px rgba(21,19,32,.52)}
+}
+@media (prefers-reduced-motion:reduce){
+  .tok,.tok .plinth{transition:none}
+  .tok .ob{animation:none;transform:rotateY(-14deg);transition:none}
+  .tok:hover,.tok.picked{transform:none}
+}
 .cabempty{text-align:center;padding:30px 0 10px}
 /* seasons and episodes. Deliberately quieter than anything else on the page: the show
    is the thing, and this is the thing's shape. A shelf of posters here would make a
@@ -1582,7 +1596,7 @@ function makeLocalSb(seed) {
           .filter(Boolean).sort();
         return Promise.resolve({ data:[{ name:r.name, members:ids.length,
           logged:db.entries.filter(e => ids.includes(e.user_id) && !e.part).length, handles:hs }], error:null }); }
-      if (name === "create_room") { const r = { id:uid(), name:args.p_name, code:Math.random().toString(36).slice(2,8), created_at:now() }; db.rooms.push(r); db.room_members.push({ room_id:r.id, user_id:db.profile.id }); save(); return Promise.resolve({ data:r, error:null }); }
+      if (name === "create_room") { if (db.room_members.filter(m => m.user_id === db.profile.id).length >= 3) return Promise.resolve({ data:null, error:new Error("You can be in up to three rooms. Leave a room first.") }); const r = { id:uid(), name:args.p_name, code:Math.random().toString(36).slice(2,8), created_at:now() }; db.rooms.push(r); db.room_members.push({ room_id:r.id, user_id:db.profile.id }); save(); return Promise.resolve({ data:r, error:null }); }
       if (name === "join_room") return Promise.resolve({ data:null, error:new Error("joining a room needs the hosted setup") });
       /* the local mock has no auth user to delete, but it can do the same thing to the
          log it holds — which is what closing the account means here */
@@ -2431,6 +2445,7 @@ async function useInvite() {
   const code = takeInvite(); if (!code || sb.__local) return false;
   if (rooms.some(r => r.code === code)) { dropInvite(); return false; }
   try {
+    if (rooms.length >= ROOM_LIMIT) throw new Error("Leave a room to join another. You can be in up to three rooms.");
     const r = await q(sb.rpc("join_room", { p_code:code }));
     dropInvite(); await loadRooms();
     if (r?.id) { P.activeRoom = r.id; P.feed = "room"; P.feedPicked = true; saveP(); }
@@ -3435,7 +3450,24 @@ async function renderDoors() {
    only follow somebody you had already stumbled across. Profiles are readable by anyone
    signed in, so a handle is enough. */
 let findT;
+function handleDistance(a, b) {
+  a = lc(a); b = lc(b); const prev = Array.from({ length:b.length + 1 }, (_, i) => i);
+  for (let i = 1; i <= a.length; i++) { const cur = [i];
+    for (let j = 1; j <= b.length; j++) cur[j] = Math.min(cur[j-1] + 1, prev[j] + 1,
+      prev[j-1] + (a[i-1] === b[j-1] ? 0 : 1));
+    for (let j = 0; j < cur.length; j++) prev[j] = cur[j]; }
+  return prev[b.length];
+}
+function handleMatch(handle, query) {
+  const h = lc(handle || ""), q = lc(query || "");
+  if (h === q) return 0;
+  if (h.startsWith(q)) return 10 + (h.length - q.length);
+  const at = h.indexOf(q); if (at >= 0) return 30 + at + (h.length - q.length);
+  const d = handleDistance(h, q), allowance = Math.max(1, Math.floor(q.length / 3));
+  return d <= allowance ? 60 + d * 10 + Math.abs(h.length - q.length) : Infinity;
+}
 function openFind() {
+  let allProfiles = null;
   openSheet(`<h3>Find someone</h3><p class="sub">By handle. Everyone in Rooms is findable —
       what they've logged still follows the same rules it always did.</p>
     <input id="findQ" type="search" placeholder="handle" autocapitalize="none" autocorrect="off" style="margin-top:12px">
@@ -3448,10 +3480,11 @@ function openFind() {
     if (v.length < 2) { res.innerHTML = ""; msg.textContent = ""; return; }
     msg.textContent = "Looking";
     findT = setTimeout(async () => {
-      let rows = [];
-      try { rows = await q(sb.from("profiles").select("id,handle,bio,avatar")
-        .ilike("handle", `%${v}%`).limit(20)); } catch (err) { msg.textContent = err.message; return; }
-      rows = rows.filter(r => r.id !== me.id);
+      try { if (!allProfiles) allProfiles = await q(sb.from("profiles").select("id,handle,bio,avatar").limit(500)); }
+      catch (err) { msg.textContent = err.message; return; }
+      const rows = allProfiles.filter(r => r.id !== me.id)
+        .map(r => ({ r, score:handleMatch(r.handle, v) })).filter(x => Number.isFinite(x.score))
+        .sort((a,b) => a.score - b.score || a.r.handle.localeCompare(b.r.handle)).slice(0,20).map(x => x.r);
       if ($("#findRes") !== res) return;
       msg.textContent = "";
       res.innerHTML = rows.length
@@ -3512,10 +3545,13 @@ function slipHTML(e, opts = {}) { const w = remember(e.works) || works[e.work_id
     ${e.note?`<div class="q${String(e.note).length > 210 ? " clip" : ""}">“${esc(e.note)}”</div>${String(e.note).length > 210 ? `<button class="more" data-more="${e.id}">More</button>` : ""}`:""}
     ${(() => { const t = together(e); return t ? `<div class="loved" style="margin-top:10px"><span class="together">◆ ${t}</span></div>` : ""; })()}
     ${e.loved?.length?`<div class="loved">${e.loved.slice(0,4).map(k => `<span>${esc(k.startsWith("person:")?lc(k.slice(7)):k)}</span>`).join("")}</div>`:""}
-    <div class="foot"><div class="acts">${mine ? "" : `<button data-like="${e.id}" class="lk ${same?"on":""}" aria-pressed="${same}" aria-label="${same ? "Liked — tap to take it back" : "Like this"}">${heartSVG(same)}</button>`
+    <div class="foot"><div class="acts">${mine ? `<button class="chip" data-edit-review="${e.id}">Edit</button><button class="chip" data-delete-review="${e.id}">Delete</button>` : `<button data-like="${e.id}" class="lk ${same?"on":""}" aria-pressed="${same}" aria-label="${same ? "Liked — tap to take it back" : "Like this"}">${heartSVG(same)}</button>`
       }${mine && e.room_only ? `<span class="tag dim">room only</span>` : ""}</div>${stars(e.score,"sm")}</div>
     <div class="likes" data-likes="${e.id}">${(() => { const l = likeLine(e); return l ? `<span>${l}</span>` : ""; })()}</div></div>`; }
 function wireSlips(el, es) { const by = Object.fromEntries(es.map(e => [e.id, e]));
+  $$("[data-edit-review]", el).forEach(b => b.onclick = () => { const e = by[b.dataset.editReview];
+    if (e?.user_id === me.id) openLog(works[e.work_id] || e.works, e); });
+  $$("[data-delete-review]", el).forEach(b => b.onclick = () => deleteReview(by[b.dataset.deleteReview]));
   $$("[data-more]", el).forEach(b => b.onclick = ev => { ev.stopPropagation();
     const qd = b.previousElementSibling; qd.classList.toggle("clip"); b.textContent = qd.classList.contains("clip") ? "More" : "Less"; });
   $$("[data-work]", el).forEach(x => x.onclick = () => openWork(x.dataset.work));
@@ -3639,7 +3675,12 @@ async function renderRoomFeed(fb, R) {
         Send one person the link and the whole thing switches on.</span>
         <button class="btn blue" id="aloneInvite">Send the invite link</button>
         ${showcase()}</div>` : ""}
-      ${rooms.length>1?`<div class="chips">${rooms.map(r => `<button class="chip ${r.id===R.id?"on":""}" data-rc="${r.id}">${esc(r.name)}</button>`).join("")}</div>`:""}</div>
+      ${rooms.length>1?`<div class="chips">${rooms.map(r => `<button class="chip ${r.id===R.id?"on":""}" data-rc="${r.id}">${esc(r.name)}</button>`).join("")}</div>`:""}<div class="stack"><button class="btn quiet" id="newRoom">Open another room</button><button class="btn quiet" id="joinRoom">Join with a code</button></div><p class="msg" id="roomMsg"></p></div>
+    <div class="tagrow" id="talkTop" style="margin:18px 0 8px"><span class="lbl" style="margin:0">What the room said</span><span class="tag dim">newest first</span></div>${(() => { if (!es.length) return blank("var(--pink)","“","Nothing said yet","Log something and it lands here for the room to see.",[["talkAdd","Log something"]]);
+      const since = lastSeen(); let shown = false;
+      return es.map(e => { const isNew = e.user_id !== me.id && String(e.created_at) > since; let head = "";
+        if (isNew && !shown) { shown = true; head = `<div class="newline">New since you were here</div>`; }
+        return head + slipHTML(e, { talk:true }); }).join(""); })()}
     ${pick ? `<div class="result"><small>Tonight's pick</small><b>${esc(pick.title)}</b><div class="stack" style="margin-top:10px"><button class="btn" id="pickLog">${K(pick.kind).verb} it</button></div></div>` : ""}
     <div class="card"><div class="h"><span>In competition</span><span class="tag dim">weighted</span></div>${comp.length ? compRows(comp) : blank("var(--butter)","%","No scores yet","Once two of you have rated the same thing, the agreement number appears here.",[["compAdd","Log something"]])}</div>
     ${(() => { const pal = roomPalmares(es); if (!pal || pal.n < 6) return "";
@@ -3651,12 +3692,7 @@ async function renderRoomFeed(fb, R) {
         ${pal.split && pal.split.id !== pal.agreed?.id ? `<div class="row" data-cw="${esc(pal.split.id)}"><span class="rk">≠</span><div class="t"><b>${t(pal.split.id)}</b><small><span class="bad">${pal.split.agree}% agree</span> · the fight of the year</small></div></div>` : ""}
         <div class="stack"><button class="btn soft" id="roomYearCard">Save the card</button></div>
       </div>`; })()}
-    <div class="tagrow" id="talkTop" style="margin:18px 0 8px"><span class="lbl" style="margin:0">What the room said</span><span class="tag dim">newest first</span></div>${(() => { if (!es.length) return blank("var(--pink)","“","Nothing said yet","Log something and it lands here for the room to see.",[["talkAdd","Log something"]]);
-      const since = lastSeen(); let shown = false;
-      return es.map(e => { const isNew = e.user_id !== me.id && String(e.created_at) > since; let head = "";
-        if (isNew && !shown) { shown = true; head = `<div class="newline">New since you were here</div>`; }
-        return head + slipHTML(e, { talk:true }); }).join(""); })()}
-    <div class="stack"><button class="btn quiet" id="newRoom">Open another room</button><button class="btn quiet" id="joinRoom">Join with a code</button></div><p class="msg" id="roomMsg"></p>`;
+    `;
   endLine(fb, es, 60);
   compFlip(fb);
   /* who is in here, arriving. Only when the room has actually grown since you last
@@ -3686,8 +3722,14 @@ async function renderRoomFeed(fb, R) {
   const ai = $("#aloneInvite"); if (ai) ai.onclick = () => $("#invite")?.click();
   const inv = $("#invite"); if (inv) inv.onclick = () => openInvite(R);
 }
+const ROOM_LIMIT = 3;
 function wireRoomButtons() { const nr = $("#newRoom"), jr = $("#joinRoom");
+  const full = rooms.length >= ROOM_LIMIT;
+  if (nr) nr.disabled = full;
+  const msg = $("#roomMsg");
+  if (msg) msg.textContent = `${rooms.length} of ${ROOM_LIMIT} rooms · ${full ? "Leave a room to create or join another." : "Create or join up to three rooms."}`;
   if (nr) nr.onclick = async () => {
+    if (rooms.length >= ROOM_LIMIT) return;
     const name = await askText({ title:"Name the room", sub:"Something the five of you will recognise. You can change it later.", label:"Name", placeholder:"The Pit", ok:"Open it", max:40 });
     if (!name) return;
     if (willNotName(name)) { $("#roomMsg").textContent = NAME_NO; return; }
@@ -3695,7 +3737,9 @@ function wireRoomButtons() { const nr = $("#newRoom"), jr = $("#joinRoom");
   const ge = $("#goEveryone"); if (ge) ge.onclick = () => { P.feed = "everyone"; P.feedPicked = true; saveP(); renderDoors(); };
   if (jr) jr.onclick = async () => {
     const code = await askText({ title:"Join a room", sub:"Whoever is already in it can find the code under the room's name.", label:"The six-character code", placeholder:"PIT123", ok:"Join", max:12, upper:true });
-    if (!code) return; try { const r = await q(sb.rpc("join_room", { p_code:code })); await loadRooms(); if (r?.id) P.activeRoom = r.id; saveP(); await loadClubs(); renderDoors(); } catch (e) { $("#roomMsg").textContent = e.message; } }; }
+    if (!code) return;
+    if (rooms.length >= ROOM_LIMIT && !rooms.some(r => r.code.toLowerCase() === code.trim().toLowerCase())) { $("#roomMsg").textContent = "Leave a room to join another. You can be in up to three rooms."; return; }
+    try { const r = await q(sb.rpc("join_room", { p_code:code })); await loadRooms(); if (r?.id) P.activeRoom = r.id; saveP(); await loadClubs(); renderDoors(); } catch (e) { $("#roomMsg").textContent = e.message; } }; }
 async function renderFollowingFeed(fb) {
   const ids = follows.map(f => f.followee); let es = [];
   if (ids.length) { try { es = notApart(await wholeEntries(f => { let x = sb.from("entries").select(ENTRY_SEL);
@@ -6367,7 +6411,7 @@ function openLog(w, edit = null) { const cfg = K(w.kind); const loved = edit?.lo
       [["all","Everyone"],["room","Just the room"]].map(([k,l]) =>
         `<button data-who="${k}" class="${(edit ? (edit.room_only ? "room" : "all") : (P.postTo === "room" ? "room" : "all")) === k ? "on" : ""}">${l}</button>`).join("")}</div>
       <p class="sub" id="whoNote"></p>
-      <p class="sub" style="margin-top:4px">Everyone means anybody with an account, not just people you know. Just the room means the ${rooms.length === 1 ? esc(rooms[0].name) : "room you are in"} and nobody else.</p>` : ""}
+      <p class="sub" style="margin-top:4px">Everyone means anybody with an account, not just people you know. Just the room means ${rooms.length === 1 ? esc(rooms[0].name) : "members of your rooms"} and nobody else.</p>` : ""}
     <div class="stack"><button class="btn" id="wSave" ${edit?"":"disabled"}>${edit?"Save changes":"Save the entry"}</button><button class="btn quiet" id="wCancel">Not now</button></div><p class="msg" id="wMsg"></p>`);
   const us = $("#useStart");
   if (us) us.onclick = () => { const n = nowOf(w.id); if (!n) return;
@@ -6505,16 +6549,18 @@ function openEntry(e, justSaved = false) { const w = works[e.work_id] || e.works
   const rb = $("#eReport"); if (rb) rb.onclick = () => openReport({ about_entry:e.id, about_user:e.user_id, who:e.profiles?.handle });
   const bb = $("#eBlock"); if (bb) bb.onclick = () => openBlock(e.user_id, e.profiles?.handle);
   $("#eClose").onclick = closeSheet; $("#eWork").onclick = () => openWork(e.work_id); const ed = $("#eEdit"); if (ed) ed.onclick = () => openLog(w, e);
-  const d = $("#eDel"); if (d) d.onclick = async () => {
-    /* asked rather than undone: deleting an entry takes the likes on it with it, and
-       putting the row back would put back a different row with nobody's likes on it */
-    if (!await askYesNo({ title:"Delete this entry?", sub:"What you wrote and anything anybody liked about it goes with it. It cannot be undone.", ok:"Delete it", bad:true })) return;
-    try { await q(sb.from("entries").delete().eq("id", e.id)); await loadMine(); closeSheet();
-      /* the row leaves rather than being replaced by the one under it — which is the half
-         second in which you find out you meant the other one */
-      const slip = e.id && $(`[data-slip="${CSS.escape(e.id)}"]`);
-      if (slip) leaveOut(slip, refresh); else refresh();
-      say("Entry deleted"); } catch (err) { oops(err, "Couldn't delete that entry"); } }; }
+  const d = $("#eDel"); if (d) d.onclick = () => deleteReview(e); }
+async function deleteReview(e) {
+  if (!e?.id || e.user_id !== me.id) return;
+  if (!await askYesNo({ title:"Delete this review?", sub:"Your rating, review and its likes will be deleted. This cannot be undone.", ok:"Delete it", bad:true })) return;
+  try {
+    await q(sb.from("entries").delete().eq("id", e.id).eq("user_id", me.id));
+    await loadMine(); recs = null; delete tagCache[e.work_id]; closeSheet();
+    const slip = $(`[data-slip="${CSS.escape(e.id)}"]`);
+    if (slip) leaveOut(slip, refresh); else refresh();
+    say("Review deleted");
+  } catch (err) { oops(err, "Couldn't delete that review"); }
+}
 
 /* ---------- import ----------
    letterboxd: Date,Name,Year,Letterboxd URI,Rating   · goodreads: Title,Author,My Rating,Date Read
