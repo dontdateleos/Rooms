@@ -422,8 +422,17 @@ textarea{min-height:76px;resize:none;line-height:1.45}
 .run::-webkit-scrollbar{display:none}
 .tok{position:relative;flex:none;background:none;border:0;padding:0;cursor:pointer;
   perspective:620px;scroll-snap-align:start;color:var(--ink);-webkit-tap-highlight-color:transparent}
+/* They turn. I had them still, on the grounds that a case is nearly flat and a quarter
+   of every rotation is an edge — which is true, and the answer to it is a spine with
+   real width rather than no motion at all. Slowly, each from its own starting point, and
+   only while it is on the screen: a hundred of these turning behind a scroll is a warm
+   phone for nothing. */
 .tok .ob{position:absolute;transform-style:preserve-3d;transform:rotateY(-14deg);
-  transition:transform .5s cubic-bezier(.2,.9,.25,1)}
+  animation:tokSpin 15s linear infinite;animation-delay:calc(var(--t, 0s) * -1);
+  animation-play-state:paused;will-change:transform}
+.tok.live .ob{animation-play-state:running}
+.tok.picked .ob{animation-duration:1.5s}
+@keyframes tokSpin{from{transform:rotateY(0deg)}to{transform:rotateY(360deg)}}
 .tok .fc{position:absolute;overflow:hidden;backface-visibility:hidden;background:var(--cream2)}
 .tok .fc img{width:100%;height:100%;object-fit:cover;display:block;opacity:0;transition:opacity .3s}
 .tok .fc img.ok{opacity:1}
@@ -433,11 +442,9 @@ textarea{min-height:76px;resize:none;line-height:1.45}
 .tok .nm{position:absolute;left:0;right:0;bottom:0;height:15px;line-height:15px;font-size:9.5px;font-weight:600;color:var(--mute);
   text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tok:focus-visible{outline:none}
-.tok:focus-visible .ob,.tok.turning .ob{animation:tokTurn 1.1s cubic-bezier(.3,0,.2,1)}
-@keyframes tokTurn{from{transform:rotateY(-14deg)}to{transform:rotateY(346deg)}}
-.tok:focus-visible .plinth,.tok.turning .plinth{opacity:1}
-@media (hover:hover){.tok:hover .ob{transform:rotateY(-4deg) translateY(-2px)}}
-@media (prefers-reduced-motion:reduce){.tok .ob{transition:none}.tok.turning .ob,.tok:focus-visible .ob{animation:none}}
+.tok:focus-visible .plinth,.tok.picked .plinth{opacity:1}
+@media (hover:hover){.tok:hover .ob{animation-duration:3.5s}}
+@media (prefers-reduced-motion:reduce){.tok .ob{animation:none;transform:rotateY(-14deg)}}
 .cabempty{text-align:center;padding:30px 0 10px}
 /* seasons and episodes. Deliberately quieter than anything else on the page: the show
    is the thing, and this is the thing's shape. A shelf of posters here would make a
@@ -789,6 +796,10 @@ nav button:active{transform:scale(.95)}
    which is exactly what happens when you ask "who with?" halfway through an entry. */
 .bigcode{font-family:var(--head);font-weight:900;font-size:40px;letter-spacing:.16em;
   line-height:1.1;padding:6px 0 2px;user-select:all;-webkit-user-select:all}
+.behind{position:fixed;left:12px;right:12px;bottom:calc(78px + env(safe-area-inset-bottom));z-index:13;
+  margin:0;background:var(--butter);color:#151320;border-radius:14px;padding:11px 14px;font-size:12.5px;
+  font-weight:600;line-height:1.45;box-shadow:0 12px 26px -14px rgba(21,19,32,.6)}
+.behind b{font-family:var(--head);font-weight:800;display:block}
 .ask{position:fixed;inset:0;background:rgba(21,19,32,.5);display:none;align-items:center;
   justify-content:center;z-index:20;padding:22px}
 .ask.on{display:flex}
@@ -1080,6 +1091,7 @@ body.demo header{padding-top:34px}
 <div class="offline" id="offline" role="status" aria-live="polite"></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
+<p class="behind" id="behind" hidden></p>
 <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-hidden="true"><div class="panel"><div class="in" id="sheetBody"></div></div></div>
 <div class="ask" id="ask" role="dialog" aria-modal="true" aria-hidden="true"><div class="askbox" id="askBox"></div></div>
 
@@ -1599,6 +1611,55 @@ if (!sb) {
   else { const { createClient } = await import("./vendor/supabase.js"); sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY); } }
 const q = async p => { const { data, error } = await p; if (error) throw error; return data; };
 
+/* ---------- when the app is ahead of the database ----------
+   This is one file served from a CDN, and a migration is something a person has to go
+   and run, so the two drift. The front page went blank the first time they did: every
+   feed asks for `part = false`, before v20 there is no such column, so all three threw
+   and the Rooms tab showed a sentence from Postgres, or nothing at all.
+
+   A migration nobody has run yet is not a reason to have no app. Ask for the filter; if
+   the column is not there, ask again without it, do the filtering here, and say plainly
+   what is missing. Slower and right beats blank. */
+const behind = new Set();
+const missingBit = e => /does not exist|could not find|schema cache|42703|42P01|PGRST20[0-9]/i
+  .test(String(e?.message || e?.code || e || ""));
+function needs(v, what) {
+  if (behind.has(v)) return; behind.add(v);
+  console.warn(`Rooms: the database has not run ${v} \u2014 ${what}`);
+  paintBehind();
+}
+/* The other half of the same problem. Getting in used to be all or nothing: one
+   Promise.all, nine loads in it, and any one of them throwing meant enter() rejected
+   before it switched to a tab — nav lit, every tab empty, no message. A refused table
+   or a dropped connection should cost you that table, not the whole app. */
+const trouble = new Map();
+function despite(what, p) {
+  return Promise.resolve(p).catch(e => {
+    const why = String(e?.message || e?.code || e || "");
+    console.warn(`Rooms: ${what} did not load \u2014 ${why}`);
+    trouble.set(what, why); paintBehind(); });
+}
+function paintBehind() {
+  const el = document.getElementById("behind"); if (!el) return;
+  if (!behind.size && !trouble.size) { el.hidden = true; return; }
+  el.hidden = false;
+  const bits = [];
+  if (behind.size) bits.push(`<b>This database is behind the app.</b> Run ${[...behind].sort().join(", ")}
+    from schema.sql in the Supabase SQL editor. Everything still works; some of it is doing
+    the slow version until you do.`);
+  if (trouble.size) bits.push(`<b>Some of this didn't load:</b> ${esc([...trouble.keys()].join(", "))}.
+    The rest of the app is fine \u2014 pull down to try again.`);
+  el.innerHTML = bits.join(" ");
+}
+/* one entries query, with the whole/part filter wherever the column exists to filter on */
+async function wholeEntries(build) {
+  if (!behind.has("v20")) {
+    try { return await q(build(true)); }
+    catch (e) { if (!missingBit(e)) throw e; needs("v20", "parts are filtered on the device"); }
+  }
+  return (await q(build(false))).filter(e => !isPart(e.work_id));
+}
+
 /* ---------- writes survive a dead connection ---------- */
 const QKEY = "rooms.queue";
 const queued = () => { try { return JSON.parse(localStorage.getItem(QKEY) || "[]"); } catch { return []; } };
@@ -1861,7 +1922,8 @@ let blocked = new Set();
 async function loadBlocks() {
   if (!me) return;
   try { const rows = await q(sb.from("blocks").select("blocked").eq("blocker", me.id));
-    blocked = new Set(rows.map(r => r.blocked)); } catch { blocked = new Set(); }
+    blocked = new Set(rows.map(r => r.blocked)); }
+  catch (e) { blocked = new Set(); if (missingBit(e)) needs("v21", "blocking is off"); }
 }
 const isApart = id => !!id && blocked.has(id);
 /* every list of other people's things passes through here */
@@ -1906,7 +1968,8 @@ function setReasons(rows) {
    hold up the app, and every caller already works from the bundled values. */
 async function loadSettings() {
   let rows = [];
-  try { rows = await q(sb.from("settings").select("key,value")); } catch { return; }
+  try { rows = await q(sb.from("settings").select("key,value")); }
+  catch (e) { if (missingBit(e)) needs("v22", "the word list cannot change without a build"); return; }
   for (const r of rows) {
     if (r.key === "nope") addPatterns(r.value);
     if (r.key === "report_reasons") setReasons(r.value);
@@ -2581,7 +2644,9 @@ async function checkNew() {
   if (R) { try { const ids = R.members.map(m => m.id).filter(i => i !== me.id);
     /* limit(100) with no order is an arbitrary hundred rows, so in a busy room the
        newest entries were the ones it could silently fail to count */
-    if (ids.length) { const es = notApart(await q(sb.from("entries").select("id,user_id,created_at,work_id,profiles!entries_user_id_fkey(handle)").eq("part", false).in("user_id", ids).order("created_at",{ascending:false}).limit(100)));
+    if (ids.length) { const es = notApart(await wholeEntries(f => { let x = sb.from("entries").select("id,user_id,created_at,work_id,profiles!entries_user_id_fkey(handle)");
+        if (f) x = x.eq("part", false);
+        return x.in("user_id", ids).order("created_at",{ascending:false}).limit(100); }));
       unseen.entries = es.filter(e => String(e.created_at) > since); } } catch {} }
   /* a count could only ever say "somebody". Keeping who lets the row say their name
      and offer the one thing anybody wants to do about it. */
@@ -3028,9 +3093,14 @@ async function enter() {
   $("#meBtn").hidden = false; $("#meName").textContent = me.handle; paintMeAv();
   $("#nav").classList.add("on"); $("#add").classList.add("live"); $("#cogBtn").hidden = false;
   $("#bellBtn").hidden = false;
-  await Promise.all([loadLists(), loadMine(), loadRooms(), loadFollows(), loadFounders(), loadNow(), loadFollowsMe(), loadSeen(), loadBlocks()]); await loadClubs(); await loadHand();
+  await Promise.all([despite("your shelf", loadLists()), despite("your log", loadMine()),
+    despite("your rooms", loadRooms()), despite("who you follow", loadFollows()),
+    despite("founders", loadFounders()), despite("what's on now", loadNow()),
+    despite("who follows you", loadFollowsMe()), despite("what you've finished", loadSeen()),
+    despite("who you've blocked", loadBlocks())]);
+  await despite("your clubs", loadClubs()); await despite("handovers", loadHand());
   loadSettings().catch(() => {});
-  await useInvite();
+  await despite("your invite", useInvite());
   booting = true;
   switchTab("doors"); movePill(true); checkNew(); joinMeChannel();
   if (!P.onboarded && !myEntries.length) setTimeout(openOnboarding, 400);
@@ -3414,7 +3484,9 @@ async function renderRoomFeed(fb, R) {
               it is the only one of the three that answers the question. */""}
         <button class="btn quiet" id="goEveryone">See what everyone's watching</button></div><p class="msg" id="roomMsg"></p>`; wireRoomButtons(); return; }
   const ids = R.members.map(m => m.id); let es = [];
-  try { es = notApart(await q(sb.from("entries").select(ENTRY_SEL).eq("part", false).in("user_id", ids).order("created_at",{ascending:false}).limit(60))); } catch (e) { fb.innerHTML = `<p class="empty">${esc(e.message)}</p>`; return; }
+  try { es = notApart(await wholeEntries(f => { let x = sb.from("entries").select(ENTRY_SEL);
+    if (f) x = x.eq("part", false);
+    return x.in("user_id", ids).order("created_at",{ascending:false}).limit(60); })); } catch (e) { fb.innerHTML = `<p class="empty">${esc(e.message)}</p>`; return; }
   es.sort(newestFirst);
   es.forEach(e => remember(e.works)); const comp = competition(es, 6);
   const pick = P.picked && !logged(P.picked) && works[P.picked];
@@ -3484,7 +3556,9 @@ function wireRoomButtons() { const nr = $("#newRoom"), jr = $("#joinRoom");
     if (!code) return; try { const r = await q(sb.rpc("join_room", { p_code:code })); await loadRooms(); if (r?.id) P.activeRoom = r.id; saveP(); await loadClubs(); renderDoors(); } catch (e) { $("#roomMsg").textContent = e.message; } }; }
 async function renderFollowingFeed(fb) {
   const ids = follows.map(f => f.followee); let es = [];
-  if (ids.length) { try { es = notApart(await q(sb.from("entries").select(ENTRY_SEL).eq("part", false).in("user_id", ids).order("created_at",{ascending:false}).limit(60))); }
+  if (ids.length) { try { es = notApart(await wholeEntries(f => { let x = sb.from("entries").select(ENTRY_SEL);
+    if (f) x = x.eq("part", false);
+    return x.in("user_id", ids).order("created_at",{ascending:false}).limit(60); })); }
     catch (err) { oops(err, "Couldn't load the following feed"); } }
   es.sort(newestFirst);
   es.forEach(e => remember(e.works));
@@ -3503,7 +3577,9 @@ async function renderFollowingFeed(fb) {
 }
 async function tasteTwins(limit) { let ps = []; try { ps = notApart(await q(sb.from("profiles").select("id,handle,bio,avatar").neq("id", me.id).limit(200))); } catch { return []; }
   const mine = tasteOf(myEntries); if (mine.tagged < 3) return []; const out = [];
-  for (const p of ps) { if (isFollowing(p.id)) continue; let es = []; try { es = await q(sb.from("entries").select("work_id,score,loved").eq("part", false).eq("user_id", p.id).limit(200)); } catch { continue; }
+  for (const p of ps) { if (isFollowing(p.id)) continue; let es = []; try { es = await wholeEntries(f => { let x = sb.from("entries").select("work_id,score,loved");
+      if (f) x = x.eq("part", false);
+      return x.eq("user_id", p.id).limit(200); }); } catch { continue; }
     const t = tasteOf(es); const m = tasteMatch(mine, t); if (m === null || t.tagged < 2) continue; out.push({ p, match:m, top:t.craft.slice(0,3).map(c => c[0]) }); }
   return out.sort((a,b) => b.match - a.match).slice(0, limit); }
 /* Where a first day lands. The feed remembers what you last chose, and what it shipped
@@ -3525,7 +3601,9 @@ function feedSort(es) { const myTaste = tasteOf(myEntries); P.feedSort = P.feedS
 function wireFeedSort(el, again) { $$("[data-fs]", el).forEach(b => b.onclick = () => { P.feedSort = b.dataset.fs; saveP(); again(); }); }
 
 async function renderEveryoneFeed(fb) {
-  let es = []; try { es = notApart(await q(sb.from("entries").select(ENTRY_SEL).eq("part", false).order("created_at",{ascending:false}).limit(300))); } catch (e) { fb.innerHTML = `<p class="empty">${esc(e.message)}</p>`; return; }
+  let es = []; try { es = notApart(await wholeEntries(f => { let x = sb.from("entries").select(ENTRY_SEL);
+    if (f) x = x.eq("part", false);
+    return x.order("created_at",{ascending:false}).limit(300); })); } catch (e) { fb.innerHTML = `<p class="empty">${esc(e.message)}</p>`; return; }
   es.forEach(e => remember(e.works));
   if (!es.length) { fb.innerHTML = `<h2>The <span class="hl" style="background:var(--sky)">hall</span></h2>` +
     blank("var(--sky)","◎","Nothing here yet","The hall fills up as people log things — everyone's scores, how much they agree, and what they loved. Be the first.",[["hallAdd","Log something"]]);
@@ -3565,6 +3643,7 @@ const isSoon = w => !!(w?.release && w.release > today());
    A show you only ever rated in seasons belongs here too: you have said what you think
    of it, and a cabinet that left it out would be missing something you own. */
 const CAB_ORDER = ["film", "tv", "book", "game"];
+let cabSeen = null;
 function cabinetRows() {
   const best = {};                       /* one token per thing, at your latest word */
   for (const e of myEntries) { const w = works[e.work_id]; if (!w) continue;
@@ -3596,16 +3675,22 @@ function renderCabinet() {
 function wireCabinet() {
   $$("[data-view]").forEach(b => b.onclick = () => { P.view = b.dataset.view; saveP(); renderShelf(); });
   const bk = $("#cabShelf"); if (bk) bk.onclick = () => { P.view = "shelf"; saveP(); renderShelf(); };
-  /* the turn belongs to the one you touched. It runs once and then gets out of the way,
-     and the sheet opens as it finishes rather than after it, so nothing waits on a
-     flourish. */
+  /* the one you touch speeds up for a moment, the way picking something up spins it */
   $$("[data-tok]").forEach(b => b.onclick = () => {
     const id = b.dataset.tok;
     if (REDUCED) return openWork(id);
-    b.classList.remove("turning"); void b.offsetWidth; b.classList.add("turning");
-    setTimeout(() => { b.classList.remove("turning"); }, 1100);
-    setTimeout(() => openWork(id), 340);
+    b.classList.add("picked");
+    setTimeout(() => b.classList.remove("picked"), 900);
+    setTimeout(() => openWork(id), 260);
   });
+  /* only what you can see moves. Without this, a cabinet of four hundred things is four
+     hundred compositor layers turning behind a scroll nobody is looking at. */
+  if (!REDUCED) {
+    cabSeen?.disconnect();
+    cabSeen = new IntersectionObserver(rows => rows.forEach(r =>
+      r.target.classList.toggle("live", r.isIntersecting)), { rootMargin: "80px" });
+    $$("[data-tok]").forEach(b => cabSeen.observe(b));
+  }
 }
 const viewSeg = () => `<div class="seg" style="margin-top:12px">${
   [["shelf", "The shelf"], ["cabinet", "The cabinet"]].map(([k, l]) =>
@@ -5824,7 +5909,7 @@ function tokenHTML(w, face = 52, five = false) {
     ? `<img src="${esc(w.cover)}" alt="" onload="this.classList.add('ok')" onerror="this.replaceWith(document.createRange().createContextualFragment(this.dataset.fb))" data-fb="${esc(tokFace(w))}">`
     : tokFace(w);
   return `<button type="button" class="tok" data-tok="${esc(w.id)}" title="${esc(w.title)}"
-      style="width:${box}px;height:${boxh + TOK_NAME}px">
+      style="width:${box}px;height:${boxh + TOK_NAME}px;--t:${(avHash(w.id) % 150) / 10}s">
     <span class="ob" style="left:${pad}px;top:0;width:${fw}px;height:${fh}px">
       <span class="fc" style="inset:0;border-radius:2px 3px 3px 2px;transform:translateZ(${dep/2}px);
         box-shadow:0 ${Math.round(fw*.09)}px ${Math.round(fw*.2)}px -${Math.round(fw*.08)}px rgba(21,19,32,.45)">${front}</span>
@@ -5850,7 +5935,8 @@ let mySeen = new Set();
 async function loadSeen() {
   if (!me) return;
   try { const rows = await q(sb.from("seen").select("work_id").eq("user_id", me.id));
-    mySeen = new Set(rows.map(r => r.work_id)); } catch {}
+    mySeen = new Set(rows.map(r => r.work_id)); }
+  catch (e) { if (missingBit(e)) needs("v20", "ticking an episode will not stick"); }
 }
 async function tickEpisode(w, on) {
   await ensurePart(w);
@@ -5923,7 +6009,9 @@ function wireEps(box, show) {
 /* ============ PROFILE PAGE ============ */
 async function openProfile(userId) { const self = userId === me.id;
   let p = self ? me : null; if (!p) { try { const rows = await q(sb.from("profiles").select("id,handle,bio,avatar").eq("id", userId).limit(1)); p = rows[0]; } catch {} } if (!p) return;
-  let es = []; try { es = (await q(sb.from("entries").select(ENTRY_SEL).eq("part", false).eq("user_id", userId).order("created_at",{ascending:false}).limit(200))).sort(newestFirst); } catch {} es.forEach(e => remember(e.works));
+  let es = []; try { es = notApart(await wholeEntries(f => { let x = sb.from("entries").select(ENTRY_SEL);
+    if (f) x = x.eq("part", false);
+    return x.eq("user_id", userId).order("created_at",{ascending:false}).limit(200); })).sort(newestFirst); } catch {} es.forEach(e => remember(e.works));
   const t = tasteOf(es), mine = tasteOf(myEntries), match = tasteMatch(mine, t);
   let top = null; try { top = await loadTop(userId); } catch {}
   const theirTens = {}; for (const [k] of TENS) { if (k === "all time") continue; try { const l = await loadTop(userId, k); if (l?.items.length) theirTens[k] = l.items; } catch {} }
