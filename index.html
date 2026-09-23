@@ -71,6 +71,7 @@ main{overflow-x:clip}                 /* the deal-in travels 30px; keep it insid
 .wrap{overflow-x:clip}
 .panel .in{overflow-x:clip}
 .wrap{max-width:560px;margin:0 auto;padding:0 18px}
+@media (min-width:760px){.wrap{max-width:720px;padding-left:28px;padding-right:28px}}
 header{position:sticky;top:0;z-index:5;background:var(--veil);backdrop-filter:blur(12px);padding-top:env(safe-area-inset-top)}
 header .wrap{display:flex;align-items:center;justify-content:space-between;height:58px}
 .logo{display:flex;align-items:center;gap:9px;font-family:var(--head);font-weight:900;font-size:22px;letter-spacing:-.03em}
@@ -1038,6 +1039,18 @@ body.demo header{padding-top:34px}
 .toast.bad{background:var(--bad)}
 .toast.good{background:var(--good)}
 .searchlog{margin-top:10px}
+.searchline{display:flex;align-items:center;gap:8px;margin-top:12px}
+.searchline input{margin-top:0;min-width:0}
+.searchline .clearsearch{flex:none;width:auto;padding:9px 12px;font-size:12px}
+.roomactions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
+.roomactions .btn{width:100%;padding:11px 12px;font-size:14px}
+.demoHint{margin-top:8px;color:var(--mute);font-size:12px;font-weight:600;text-align:center}
+.roomhead{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.roomhead .h{flex:1;min-width:0}
+.roomcode{display:inline-flex;align-items:center;gap:5px;width:auto;padding:6px 9px;font-size:11px}
+.roomswitch{display:flex;gap:6px;overflow-x:auto;padding:2px 0 4px;margin-top:10px;scrollbar-width:none}
+.roomswitch::-webkit-scrollbar{display:none}
+.roomswitch .chip{flex:none}
 .slip .q.clip{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
 .more{background:none;border:0;padding:4px 0 0;font-family:var(--head);font-weight:800;font-size:13px;color:var(--mute);cursor:pointer}
 @keyframes thump{0%{transform:scale(1)}30%{transform:scale(1.04)}60%{transform:scale(.985)}100%{transform:scale(1)}}
@@ -3470,10 +3483,11 @@ function openFind() {
   let allProfiles = null;
   openSheet(`<h3>Find someone</h3><p class="sub">By handle. Everyone in Rooms is findable —
       what they've logged still follows the same rules it always did.</p>
-    <input id="findQ" type="search" placeholder="handle" autocapitalize="none" autocorrect="off" style="margin-top:12px">
+    <div class="searchline"><input id="findQ" type="search" placeholder="handle" autocapitalize="none" autocorrect="off"><button type="button" class="btn ghost clearsearch" id="findClear">Clear</button></div>
     <p class="msg" id="findMsg"></p><div id="findRes"></div>
     <div class="stack"><button class="btn quiet" id="findClose">Not now</button></div>`);
   $("#findClose").onclick = closeSheet;
+  $("#findClear").onclick = () => { $("#findQ").value = ""; $("#findRes").innerHTML = ""; $("#findMsg").textContent = ""; $("#findQ").focus(); };
   setTimeout(() => $("#findQ")?.focus(), 350);
   $("#findQ").oninput = e => { clearTimeout(findT); const v = e.target.value.trim().replace(/^@/, "");
     const res = $("#findRes"), msg = $("#findMsg");
@@ -3545,7 +3559,7 @@ function slipHTML(e, opts = {}) { const w = remember(e.works) || works[e.work_id
     ${e.note?`<div class="q${String(e.note).length > 210 ? " clip" : ""}">“${esc(e.note)}”</div>${String(e.note).length > 210 ? `<button class="more" data-more="${e.id}">More</button>` : ""}`:""}
     ${(() => { const t = together(e); return t ? `<div class="loved" style="margin-top:10px"><span class="together">◆ ${t}</span></div>` : ""; })()}
     ${e.loved?.length?`<div class="loved">${e.loved.slice(0,4).map(k => `<span>${esc(k.startsWith("person:")?lc(k.slice(7)):k)}</span>`).join("")}</div>`:""}
-    <div class="foot"><div class="acts">${mine ? `<button class="chip" data-edit-review="${e.id}">Edit</button><button class="chip" data-delete-review="${e.id}">Delete</button>` : `<button data-like="${e.id}" class="lk ${same?"on":""}" aria-pressed="${same}" aria-label="${same ? "Liked — tap to take it back" : "Like this"}">${heartSVG(same)}</button>`
+    <div class="foot"><div class="acts">${opts.roomId ? `<button class="chip" data-pin-review="${e.id}" data-room-id="${esc(opts.roomId)}" aria-label="Pin this review">☆ Pin</button>` : ""}${mine ? `<button class="chip" data-edit-review="${e.id}">Edit</button><button class="chip" data-delete-review="${e.id}">Delete</button>` : `<button data-like="${e.id}" class="lk ${same?"on":""}" aria-pressed="${same}" aria-label="${same ? "Liked — tap to take it back" : "Like this"}">${heartSVG(same)}</button>`
       }${mine && e.room_only ? `<span class="tag dim">room only</span>` : ""}</div>${stars(e.score,"sm")}</div>
     <div class="likes" data-likes="${e.id}">${(() => { const l = likeLine(e); return l ? `<span>${l}</span>` : ""; })()}</div></div>`; }
 function wireSlips(el, es) { const by = Object.fromEntries(es.map(e => [e.id, e]));
@@ -3556,6 +3570,7 @@ function wireSlips(el, es) { const by = Object.fromEntries(es.map(e => [e.id, e]
     const qd = b.previousElementSibling; qd.classList.toggle("clip"); b.textContent = qd.classList.contains("clip") ? "More" : "Less"; });
   $$("[data-work]", el).forEach(x => x.onclick = () => openWork(x.dataset.work));
   $$("[data-prof]", el).forEach(x => x.onclick = () => openProfile(x.dataset.prof));
+  $$('[data-pin-review]', el).forEach(b => b.onclick = async () => { if (DEMO) { say('Pins are available in the connected app; demo changes are preview-only.'); return; } b.disabled = true; try { const { data, error } = await sb.rpc('toggle_room_pin', { p_room: b.dataset.roomId, p_entry: b.dataset.pinReview }); if (error) throw error; b.textContent = data ? '★ Pinned' : '☆ Pin'; } catch (err) { oops(err, "Couldn't update the pin"); } finally { b.disabled = false; } });
   /* It used to be called Same, lived only in the room, and re-rendered the whole feed
      on every tap — which rebuilt the page under your thumb and threw away where you
      were reading. It now appears wherever a review does, and only the button it was,
@@ -3655,18 +3670,22 @@ function openInvite(R) {
 
 async function renderRoomFeed(fb, R) {
   if (!R) { leaveRoomChannel(); fb.innerHTML = `<h2>Your <span class="hl" style="background:var(--pink)">room</span></h2><p class="empty">A room is five to twenty friends and a six-character code. It shows what everyone rated, how much you agree, and what each of you said about it. ${sb.__local ? "Rooms need the hosted setup — everything else works now." : ""}</p>
-      <div class="stack"><button class="btn blue" id="newRoom">Open a room</button><button class="btn ghost" id="joinRoom">Join with a code</button>
+      <div class="roomactions"><button class="btn blue" id="newRoom">Open a room</button><button class="btn ghost" id="joinRoom">Join with a code</button>
         ${/* both of the above need somebody else. This one does not, and on a first day
               it is the only one of the three that answers the question. */""}
-        <button class="btn quiet" id="goEveryone">See what everyone's watching</button></div><p class="msg" id="roomMsg"></p>`; wireRoomButtons(); return; }
+        <button class="btn quiet" id="goEveryone">See what everyone's watching</button></div>${DEMO ? `<p class="demoHint">Demo mode: room changes are preview-only.</p>` : ""}<p class="msg" id="roomMsg"></p>`; wireRoomButtons(); return; }
   const ids = R.members.map(m => m.id); let es = [];
   try { es = notApart(await wholeEntries(f => { let x = sb.from("entries").select(ENTRY_SEL);
     if (f) x = x.eq("part", false);
     return x.in("user_id", ids).order("created_at",{ascending:false}).limit(60); })); } catch (e) { fb.innerHTML = `<p class="empty">${esc(e.message)}</p>`; return; }
   es.sort(newestFirst);
+  const roomFilter = ["all", "reviews", "activity"].includes(P.roomFilter) ? P.roomFilter : "all";
+  const roomEntries = roomFilter === "reviews" ? es.filter(e => e.note || (e.loved || []).length) : roomFilter === "activity" ? es.filter(e => !e.note && !(e.loved || []).length) : es;
   es.forEach(e => remember(e.works)); const comp = competition(es, 6);
   const pick = P.picked && !logged(P.picked) && works[P.picked];
-  fb.innerHTML = `<div class="card"><div class="h"><span>${esc(R.name)}</span><span class="tag dim">${R.members.length} in here · ${esc(R.code)}</span></div>
+  fb.innerHTML = `<div class="card"><div class="roomhead"><div class="h"><span>${esc(R.name)}</span><span class="tag dim">${R.members.length} in here</span></div><button class="btn ghost roomcode" id="roomCode" title="Copy room code">${esc(R.code)} · Copy</button></div>
+      ${rooms.length>1 ? `<div class="roomswitch" aria-label="Your rooms">${rooms.map(r => `<button class="chip ${r.id===R.id?"on":""}" data-rc="${esc(r.id)}">${esc(r.name)}</button>`).join("")}</div>` : ""}
+      <div class="seg roomfilters" aria-label="Room activity filter">${[["all","Everything"],["reviews","Reviews"],["activity","Activity"]].map(([k,l]) => `<button data-rfilter="${k}" class="${roomFilter===k?"on":""}">${l}</button>`).join("")}</div>
       <div class="chips" id="roomSeats" style="margin-top:8px">${R.members.map(m => `<span class="chip ${m.id===me.id?"on":""}" data-prof="${esc(m.id)}">${esc(m.handle)}</span>`).join("")}<button class="chip" id="invite">+ bring someone in</button><button class="chip" id="leaveRoom">Leave</button></div>
       <div class="here" id="hereRow" aria-live="polite"><small>Nobody else in here right now</small></div>
       <div class="nowrow" id="roomNow"></div>
@@ -3675,12 +3694,12 @@ async function renderRoomFeed(fb, R) {
         Send one person the link and the whole thing switches on.</span>
         <button class="btn blue" id="aloneInvite">Send the invite link</button>
         ${showcase()}</div>` : ""}
-      ${rooms.length>1?`<div class="chips">${rooms.map(r => `<button class="chip ${r.id===R.id?"on":""}" data-rc="${r.id}">${esc(r.name)}</button>`).join("")}</div>`:""}<div class="stack"><button class="btn quiet" id="newRoom">Open another room</button><button class="btn quiet" id="joinRoom">Join with a code</button></div><p class="msg" id="roomMsg"></p></div>
-    <div class="tagrow" id="talkTop" style="margin:18px 0 8px"><span class="lbl" style="margin:0">What the room said</span><span class="tag dim">newest first</span></div>${(() => { if (!es.length) return blank("var(--pink)","“","Nothing said yet","Log something and it lands here for the room to see.",[["talkAdd","Log something"]]);
+      ${rooms.length>1?`<div class="chips">${rooms.map(r => `<button class="chip ${r.id===R.id?"on":""}" data-rc="${r.id}">${esc(r.name)}</button>`).join("")}</div>`:""}<div class="roomactions"><button class="btn soft" id="newRoom">Open another room</button><button class="btn ghost" id="joinRoom">Join with a code</button></div>${DEMO ? `<p class="demoHint">Demo mode: room changes are preview-only.</p>` : ""}<p class="msg" id="roomMsg"></p></div>
+    <div class="tagrow" id="talkTop" style="margin:18px 0 8px"><span class="lbl" style="margin:0">What the room said</span><span class="tag dim">newest first</span></div>${(() => { if (!roomEntries.length) return blank("var(--pink)","“",roomFilter === "reviews" ? "No reviews yet" : roomFilter === "activity" ? "No activity yet" : "Nothing said yet",roomFilter === "reviews" ? "Reviews with a note or reaction will appear here." : roomFilter === "activity" ? "Room activity without a written review will appear here." : "Log something and it lands here for the room to see.",[["talkAdd","Log something"]]);
       const since = lastSeen(); let shown = false;
-      return es.map(e => { const isNew = e.user_id !== me.id && String(e.created_at) > since; let head = "";
+      return roomEntries.map(e => { const isNew = e.user_id !== me.id && String(e.created_at) > since; let head = "";
         if (isNew && !shown) { shown = true; head = `<div class="newline">New since you were here</div>`; }
-        return head + slipHTML(e, { talk:true }); }).join(""); })()}
+        return head + slipHTML(e, { talk:true, roomId:R.id }); }).join(""); })()}
     ${pick ? `<div class="result"><small>Tonight's pick</small><b>${esc(pick.title)}</b><div class="stack" style="margin-top:10px"><button class="btn" id="pickLog">${K(pick.kind).verb} it</button></div></div>` : ""}
     <div class="card"><div class="h"><span>In competition</span><span class="tag dim">weighted</span></div>${comp.length ? compRows(comp) : blank("var(--butter)","%","No scores yet","Once two of you have rated the same thing, the agreement number appears here.",[["compAdd","Log something"]])}</div>
     ${(() => { const pal = roomPalmares(es); if (!pal || pal.n < 6) return "";
@@ -3713,6 +3732,11 @@ async function renderRoomFeed(fb, R) {
   $$("[data-cw]", fb).forEach(x => x.onclick = () => openWork(x.dataset.cw));
   $$(".card [data-prof]", fb).forEach(x => x.onclick = () => openProfile(x.dataset.prof));
   $$("[data-rc]", fb).forEach(b => b.onclick = async () => { P.activeRoom = b.dataset.rc; saveP(); await loadClubs(); renderDoors(); });
+  $$('[data-rfilter]', fb).forEach(b => b.onclick = () => { P.roomFilter = b.dataset.rfilter; saveP(); renderDoors(); });
+  const rc = $("#roomCode"); if (rc) rc.onclick = async () => {
+    try { await navigator.clipboard.writeText(R.code); say("Room code copied", "good"); }
+    catch { say(`Room code: ${R.code}`); }
+  };
   const pl = $("#pickLog"); if (pl) pl.onclick = () => openLog(works[P.picked]);
   const lv = $("#leaveRoom"); if (lv) lv.onclick = async () => {
     const last = R.members.length <= 1;
@@ -3728,6 +3752,12 @@ function wireRoomButtons() { const nr = $("#newRoom"), jr = $("#joinRoom");
   if (nr) nr.disabled = full;
   const msg = $("#roomMsg");
   if (msg) msg.textContent = `${rooms.length} of ${ROOM_LIMIT} rooms · ${full ? "Leave a room to create or join another." : "Create or join up to three rooms."}`;
+  if (DEMO) {
+    const demoAction = action => () => say(`${action} is available in the connected app. This demo does not save changes.`);
+    if (nr) nr.onclick = demoAction("Creating a room");
+    if (jr) jr.onclick = demoAction("Joining a room");
+    return;
+  }
   if (nr) nr.onclick = async () => {
     if (rooms.length >= ROOM_LIMIT) return;
     const name = await askText({ title:"Name the room", sub:"Something the five of you will recognise. You can change it later.", label:"Name", placeholder:"The Pit", ok:"Open it", max:40 });

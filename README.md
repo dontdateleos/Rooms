@@ -123,3 +123,11 @@ for both room creation and joining, including invite links.
 Your review cards now include Edit and Delete buttons. Deleting asks for confirmation
 and removes the entry and its likes. “What the room said” appears first beneath the
 room header, ahead of picks, competition and the room's year.
+
+## Room quality update
+
+Run `migrations/027-room-quality.sql` after the room-limit migration for existing
+Supabase projects. It adds durable invite status, pinned room entries, room activity,
+and per-room notification preferences for the room switcher and activity tools.
+It also exposes `toggle_room_pin`, `record_room_activity`, `room_remove_member`,
+and `room_transfer_owner` for connected room controls.
