@@ -5870,10 +5870,12 @@ const SEASON_MEDALS = [
   { tier:"platinum", at:10, icon:"✺", name:"Platinum" }
 ];
 const SEASON_PICKS = [
-  ["film","The Thing"],["film","The Witch"],["film","Get Out"],["film","The Descent"],
-  ["tv","The Haunting of Hill House"],["tv","Yellowjackets"],
-  ["book","Beloved"],["book","The Only Good Indians"],
-  ["game","Alan Wake 2"],["game","Resident Evil 4"]
+  /* Every challenge opens as a real reading / watching list, rather than two examples.
+     These stay hand-picked: a seasonal recommendation should feel chosen, not scraped. */
+  ...["The Thing","The Witch","Get Out","The Descent","Hereditary","The Babadook","The Shining","Alien","The Texas Chain Saw Massacre","The Blair Witch Project","The Others","The Ring","Candyman","Scream","Raw","The Wailing","Train to Busan","The Lighthouse","Suspiria","The Invisible Man","Barbarian","Talk to Me","The Black Phone","Saint Maud","The Night House"].map(title => ["film",title]),
+  ...["The Haunting of Hill House","Yellowjackets","Midnight Mass","The Fall of the House of Usher","Hannibal","Twin Peaks","Penny Dreadful","Channel Zero","The Terror","Brand New Cherry Flavor","Marianne","Archive 81","From","The Outsider","The Exorcist","The Walking Dead","Ash vs Evil Dead","The Last of Us","Black Mirror","Creepshow","The X-Files","Ju-On: Origins","AHS: Murder House","Servant","The Curse"].map(title => ["tv",title]),
+  ...["Beloved","The Only Good Indians","The Haunting of Hill House","The Shining","House of Leaves","Mexican Gothic","The Fisherman","The Ruins","Our Wives Under the Sea","The Little Stranger","The Silent Companions","The Cabin at the End of the World","The Passage","Dracula","Frankenstein","The Exorcist","The Woman in Black","We Have Always Lived in the Castle","The Turn of the Screw","The Changeling","The Troop","The Hollow Places","The Last House on Needless Street","A Head Full of Ghosts","The September House"].map(title => ["book",title]),
+  ...["Alan Wake 2","Resident Evil 4","Silent Hill 2","Dead Space","Signalis","Amnesia: The Dark Descent","SOMA","Alien: Isolation","Bloodborne","The Last of Us Part II","Control","Fatal Frame II","Outlast","Little Nightmares II","The Evil Within","Darkwood","Mundaun","Detention","Oxenfree","Dredge","Inscryption","Slay the Princess","Pathologic 2","World of Horror","Crow Country"].map(title => ["game",title])
 ];
 const seasonDate = e => String(e.created_at || e.rated_on || "").slice(0,10);
 const seasonKind = e => e.works?.kind || works[e.work_id]?.kind || kindOf(e.work_id);
