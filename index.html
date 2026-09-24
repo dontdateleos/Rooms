@@ -683,7 +683,7 @@ nav .in:has(.navpill.set) button.on{background:none}
    short-lived event with flexible progress, so the little objects belong to the things
    that counted as well as to the season itself. */
 .season-hero{background:#24162D;color:#FFF7EC;border-radius:24px;padding:20px;margin-top:12px;overflow:hidden;position:relative}
-.season-hero:after{content:'✦';position:absolute;right:18px;top:-20px;font-size:128px;color:#FFB36B;opacity:.16;line-height:1}
+.season-hero:after{content:'◉ ◉';position:absolute;right:14px;top:2px;font-family:var(--head);font-size:76px;letter-spacing:-22px;color:#FFB36B;opacity:.24;line-height:1;transform:rotate(-8deg)}
 .season-hero>*{position:relative;z-index:1}.season-hero .tag{background:var(--apricot);color:var(--onAccent)}
 .season-hero h3{font-family:var(--head);font-size:28px;line-height:.95;letter-spacing:-.04em;margin-top:10px;max-width:260px}
 .season-hero p{font-size:13px;font-weight:650;line-height:1.4;color:#E7D8ED;margin-top:9px;max-width:290px}
@@ -694,6 +694,8 @@ nav .in:has(.navpill.set) button.on{background:none}
 .season-progress{height:8px;background:var(--cream2);border-radius:99px;overflow:hidden;margin-top:10px}.season-progress i{display:block;height:100%;background:var(--ink);border-radius:inherit;transition:width .55s cubic-bezier(.2,.9,.25,1)}
 .season-tier{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:8px;font-size:11px;font-weight:800;color:var(--mute)}.season-tier b{color:var(--ink)}
 .season-haul{display:flex;gap:7px;margin-top:10px}.season-haul span{width:28px;height:28px;border-radius:10px;display:grid;place-items:center;background:var(--cream2);border:1px solid var(--line);font-size:13px;filter:grayscale(1);opacity:.42}.season-haul span.on{filter:none;opacity:1}.season-haul span.bronze{background:#F1B37A}.season-haul span.silver{background:#D6D7DD}.season-haul span.gold{background:#FFE86A}.season-haul span.platinum{background:#D5C4FF}
+.season-picks{background:var(--cream2);border-radius:20px;padding:16px;margin-top:12px}.season-picks .h{display:flex;justify-content:space-between;align-items:baseline;gap:10px}.season-picks .row{cursor:pointer}.season-picks .row:hover{transform:translateX(2px)}.season-picks button.row{width:100%;border:0;background:transparent;text-align:left;font:inherit;padding-left:0;padding-right:0}
+.taste-hero{background:var(--ink);color:var(--cream);border-radius:24px;padding:19px 20px;margin-top:10px;position:relative;overflow:hidden}.taste-hero:after{content:"◒  ◉";position:absolute;right:18px;top:8px;color:var(--butter);font-family:var(--head);font-size:54px;opacity:.22;transform:rotate(10deg)}.taste-hero>*{position:relative;z-index:1}.taste-hero h2{font-size:25px;letter-spacing:-.04em}.taste-hero p{color:#C9C4D4;font-size:13px;font-weight:650;line-height:1.42;margin-top:6px;max-width:280px}.taste-hero .tag{background:var(--butter);color:var(--onAccent);margin-top:11px}
 .season-rank{background:var(--mint);border-radius:18px;padding:14px 16px;margin-top:12px;font-size:13px;font-weight:700;line-height:1.4}.season-rank b{font-family:var(--head);font-size:16px}
 .season-cover{position:relative;width:44px;height:64px;display:block;flex:none}.season-cover>img,.season-cover>.co{width:44px!important;height:64px!important}.season-stamp{position:absolute;right:-7px;top:-7px;width:22px;height:22px;border-radius:8px;font-size:11px;box-shadow:0 2px 0 rgba(21,19,32,.18);z-index:2}.season-stamp.bronze{background:#F1B37A}.season-stamp.silver{background:#D6D7DD}.season-stamp.gold{background:#FFE86A}.season-stamp.platinum{background:#D5C4FF}
 .pal{background:var(--ink);color:var(--cream);border-radius:22px;padding:18px;margin-top:12px}
@@ -1122,10 +1124,10 @@ body.demo header{padding-top:34px}
 
 <nav id="nav"><div class="in"><span class="navpill" id="navPill"></span>
   <button data-tab="doors">Rooms</button>
-  <button data-tab="shelf">Library</button>
-  <button id="add" aria-label="Log something"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
   <button data-tab="taste">Taste</button>
+  <button id="add" aria-label="Log something"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
   <button data-tab="clubs">Seasons</button>
+  <button data-tab="shelf">Library</button>
 </div></nav>
 <div class="demobar" id="demobar" hidden>Demo &middot; invented people &middot; nothing is saved</div>
 <div class="offline" id="offline" role="status" aria-live="polite"></div>
@@ -3410,7 +3412,10 @@ function weekCard() {
 async function renderDoors() {
   const body = $("#doorsBody"); const R = activeRoom();
   const mem = memories()[0], rev = dueReview();
-  body.innerHTML = `${weekCard()}${rev ? `<div class="card look" id="revCard"><div class="h"><span>${esc(rev.head)}</span><span class="tag dim">${rev.kind === "year" ? "the year" : "last month"}</span></div>
+  body.innerHTML = `<div class="seg">${[["room","Your room"],["following","Following"],["everyone","Everyone"]].map(([k,l]) => `<button data-feed="${k}" class="${feedNow()===k?"on":""}">${l}</button>`).join("")}</div>
+    <div class="findrow"><button class="chip" id="findPeople">Find someone by handle</button></div>
+    <div id="feedBody">${skeleton(3)}</div>
+    ${weekCard()}${rev ? `<div class="card look" id="revCard"><div class="h"><span>${esc(rev.head)}</span><span class="tag dim">${rev.kind === "year" ? "the year" : "last month"}</span></div>
       <div class="stack"><button class="btn soft" id="revGo">Have a look</button></div></div>` : ""}
     ${mem ? `<div class="card look" id="memCard"><div class="h"><span>${esc(mem.head)}</span><span class="tag dim">${
         mem.kind === "still" ? "and never went back" : when(mem.when || mem.entries[0].rated_on)}</span></div>
@@ -3419,9 +3424,7 @@ async function renderDoors() {
           <small>${tag(w.kind)} ${(e.score/2).toFixed(1)}${e.note ? ` · <span class="said">“${esc(e.note)}”</span>` : ""}</small></div></div>`; }).join("")}
       ${mem.entries.length > 3 ? `<p class="sub">and ${said(mem.entries.length - 3)} more that day.</p>` : ""}
       <div class="stack"><button class="btn soft" id="memShare">Share it</button><button class="btn quiet" id="memGo">Not now</button></div></div>` : ""}
-    <div class="seg">${[["room","Your room"],["following","Following"],["everyone","Everyone"]].map(([k,l]) => `<button data-feed="${k}" class="${feedNow()===k?"on":""}">${l}</button>`).join("")}</div>
-    <div class="findrow"><button class="chip" id="findPeople">Find someone by handle</button></div>
-    <div id="feedBody">${skeleton(3)}</div>`;
+`;
   /* Either way it is put away for the week: looking at it and deciding not to are both
      answers, and asking the same question tomorrow would be the app not listening. */
   const tuckWeek = () => { P.weekSeen = WEEK_KEY(); saveP(); $("#weekCard")?.remove(); };
@@ -5137,9 +5140,11 @@ async function loadRecs() { if (recs) return recs; const onShelf = new Set(lists
   if (!seeds.length || reached) recs = out;
   return out; }
 async function renderTaste() { const body = $("#tasteBody"); const t = tasteOf(myEntries);
-  body.innerHTML = `<div style="display:flex;align-items:center;gap:12px;margin-top:10px">${avatar(me)}<div><h2 style="margin:0">${esc(me.handle)}</h2>${me.bio?`<p class="sub" style="margin-top:2px">${esc(me.bio)}</p>`:""}</div></div>
+  const tasteLead = myEntries.length ? (t.craft[0]?.[0] ? `You keep coming back for ${t.craft[0][0].toLowerCase()}. Here is something that might meet you there.` : "Your taste gets clearer every time you log something.") : "Log a few things and this becomes a living map of what pulls you in.";
+  body.innerHTML = `<div class="taste-hero">${avatar(me)}<h2>${esc(me.handle)}’s taste</h2><p>${esc(tasteLead)}</p><span class="tag">${myEntries.length ? `${myEntries.length} logged` : "just getting started"}</span></div>
     <div class="tally">${Object.keys(KINDS).filter(k=>t.kinds[k]).map(k => `<span><b>${t.kinds[k]}</b>${K(k).label.toLowerCase()}</span>`).join("")}<span><b>${follows.length}</b>following</span><span id="followerCount"></span></div>
     <div class="card">${tasteHTML(t)}${t.tagged >= 3 ? `<div class="stack"><button class="btn ghost" id="myTasteCard">Save the card</button></div>` : ""}</div>
+    <div class="card"><div class="h"><span>For tonight</span><span class="tag dim">from what you loved</span></div><div id="recBody">${skeleton(2)}</div></div>
     <div class="card"><div class="h"><span>Your ten</span><button class="chip" id="editTop">Edit</button></div>
       <div class="chips" id="tenPick">${TENS.map(([k,l]) => `<button class="chip ${(P.ten||"all time")===k?"on":""}" data-ten="${k}">${l}</button>`).join("")}</div>
       <div id="tenBody">${skeleton(1)}</div></div>
@@ -5160,7 +5165,6 @@ async function renderTaste() { const body = $("#tasteBody"); const t = tasteOf(m
             <span class="chip ${up ? "up" : "down"}">${(b.mean/2).toFixed(1)} ${up ? "▲" : "▼"} ${(Math.abs(b.delta)/2).toFixed(1)}</span></div>`; }).join("")}
         ${waiting ? `<p class="sub" style="margin-top:${rank.length?"10":"4"}px">${rank.length ? "" : "Nothing to say yet. "}${
           said(waiting)} ${waiting === 1 ? "other person has" : "others have"} handed you things — it takes ${said(HAND_FLOOR)} logged before their average means anything.</p>` : ""}</div>`; })()}
-    <div class="card"><div class="h"><span>What to take on next</span><span class="tag dim">from what you loved</span></div><div id="recBody">${skeleton(2)}</div></div>
     ${myEntries.length ? `<div class="card"><div class="h"><span>Share a stretch</span><span class="tag dim">three cuts each</span></div>
       <div class="chips" style="margin-top:10px"><button class="chip" id="shareWeek">This week</button><button class="chip" id="shareMonth">This month</button></div></div>` : ""}
     ${(() => { const year = String(new Date().getFullYear()); const d = reviewData(yearOf(myEntries, year)); return d.n >= 5 ? reviewHTML(d, year) : ""; })()}
@@ -5780,10 +5784,10 @@ async function renderClubsProgrammes() { const body = $("#clubsBody"), R = activ
 const HALLOWEEN_2026 = {
   id:"halloween-2026", name:"31 Nights In", starts:"2026-10-01", ends:"2026-10-31",
   challenges:[
-    { id:"midnight-matinee", kind:"film", icon:"◒", name:"Midnight Matinee", copy:"Log films through October." },
-    { id:"after-dark", kind:"tv", icon:"▤", name:"After Dark", copy:"Log shows through October." },
-    { id:"haunted-shelf", kind:"book", icon:"✦", name:"Haunted Shelf", copy:"Log books through October." },
-    { id:"ghost-machine", kind:"game", icon:"◇", name:"Ghost in the Machine", copy:"Log games through October." }
+    { id:"midnight-matinee", kind:"film", icon:"◒", name:"Midnight Matinee", copy:"Log horror films through October." },
+    { id:"after-dark", kind:"tv", icon:"▤", name:"After Dark", copy:"Log horror shows through October." },
+    { id:"haunted-shelf", kind:"book", icon:"✦", name:"Haunted Shelf", copy:"Log horror books through October." },
+    { id:"ghost-machine", kind:"game", icon:"◇", name:"Ghost in the Machine", copy:"Log horror games through October." }
   ]
 };
 const SEASON_MEDALS = [
@@ -5794,8 +5798,10 @@ const SEASON_MEDALS = [
 ];
 const seasonDate = e => String(e.created_at || e.rated_on || "").slice(0,10);
 const seasonKind = e => e.works?.kind || works[e.work_id]?.kind || kindOf(e.work_id);
+const seasonGenres = e => (e.works?.meta?.genres || works[e.work_id]?.meta?.genres || []).map(g => String(g).toLowerCase());
+const isSeasonHorror = e => seasonGenres(e).some(g => g === "horror" || g.includes("horror fiction"));
 function seasonChallengeFor(e, season = HALLOWEEN_2026) {
-  const d = seasonDate(e); if (!d || d < season.starts || d > season.ends) return null;
+  const d = seasonDate(e); if (!d || d < season.starts || d > season.ends || !isSeasonHorror(e)) return null;
   return season.challenges.find(c => c.kind === seasonKind(e)) || null;
 }
 function seasonEntries(challenge, rows = myEntries, season = HALLOWEEN_2026) {
@@ -5821,7 +5827,7 @@ function seasonPhase(season = HALLOWEEN_2026) {
 async function seasonRank(season = HALLOWEEN_2026) {
   if (seasonPhase(season).key === "upcoming") return null;
   try {
-    const rows = await q(sb.from("entries").select("user_id,work_id,created_at,rated_on,works(kind)").limit(2000));
+    const rows = await q(sb.from("entries").select("user_id,work_id,created_at,rated_on,works(kind,meta)").limit(2000));
     const by = new Map();
     for (const e of rows) {
       if (!seasonChallengeFor(e, season)) continue;
@@ -5859,8 +5865,17 @@ async function renderClubs() {
     const pct = Math.min(100, Math.round(n / SEASON_MEDALS.at(-1).at * 100));
     return `<article class="season-challenge"><div class="season-object ${c.kind}">${c.icon}</div><div><h3>${esc(c.name)}</h3><p>${esc(c.copy)}</p><div class="season-progress"><i style="width:${pct}%"></i></div><div class="season-tier"><span><b>${n}</b> logged</span><span>${medal ? medal.name + " earned" : "Bronze at 1"}</span></div><div class="season-haul">${SEASON_MEDALS.map(m => `<span class="${n >= m.at ? "on " + m.tier : ""}" title="${m.name} · ${m.at}">${m.icon}</span>`).join("")}</div></div></article>`;
   }).join("");
-  out.innerHTML = `<div class="season-hero"><span class="tag">Public season</span><h3>${esc(season.name)}</h3><p>${phase.text} · Complete as much or as little as you want. Every qualifying film, show, book or game earns a notch.</p></div>${cards}
+  const picks = [
+    ["film","The Thing"],["film","The Witch"],["film","Get Out"],["film","The Descent"],
+    ["tv","The Haunting of Hill House"],["tv","Yellowjackets"],
+    ["book","Beloved"],["book","The Only Good Indians"],
+    ["game","Alan Wake 2"],["game","Resident Evil 4"]
+  ];
+  const pickRows = picks.map(([kind,title], i) => `<button class="row" type="button" data-season-pick="${esc(title)}" data-season-kind="${kind}"><span class="rk">${i+1}</span><div class="t"><b>${esc(title)}</b><small>${tag(kind)} · horror pick</small></div><span class="chip">Find</span></button>`).join("");
+  out.innerHTML = `<div class="season-hero"><span class="tag">Public season</span><h3>${esc(season.name)}</h3><p>${phase.text} · Horror-tagged logs only. Complete as much or as little as you want; each qualifying title earns a notch.</p></div>${cards}
+    <div class="season-picks"><div class="h"><span>Ten to get you started</span><span class="tag dim">horror</span></div>${pickRows}</div>
     <div class="season-rank" id="seasonRank"><b>Night Owl</b><br>${phase.key === "upcoming" ? "The top 10% mark opens with the season. Log at least three qualifying titles to be eligible." : "Checking the current top 10%…"}</div>`;
+  $$('[data-season-pick]', out).forEach(row => row.onclick = () => { P.kinds = [row.dataset.seasonKind]; saveP(); switchTab("shelf"); setTimeout(() => { const search = $("#search"); if (!search) return; search.value = row.dataset.seasonPick; search.dispatchEvent(new Event("input", { bubbles:true })); search.focus(); }, 100); });
   if (phase.key !== "upcoming") { const rank = await seasonRank(season), box = $("#seasonRank"); if (box) box.innerHTML = rank.people
     ? `<b>Night Owl</b><br>${rank.inTop ? "You are currently in the top 10% of active participants. Keep it through the end of October to earn the mark." : `Top 10% of ${rank.people} active participants. Log at least three qualifying titles; the current line is ${rank.cut} unique title${rank.cut===1?"":"s"}.`}`
     : `<b>Night Owl</b><br>Be among the first to log a qualifying title. The top 10% mark starts once the season has participants.`; }
