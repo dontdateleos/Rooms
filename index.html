@@ -679,6 +679,23 @@ nav .in:has(.navpill.set) button.on{background:none}
 .deadline{font-family:var(--head);font-weight:900;font-size:13px}
 .deadline.soon{color:var(--bad)}
 .deadline.done{color:var(--good)}
+/* seasons — the public programme has a different job from a friends' club.  It is a
+   short-lived event with flexible progress, so the little objects belong to the things
+   that counted as well as to the season itself. */
+.season-hero{background:#24162D;color:#FFF7EC;border-radius:24px;padding:20px;margin-top:12px;overflow:hidden;position:relative}
+.season-hero:after{content:'✦';position:absolute;right:18px;top:-20px;font-size:128px;color:#FFB36B;opacity:.16;line-height:1}
+.season-hero>*{position:relative;z-index:1}.season-hero .tag{background:var(--apricot);color:var(--onAccent)}
+.season-hero h3{font-family:var(--head);font-size:28px;line-height:.95;letter-spacing:-.04em;margin-top:10px;max-width:260px}
+.season-hero p{font-size:13px;font-weight:650;line-height:1.4;color:#E7D8ED;margin-top:9px;max-width:290px}
+.season-challenge{background:var(--card);border-radius:20px;padding:16px;margin-top:12px;display:grid;grid-template-columns:48px minmax(0,1fr);gap:12px;align-items:center;box-shadow:0 14px 34px -26px rgba(21,19,32,.3)}
+.season-object,.season-stamp{display:grid;place-items:center;font-family:var(--head);font-weight:900;color:var(--onAccent);background:var(--cream2);border:2px solid var(--line)}
+.season-object{width:48px;height:48px;border-radius:16px;font-size:22px}.season-object.film{background:var(--apricot)}.season-object.tv{background:var(--pink)}.season-object.book{background:var(--butter)}.season-object.game{background:var(--mint)}
+.season-challenge h3{font-family:var(--head);font-size:17px;letter-spacing:-.02em}.season-challenge p{font-size:12px;font-weight:650;color:var(--mute);margin-top:3px}
+.season-progress{height:8px;background:var(--cream2);border-radius:99px;overflow:hidden;margin-top:10px}.season-progress i{display:block;height:100%;background:var(--ink);border-radius:inherit;transition:width .55s cubic-bezier(.2,.9,.25,1)}
+.season-tier{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:8px;font-size:11px;font-weight:800;color:var(--mute)}.season-tier b{color:var(--ink)}
+.season-haul{display:flex;gap:7px;margin-top:10px}.season-haul span{width:28px;height:28px;border-radius:10px;display:grid;place-items:center;background:var(--cream2);border:1px solid var(--line);font-size:13px;filter:grayscale(1);opacity:.42}.season-haul span.on{filter:none;opacity:1}.season-haul span.bronze{background:#F1B37A}.season-haul span.silver{background:#D6D7DD}.season-haul span.gold{background:#FFE86A}.season-haul span.platinum{background:#D5C4FF}
+.season-rank{background:var(--mint);border-radius:18px;padding:14px 16px;margin-top:12px;font-size:13px;font-weight:700;line-height:1.4}.season-rank b{font-family:var(--head);font-size:16px}
+.season-cover{position:relative;width:44px;height:64px;display:block;flex:none}.season-cover>img,.season-cover>.co{width:44px!important;height:64px!important}.season-stamp{position:absolute;right:-7px;top:-7px;width:22px;height:22px;border-radius:8px;font-size:11px;box-shadow:0 2px 0 rgba(21,19,32,.18);z-index:2}.season-stamp.bronze{background:#F1B37A}.season-stamp.silver{background:#D6D7DD}.season-stamp.gold{background:#FFE86A}.season-stamp.platinum{background:#D5C4FF}
 .pal{background:var(--ink);color:var(--cream);border-radius:22px;padding:18px;margin-top:12px}
 .pal .h{display:flex;justify-content:space-between;align-items:center;font-family:var(--head);font-weight:900;font-size:17px;
   padding-bottom:12px;border-bottom:2px solid #3A3650;margin-bottom:4px}
@@ -1108,7 +1125,7 @@ body.demo header{padding-top:34px}
   <button data-tab="shelf">Library</button>
   <button id="add" aria-label="Log something"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
   <button data-tab="taste">Taste</button>
-  <button data-tab="clubs">Clubs</button>
+  <button data-tab="clubs">Seasons</button>
 </div></nav>
 <div class="demobar" id="demobar" hidden>Demo &middot; invented people &middot; nothing is saved</div>
 <div class="offline" id="offline" role="status" aria-live="polite"></div>
@@ -3555,7 +3572,7 @@ function slipHTML(e, opts = {}) { const w = remember(e.works) || works[e.work_id
   const same = (e.reactions||[]).some(r => r.user_id === me.id), n = (e.reactions||[]).length;
   return `<div class="slip" data-slip="${e.id}">
     <div class="who" data-prof="${esc(e.user_id)}" style="cursor:pointer">${avatar(e.profiles)} <b>${esc(mine ? "you" : e.profiles?.handle)}</b> · ${K(w.kind).verb} ${when(e.rated_on)}</div>
-    <div class="ttl" data-work="${esc(e.work_id)}">${cover(w)}<div><b>${esc(w.title)}</b><small>${tag(w.kind)} ${esc(w.year||"")}</small></div></div>
+    <div class="ttl" data-work="${esc(e.work_id)}"><span class="season-cover">${cover(w)}${seasonEntryStamp(e)}</span><div><b>${esc(w.title)}</b><small>${tag(w.kind)} ${esc(w.year||"")}</small></div></div>
     ${e.note?`<div class="q${String(e.note).length > 210 ? " clip" : ""}">“${esc(e.note)}”</div>${String(e.note).length > 210 ? `<button class="more" data-more="${e.id}">More</button>` : ""}`:""}
     ${(() => { const t = together(e); return t ? `<div class="loved" style="margin-top:10px"><span class="together">◆ ${t}</span></div>` : ""; })()}
     ${e.loved?.length?`<div class="loved">${e.loved.slice(0,4).map(k => `<span>${esc(k.startsWith("person:")?lc(k.slice(7)):k)}</span>`).join("")}</div>`:""}
@@ -5698,7 +5715,7 @@ function openWholeLog() {
   wireLog("wholeLog"); $("#wlClose").onclick = closeSheet; }
 
 /* ============ CLUBS ============ */
-async function renderClubs() { const body = $("#clubsBody"), R = activeRoom();
+async function renderClubsProgrammes() { const body = $("#clubsBody"), R = activeRoom();
   P.clubTab = P.clubTab || "yours";
   const daysTo = d => d ? Math.ceil((new Date(d + "T12:00:00Z") - Date.now()) / 864e5) : null;
   const clubCard = (c, joined) => { const items = c.items || [], done = items.filter(id => logged(id)).length,
@@ -5756,6 +5773,100 @@ async function renderClubs() { const body = $("#clubsBody"), R = activeRoom();
     if (!people.length) { box.innerHTML = `<span class="more" style="margin-left:0">just you so far</span>`; continue; }
     box.innerHTML = people.slice(0,5).map(p => avatar(p)).join("") + (people.length > 5 ? `<span class="more">+${people.length-5}</span>` : `<span class="more">${people.length} in</span>`); }
 }
+/* ============ SEASONS ============
+   Seasons are public and count what somebody actually logs during a window.  That is
+   intentionally unlike a Club's fixed reading list: finishing every title is not the
+   point, and repeated logs of the same title do not inflate a medal. */
+const HALLOWEEN_2026 = {
+  id:"halloween-2026", name:"31 Nights In", starts:"2026-10-01", ends:"2026-10-31",
+  challenges:[
+    { id:"midnight-matinee", kind:"film", icon:"◒", name:"Midnight Matinee", copy:"Log films through October." },
+    { id:"after-dark", kind:"tv", icon:"▤", name:"After Dark", copy:"Log shows through October." },
+    { id:"haunted-shelf", kind:"book", icon:"✦", name:"Haunted Shelf", copy:"Log books through October." },
+    { id:"ghost-machine", kind:"game", icon:"◇", name:"Ghost in the Machine", copy:"Log games through October." }
+  ]
+};
+const SEASON_MEDALS = [
+  { tier:"bronze", at:1, icon:"●", name:"Bronze" },
+  { tier:"silver", at:3, icon:"◐", name:"Silver" },
+  { tier:"gold", at:6, icon:"✦", name:"Gold" },
+  { tier:"platinum", at:10, icon:"✺", name:"Platinum" }
+];
+const seasonDate = e => String(e.created_at || e.rated_on || "").slice(0,10);
+const seasonKind = e => e.works?.kind || works[e.work_id]?.kind || kindOf(e.work_id);
+function seasonChallengeFor(e, season = HALLOWEEN_2026) {
+  const d = seasonDate(e); if (!d || d < season.starts || d > season.ends) return null;
+  return season.challenges.find(c => c.kind === seasonKind(e)) || null;
+}
+function seasonEntries(challenge, rows = myEntries, season = HALLOWEEN_2026) {
+  /* A title is a single notch no matter how many times someone edits or rewatches it. */
+  const seen = new Set();
+  return rows.filter(e => { if (seasonChallengeFor(e, season)?.id !== challenge.id || seen.has(e.work_id)) return false;
+    seen.add(e.work_id); return true; });
+}
+function seasonMedal(n) { return [...SEASON_MEDALS].reverse().find(m => n >= m.at) || null; }
+function seasonEntryStamp(e) {
+  if (!me || e.user_id !== me.id) return "";
+  const c = seasonChallengeFor(e); if (!c) return "";
+  const n = seasonEntries(c).length, medal = seasonMedal(n);
+  const label = `${c.name} · ${n} logged${medal ? ` · ${medal.name}` : ""}`;
+  return `<span class="season-stamp ${medal?.tier || ""}" aria-label="${esc(label)}" title="${esc(label)}">${medal?.icon || c.icon}</span>`;
+}
+function seasonPhase(season = HALLOWEEN_2026) {
+  const d = today();
+  return d < season.starts ? { key:"upcoming", text:`Starts ${when(season.starts)}` }
+    : d > season.ends ? { key:"finished", text:`Finished ${when(season.ends)}` }
+    : { key:"live", text:`Ends ${when(season.ends)}` };
+}
+async function seasonRank(season = HALLOWEEN_2026) {
+  if (seasonPhase(season).key === "upcoming") return null;
+  try {
+    const rows = await q(sb.from("entries").select("user_id,work_id,created_at,rated_on,works(kind)").limit(2000));
+    const by = new Map();
+    for (const e of rows) {
+      if (!seasonChallengeFor(e, season)) continue;
+      const mine = by.get(e.user_id) || new Set(); mine.add(e.work_id); by.set(e.user_id, mine);
+    }
+    const scores = [...by.entries()].map(([id, ids]) => ({ id, n:ids.size })).filter(x => x.n > 0).sort((a,b) => b.n-a.n);
+    if (!scores.length) return { people:0, inTop:false };
+    const cut = scores[Math.min(scores.length - 1, Math.ceil(scores.length * .1) - 1)].n;
+    const mine = scores.find(x => x.id === me.id);
+    return { people:scores.length, inTop:!!mine && mine.n >= 3 && mine.n >= cut, mine:mine?.n || 0, cut };
+  } catch { return { people:0, inTop:false }; }
+}
+async function renderClubs() {
+  const body = $("#clubsBody"), room = activeRoom();
+  if (!["season", "clubs"].includes(P.clubTab)) P.clubTab = "season";
+  const season = HALLOWEEN_2026, phase = seasonPhase(season);
+  const friendCard = c => { const items = c.items || [], done = items.filter(id => logged(id)).length;
+    const pct = items.length ? Math.round(done/items.length * 100) : 0;
+    return `<div class="club" data-c="${esc(c.id)}"><div class="top"><span class="tag" style="background:var(--lilac)">${esc(c.label)}</span><span class="deadline">${c.due ? "ends " + when(c.due) : "rolling"}</span></div><b>${esc(c.name)}</b><div class="tr"><i style="width:${pct}%"></i></div><div class="pr"><b>${done}</b> of ${items.length} · friends in your room</div></div>`; };
+  body.innerHTML = `<h2><span class="hl" style="background:var(--lilac)">Seasons</span></h2>
+    <p class="sub">Public challenges for everyone. Clubs stay small and live with your friends in a room.</p>
+    <div class="seg"><button data-season-tab="season" class="${P.clubTab === "season" ? "on" : ""}">Halloween</button><button data-season-tab="clubs" class="${P.clubTab === "clubs" ? "on" : ""}">Friend clubs${clubs.length ? " · " + clubs.length : ""}</button></div>
+    <div id="seasonContent"></div>`;
+  $$('[data-season-tab]', body).forEach(b => b.onclick = () => { P.clubTab = b.dataset.seasonTab; saveP(); renderClubs(); });
+  const out = $("#seasonContent");
+  if (P.clubTab === "clubs") {
+    out.innerHTML = room ? `<div id="friendClubList">${clubs.length ? clubs.map(friendCard).join("") : blank("var(--lilac)","◷","No friend clubs yet","Make a shared programme for this room — a director, a series, or a list you want to get through together.",[])}</div><div class="stack"><button class="btn soft" id="newFriendClub">Start a club</button></div>`
+      : blank("var(--lilac)","◷","Clubs live in a room","Open or join a room first, then start a small shared programme with the people in it.",[["clubRoom","Open a room"]]);
+    $$("[data-c]", out).forEach(x => x.onclick = () => openClub(clubs.find(c => c.id === x.dataset.c)));
+    const nc = $("#newFriendClub"); if (nc) nc.onclick = () => openClubEditor(null, "room");
+    const cr = $("#clubRoom"); if (cr) cr.onclick = () => switchTab("doors");
+    revealIn(out); return;
+  }
+  const cards = season.challenges.map(c => { const entries = seasonEntries(c), n = entries.length, medal = seasonMedal(n);
+    const pct = Math.min(100, Math.round(n / SEASON_MEDALS.at(-1).at * 100));
+    return `<article class="season-challenge"><div class="season-object ${c.kind}">${c.icon}</div><div><h3>${esc(c.name)}</h3><p>${esc(c.copy)}</p><div class="season-progress"><i style="width:${pct}%"></i></div><div class="season-tier"><span><b>${n}</b> logged</span><span>${medal ? medal.name + " earned" : "Bronze at 1"}</span></div><div class="season-haul">${SEASON_MEDALS.map(m => `<span class="${n >= m.at ? "on " + m.tier : ""}" title="${m.name} · ${m.at}">${m.icon}</span>`).join("")}</div></div></article>`;
+  }).join("");
+  out.innerHTML = `<div class="season-hero"><span class="tag">Public season</span><h3>${esc(season.name)}</h3><p>${phase.text} · Complete as much or as little as you want. Every qualifying film, show, book or game earns a notch.</p></div>${cards}
+    <div class="season-rank" id="seasonRank"><b>Night Owl</b><br>${phase.key === "upcoming" ? "The top 10% mark opens with the season. Log at least three qualifying titles to be eligible." : "Checking the current top 10%…"}</div>`;
+  if (phase.key !== "upcoming") { const rank = await seasonRank(season), box = $("#seasonRank"); if (box) box.innerHTML = rank.people
+    ? `<b>Night Owl</b><br>${rank.inTop ? "You are currently in the top 10% of active participants. Keep it through the end of October to earn the mark." : `Top 10% of ${rank.people} active participants. Log at least three qualifying titles; the current line is ${rank.cut} unique title${rank.cut===1?"":"s"}.`}`
+    : `<b>Night Owl</b><br>Be among the first to log a qualifying title. The top 10% mark starts once the season has participants.`; }
+  revealIn(out);
+}
+
 function renderClubsOld() { const body = $("#clubsBody"), R = activeRoom();
   if (!R) { body.innerHTML = `<h2><span class="hl" style="background:var(--lilac)">Clubs</span></h2>` +
     blank("var(--lilac)","◷","Clubs live in a room","A programme with a deadline: thirteen horrors before Halloween, every Le Guin, six games before winter. Open a room and start one.",[["clubsToRoom","Open a room"]]);
@@ -5920,7 +6031,7 @@ function openClubEditor(existing = null, scope = "room") { const c = existing
       else { const row = await q(sb.from("clubs").insert({ room_id: c.scope === "open" ? null : (activeRoom()?.id || null), scope:c.scope,
           name:c.name, label:c.label, due:c.due, items:c.items, created_by:me.id }).select().single());
         if (c.scope === "open" && row?.id) { try { await q(sb.from("club_members").insert({ club_id:row.id, user_id:me.id })); } catch (err) { oops(err, "Couldn't join the club"); } } }
-      P.clubTab = "yours"; saveP();   /* you're in whatever you just made */
+      P.clubTab = c.scope === "room" ? "clubs" : "season"; saveP();
       await loadClubs(); closeSheet(); renderClubs(); } catch (e) { $("#cMsg").textContent = e.message; } }; }
 
 /* numbers that mean a quantity count up to it */
