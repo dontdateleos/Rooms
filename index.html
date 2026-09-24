@@ -683,20 +683,22 @@ nav .in:has(.navpill.set) button.on{background:none}
    short-lived event with flexible progress, so the little objects belong to the things
    that counted as well as to the season itself. */
 .season-hero{background:#24162D;color:#FFF7EC;border-radius:24px;padding:20px;margin-top:12px;overflow:hidden;position:relative}
-.season-hero:after{content:'◉ ◉';position:absolute;right:14px;top:2px;font-family:var(--head);font-size:76px;letter-spacing:-22px;color:#FFB36B;opacity:.24;line-height:1;transform:rotate(-8deg)}
-.season-hero>*{position:relative;z-index:1}.season-hero .tag{background:var(--apricot);color:var(--onAccent)}
+.season-hero:after{content:'';position:absolute;right:22px;top:11px;width:14px;height:14px;border-radius:8px 8px 2px 8px;background:#78A55A;transform:rotate(-30deg)}.season-pumpkin{position:absolute;right:18px;bottom:17px;width:74px;height:66px;border-radius:46% 46% 42% 42%;background:#F28D46;box-shadow:inset 11px 0 #F6AB57,inset -11px 0 #D96B34,0 6px 0 rgba(0,0,0,.12)}.season-pumpkin i{position:absolute;z-index:2;top:20px;width:13px;height:17px;background:#24162D;transform:skewY(-18deg)}.season-pumpkin i:first-child{left:17px}.season-pumpkin i:nth-child(2){right:17px;transform:skewY(18deg)}.season-pumpkin b{position:absolute;z-index:2;left:25px;bottom:14px;width:25px;height:9px;border-bottom:5px solid #24162D;border-radius:0 0 18px 18px}
+.season-hero>*{position:relative;z-index:1}.season-hero .season-pumpkin{position:absolute;z-index:2}.season-hero .tag{background:var(--apricot);color:var(--onAccent)}
 .season-hero h3{font-family:var(--head);font-size:28px;line-height:.95;letter-spacing:-.04em;margin-top:10px;max-width:260px}
 .season-hero p{font-size:13px;font-weight:650;line-height:1.4;color:#E7D8ED;margin-top:9px;max-width:290px}
-.season-challenge{background:var(--card);border-radius:20px;padding:16px;margin-top:12px;display:grid;grid-template-columns:48px minmax(0,1fr);gap:12px;align-items:center;box-shadow:0 14px 34px -26px rgba(21,19,32,.3)}
+.season-challenge{background:var(--card);border-radius:20px;padding:16px;margin-top:12px;display:grid;border:0;width:100%;text-align:left;font:inherit;cursor:pointer;grid-template-columns:48px minmax(0,1fr);gap:12px;align-items:center;box-shadow:0 14px 34px -26px rgba(21,19,32,.3)}
 .season-object,.season-stamp{display:grid;place-items:center;font-family:var(--head);font-weight:900;color:var(--onAccent);background:var(--cream2);border:2px solid var(--line)}
 .season-object{width:48px;height:48px;border-radius:16px;font-size:22px}.season-object.film{background:var(--apricot)}.season-object.tv{background:var(--pink)}.season-object.book{background:var(--butter)}.season-object.game{background:var(--mint)}
-.season-challenge h3{font-family:var(--head);font-size:17px;letter-spacing:-.02em}.season-challenge p{font-size:12px;font-weight:650;color:var(--mute);margin-top:3px}
+.season-challenge:active{transform:scale(.985)}.season-open{display:inline-flex;align-items:center;gap:5px;margin-top:9px;font-size:11px;font-weight:850;color:var(--mute)}.season-open b{font-size:18px;line-height:.6;color:var(--ink)}.season-challenge h3{font-family:var(--head);font-size:17px;letter-spacing:-.02em}.season-challenge p{font-size:12px;font-weight:650;color:var(--mute);margin-top:3px}
 .season-progress{height:8px;background:var(--cream2);border-radius:99px;overflow:hidden;margin-top:10px}.season-progress i{display:block;height:100%;background:var(--ink);border-radius:inherit;transition:width .55s cubic-bezier(.2,.9,.25,1)}
 .season-tier{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:8px;font-size:11px;font-weight:800;color:var(--mute)}.season-tier b{color:var(--ink)}
 .season-haul{display:flex;gap:7px;margin-top:10px}.season-haul span{width:28px;height:28px;border-radius:10px;display:grid;place-items:center;background:var(--cream2);border:1px solid var(--line);font-size:13px;filter:grayscale(1);opacity:.42}.season-haul span.on{filter:none;opacity:1}.season-haul span.bronze{background:#F1B37A}.season-haul span.silver{background:#D6D7DD}.season-haul span.gold{background:#FFE86A}.season-haul span.platinum{background:#D5C4FF}
 .season-picks{background:var(--cream2);border-radius:20px;padding:16px;margin-top:12px}.season-picks .h{display:flex;justify-content:space-between;align-items:baseline;gap:10px}.season-picks .row{cursor:pointer}.season-picks .row:hover{transform:translateX(2px)}.season-picks button.row{width:100%;border:0;background:transparent;text-align:left;font:inherit;padding-left:0;padding-right:0}
 .taste-hero{background:var(--ink);color:var(--cream);border-radius:24px;padding:19px 20px;margin-top:10px;position:relative;overflow:hidden}.taste-hero:after{content:"◒  ◉";position:absolute;right:18px;top:8px;color:var(--butter);font-family:var(--head);font-size:54px;opacity:.22;transform:rotate(10deg)}.taste-hero>*{position:relative;z-index:1}.taste-hero h2{font-size:25px;letter-spacing:-.04em}.taste-hero p{color:#C9C4D4;font-size:13px;font-weight:650;line-height:1.42;margin-top:6px;max-width:280px}.taste-hero .tag{background:var(--butter);color:var(--onAccent);margin-top:11px}
 .season-rank{background:var(--mint);border-radius:18px;padding:14px 16px;margin-top:12px;font-size:13px;font-weight:700;line-height:1.4}.season-rank b{font-family:var(--head);font-size:16px}
+.room-moments{margin:14px 0 6px}.room-moment.fresh{animation:momentIn .55s cubic-bezier(.2,.9,.25,1)}@keyframes momentIn{0%{opacity:0;transform:translateY(14px) scale(.97)}100%{opacity:1;transform:none}}.room-moment{display:flex;align-items:center;gap:11px;background:var(--mint);border-radius:16px;padding:11px 12px;margin-top:7px;cursor:pointer}.room-moment:nth-child(odd){background:var(--lilac)}.room-moment b{display:block;font-family:var(--head);font-size:14px}.room-moment small{display:block;font-size:11.5px;font-weight:700;color:var(--mute);margin-top:2px}.moment-mark{width:28px;height:28px;display:grid;place-items:center;border:2px solid var(--ink);border-radius:10px;font-family:var(--head);font-size:15px;flex:none}
+.room-prompt{background:var(--pink);border-radius:18px;padding:13px 14px;margin:12px 0 2px;display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:center;position:relative;overflow:hidden}.room-prompt:after{content:'?';position:absolute;right:104px;top:-26px;font-family:var(--head);font-size:88px;line-height:1;color:#C82C66;opacity:.14}.room-prompt>*{position:relative;z-index:1}.room-prompt b,.room-split b{font-family:var(--head);font-size:16px}.room-prompt p,.room-split p{font-size:12px;font-weight:650;line-height:1.35;margin-top:2px}.room-prompt .btn{padding:9px 12px;font-size:12px;white-space:nowrap}.room-prompt .later{border:0;background:transparent;font:inherit;font-size:12px;font-weight:800;color:var(--mute);padding:8px;cursor:pointer}.room-split{background:var(--butter);border-radius:22px;padding:17px 18px;margin:14px 0 4px}.room-split .scoreline{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:12px;font-weight:800}.room-split .scoreline i{height:8px;flex:1;border-radius:99px;background:linear-gradient(90deg,var(--pink) 0 48%,var(--cream) 48% 52%,var(--mint) 52%)}
 .season-cover{position:relative;width:44px;height:64px;display:block;flex:none}.season-cover>img,.season-cover>.co{width:44px!important;height:64px!important}.season-stamp{position:absolute;right:-7px;top:-7px;width:22px;height:22px;border-radius:8px;font-size:11px;box-shadow:0 2px 0 rgba(21,19,32,.18);z-index:2}.season-stamp.bronze{background:#F1B37A}.season-stamp.silver{background:#D6D7DD}.season-stamp.gold{background:#FFE86A}.season-stamp.platinum{background:#D5C4FF}
 .pal{background:var(--ink);color:var(--cream);border-radius:22px;padding:18px;margin-top:12px}
 .pal .h{display:flex;justify-content:space-between;align-items:center;font-family:var(--head);font-weight:900;font-size:17px;
@@ -1063,6 +1065,7 @@ body.demo header{padding-top:34px}
 .searchline .clearsearch{flex:none;width:auto;padding:9px 12px;font-size:12px}
 .roomactions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
 .roomactions .btn{width:100%;padding:11px 12px;font-size:14px}
+.room-manage{margin-top:10px}.room-manage>button{border:0;background:none;padding:0;cursor:pointer;font:inherit}.room-manage-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}.room-manage-actions[hidden]{display:none}.room-manage-actions .btn{padding:10px 11px;font-size:13px}.room-manage-actions .btn.quiet{grid-column:1/-1}.room-streak{display:flex;align-items:center;gap:7px;margin-top:10px;padding:8px 10px;background:var(--cream2);border-radius:12px;color:var(--mute);font-size:12px;font-weight:750}.room-streak i{display:inline-grid;place-items:center;width:19px;height:19px;border-radius:50%;background:var(--mint);color:var(--ink);font-style:normal;font-size:12px}.library-filterbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px}.library-filterbar .sub{margin:0;min-width:0}.library-filterbar .btn{width:auto;white-space:nowrap;padding:9px 12px;font-size:12px}.filter-sheet .chips{margin-top:8px}.filter-sheet .lbl{margin-top:16px}.rec-empty{padding:4px 0}.rec-empty .stack{margin-top:12px}
 .demoHint{margin-top:8px;color:var(--mute);font-size:12px;font-weight:600;text-align:center}
 .roomhead{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .roomhead .h{flex:1;min-width:0}
@@ -1126,7 +1129,7 @@ body.demo header{padding-top:34px}
   <button data-tab="doors">Rooms</button>
   <button data-tab="taste">Taste</button>
   <button id="add" aria-label="Log something"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
-  <button data-tab="clubs">Seasons</button>
+  <button data-tab="clubs">Clubs</button>
   <button data-tab="shelf">Library</button>
 </div></nav>
 <div class="demobar" id="demobar" hidden>Demo &middot; invented people &middot; nothing is saved</div>
@@ -2596,6 +2599,7 @@ let roomCh = null, roomChId = null, hereNow = [];
 let nowPaintT = null;
 function leaveRoomChannel() { if (roomCh) { try { sb.removeChannel(roomCh); } catch {} }
   clearTimeout(nowPaintT); roomCh = null; roomChId = null; hereNow = []; }
+let hereQuiet = "";
 function paintHere() {
   const el = $("#hereRow"); if (!el) return;
   const others = hereNow.filter(p => p.id !== me.id);
@@ -2614,7 +2618,7 @@ function paintHere() {
         `<span class="face${seen.size && !seen.has(p.id) ? " came" : ""}" data-who="${esc(p.id)}"
           data-prof="${esc(p.id)}" style="cursor:pointer" title="${esc(p.handle)}">${avatar(p)}</span>`).join("")}</span>
        <small>${others.length === 1 ? esc(others[0].handle) + " is in here now" : others.length + " in here now"}</small>`
-    : `<small>Nobody else in here right now</small>`;
+    : `<small>${hereQuiet || "Nobody else in here right now"}</small>`;
   $$("[data-prof]", el).forEach(x => x.onclick = () => openProfile(x.dataset.prof));
 }
 function joinRoomChannel(R) {
@@ -3379,6 +3383,55 @@ const skeleton = (n = 3) => Array.from({length:n}, () => `<div class="skel"><i c
    Shown once a week and then put away for a week, whether or not it was opened: a card
    that comes back every time you open the app is not a moment, it is wallpaper. Two
    entries at least, because "you logged one thing" is not a week worth reporting. */
+function roomMoments(entries) {
+  const since = new Date(); since.setDate(since.getDate() - 7);
+  const cutoff = since.toISOString().slice(0,10), byWork = new Map(), out = [];
+  for (const e of entries) {
+    if (String(e.created_at || e.rated_on || "").slice(0,10) < cutoff) continue;
+    const people = byWork.get(e.work_id) || new Map();
+    const previous = people.get(e.user_id);
+    if (!previous || newestFirst(e, previous) < 0) people.set(e.user_id, e);
+    byWork.set(e.work_id, people);
+  }
+  for (const [workId, people] of byWork) if (people.size >= 2) {
+    const rows = [...people.values()].sort(newestFirst), latest = rows[0];
+    out.push({ kind:"together", workId, people:rows, at:latest.created_at || latest.rated_on });
+  }
+  for (const e of entries.filter(e => e.user_id === me.id)) {
+    const hand = cameFrom(e.work_id); if (!hand) continue;
+    out.push({ kind:"handover", workId:e.work_id, hand, at:e.created_at || e.rated_on });
+  }
+  return out.sort((a,b) => String(b.at).localeCompare(String(a.at))).slice(0,4);
+}
+function roomStreak(entries) {
+  const since = new Date(); since.setDate(since.getDate() - 7);
+  const cutoff = since.toISOString().slice(0,10), byDay = new Map(), people = new Set();
+  for (const e of entries) { const day = String(e.created_at || e.rated_on || "").slice(0,10);
+    if (!day || day < cutoff) continue; people.add(e.user_id);
+    const set = byDay.get(day) || new Set(); set.add(e.user_id); byDay.set(day, set); }
+  const sharedDays = [...byDay.values()].filter(set => set.size >= 2).length;
+  if (people.size < 2) return "";
+  return `<div class="room-streak"><i>◌</i><span><b>${people.size} of you logged this week</b>${sharedDays ? ` · ${sharedDays} shared ${sharedDays===1?"day":"days"}` : ""}</span></div>`;
+}
+function roomMomentsHTML(moments, fresh = new Set()) { if (!moments.length) return "";
+  return `<div class="room-moments"><div class="lbl">Room moments</div>${moments.map(m => { const w = works[m.workId] || {}, key = `${m.kind}:${m.workId}:${m.at}`;
+    if (m.kind === "handover") return `<div class="room-moment${fresh.has(key) ? " fresh" : ""}" data-cw="${esc(m.workId)}"><span class="moment-mark">↗</span><div><b>You logged ${esc(w.title || "a recommendation")}</b><small>from ${esc(m.hand.sender_p?.handle || "someone")}</small></div></div>`;
+    const names = m.people.map(e => e.user_id === me.id ? "you" : (e.profiles?.handle || "someone"));
+    return `<div class="room-moment${fresh.has(key) ? " fresh" : ""}" data-cw="${esc(m.workId)}"><span class="moment-mark">◎</span><div><b>${esc(w.title || "A title")} crossed paths</b><small>${names.length === 2 ? names.join(" and ") : `${names.slice(0,2).join(", ")} and ${names.length-2} more`} logged it this week</small></div></div>`;
+  }).join("")}</div>`;
+}
+
+const ROOM_PROMPTS = [
+  "What is one thing you could finish tonight?",
+  "What have you been meaning to tell the room about?",
+  "Pick the thing you would defend most fiercely.",
+  "What would make a perfect low-effort night in?"
+];
+function roomPrompt() { const d = new Date(), key = today();
+  if (P.roomPromptSeen === key || myEntries.some(e => String(e.created_at || e.rated_on || "").slice(0,10) === key)) return "";
+  const text = ROOM_PROMPTS[(d.getDate() + d.getMonth() * 3) % ROOM_PROMPTS.length];
+  return `<div class="room-prompt" id="roomPrompt"><div><b>One for the room</b><p>${esc(text)}</p></div><button class="btn" id="roomPromptLog">Log</button><button class="later" id="roomPromptLater">Later</button></div>`;
+}
 const WEEK_KEY = () => { const d = new Date(); d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
   return d.toISOString().slice(0, 10); };                 /* the Monday just gone */
 function weekPast() {
@@ -3701,12 +3754,19 @@ async function renderRoomFeed(fb, R) {
   es.sort(newestFirst);
   const roomFilter = ["all", "reviews", "activity"].includes(P.roomFilter) ? P.roomFilter : "all";
   const roomEntries = roomFilter === "reviews" ? es.filter(e => e.note || (e.loved || []).length) : roomFilter === "activity" ? es.filter(e => !e.note && !(e.loved || []).length) : es;
-  es.forEach(e => remember(e.works)); const comp = competition(es, 6);
+  es.forEach(e => remember(e.works)); const allComp = competition(es, 60), comp = allComp.slice(0, 6);
+  const lastOther = es.find(e => e.user_id !== me.id);
+  hereQuiet = lastOther ? `${esc(lastOther.profiles?.handle || "Someone")} last logged ${when(lastOther.rated_on)}` : "Nobody else in here yet";
+  const split = allComp.filter(f => f.split).sort((a,b) => (a.agree ?? 100) - (b.agree ?? 100))[0];
+  const moments = roomMoments(es), momentKeys = moments.map(m => `${m.kind}:${m.workId}:${m.at}`);
+  const seenMoments = new Set(P.roomMomentSeen || []), freshMoments = new Set(momentKeys.filter(k => !seenMoments.has(k)));
+  if (freshMoments.size) { P.roomMomentSeen = [...new Set([...seenMoments, ...momentKeys])].slice(-80); saveP(); }
   const pick = P.picked && !logged(P.picked) && works[P.picked];
   fb.innerHTML = `<div class="card"><div class="roomhead"><div class="h"><span>${esc(R.name)}</span><span class="tag dim">${R.members.length} in here</span></div><button class="btn ghost roomcode" id="roomCode" title="Copy room code">${esc(R.code)} · Copy</button></div>
       ${rooms.length>1 ? `<div class="roomswitch" aria-label="Your rooms">${rooms.map(r => `<button class="chip ${r.id===R.id?"on":""}" data-rc="${esc(r.id)}">${esc(r.name)}</button>`).join("")}</div>` : ""}
       <div class="seg roomfilters" aria-label="Room activity filter">${[["all","Everything"],["reviews","Reviews"],["activity","Activity"]].map(([k,l]) => `<button data-rfilter="${k}" class="${roomFilter===k?"on":""}">${l}</button>`).join("")}</div>
-      <div class="chips" id="roomSeats" style="margin-top:8px">${R.members.map(m => `<span class="chip ${m.id===me.id?"on":""}" data-prof="${esc(m.id)}">${esc(m.handle)}</span>`).join("")}<button class="chip" id="invite">+ bring someone in</button><button class="chip" id="leaveRoom">Leave</button></div>
+      <div class="chips" id="roomSeats" style="margin-top:8px">${R.members.map(m => `<span class="chip ${m.id===me.id?"on":""}" data-prof="${esc(m.id)}">${esc(m.handle)}</span>`).join("")}<button class="chip" id="invite">+ bring someone in</button></div>
+      ${roomStreak(es)}
       <div class="here" id="hereRow" aria-live="polite"><small>Nobody else in here right now</small></div>
       <div class="nowrow" id="roomNow"></div>
       ${R.members.length < 2 ? `<div class="alone"><b>It's just you in here.</b>
@@ -3714,13 +3774,16 @@ async function renderRoomFeed(fb, R) {
         Send one person the link and the whole thing switches on.</span>
         <button class="btn blue" id="aloneInvite">Send the invite link</button>
         ${showcase()}</div>` : ""}
-      ${rooms.length>1?`<div class="chips">${rooms.map(r => `<button class="chip ${r.id===R.id?"on":""}" data-rc="${r.id}">${esc(r.name)}</button>`).join("")}</div>`:""}<div class="roomactions"><button class="btn soft" id="newRoom">Open another room</button><button class="btn ghost" id="joinRoom">Join with a code</button></div>${DEMO ? `<p class="demoHint">Demo mode: room changes are preview-only.</p>` : ""}<p class="msg" id="roomMsg"></p></div>
-    <div class="tagrow" id="talkTop" style="margin:18px 0 8px"><span class="lbl" style="margin:0">What the room said</span><span class="tag dim">newest first</span></div>${(() => { if (!roomEntries.length) return blank("var(--pink)","“",roomFilter === "reviews" ? "No reviews yet" : roomFilter === "activity" ? "No activity yet" : "Nothing said yet",roomFilter === "reviews" ? "Reviews with a note or reaction will appear here." : roomFilter === "activity" ? "Room activity without a written review will appear here." : "Log something and it lands here for the room to see.",[["talkAdd","Log something"]]);
+      ${roomPrompt()}
+      ${rooms.length>1?`<div class="chips">${rooms.map(r => `<button class="chip ${r.id===R.id?"on":""}" data-rc="${r.id}">${esc(r.name)}</button>`).join("")}</div>`:""}<div class="room-manage"><button id="roomManage" aria-expanded="false"><span class="chip">Room options</span></button><div class="room-manage-actions" id="roomManageActions" hidden><button class="btn soft" id="newRoom">Open another room</button><button class="btn ghost" id="joinRoom">Join with a code</button><button class="btn quiet" id="leaveRoom">Leave this room</button></div></div>${DEMO ? `<p class="demoHint">Demo mode: room changes are preview-only.</p>` : ""}<p class="msg" id="roomMsg"></p></div>
+    ${roomFilter === "activity" ? roomMomentsHTML(moments, freshMoments) : ""}
+    <div class="tagrow" id="talkTop" style="margin:18px 0 8px"><span class="lbl" style="margin:0">What the room said</span><span class="tag dim">newest first</span></div>${(() => { if (!roomEntries.length && !(roomFilter === "activity" && moments.length)) return blank("var(--pink)","“",roomFilter === "reviews" ? "No reviews yet" : roomFilter === "activity" ? "No activity yet" : "Nothing said yet",roomFilter === "reviews" ? "Reviews with a note or reaction will appear here." : roomFilter === "activity" ? "Room activity without a written review will appear here." : "Log something and it lands here for the room to see.",[["talkAdd","Log something"]]);
       const since = lastSeen(); let shown = false;
       return roomEntries.map(e => { const isNew = e.user_id !== me.id && String(e.created_at) > since; let head = "";
         if (isNew && !shown) { shown = true; head = `<div class="newline">New since you were here</div>`; }
         return head + slipHTML(e, { talk:true, roomId:R.id }); }).join(""); })()}
     ${pick ? `<div class="result"><small>Tonight's pick</small><b>${esc(pick.title)}</b><div class="stack" style="margin-top:10px"><button class="btn" id="pickLog">${K(pick.kind).verb} it</button></div></div>` : ""}
+    ${split ? `<div class="room-split" data-cw="${esc(split.id)}"><b>A friendly argument</b><p><strong>${esc(works[split.id]?.title || "This one")}</strong> has the room divided — ${esc(split.hi.profiles?.handle || "someone")} gave it ${(split.hi.score/2).toFixed(1)}, while ${esc(split.lo.profiles?.handle || "someone")} gave it ${(split.lo.score/2).toFixed(1)}.</p><div class="scoreline"><span>${(split.lo.score/2).toFixed(1)}</span><i></i><span>${(split.hi.score/2).toFixed(1)}</span></div><button class="chip" style="margin-top:12px">See the scores</button></div>` : ""}
     <div class="card"><div class="h"><span>In competition</span><span class="tag dim">weighted</span></div>${comp.length ? compRows(comp) : blank("var(--butter)","%","No scores yet","Once two of you have rated the same thing, the agreement number appears here.",[["compAdd","Log something"]])}</div>
     ${(() => { const pal = roomPalmares(es); if (!pal || pal.n < 6) return "";
       const t = id => esc(works[id]?.title || "");
@@ -3747,6 +3810,8 @@ async function renderRoomFeed(fb, R) {
   /* presence says who is here; this says what they are actually in the middle of */
   paintRoomNow(R);
   ["talkAdd","compAdd"].forEach(id => { const el = $("#"+id); if (el) el.onclick = openAdd; });
+  const promptLog = $("#roomPromptLog"); if (promptLog) promptLog.onclick = openAdd;
+  const promptLater = $("#roomPromptLater"); if (promptLater) promptLater.onclick = () => { P.roomPromptSeen = new Date().toISOString().slice(0,10); saveP(); $("#roomPrompt")?.remove(); };
   const ryc = $("#roomYearCard"); if (ryc) ryc.onclick = () => { const pal = roomPalmares(es);
     if (pal) openCuts("roomyear", { room:R, pal, year:String(new Date().getFullYear()) }, "Share the room's year"); };
   $$("[data-cw]", fb).forEach(x => x.onclick = () => openWork(x.dataset.cw));
@@ -3768,6 +3833,8 @@ async function renderRoomFeed(fb, R) {
 }
 const ROOM_LIMIT = 3;
 function wireRoomButtons() { const nr = $("#newRoom"), jr = $("#joinRoom");
+  const manage = $("#roomManage"), manageActions = $("#roomManageActions");
+  if (manage && manageActions) manage.onclick = () => { const opening = manageActions.hidden; manageActions.hidden = !opening; manage.setAttribute("aria-expanded", String(opening)); };
   const full = rooms.length >= ROOM_LIMIT;
   if (nr) nr.disabled = full;
   const msg = $("#roomMsg");
@@ -4071,10 +4138,7 @@ function renderShelf() { if (cabView() === "cabinet") return renderCabinet();
     <input id="search" type="search" placeholder="Search film, TV, books, games" autocomplete="off" style="margin-top:12px">
     <div class="chips">${Object.keys(KINDS).map(k => `<button class="chip k ${P.kinds.includes(k)?"on":""}" data-sk="${k}">${K(k).label}</button>`).join("")}</div>
     <div class="msg" id="msg"></div><div id="results"></div>
-    ${all.length ? `<div class="chips" style="margin-top:12px">${[["","Everything"],...Object.keys(KINDS).filter(k=>counts[k]).map(k=>[k,K(k).plural+" · "+counts[k]])].map(([k,l]) => `<button class="chip ${P.shelfFilter===k?"on":""}" data-kf="${k}">${l}</button>`).join("")}</div>
-      ${soonCount || nowCount ? `<div class="chips">${[["","All"],["out","Out now"],
-        ...(nowCount ? [["now",`In the middle of · ${nowCount}`]] : []),
-        ...(soonCount ? [["soon",`Coming · ${soonCount}`]] : [])].map(([k,l]) => `<button class="chip ${(P.when||"")===k?"on":""}" data-wf="${k}">${l}</button>`).join("")}</div>` : ""}
+    ${all.length ? `<div class="library-filterbar"><p class="sub">${P.shelfFilter ? K(P.shelfFilter).plural : "Everything"}${P.when ? ` · ${P.when === "out" ? "out now" : P.when === "now" ? "in the middle of" : "coming soon"}` : ""}</p><button class="btn ghost" id="libraryFilters">Filters${P.shelfFilter || P.when ? " · on" : ""}</button></div>
       ${pickBar}
       <div class="grid" id="shelfGrid">${rows.map(w => { const soon = isSoon(w), n = nowOf(w.id);
         return `<div class="cell" data-cell="${esc(w.id)}"><div class="po ${logged(w.id)?"done":""} ${soon?"soon":""} ${n?"onit":""}" data-w="${esc(w.id)}">${cover(w,"")}<b>${esc(w.title)}</b>${tag(w.kind)}
@@ -4134,6 +4198,15 @@ function renderShelf() { if (cabView() === "cabinet") return renderCabinet();
   wireSearch();
   $$("[data-view]").forEach(b => b.onclick = () => { P.view = b.dataset.view; saveP(); renderShelf(); });
   if (P.picked && !logged(P.picked) && works[P.picked]) showResult(works[P.picked]); renderWaiting(); renderShelfRecs(); }
+function openLibraryFilters(counts, soonCount, nowCount) {
+  const kinds = [["", "Everything"], ...Object.keys(KINDS).filter(k => counts[k]).map(k => [k, `${K(k).plural} · ${counts[k]}`])];
+  const states = [["", "All"], ["out", "Out now"], ...(nowCount ? [["now", `In the middle of · ${nowCount}`]] : []), ...(soonCount ? [["soon", `Coming · ${soonCount}`]] : [])];
+  openSheet(`<div class="filter-sheet"><h3>Library filters</h3><p class="sub">Narrow the shelf without losing your place.</p><div class="lbl">Medium</div><div class="chips">${kinds.map(([k,l]) => `<button class="chip ${P.shelfFilter===k?"on":""}" data-lf-kind="${k}">${l}</button>`).join("")}</div><div class="lbl">Availability</div><div class="chips">${states.map(([k,l]) => `<button class="chip ${(P.when||"")===k?"on":""}" data-lf-when="${k}">${l}</button>`).join("")}</div><div class="stack"><button class="btn quiet" id="filterReset">Clear filters</button><button class="btn" id="filterDone">Done</button></div></div>`);
+  $$('[data-lf-kind]').forEach(b => b.onclick = () => { P.shelfFilter=b.dataset.lfKind; saveP(); closeSheet(); renderShelf(); });
+  $$('[data-lf-when]').forEach(b => b.onclick = () => { P.when=b.dataset.lfWhen; saveP(); closeSheet(); renderShelf(); });
+  $("#filterReset").onclick = () => { P.shelfFilter=""; P.when=""; saveP(); closeSheet(); renderShelf(); };
+  $("#filterDone").onclick = closeSheet;
+}
 /* The shelf is where you decide what's next, so what your taste suggests belongs here and
    not only on your own profile page — the same recommendations, one tap from landing. It
    filters again on render rather than trusting the cache, so adding one makes it leave the
@@ -5194,7 +5267,7 @@ async function renderTaste() { const body = $("#tasteBody"); const t = tasteOf(m
     $$("[data-ten]", body).forEach(x => x.classList.toggle("on", x === b)); paintTen(); });
   paintTen();
   const rs = await loadRecs().catch(() => []); const rb = $("#recBody"); if (!rb) return;
-  if (!rs.length) { rb.innerHTML = `<p class="empty">Rate a few things four stars or more and this fills up.</p>`; return; }
+  if (!rs.length) { rb.innerHTML = `<div class="rec-empty"><p class="empty">Nothing fresh to put here yet. Log something you loved, or go looking for the next one.</p><div class="stack"><button class="btn soft" id="tasteFind">Find something to log</button>${myEntries.length ? `<button class="btn quiet" id="tasteShelf">Browse your library</button>` : ""}</div></div>`; $("#tasteFind").onclick = openAdd; const ts=$("#tasteShelf"); if(ts) ts.onclick=()=>switchTab("shelf"); return; }
   window.__hits = Object.assign(window.__hits||{}, Object.fromEntries(rs.map(x => [x.r.id, x.r])));
   rb.innerHTML = rs.map(({ r, why }) => `<div class="row" data-rec="${esc(r.id)}">${cover(r)}<div class="t"><b>${esc(r.title)}</b><small>${tag(r.kind)} ${esc(r.year||"")} · because of ${esc(why)}</small></div><span class="chip">Add</span></div>`).join("");
   $$("[data-rec]", rb).forEach(x => x.onclick = async () => { await addToShelf(x.dataset.rec); recs = recs.filter(e => e.r.id !== x.dataset.rec); renderTaste(); }); }
@@ -5796,6 +5869,12 @@ const SEASON_MEDALS = [
   { tier:"gold", at:6, icon:"✦", name:"Gold" },
   { tier:"platinum", at:10, icon:"✺", name:"Platinum" }
 ];
+const SEASON_PICKS = [
+  ["film","The Thing"],["film","The Witch"],["film","Get Out"],["film","The Descent"],
+  ["tv","The Haunting of Hill House"],["tv","Yellowjackets"],
+  ["book","Beloved"],["book","The Only Good Indians"],
+  ["game","Alan Wake 2"],["game","Resident Evil 4"]
+];
 const seasonDate = e => String(e.created_at || e.rated_on || "").slice(0,10);
 const seasonKind = e => e.works?.kind || works[e.work_id]?.kind || kindOf(e.work_id);
 const seasonGenres = e => (e.works?.meta?.genres || works[e.work_id]?.meta?.genres || []).map(g => String(g).toLowerCase());
@@ -5817,6 +5896,17 @@ function seasonEntryStamp(e) {
   const n = seasonEntries(c).length, medal = seasonMedal(n);
   const label = `${c.name} · ${n} logged${medal ? ` · ${medal.name}` : ""}`;
   return `<span class="season-stamp ${medal?.tier || ""}" aria-label="${esc(label)}" title="${esc(label)}">${medal?.icon || c.icon}</span>`;
+}
+function openSeasonChallenge(challenge) {
+  if (!challenge) return;
+  const picks = SEASON_PICKS.filter(([kind]) => kind === challenge.kind);
+  const entries = seasonEntries(challenge), medal = seasonMedal(entries.length);
+  openSheet(`<div class="head"><div class="season-object ${challenge.kind}">${challenge.icon}</div><div class="hh"><h3>${esc(challenge.name)}</h3><p class="sub">${esc(challenge.copy)} Horror-tagged logs only.</p></div></div>
+    <div class="season-rank"><b>${entries.length} logged</b><br>${medal ? medal.name + " earned so far." : "Your first qualifying log earns Bronze."}</div>
+    <div class="lbl">Start here</div><div class="season-picks">${picks.map(([kind,title], i) => `<button class="row" type="button" data-season-pick="${esc(title)}" data-season-kind="${kind}"><span class="rk">${i+1}</span><div class="t"><b>${esc(title)}</b><small>${tag(kind)} · horror pick</small></div><span class="chip">Find</span></button>`).join("")}</div>
+    <div class="stack"><button class="btn quiet" id="seasonClose">Back</button></div>`);
+  $("#seasonClose").onclick = closeSheet;
+  $$('[data-season-pick]').forEach(row => row.onclick = () => { P.kinds = [row.dataset.seasonKind]; saveP(); closeSheet(); switchTab("shelf"); setTimeout(() => { const search = $("#search"); if (!search) return; search.value = row.dataset.seasonPick; search.dispatchEvent(new Event("input", { bubbles:true })); search.focus(); }, 100); });
 }
 function seasonPhase(season = HALLOWEEN_2026) {
   const d = today();
@@ -5847,8 +5937,8 @@ async function renderClubs() {
   const friendCard = c => { const items = c.items || [], done = items.filter(id => logged(id)).length;
     const pct = items.length ? Math.round(done/items.length * 100) : 0;
     return `<div class="club" data-c="${esc(c.id)}"><div class="top"><span class="tag" style="background:var(--lilac)">${esc(c.label)}</span><span class="deadline">${c.due ? "ends " + when(c.due) : "rolling"}</span></div><b>${esc(c.name)}</b><div class="tr"><i style="width:${pct}%"></i></div><div class="pr"><b>${done}</b> of ${items.length} · friends in your room</div></div>`; };
-  body.innerHTML = `<h2><span class="hl" style="background:var(--lilac)">Seasons</span></h2>
-    <p class="sub">Public challenges for everyone. Clubs stay small and live with your friends in a room.</p>
+  body.innerHTML = `<h2><span class="hl" style="background:var(--lilac)">Clubs</span></h2>
+    <p class="sub">The current public season sits alongside the small clubs you make with friends.</p>
     <div class="seg"><button data-season-tab="season" class="${P.clubTab === "season" ? "on" : ""}">Halloween</button><button data-season-tab="clubs" class="${P.clubTab === "clubs" ? "on" : ""}">Friend clubs${clubs.length ? " · " + clubs.length : ""}</button></div>
     <div id="seasonContent"></div>`;
   $$('[data-season-tab]', body).forEach(b => b.onclick = () => { P.clubTab = b.dataset.seasonTab; saveP(); renderClubs(); });
@@ -5861,21 +5951,13 @@ async function renderClubs() {
     const cr = $("#clubRoom"); if (cr) cr.onclick = () => switchTab("doors");
     revealIn(out); return;
   }
-  const cards = season.challenges.map(c => { const entries = seasonEntries(c), n = entries.length, medal = seasonMedal(n);
+  const cards = season.challenges.map(c => { const entries = seasonEntries(c), n = entries.length, medal = seasonMedal(n), pickCount = SEASON_PICKS.filter(([kind]) => kind === c.kind).length;
     const pct = Math.min(100, Math.round(n / SEASON_MEDALS.at(-1).at * 100));
-    return `<article class="season-challenge"><div class="season-object ${c.kind}">${c.icon}</div><div><h3>${esc(c.name)}</h3><p>${esc(c.copy)}</p><div class="season-progress"><i style="width:${pct}%"></i></div><div class="season-tier"><span><b>${n}</b> logged</span><span>${medal ? medal.name + " earned" : "Bronze at 1"}</span></div><div class="season-haul">${SEASON_MEDALS.map(m => `<span class="${n >= m.at ? "on " + m.tier : ""}" title="${m.name} · ${m.at}">${m.icon}</span>`).join("")}</div></div></article>`;
+    return `<button class="season-challenge" type="button" data-season-challenge="${c.id}"><div class="season-object ${c.kind}">${c.icon}</div><div><h3>${esc(c.name)}</h3><p>${esc(c.copy)}</p><span class="season-open">${pickCount} ${pickCount === 1 ? "pick" : "picks"} <b>›</b></span><div class="season-progress"><i style="width:${pct}%"></i></div><div class="season-tier"><span><b>${n}</b> logged</span><span>${medal ? medal.name + " earned" : "Bronze at 1"}</span></div><div class="season-haul">${SEASON_MEDALS.map(m => `<span class="${n >= m.at ? "on " + m.tier : ""}" title="${m.name} · ${m.at}">${m.icon}</span>`).join("")}</div></div></button>`;
   }).join("");
-  const picks = [
-    ["film","The Thing"],["film","The Witch"],["film","Get Out"],["film","The Descent"],
-    ["tv","The Haunting of Hill House"],["tv","Yellowjackets"],
-    ["book","Beloved"],["book","The Only Good Indians"],
-    ["game","Alan Wake 2"],["game","Resident Evil 4"]
-  ];
-  const pickRows = picks.map(([kind,title], i) => `<button class="row" type="button" data-season-pick="${esc(title)}" data-season-kind="${kind}"><span class="rk">${i+1}</span><div class="t"><b>${esc(title)}</b><small>${tag(kind)} · horror pick</small></div><span class="chip">Find</span></button>`).join("");
-  out.innerHTML = `<div class="season-hero"><span class="tag">Public season</span><h3>${esc(season.name)}</h3><p>${phase.text} · Horror-tagged logs only. Complete as much or as little as you want; each qualifying title earns a notch.</p></div>${cards}
-    <div class="season-picks"><div class="h"><span>Ten to get you started</span><span class="tag dim">horror</span></div>${pickRows}</div>
+  out.innerHTML = `<div class="season-hero"><span class="tag">Public season</span><span class="season-pumpkin" aria-hidden="true"><i></i><i></i><b></b></span><h3>${esc(season.name)}</h3><p>${phase.text} · Horror-tagged logs only. Pick a challenge to see what to start with.</p></div>${cards}
     <div class="season-rank" id="seasonRank"><b>Night Owl</b><br>${phase.key === "upcoming" ? "The top 10% mark opens with the season. Log at least three qualifying titles to be eligible." : "Checking the current top 10%…"}</div>`;
-  $$('[data-season-pick]', out).forEach(row => row.onclick = () => { P.kinds = [row.dataset.seasonKind]; saveP(); switchTab("shelf"); setTimeout(() => { const search = $("#search"); if (!search) return; search.value = row.dataset.seasonPick; search.dispatchEvent(new Event("input", { bubbles:true })); search.focus(); }, 100); });
+  $$('[data-season-challenge]', out).forEach(row => row.onclick = () => openSeasonChallenge(season.challenges.find(c => c.id === row.dataset.seasonChallenge)));
   if (phase.key !== "upcoming") { const rank = await seasonRank(season), box = $("#seasonRank"); if (box) box.innerHTML = rank.people
     ? `<b>Night Owl</b><br>${rank.inTop ? "You are currently in the top 10% of active participants. Keep it through the end of October to earn the mark." : `Top 10% of ${rank.people} active participants. Log at least three qualifying titles; the current line is ${rank.cut} unique title${rank.cut===1?"":"s"}.`}`
     : `<b>Night Owl</b><br>Be among the first to log a qualifying title. The top 10% mark starts once the season has participants.`; }
