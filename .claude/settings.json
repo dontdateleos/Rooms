@@ -1,0 +1,19 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "agent",
+            "if": "Bash(git commit*)",
+            "prompt": "A git commit just landed in the Rooms repo (dontdateleos/Rooms). If it represents a real product, design, or technical decision — not a typo fix, formatting-only change, or routine config housekeeping — add one short dated bullet to the Rooms project page in Notion, under its existing '## Decisions' heading, summarizing what changed and, more importantly, why. Match the voice of the entries already there: plain, specific, no marketing language. Find the page via the Notion MCP tools if you don't already have its id (search 'Rooms', it lives under Jordan's Room / Projects). Use insert_content with position 'end' to append under Decisions, grouping into today's dated entry if one already exists from this session rather than adding a duplicate date heading. Skip silently if the commit doesn't warrant a note. Commit info: $ARGUMENTS",
+            "model": "claude-sonnet-5",
+            "timeout": 120,
+            "statusMessage": "Logging decision to Notion…"
+          }
+        ]
+      }
+    ]
+  }
+}
