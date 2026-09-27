@@ -679,27 +679,32 @@ nav .in:has(.navpill.set) button.on{background:none}
 .deadline{font-family:var(--head);font-weight:900;font-size:13px}
 .deadline.soon{color:var(--bad)}
 .deadline.done{color:var(--good)}
-/* seasons — the public programme has a different job from a friends' club.  It is a
+/* seasons — the public programme has a different job from a friends' club. It is a
    short-lived event with flexible progress, so the little objects belong to the things
-   that counted as well as to the season itself. */
-.season-hero{background:#24162D;color:#FFF7EC;border-radius:24px;padding:20px;margin-top:12px;overflow:hidden;position:relative}
-.season-hero:after{content:'';position:absolute;right:22px;top:11px;width:14px;height:14px;border-radius:8px 8px 2px 8px;background:#78A55A;transform:rotate(-30deg)}.season-pumpkin{position:absolute;right:18px;bottom:17px;width:74px;height:66px;border-radius:46% 46% 42% 42%;background:#F28D46;box-shadow:inset 11px 0 #F6AB57,inset -11px 0 #D96B34,0 6px 0 rgba(0,0,0,.12)}.season-pumpkin i{position:absolute;z-index:2;top:20px;width:13px;height:17px;background:#24162D;transform:skewY(-18deg)}.season-pumpkin i:first-child{left:17px}.season-pumpkin i:nth-child(2){right:17px;transform:skewY(18deg)}.season-pumpkin b{position:absolute;z-index:2;left:25px;bottom:14px;width:25px;height:9px;border-bottom:5px solid #24162D;border-radius:0 0 18px 18px}
-.season-hero>*{position:relative;z-index:1}.season-hero .season-pumpkin{position:absolute;z-index:2}.season-hero .tag{background:var(--apricot);color:var(--onAccent)}
-.season-hero h3{font-family:var(--head);font-size:28px;line-height:.95;letter-spacing:-.04em;margin-top:10px;max-width:260px}
-.season-hero p{font-size:13px;font-weight:650;line-height:1.4;color:#E7D8ED;margin-top:9px;max-width:290px}
-.season-challenge{background:var(--card);border-radius:20px;padding:16px;margin-top:12px;display:grid;border:0;width:100%;text-align:left;font:inherit;cursor:pointer;grid-template-columns:48px minmax(0,1fr);gap:12px;align-items:center;box-shadow:0 14px 34px -26px rgba(21,19,32,.3)}
-.season-object,.season-stamp{display:grid;place-items:center;font-family:var(--head);font-weight:900;color:var(--onAccent);background:var(--cream2);border:2px solid var(--line)}
-.season-object{width:48px;height:48px;border-radius:16px;font-size:22px}.season-object.film{background:var(--apricot)}.season-object.tv{background:var(--pink)}.season-object.book{background:var(--butter)}.season-object.game{background:var(--mint)}
-.season-challenge:active{transform:scale(.985)}.season-open{display:inline-flex;align-items:center;gap:5px;margin-top:9px;font-size:11px;font-weight:850;color:var(--mute)}.season-open b{font-size:18px;line-height:.6;color:var(--ink)}.season-challenge h3{font-family:var(--head);font-size:17px;letter-spacing:-.02em}.season-challenge p{font-size:12px;font-weight:650;color:var(--mute);margin-top:3px}
-.season-progress{height:8px;background:var(--cream2);border-radius:99px;overflow:hidden;margin-top:10px}.season-progress i{display:block;height:100%;background:var(--ink);border-radius:inherit;transition:width .55s cubic-bezier(.2,.9,.25,1)}
-.season-tier{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:8px;font-size:11px;font-weight:800;color:var(--mute)}.season-tier b{color:var(--ink)}
-.season-haul{display:flex;gap:7px;margin-top:10px}.season-haul span{width:28px;height:28px;border-radius:10px;display:grid;place-items:center;background:var(--cream2);border:1px solid var(--line);font-size:13px;filter:grayscale(1);opacity:.42}.season-haul span.on{filter:none;opacity:1}.season-haul span.bronze{background:#F1B37A}.season-haul span.silver{background:#D6D7DD}.season-haul span.gold{background:#FFE86A}.season-haul span.platinum{background:#D5C4FF}
-.season-picks{background:var(--cream2);border-radius:20px;padding:16px;margin-top:12px}.season-picks .h{display:flex;justify-content:space-between;align-items:baseline;gap:10px}.season-picks .row{cursor:pointer}.season-picks .row:hover{transform:translateX(2px)}.season-picks button.row{width:100%;border:0;background:transparent;text-align:left;font:inherit;padding-left:0;padding-right:0}
-.taste-hero{background:var(--ink);color:var(--cream);border-radius:24px;padding:19px 20px;margin-top:10px;position:relative;overflow:hidden}.taste-hero:after{content:"◒  ◉";position:absolute;right:18px;top:8px;color:var(--butter);font-family:var(--head);font-size:54px;opacity:.22;transform:rotate(10deg)}.taste-hero>*{position:relative;z-index:1}.taste-hero h2{font-size:25px;letter-spacing:-.04em}.taste-hero p{color:#C9C4D4;font-size:13px;font-weight:650;line-height:1.42;margin-top:6px;max-width:280px}.taste-hero .tag{background:var(--butter);color:var(--onAccent);margin-top:11px}
-.season-rank{background:var(--mint);border-radius:18px;padding:14px 16px;margin-top:12px;font-size:13px;font-weight:700;line-height:1.4}.season-rank b{font-family:var(--head);font-size:16px}
-.room-moments{margin:14px 0 6px}.room-moment.fresh{animation:momentIn .55s cubic-bezier(.2,.9,.25,1)}@keyframes momentIn{0%{opacity:0;transform:translateY(14px) scale(.97)}100%{opacity:1;transform:none}}.room-moment{display:flex;align-items:center;gap:11px;background:var(--mint);border-radius:16px;padding:11px 12px;margin-top:7px;cursor:pointer}.room-moment:nth-child(odd){background:var(--lilac)}.room-moment b{display:block;font-family:var(--head);font-size:14px}.room-moment small{display:block;font-size:11.5px;font-weight:700;color:var(--mute);margin-top:2px}.moment-mark{width:28px;height:28px;display:grid;place-items:center;border:2px solid var(--ink);border-radius:10px;font-family:var(--head);font-size:15px;flex:none}
-.room-prompt{background:var(--pink);border-radius:18px;padding:13px 14px;margin:12px 0 2px;display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:center;position:relative;overflow:hidden}.room-prompt:after{content:'?';position:absolute;right:104px;top:-26px;font-family:var(--head);font-size:88px;line-height:1;color:#C82C66;opacity:.14}.room-prompt>*{position:relative;z-index:1}.room-prompt b,.room-split b{font-family:var(--head);font-size:16px}.room-prompt p,.room-split p{font-size:12px;font-weight:650;line-height:1.35;margin-top:2px}.room-prompt .btn{padding:9px 12px;font-size:12px;white-space:nowrap}.room-prompt .later{border:0;background:transparent;font:inherit;font-size:12px;font-weight:800;color:var(--mute);padding:8px;cursor:pointer}.room-split{background:var(--butter);border-radius:22px;padding:17px 18px;margin:14px 0 4px}.room-split .scoreline{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:12px;font-weight:800}.room-split .scoreline i{height:8px;flex:1;border-radius:99px;background:linear-gradient(90deg,var(--pink) 0 48%,var(--cream) 48% 52%,var(--mint) 52%)}
-.season-cover{position:relative;width:44px;height:64px;display:block;flex:none}.season-cover>img,.season-cover>.co{width:44px!important;height:64px!important}.season-stamp{position:absolute;right:-7px;top:-7px;width:22px;height:22px;border-radius:8px;font-size:11px;box-shadow:0 2px 0 rgba(21,19,32,.18);z-index:2}.season-stamp.bronze{background:#F1B37A}.season-stamp.silver{background:#D6D7DD}.season-stamp.gold{background:#FFE86A}.season-stamp.platinum{background:#D5C4FF}
+   that counted as well as to the season itself. The season card, the challenge cards,
+   and Night Owl are .card/.club/.h underneath, same as everywhere else — no bespoke
+   hero banner, no illustration, no invented colour per medal tier. A tier is told apart
+   by its glyph and by whether it's filled: flat ink or it isn't, the same way the rest
+   of the app tells earned from not earned. */
+.season-object{width:48px;height:48px;border-radius:16px;display:grid;place-items:center;font-family:var(--head);font-weight:900;font-size:22px;color:var(--onAccent);flex:none}
+.season-object.film{background:var(--apricot)}.season-object.tv{background:var(--pink)}.season-object.book{background:var(--butter)}.season-object.game{background:var(--mint)}
+.club.season-challenge{display:grid;grid-template-columns:48px minmax(0,1fr);gap:12px;align-items:start;
+  border:0;width:100%;text-align:left;font:inherit;cursor:pointer}
+.season-open{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:850;color:var(--mute)}.season-open b{font-size:18px;line-height:.6;color:var(--ink);font-family:var(--head)}
+.season-haul{display:flex;gap:7px;margin-top:10px}
+.season-haul span{width:28px;height:28px;border-radius:10px;display:grid;place-items:center;background:var(--cream2);border:1px solid var(--line);font-size:13px;color:var(--mute);opacity:.5}
+.season-haul span.on{background:var(--ink);color:var(--cream);border-color:var(--ink);opacity:1}
+.season-picks{background:var(--cream2);border-radius:20px;padding:16px;margin-top:12px}
+.season-picks .h{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.season-picks .row{cursor:pointer}.season-picks button.row{width:100%;border:0;background:transparent;text-align:left;font:inherit;padding-left:0;padding-right:0}
+.season-cover{position:relative;width:44px;height:64px;display:block;flex:none}
+.season-cover>img,.season-cover>.co{width:44px!important;height:64px!important}
+.season-stamp{position:absolute;right:-7px;top:-7px;width:22px;height:22px;border-radius:8px;font-size:11px;box-shadow:0 2px 0 rgba(21,19,32,.18);z-index:2;display:grid;place-items:center;background:var(--cream2);border:1px solid var(--line);color:var(--mute)}
+.season-stamp.bronze,.season-stamp.silver,.season-stamp.gold,.season-stamp.platinum{background:var(--ink);color:var(--cream);border-color:var(--ink)}
+/* room moments: a card of .row, the same shape as every other list of things that
+   happened, with a cover instead of an invented glyph badge */
+.moment-row.fresh{animation:rowIn .5s cubic-bezier(.2,.9,.25,1)}
+@keyframes rowIn{0%{opacity:0;transform:translateY(10px)}100%{opacity:1;transform:none}}
 .pal{background:var(--ink);color:var(--cream);border-radius:22px;padding:18px;margin-top:12px}
 .pal .h{display:flex;justify-content:space-between;align-items:center;font-family:var(--head);font-weight:900;font-size:17px;
   padding-bottom:12px;border-bottom:2px solid #3A3650;margin-bottom:4px}
@@ -3457,10 +3462,13 @@ function roomStreak(entries) {
   return `<div class="room-streak"><i>◌</i><span><b>${people.size} of you logged this week</b>${sharedDays ? ` · ${sharedDays} shared ${sharedDays===1?"day":"days"}` : ""}</span></div>`;
 }
 function roomMomentsHTML(moments, fresh = new Set()) { if (!moments.length) return "";
-  return `<div class="room-moments"><div class="lbl">Room moments</div>${moments.map(m => { const w = works[m.workId] || {}, key = `${m.kind}:${m.workId}:${m.at}`;
-    if (m.kind === "handover") return `<div class="room-moment${fresh.has(key) ? " fresh" : ""}" data-cw="${esc(m.workId)}"><span class="moment-mark">↗</span><div><b>You logged ${esc(w.title || "a recommendation")}</b><small>from ${esc(m.hand.sender_p?.handle || "someone")}</small></div></div>`;
+  return `<div class="lbl">Room moments</div><div class="card" style="margin-top:0">${moments.map(m => { const w = works[m.workId] || {}, key = `${m.kind}:${m.workId}:${m.at}`;
+    const row = (title, small) => `<div class="row moment-row${fresh.has(key) ? " fresh" : ""}" data-cw="${esc(m.workId)}">${cover(w)}<div class="t"><b>${title}</b><small>${small}</small></div></div>`;
+    if (m.kind === "handover") return row(`You logged ${esc(w.title || "a recommendation")}`,
+      `from ${esc(m.hand.sender_p?.handle || "someone")}`);
     const names = m.people.map(e => e.user_id === me.id ? "you" : (e.profiles?.handle || "someone"));
-    return `<div class="room-moment${fresh.has(key) ? " fresh" : ""}" data-cw="${esc(m.workId)}"><span class="moment-mark">◎</span><div><b>${esc(w.title || "A title")} crossed paths</b><small>${names.length === 2 ? names.join(" and ") : `${names.slice(0,2).join(", ")} and ${names.length-2} more`} logged it this week</small></div></div>`;
+    return row(`${esc(w.title || "A title")} crossed paths`,
+      `${names.length === 2 ? names.join(" and ") : `${names.slice(0,2).join(", ")} and ${names.length-2} more`} logged it this week`);
   }).join("")}</div>`;
 }
 
@@ -3473,7 +3481,10 @@ const ROOM_PROMPTS = [
 function roomPrompt() { const d = new Date(), key = today();
   if (P.roomPromptSeen === key || myEntries.some(e => String(e.created_at || e.rated_on || "").slice(0,10) === key)) return "";
   const text = ROOM_PROMPTS[(d.getDate() + d.getMonth() * 3) % ROOM_PROMPTS.length];
-  return `<div class="room-prompt" id="roomPrompt"><div><b>One for the room</b><p>${esc(text)}</p></div><button class="btn" id="roomPromptLog">Log</button><button class="later" id="roomPromptLater">Later</button></div>`;
+  return `<div class="card look" id="roomPrompt"><div class="h"><span>One for the room</span></div>
+    <p class="sub" style="margin-top:0">${esc(text)}</p>
+    <div class="stack"><button class="btn soft" id="roomPromptLog">Log something</button>
+      <button class="btn quiet" id="roomPromptLater">Later</button></div></div>`;
 }
 const WEEK_KEY = () => { const d = new Date(); d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
   return d.toISOString().slice(0, 10); };                 /* the Monday just gone */
@@ -3853,7 +3864,7 @@ async function renderRoomFeed(fb, R) {
         if (isNew && !shown) { shown = true; head = `<div class="newline">New since you were here</div>`; }
         return head + slipHTML(e, { talk:true }); }).join(""); })()}
     ${pick ? `<div class="result"><small>Tonight's pick</small><b>${esc(pick.title)}</b><div class="stack" style="margin-top:10px"><button class="btn" id="pickLog">${K(pick.kind).verb} it</button></div></div>` : ""}
-    ${split ? `<div class="room-split" data-cw="${esc(split.id)}"><b>A friendly argument</b><p><strong>${esc(works[split.id]?.title || "This one")}</strong> has the room divided — ${esc(split.hi.profiles?.handle || "someone")} gave it ${(split.hi.score/2).toFixed(1)}, while ${esc(split.lo.profiles?.handle || "someone")} gave it ${(split.lo.score/2).toFixed(1)}.</p><div class="scoreline"><span>${(split.lo.score/2).toFixed(1)}</span><i></i><span>${(split.hi.score/2).toFixed(1)}</span></div><button class="chip" style="margin-top:12px">See the scores</button></div>` : ""}
+    ${split ? `<div class="card"><div class="h"><span>A friendly argument</span></div>${compRows([split])}</div>` : ""}
     <div class="card"><div class="h"><span>In competition</span><span class="tag dim">weighted</span></div>${comp.length ? compRows(comp) : blank("var(--butter)","%","No scores yet","Once two of you have rated the same thing, the agreement number appears here.",[["compAdd","Log something"]])}</div>
     ${(() => { const pal = roomPalmares(es); if (!pal || pal.n < 6) return "";
       const t = id => esc(works[id]?.title || "");
@@ -5285,7 +5296,8 @@ async function loadRecs() { if (recs) return recs; const onShelf = new Set(lists
   return out; }
 async function renderTaste() { const body = $("#tasteBody"); const t = tasteOf(myEntries);
   const tasteLead = myEntries.length ? (t.craft[0]?.[0] ? `You keep coming back for ${t.craft[0][0].toLowerCase()}. Here is something that might meet you there.` : "Your taste gets clearer every time you log something.") : "Log a few things and this becomes a living map of what pulls you in.";
-  body.innerHTML = `<div class="taste-hero">${avatar(me)}<h2>${esc(me.handle)}’s taste</h2><p>${esc(tasteLead)}</p><span class="tag">${myEntries.length ? `${myEntries.length} logged` : "just getting started"}</span></div>
+  body.innerHTML = `<div style="display:flex;align-items:center;gap:12px;margin-top:10px">${avatar(me)}<div><h2 style="margin:0">${esc(me.handle)}</h2>${me.bio?`<p class="sub" style="margin-top:2px">${esc(me.bio)}</p>`:""}</div></div>
+    <p class="sub" style="margin-top:10px">${esc(tasteLead)}</p>
     <div class="tally">${Object.keys(KINDS).filter(k=>t.kinds[k]).map(k => `<span><b>${t.kinds[k]}</b>${K(k).label.toLowerCase()}</span>`).join("")}<span><b>${follows.length}</b>following</span><span id="followerCount"></span></div>
     <div class="card">${tasteHTML(t)}${t.tagged >= 3 ? `<div class="stack"><button class="btn ghost" id="myTasteCard">Save the card</button></div>` : ""}</div>
     <div class="card"><div class="h"><span>For tonight</span><span class="tag dim">from what you loved</span></div><div id="recBody">${skeleton(2)}</div></div>
@@ -5982,7 +5994,7 @@ function openSeasonChallenge(challenge) {
   const picks = SEASON_PICKS.filter(([kind]) => kind === challenge.kind);
   const entries = seasonEntries(challenge), medal = seasonMedal(entries.length);
   openSheet(`<div class="head"><div class="season-object ${challenge.kind}">${challenge.icon}</div><div class="hh"><h3>${esc(challenge.name)}</h3><p class="sub">${esc(challenge.copy)} Horror-tagged logs only.</p></div></div>
-    <div class="season-rank"><b>${entries.length} logged</b><br>${medal ? medal.name + " earned so far." : "Your first qualifying log earns Bronze."}</div>
+    <div class="card" style="margin-top:14px"><b>${entries.length} logged</b><p class="sub" style="margin-top:4px">${medal ? medal.name + " earned so far." : "Your first qualifying log earns Bronze."}</p></div>
     <div class="lbl">Start here</div><div class="season-picks">${picks.map(([kind,title], i) => `<button class="row" type="button" data-season-pick="${esc(title)}" data-season-kind="${kind}"><span class="rk">${i+1}</span><div class="t"><b>${esc(title)}</b><small>${tag(kind)} · horror pick</small></div><span class="chip">Find</span></button>`).join("")}</div>
     <div class="stack"><button class="btn quiet" id="seasonClose">Back</button></div>`);
   $("#seasonClose").onclick = closeSheet;
@@ -6029,15 +6041,22 @@ async function renderClubs() {
   const out = $("#seasonContent");
   if (P.clubTab === "clubs") { await renderFriendClubs(out); return; }
   const cards = season.challenges.map(c => { const entries = seasonEntries(c), n = entries.length, medal = seasonMedal(n), pickCount = SEASON_PICKS.filter(([kind]) => kind === c.kind).length;
-    const pct = Math.min(100, Math.round(n / SEASON_MEDALS.at(-1).at * 100));
-    return `<button class="season-challenge" type="button" data-season-challenge="${c.id}"><div class="season-object ${c.kind}">${c.icon}</div><div><h3>${esc(c.name)}</h3><p>${esc(c.copy)}</p><span class="season-open">${pickCount} ${pickCount === 1 ? "pick" : "picks"} <b>›</b></span><div class="season-progress"><i style="width:${pct}%"></i></div><div class="season-tier"><span><b>${n}</b> logged</span><span>${medal ? medal.name + " earned" : "Bronze at 1"}</span></div><div class="season-haul">${SEASON_MEDALS.map(m => `<span class="${n >= m.at ? "on " + m.tier : ""}" title="${m.name} · ${m.at}">${m.icon}</span>`).join("")}</div></div></button>`;
+    return `<button class="club season-challenge" type="button" data-season-challenge="${c.id}">
+      <div class="season-object ${c.kind}">${c.icon}</div>
+      <div><div class="top"><span class="tag" style="background:${K(c.kind).colour}">${K(c.kind).label}</span><span class="season-open">${pickCount} ${pickCount === 1 ? "pick" : "picks"} <b>›</b></span></div>
+        <b>${esc(c.name)}</b>
+        <div class="tr"><i style="width:${Math.min(100, Math.round(n / SEASON_MEDALS.at(-1).at * 100))}%"></i></div>
+        <div class="pr"><b>${n}</b> logged${medal ? ` · ${medal.name} earned` : ""}</div>
+        <div class="season-haul">${SEASON_MEDALS.map(m => `<span class="${n >= m.at ? "on" : ""}" title="${m.name} · ${m.at}">${m.icon}</span>`).join("")}</div></div></button>`;
   }).join("");
-  out.innerHTML = `<div class="season-hero"><span class="tag">Public season</span><span class="season-pumpkin" aria-hidden="true"><i></i><i></i><b></b></span><h3>${esc(season.name)}</h3><p>${phase.text} · Horror-tagged logs only. Pick a challenge to see what to start with.</p></div>${cards}
-    <div class="season-rank" id="seasonRank"><b>Night Owl</b><br>${phase.key === "upcoming" ? "The top 10% mark opens with the season. Log at least three qualifying titles to be eligible." : "Checking the current top 10%…"}</div>`;
+  out.innerHTML = `<div class="card"><div class="h"><span>${esc(season.name)}</span><span class="tag dim">${esc(phase.text)}</span></div>
+      <p class="sub" style="margin-top:0">Horror-tagged logs only. Pick a challenge to see what to start with.</p></div>${cards}
+    <div class="card"><div class="h"><span>Night Owl</span></div>
+      <p class="sub" id="seasonRank" style="margin-top:0">${phase.key === "upcoming" ? "The top 10% mark opens with the season. Log at least three qualifying titles to be eligible." : "Checking the current top 10%…"}</p></div>`;
   $$('[data-season-challenge]', out).forEach(row => row.onclick = () => openSeasonChallenge(season.challenges.find(c => c.id === row.dataset.seasonChallenge)));
   if (phase.key !== "upcoming") { const rank = await seasonRank(season), box = $("#seasonRank"); if (box) box.innerHTML = rank.people
-    ? `<b>Night Owl</b><br>${rank.inTop ? "You are currently in the top 10% of active participants. Keep it through the end of October to earn the mark." : `Top 10% of ${rank.people} active participants. Log at least three qualifying titles; the current line is ${rank.cut} unique title${rank.cut===1?"":"s"}.`}`
-    : `<b>Night Owl</b><br>Be among the first to log a qualifying title. The top 10% mark starts once the season has participants.`; }
+    ? (rank.inTop ? "You are currently in the top 10% of active participants. Keep it through the end of October to earn the mark." : `Top 10% of ${rank.people} active participants. Log at least three qualifying titles; the current line is ${rank.cut} unique title${rank.cut===1?"":"s"}.`)
+    : "Be among the first to log a qualifying title. The top 10% mark starts once the season has participants."; }
   revealIn(out);
 }
 
