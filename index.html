@@ -438,6 +438,15 @@ button:focus-visible,.linky:focus-visible{outline:3px solid var(--blue);outline-
 .tok.picked{transform:translateY(-3px) scale(1.035)}
 .tok.picked .ob{animation-duration:2.4s;filter:drop-shadow(0 13px 9px rgba(21,19,32,.24))}
 @keyframes tokSpin{from{transform:rotateY(0deg)}to{transform:rotateY(360deg)}}
+/* the float — the memory-card-screen feeling this cabinet took its cue from — rides on
+   an inner layer, not on .ob itself: .ob's own box is what the plinth is measured
+   against, and a wrapper that shifts underneath it would make "stands on the plinth"
+   true only some of the time. transform, not margin, so nothing here is ever reflowed. */
+.tok .rise{position:absolute;inset:0;transform-style:preserve-3d;
+  animation:tokBob 3.6s ease-in-out infinite;animation-delay:calc(var(--t, 0s) * -1);
+  animation-play-state:paused}
+.tok.live .rise{animation-play-state:running}
+@keyframes tokBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
 .tok .fc{position:absolute;overflow:hidden;backface-visibility:hidden;background:var(--cream2)}
 .tok .fc img{width:100%;height:100%;object-fit:cover;display:block;opacity:0;transition:opacity .3s}
 .tok .fc img.ok{opacity:1}
@@ -450,14 +459,17 @@ button:focus-visible,.linky:focus-visible{outline:3px solid var(--blue);outline-
   text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tok:focus-visible{outline:3px solid var(--blue);outline-offset:3px;border-radius:12px}
 .tok:focus-visible .plinth,.tok.picked .plinth{opacity:1}
+.tok.picked .rise{animation-duration:1.6s}
 @media (hover:hover){
   .tok:hover{transform:translateY(-3px) scale(1.025)}
   .tok:hover .ob{animation-duration:9s;filter:drop-shadow(0 13px 9px rgba(21,19,32,.22))}
+  .tok:hover .rise{animation-duration:2.4s}
   .tok:hover .plinth{opacity:.92;transform:scale(1.05);box-shadow:inset 0 2px 2px rgba(255,255,255,.5),0 9px 14px -7px rgba(21,19,32,.52)}
 }
 @media (prefers-reduced-motion:reduce){
   .tok,.tok .plinth{transition:none}
   .tok .ob{animation:none;transform:rotateY(-14deg);transition:none}
+  .tok .rise{animation:none;transform:none}
   .tok:hover,.tok.picked{transform:none}
 }
 .cabempty{text-align:center;padding:30px 0 10px}
@@ -5958,40 +5970,29 @@ async function renderFriendClubs(el) { const R = activeRoom();
 /* the four challenge marks are built the exact way the season's own ghost is, and the
    way a profile avatar is underneath that: flat tones, no gradient, two capsule eyes.
    The stamp on a logged entry stays the plain glyph in `icon` — that badge is 22px, too
-   small for a shape with any detail to read, so it keeps the simpler mark. */
+   small for a shape with any detail to read, so it keeps the simpler mark. One shape,
+   the season's own ghost, in each medium's own colour — four faces of the same idea
+   rather than four different animals. */
+function ghostMark(tilt, base) {
+  const light = avShade(base, .30), dark = avShade(base, -.18);
+  return `<svg viewBox="0 0 100 100" aria-hidden="true"><g transform="rotate(${tilt} 50 54)">
+    <path d="M18 46a32 32 0 0 1 64 0v30q-8 10-16 0t-16 0t-16 0t-16 0z" fill="${base}"/>
+    <path d="M50 14a32 32 0 0 1 32 32H18a32 32 0 0 1 32-32z" fill="${light}"/>
+    <path d="M82 46v30q-8 10-16 0V46a14 14 0 0 0-8-13 32 32 0 0 1 24 13z" fill="${dark}"/>
+    <g class="eyes" fill="#151320"><rect x="40" y="44" width="7" height="20" rx="3.5"/><rect x="55" y="42" width="7" height="22" rx="3.5"/></g>
+  </g></svg>`;
+}
 const HALLOWEEN_2026 = {
   id:"halloween-2026", name:"31 Nights In", starts:"2026-10-01", ends:"2026-10-31",
   challenges:[
     { id:"midnight-matinee", kind:"film", icon:"◒", name:"Midnight Matinee", copy:"Log horror films through October.",
-      mark:`<svg viewBox="0 0 100 100" aria-hidden="true"><g transform="rotate(0 50 54)">
-        <path d="M50 38c9-13 24-19 24-19s-2 13-9 21c13 2 23 12 23 23 0 6-6 8-10 10 4 2 8 4 8 8 0 8-16 12-36 12s-36-4-36-12c0-4 4-6 8-8-4-2-10-4-10-10 0-11 10-21 23-23-7-8-9-21-9-21s15 6 24 19z" fill="#7A7590"/>
-        <path d="M50 38c5-8 13-13 13-13s0 7-3 12c-4-1-7-1-10 1-3-2-6-2-10-1-3-5-3-12-3-12s8 5 13 13z" fill="#A29EB1"/>
-        <path d="M50 100c15 0 30-4 32-10-6 5-17 8-32 8s-26-3-32-8c2 6 17 10 32 10z" fill="#646076"/>
-        <g class="eyes" fill="#151320"><rect x="40" y="58" width="7" height="16" rx="3.5"/><rect x="55" y="57" width="7" height="17" rx="3.5"/></g>
-      </g></svg>` },
+      mark:ghostMark(0, AV_COLS[0]) },
     { id:"after-dark", kind:"tv", icon:"▤", name:"After Dark", copy:"Log horror shows through October.",
-      mark:`<svg viewBox="0 0 100 100" aria-hidden="true"><g transform="rotate(-2 50 54)">
-        <path d="M12 22L26 8l4 14z" fill="#0B0A12"/><path d="M88 22L74 8l-4 14z" fill="#0B0A12"/>
-        <circle cx="50" cy="54" r="36" fill="#151320"/>
-        <path d="M14 54a36 36 0 0 1 72 0c0-14-16-22-36-22S14 40 14 54z" fill="#3A3650"/>
-        <path d="M50 90a36 36 0 0 0 34-24c-6 10-19 16-34 16s-28-6-34-16a36 36 0 0 0 34 24z" fill="#0B0A12"/>
-        <path d="M84 70c8 3 12 11 8 18" stroke="#0B0A12" stroke-width="7" stroke-linecap="round" fill="none"/>
-        <g class="eyes" fill="#FFF7EC"><rect x="40" y="46" width="7" height="20" rx="3.5"/><rect x="55" y="44" width="7" height="22" rx="3.5"/></g>
-      </g></svg>` },
+      mark:ghostMark(-2, AV_COLS[2]) },
     { id:"haunted-shelf", kind:"book", icon:"✦", name:"Haunted Shelf", copy:"Log horror books through October.",
-      mark:`<svg viewBox="0 0 100 100" aria-hidden="true"><g transform="rotate(-3 50 54)">
-        <path d="M50 14l30 58c0 9-13 14-30 14s-30-5-30-14z" fill="#B9A6FF"/>
-        <path d="M50 14l14 27c-4-2-9-3-14-3s-10 1-14 3z" fill="#CEC1FF"/>
-        <path d="M80 72c0 9-13 14-30 14 10-2 16-7 16-14l-6-40z" fill="#9888D1"/>
-        <g class="eyes" fill="#151320"><rect x="40" y="46" width="7" height="20" rx="3.5"/><rect x="55" y="44" width="7" height="22" rx="3.5"/></g>
-      </g></svg>` },
+      mark:ghostMark(-3, AV_COLS[3]) },
     { id:"ghost-machine", kind:"game", icon:"◇", name:"Ghost in the Machine", copy:"Log horror games through October.",
-      mark:`<svg viewBox="0 0 100 100" aria-hidden="true"><g transform="rotate(2 50 54)">
-        <path d="M18 46a32 32 0 0 1 64 0v30q-8 10-16 0t-16 0t-16 0t-16 0z" fill="#8FD3FF"/>
-        <path d="M50 14a32 32 0 0 1 32 32H18a32 32 0 0 1 32-32z" fill="#B1E0FF"/>
-        <path d="M82 46v30q-8 10-16 0V46a14 14 0 0 0-8-13 32 32 0 0 1 24 13z" fill="#75ADD1"/>
-        <g class="eyes" fill="#151320"><rect x="40" y="44" width="7" height="20" rx="3.5"/><rect x="55" y="42" width="7" height="22" rx="3.5"/></g>
-      </g></svg>` }
+      mark:ghostMark(2, AV_COLS[4]) }
   ]
 };
 const SEASON_MEDALS = [
@@ -6587,11 +6588,13 @@ function tokenHTML(w, face = 52, five = false) {
   return `<button type="button" class="tok" data-tok="${esc(w.id)}" title="${esc(w.title)}"
       style="width:${box}px;height:${boxh + TOK_NAME}px;--t:${(avHash(w.id) % 150) / 10}s">
     <span class="ob" style="left:${pad}px;top:0;width:${fw}px;height:${fh}px">
-      <span class="fc" style="inset:0;border-radius:2px 3px 3px 2px;transform:translateZ(${dep/2}px);
-        box-shadow:0 ${Math.round(fw*.09)}px ${Math.round(fw*.2)}px -${Math.round(fw*.08)}px rgba(21,19,32,.45)">${front}</span>
-      <span class="fc" style="inset:0;border-radius:3px 2px 2px 3px;transform:rotateY(180deg) translateZ(${dep/2}px);background:var(--line)"></span>
-      <span class="fc" style="left:${sideL}px;top:0;width:${dep}px;height:${fh}px;transform:rotateY(-90deg) translateZ(${fw/2}px);background:${TOK_TINT[w.kind]||"var(--line)"}"></span>
-      <span class="fc" style="left:${sideL}px;top:0;width:${dep}px;height:${fh}px;transform:rotateY(90deg) translateZ(${fw/2}px)">${tokEdge(w.kind)}</span>
+      <span class="rise">
+        <span class="fc" style="inset:0;border-radius:2px 3px 3px 2px;transform:translateZ(${dep/2}px);
+          box-shadow:0 ${Math.round(fw*.09)}px ${Math.round(fw*.2)}px -${Math.round(fw*.08)}px rgba(21,19,32,.45)">${front}</span>
+        <span class="fc" style="inset:0;border-radius:3px 2px 2px 3px;transform:rotateY(180deg) translateZ(${dep/2}px);background:var(--line)"></span>
+        <span class="fc" style="left:${sideL}px;top:0;width:${dep}px;height:${fh}px;transform:rotateY(-90deg) translateZ(${fw/2}px);background:${TOK_TINT[w.kind]||"var(--line)"}"></span>
+        <span class="fc" style="left:${sideL}px;top:0;width:${dep}px;height:${fh}px;transform:rotateY(90deg) translateZ(${fw/2}px)">${tokEdge(w.kind)}</span>
+      </span>
     </span>
     <span class="plinth" style="left:${Math.round((box-bw)/2)}px;bottom:${TOK_NAME}px;width:${bw}px;height:${bh}px;background:${TOK_TINT[w.kind]||"var(--line)"}"></span>
     ${five ? `<span class="halo" style="left:${Math.round((box-bw)/2)-5}px;bottom:${TOK_NAME-5}px;width:${bw+10}px;height:${bh+10}px"></span>` : ""}
