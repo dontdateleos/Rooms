@@ -681,13 +681,24 @@ nav .in:has(.navpill.set) button.on{background:none}
 .deadline.done{color:var(--good)}
 /* seasons — the public programme has a different job from a friends' club. It is a
    short-lived event with flexible progress, so the little objects belong to the things
-   that counted as well as to the season itself. The season card, the challenge cards,
-   and Night Owl are .card/.club/.h underneath, same as everywhere else — no bespoke
-   hero banner, no illustration, no invented colour per medal tier. A tier is told apart
-   by its glyph and by whether it's filled: flat ink or it isn't, the same way the rest
-   of the app tells earned from not earned. */
+   that counted as well as to the season itself. The challenge cards and Night Owl are
+   .card/.club/.h underneath, same as everywhere else — no invented colour per medal
+   tier. A tier is told apart by its glyph and by whether it's filled: flat ink or it
+   isn't, the same way the rest of the app tells earned from not earned. The season
+   card itself is the one exception: it's a costume the app puts on once a year, not
+   the app's own face, so it gets its own dark card and a mascot built the same way a
+   profile avatar is — flat tones, no gradient, two capsule eyes. */
 .season-object{width:48px;height:48px;border-radius:16px;display:grid;place-items:center;font-family:var(--head);font-weight:900;font-size:22px;color:var(--onAccent);flex:none}
 .season-object.film{background:var(--apricot)}.season-object.tv{background:var(--pink)}.season-object.book{background:var(--butter)}.season-object.game{background:var(--mint)}
+.season-hero{position:relative;overflow:hidden;background:#241C33;border-radius:22px;
+  padding:18px 116px 18px 18px;margin-top:12px;box-shadow:0 14px 34px -26px rgba(21,19,32,.5)}
+.season-hero .tag{background:var(--apricot);color:#241C33}
+.season-hero h3{font-size:23px;color:#FBF3E7;margin-top:10px}
+.season-hero .sub{color:#C9BFE0;margin-top:6px}
+.season-ghost{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:86px;height:86px}
+.season-ghost svg{width:100%;height:100%;display:block;animation:avBob 4.1s ease-in-out infinite}
+.season-ghost .eyes{transform-box:fill-box;transform-origin:50% 50%;animation:avBlink 6.4s ease-in-out infinite;animation-delay:2s}
+@media (prefers-reduced-motion:reduce){.season-ghost svg,.season-ghost .eyes{animation:none}}
 .club.season-challenge{display:grid;grid-template-columns:48px minmax(0,1fr);gap:12px;align-items:start;
   border:0;width:100%;text-align:left;font:inherit;cursor:pointer}
 .season-open{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:850;color:var(--mute)}.season-open b{font-size:18px;line-height:.6;color:var(--ink);font-family:var(--head)}
@@ -6049,8 +6060,17 @@ async function renderClubs() {
         <div class="pr"><b>${n}</b> logged${medal ? ` · ${medal.name} earned` : ""}</div>
         <div class="season-haul">${SEASON_MEDALS.map(m => `<span class="${n >= m.at ? "on" : ""}" title="${m.name} · ${m.at}">${m.icon}</span>`).join("")}</div></div></button>`;
   }).join("");
-  out.innerHTML = `<div class="card"><div class="h"><span>${esc(season.name)}</span><span class="tag dim">${esc(phase.text)}</span></div>
-      <p class="sub" style="margin-top:0">Horror-tagged logs only. Pick a challenge to see what to start with.</p></div>${cards}
+  out.innerHTML = `<div class="season-hero">
+      <span class="tag">Public season</span>
+      <h3>${esc(season.name)}</h3>
+      <p class="sub">${esc(phase.text)} · Horror-tagged logs only. Pick a challenge to see what to start with.</p>
+      <span class="season-ghost" aria-hidden="true"><svg viewBox="0 0 100 100"><g transform="rotate(2 50 54)">
+        <path d="M18 46a32 32 0 0 1 64 0v30q-8 10-16 0t-16 0t-16 0t-16 0z" fill="#8FD3FF"/>
+        <path d="M50 14a32 32 0 0 1 32 32H18a32 32 0 0 1 32-32z" fill="#B1E0FF"/>
+        <path d="M82 46v30q-8 10-16 0V46a14 14 0 0 0-8-13 32 32 0 0 1 24 13z" fill="#75ADD1"/>
+        <g class="eyes" fill="#151320"><rect x="40" y="44" width="7" height="20" rx="3.5"/><rect x="55" y="42" width="7" height="22" rx="3.5"/></g>
+      </g></svg></span>
+    </div>${cards}
     <div class="card"><div class="h"><span>Night Owl</span></div>
       <p class="sub" id="seasonRank" style="margin-top:0">${phase.key === "upcoming" ? "The top 10% mark opens with the season. Log at least three qualifying titles to be eligible." : "Checking the current top 10%…"}</p></div>`;
   $$('[data-season-challenge]', out).forEach(row => row.onclick = () => openSeasonChallenge(season.challenges.find(c => c.id === row.dataset.seasonChallenge)));
