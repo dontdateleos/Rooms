@@ -1065,7 +1065,7 @@ body.demo header{padding-top:34px}
 .searchline .clearsearch{flex:none;width:auto;padding:9px 12px;font-size:12px}
 .roomactions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
 .roomactions .btn{width:100%;padding:11px 12px;font-size:14px}
-.room-manage{margin-top:10px}.room-manage>button{border:0;background:none;padding:0;cursor:pointer;font:inherit}.room-manage-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}.room-manage-actions[hidden]{display:none}.room-manage-actions .btn{padding:10px 11px;font-size:13px}.room-manage-actions .btn.quiet{grid-column:1/-1}.room-streak{display:flex;align-items:center;gap:7px;margin-top:10px;padding:8px 10px;background:var(--cream2);border-radius:12px;color:var(--mute);font-size:12px;font-weight:750}.room-streak i{display:inline-grid;place-items:center;width:19px;height:19px;border-radius:50%;background:var(--mint);color:var(--ink);font-style:normal;font-size:12px}.library-filterbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px}.library-filterbar .sub{margin:0;min-width:0}.library-filterbar .btn{width:auto;white-space:nowrap;padding:9px 12px;font-size:12px}.filter-sheet .chips{margin-top:8px}.filter-sheet .lbl{margin-top:16px}.rec-empty{padding:4px 0}.rec-empty .stack{margin-top:12px}
+.room-manage{margin-top:10px}.room-manage>button{border:0;background:none;padding:0;cursor:pointer;font:inherit}.room-manage-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}.room-manage-actions[hidden]{display:none}.room-manage-actions .btn{padding:10px 11px;font-size:13px}.room-manage-actions .btn.quiet{grid-column:1/-1}.room-streak{display:flex;align-items:center;gap:7px;margin-top:10px;padding:8px 10px;background:var(--cream2);border-radius:12px;color:var(--mute);font-size:12px;font-weight:750}.room-streak i{display:inline-grid;place-items:center;width:19px;height:19px;border-radius:50%;background:var(--mint);color:var(--ink);font-style:normal;font-size:12px}.rec-empty{padding:4px 0}.rec-empty .stack{margin-top:12px}
 .demoHint{margin-top:8px;color:var(--mute);font-size:12px;font-weight:600;text-align:center}
 .roomhead{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .roomhead .h{flex:1;min-width:0}
@@ -1507,9 +1507,14 @@ const DETAIL = {
       credits:{ creator:cr, writer:cr, director:crewName(d.credits,"Director"), dp:crewName(d.credits,"Director of Photography"), composer:crewName(d.credits,"Original Music Composer"),
         cast:(d.credits?.cast||[]).slice(0,4).map(p=>p.name).join(", ") } }; },
   async book(raw) { try { const d = await ol(`/works/${raw}.json`); return { meta:{ genres:(d.subjects||[]).slice(0,4) } }; } catch { return {}; } },
-  async game(raw) { try { const [g] = await igdb("games", `where id = ${+raw}; fields name,genres.name,involved_companies.company.name,involved_companies.developer;`);
+  async game(raw) { try { const [g] = await igdb("games", `where id = ${+raw}; fields name,genres.name,themes.name,involved_companies.company.name,involved_companies.developer;`);
     const dev = (g?.involved_companies||[]).find(c=>c.developer)?.company?.name || g?.involved_companies?.[0]?.company?.name || "";
-    return { creator:dev, meta:{ genres:(g?.genres||[]).map(x=>x.name) }, credits:{ studio:dev } }; } catch { return {}; } }
+    /* IGDB has no "Horror" genre — it's a theme there, alongside Survival, Fantasy,
+       Sci-fi and the like — so a genre-only fetch could never have found a horror game.
+       Themes are merged in with genres rather than kept apart: they answer the same
+       question ("what kind of game is this") everywhere the app shows them. */
+    const genres = [...new Set([...(g?.genres||[]).map(x=>x.name), ...(g?.themes||[]).map(x=>x.name)])];
+    return { creator:dev, meta:{ genres }, credits:{ studio:dev } }; } catch { return {}; } }
 };
 function peopleOf(w) { const c = w.credits || {}, out = [];
   for (const [key,label] of [["director","director"],["creator","made by"],["author","author"],["writer","writer"],["studio","studio"],["dp","cinematographer"],["editor","editor"],["composer","composer"]])
@@ -1565,6 +1570,7 @@ function makeLocalSb(seed) {
   const from = t => { const st = { eqs:[], ins:null, up:null, del:false, upsert:null, sorts:[], lim:0, single:false }; const b = {};
     b.select = cols => { st.sel = String(cols || ""); return b; }; b.eq = (k,v) => { st.eqs.push([k,v]); return b; }; b.in = (k,vs) => { st.eqs.push([k,new Set(vs)]); return b; };
     b.neq = (k,v) => { st.eqs.push([k, { not:v }]); return b; };
+    b.gte = (k,v) => { st.eqs.push([k, { gte:v }]); return b; }; b.lte = (k,v) => { st.eqs.push([k, { lte:v }]); return b; };
     /* postgrest's or() is a string of its own filters; only the eq form is used here */
     b.ilike = (k,v) => { st.eqs.push([k, { like:String(v).replace(/%/g,"").toLowerCase() }]); return b; };
     b.or = expr => { st.or = String(expr).split(",").map(x => x.split(".")).filter(x => x[1] === "eq")
@@ -1575,6 +1581,8 @@ function makeLocalSb(seed) {
       const match = r => st.eqs.every(([k,v]) => v instanceof Set ? v.has(r[k])
           : (v && typeof v === "object" && "not" in v) ? r[k] !== v.not
           : (v && typeof v === "object" && "like" in v) ? String(r[k]||"").toLowerCase().includes(v.like)
+          : (v && typeof v === "object" && "gte" in v) ? String(r[k]||"") >= String(v.gte)
+          : (v && typeof v === "object" && "lte" in v) ? String(r[k]||"") <= String(v.lte)
           : r[k] === v)
         && (!st.or || st.or.some(([k,v]) => String(r[k]) === v));
       let out;
@@ -1631,6 +1639,37 @@ function makeLocalSb(seed) {
           .filter(Boolean).sort();
         return Promise.resolve({ data:[{ name:r.name, members:ids.length,
           logged:db.entries.filter(e => ids.includes(e.user_id) && !e.part).length, handles:hs }], error:null }); }
+      /* v27, doing here what it does there: exact, then starts-with, then contains,
+         then a bigram-overlap stand-in for trigram similarity. Ranked and limited on
+         this side of the wire, same as the real function. */
+      if (name === "find_people") { const t = lc(String(args.p_q || "").trim().replace(/^@/, ""));
+        if (t.length < 2) return Promise.resolve({ data:[], error:null });
+        /* pg_trgm's similarity(), close enough to matter: pad two spaces front, one
+           back, take every three-character window, and divide what's shared by what's
+           in either — not by what's summed, which is the mistake that made "mo" read
+           as a near match for "morgan" the first time this was written. A two-letter
+           handle has three trigrams to a six-letter word's seven; sharing two of them
+           is a coincidence of being a prefix, not closeness, and the union-based ratio
+           is what tells those apart. */
+        const sim = (a, b) => { const grams = w => { const p = "  " + w + " ", g = new Set();
+            for (let i = 0; i < p.length - 2; i++) g.add(p.slice(i, i+3)); return g; };
+          const A = grams(a), B = grams(b); let shared = 0;
+          for (const g of A) if (B.has(g)) shared++;
+          const union = A.size + B.size - shared;
+          return union ? shared / union : 0; };
+        /* find_people excludes anybody apart_from() would — mutual blocking, either
+           direction — the same as every other read the real function is guarded by */
+        const meId = db.profile?.id;
+        const apart = pid => (db.blocks || []).some(b =>
+          (b.blocker === meId && b.blocked === pid) || (b.blocker === pid && b.blocked === meId));
+        const all = [...(db.profile ? [db.profile] : []), ...db.profiles].filter(p => p.id !== meId && !apart(p.id));
+        const rows = all.map(p => { const h = lc(p.handle || "");
+            const score = (h === t ? 3 : h.startsWith(t) ? 2 : h.includes(t) ? 1 : 0) + sim(h, t);
+            return { p, h, score }; })
+          .filter(x => x.h.includes(t) || sim(x.h, t) > 0.25)
+          .sort((a,b) => b.score - a.score || a.p.handle.length - b.p.handle.length || a.p.handle.localeCompare(b.p.handle))
+          .slice(0, Math.max(1, Math.min(args.p_limit || 20, 50)));
+        return Promise.resolve({ data:rows.map(x => ({ id:x.p.id, handle:x.p.handle, bio:x.p.bio||"", avatar:x.p.avatar||null, score:x.score })), error:null }); }
       if (name === "create_room") { if (db.room_members.filter(m => m.user_id === db.profile.id).length >= 3) return Promise.resolve({ data:null, error:new Error("You can be in up to three rooms. Leave a room first.") }); const r = { id:uid(), name:args.p_name, code:Math.random().toString(36).slice(2,8), created_at:now() }; db.rooms.push(r); db.room_members.push({ room_id:r.id, user_id:db.profile.id }); save(); return Promise.resolve({ data:r, error:null }); }
       if (name === "join_room") return Promise.resolve({ data:null, error:new Error("joining a room needs the hosted setup") });
       /* the local mock has no auth user to delete, but it can do the same thing to the
@@ -3397,7 +3436,11 @@ function roomMoments(entries) {
     const rows = [...people.values()].sort(newestFirst), latest = rows[0];
     out.push({ kind:"together", workId, people:rows, at:latest.created_at || latest.rated_on });
   }
+  /* the same 7-day cutoff as the crossed-paths loop above: without it a handover you
+     logged months ago would sit in "Room moments" forever, never bumped out because
+     nothing dates it, until something newer happened to fill its slot */
   for (const e of entries.filter(e => e.user_id === me.id)) {
+    if (String(e.created_at || e.rated_on || "").slice(0,10) < cutoff) continue;
     const hand = cameFrom(e.work_id); if (!hand) continue;
     out.push({ kind:"handover", workId:e.work_id, hand, at:e.created_at || e.rated_on });
   }
@@ -3552,8 +3595,31 @@ function handleMatch(handle, query) {
   const d = handleDistance(h, q), allowance = Math.max(1, Math.floor(q.length / 3));
   return d <= allowance ? 60 + d * 10 + Math.abs(h.length - q.length) : Infinity;
 }
+/* Ranking who nearly matches only works if the ranking runs where the rows are. The
+   first version of this fetched the whole profiles table onto the device on every
+   keystroke — wrong twice over: past a few hundred users it silently gets an arbitrary
+   slice with no ORDER BY, so most people become unfindable with no sign anything broke,
+   and it hands the entire directory (handle, bio, avatar) to anyone who opens the sheet.
+   v27 does the ranking in the database; without it, ask only for what was typed (bounded,
+   ordered by nothing this device controls) and rank that bounded set locally instead of
+   the whole table. */
+async function findPeople(v) {
+  const t = String(v || "").trim().replace(/^@/, "");
+  if (!behind.has("v27")) {
+    try { return (await q(sb.rpc("find_people", { p_q:t, p_limit:20 }))).filter(r => r.id !== me.id); }
+    catch (e) { if (!missingBit(e)) throw e;
+      needs("v27", "finding somebody is an exact match and the closest are worked out here"); }
+  }
+  const grab = async pat => { try {
+      return await q(sb.from("profiles").select("id,handle,bio,avatar").ilike("handle", pat).limit(40));
+    } catch { return []; } };
+  let rows = await grab(`%${t}%`);
+  if (!rows.length && t.length >= 3) rows = await grab(`%${t.slice(0, Math.ceil(t.length / 2))}%`);
+  return rows.filter(r => r.id !== me.id)
+    .map(r => ({ r, score:handleMatch(r.handle, t) })).filter(x => Number.isFinite(x.score))
+    .sort((a,b) => a.score - b.score || a.r.handle.localeCompare(b.r.handle)).slice(0,20).map(x => x.r);
+}
 function openFind() {
-  let allProfiles = null;
   openSheet(`<h3>Find someone</h3><p class="sub">By handle. Everyone in Rooms is findable —
       what they've logged still follows the same rules it always did.</p>
     <div class="searchline"><input id="findQ" type="search" placeholder="handle" autocapitalize="none" autocorrect="off"><button type="button" class="btn ghost clearsearch" id="findClear">Clear</button></div>
@@ -3567,19 +3633,20 @@ function openFind() {
     if (v.length < 2) { res.innerHTML = ""; msg.textContent = ""; return; }
     msg.textContent = "Looking";
     findT = setTimeout(async () => {
-      try { if (!allProfiles) allProfiles = await q(sb.from("profiles").select("id,handle,bio,avatar").limit(500)); }
-      catch (err) { msg.textContent = err.message; return; }
-      const rows = allProfiles.filter(r => r.id !== me.id)
-        .map(r => ({ r, score:handleMatch(r.handle, v) })).filter(x => Number.isFinite(x.score))
-        .sort((a,b) => a.score - b.score || a.r.handle.localeCompare(b.r.handle)).slice(0,20).map(x => x.r);
+      let rows = [];
+      try { rows = await findPeople(v); } catch (err) { msg.textContent = err.message; return; }
       if ($("#findRes") !== res) return;
       msg.textContent = "";
+      /* If nothing matched what was typed exactly, say so over the near ones rather
+         than letting somebody read the first row as the person they were looking for. */
+      const t = lc(v), spot = rows.some(p => lc(p.handle).includes(t));
       res.innerHTML = rows.length
-        ? `<div class="card">${rows.map(p => `<div class="twin" data-prof="${esc(p.id)}" style="cursor:pointer">${avatar(p)}
+        ? `${spot ? "" : `<p class="sub" style="margin-top:10px">Nobody is called “${esc(v)}”. The closest:</p>`}
+          <div class="card">${rows.map(p => `<div class="twin" data-prof="${esc(p.id)}" style="cursor:pointer">${avatar(p)}
             <div class="t"><b>${esc(p.handle)}</b><small>${esc(p.bio || "")}</small></div>
             <button class="chip ${isFollowing(p.id) ? "on" : ""}" data-fnd="${esc(p.id)}">${
               isFollowing(p.id) ? "Following" : "Follow"}</button></div>`).join("")}</div>`
-        : `<p class="empty">Nobody called “${esc(v)}”.</p>`;
+        : `<p class="empty">Nobody called “${esc(v)}”, or anything like it.</p>`;
       settleIn(res, ".twin");
       $$("[data-fnd]", res).forEach(b => b.onclick = async ev => { ev.stopPropagation();
         const id = b.dataset.fnd, on = !isFollowing(id); b.disabled = true;
@@ -3632,7 +3699,7 @@ function slipHTML(e, opts = {}) { const w = remember(e.works) || works[e.work_id
     ${e.note?`<div class="q${String(e.note).length > 210 ? " clip" : ""}">“${esc(e.note)}”</div>${String(e.note).length > 210 ? `<button class="more" data-more="${e.id}">More</button>` : ""}`:""}
     ${(() => { const t = together(e); return t ? `<div class="loved" style="margin-top:10px"><span class="together">◆ ${t}</span></div>` : ""; })()}
     ${e.loved?.length?`<div class="loved">${e.loved.slice(0,4).map(k => `<span>${esc(k.startsWith("person:")?lc(k.slice(7)):k)}</span>`).join("")}</div>`:""}
-    <div class="foot"><div class="acts">${opts.roomId ? `<button class="chip" data-pin-review="${e.id}" data-room-id="${esc(opts.roomId)}" aria-label="Pin this review">☆ Pin</button>` : ""}${mine ? `<button class="chip" data-edit-review="${e.id}">Edit</button><button class="chip" data-delete-review="${e.id}">Delete</button>` : `<button data-like="${e.id}" class="lk ${same?"on":""}" aria-pressed="${same}" aria-label="${same ? "Liked — tap to take it back" : "Like this"}">${heartSVG(same)}</button>`
+    <div class="foot"><div class="acts">${mine ? `<button class="chip" data-edit-review="${e.id}">Edit</button><button class="chip" data-delete-review="${e.id}">Delete</button>` : `<button data-like="${e.id}" class="lk ${same?"on":""}" aria-pressed="${same}" aria-label="${same ? "Liked — tap to take it back" : "Like this"}">${heartSVG(same)}</button>`
       }${mine && e.room_only ? `<span class="tag dim">room only</span>` : ""}</div>${stars(e.score,"sm")}</div>
     <div class="likes" data-likes="${e.id}">${(() => { const l = likeLine(e); return l ? `<span>${l}</span>` : ""; })()}</div></div>`; }
 function wireSlips(el, es) { const by = Object.fromEntries(es.map(e => [e.id, e]));
@@ -3643,7 +3710,6 @@ function wireSlips(el, es) { const by = Object.fromEntries(es.map(e => [e.id, e]
     const qd = b.previousElementSibling; qd.classList.toggle("clip"); b.textContent = qd.classList.contains("clip") ? "More" : "Less"; });
   $$("[data-work]", el).forEach(x => x.onclick = () => openWork(x.dataset.work));
   $$("[data-prof]", el).forEach(x => x.onclick = () => openProfile(x.dataset.prof));
-  $$('[data-pin-review]', el).forEach(b => b.onclick = async () => { if (DEMO) { say('Pins are available in the connected app; demo changes are preview-only.'); return; } b.disabled = true; try { const { data, error } = await sb.rpc('toggle_room_pin', { p_room: b.dataset.roomId, p_entry: b.dataset.pinReview }); if (error) throw error; b.textContent = data ? '★ Pinned' : '☆ Pin'; } catch (err) { oops(err, "Couldn't update the pin"); } finally { b.disabled = false; } });
   /* It used to be called Same, lived only in the room, and re-rendered the whole feed
      on every tap — which rebuilt the page under your thumb and threw away where you
      were reading. It now appears wherever a review does, and only the button it was,
@@ -3775,13 +3841,17 @@ async function renderRoomFeed(fb, R) {
         <button class="btn blue" id="aloneInvite">Send the invite link</button>
         ${showcase()}</div>` : ""}
       ${roomPrompt()}
-      ${rooms.length>1?`<div class="chips">${rooms.map(r => `<button class="chip ${r.id===R.id?"on":""}" data-rc="${r.id}">${esc(r.name)}</button>`).join("")}</div>`:""}<div class="room-manage"><button id="roomManage" aria-expanded="false"><span class="chip">Room options</span></button><div class="room-manage-actions" id="roomManageActions" hidden><button class="btn soft" id="newRoom">Open another room</button><button class="btn ghost" id="joinRoom">Join with a code</button><button class="btn quiet" id="leaveRoom">Leave this room</button></div></div>${DEMO ? `<p class="demoHint">Demo mode: room changes are preview-only.</p>` : ""}<p class="msg" id="roomMsg"></p></div>
-    ${roomFilter === "activity" ? roomMomentsHTML(moments, freshMoments) : ""}
+      <div class="room-manage"><button id="roomManage" aria-expanded="false"><span class="chip">Room options</span></button><div class="room-manage-actions" id="roomManageActions" hidden><button class="btn soft" id="newRoom">Open another room</button><button class="btn ghost" id="joinRoom">Join with a code</button><button class="btn quiet" id="leaveRoom">Leave this room</button></div></div>${DEMO ? `<p class="demoHint">Demo mode: room changes are preview-only.</p>` : ""}<p class="msg" id="roomMsg"></p></div>
+    ${/* Cross-paths and handover moments are their own thing, not one of the three ways
+         of filtering "what the room said" — showing them only under the Activity filter
+         meant the freshness bookkeeping above (which runs on every render, filter or no)
+         marked a moment seen before it was ever shown. */""}
+    ${roomMomentsHTML(moments, freshMoments)}
     <div class="tagrow" id="talkTop" style="margin:18px 0 8px"><span class="lbl" style="margin:0">What the room said</span><span class="tag dim">newest first</span></div>${(() => { if (!roomEntries.length && !(roomFilter === "activity" && moments.length)) return blank("var(--pink)","“",roomFilter === "reviews" ? "No reviews yet" : roomFilter === "activity" ? "No activity yet" : "Nothing said yet",roomFilter === "reviews" ? "Reviews with a note or reaction will appear here." : roomFilter === "activity" ? "Room activity without a written review will appear here." : "Log something and it lands here for the room to see.",[["talkAdd","Log something"]]);
       const since = lastSeen(); let shown = false;
       return roomEntries.map(e => { const isNew = e.user_id !== me.id && String(e.created_at) > since; let head = "";
         if (isNew && !shown) { shown = true; head = `<div class="newline">New since you were here</div>`; }
-        return head + slipHTML(e, { talk:true, roomId:R.id }); }).join(""); })()}
+        return head + slipHTML(e, { talk:true }); }).join(""); })()}
     ${pick ? `<div class="result"><small>Tonight's pick</small><b>${esc(pick.title)}</b><div class="stack" style="margin-top:10px"><button class="btn" id="pickLog">${K(pick.kind).verb} it</button></div></div>` : ""}
     ${split ? `<div class="room-split" data-cw="${esc(split.id)}"><b>A friendly argument</b><p><strong>${esc(works[split.id]?.title || "This one")}</strong> has the room divided — ${esc(split.hi.profiles?.handle || "someone")} gave it ${(split.hi.score/2).toFixed(1)}, while ${esc(split.lo.profiles?.handle || "someone")} gave it ${(split.lo.score/2).toFixed(1)}.</p><div class="scoreline"><span>${(split.lo.score/2).toFixed(1)}</span><i></i><span>${(split.hi.score/2).toFixed(1)}</span></div><button class="chip" style="margin-top:12px">See the scores</button></div>` : ""}
     <div class="card"><div class="h"><span>In competition</span><span class="tag dim">weighted</span></div>${comp.length ? compRows(comp) : blank("var(--butter)","%","No scores yet","Once two of you have rated the same thing, the agreement number appears here.",[["compAdd","Log something"]])}</div>
@@ -3811,7 +3881,10 @@ async function renderRoomFeed(fb, R) {
   paintRoomNow(R);
   ["talkAdd","compAdd"].forEach(id => { const el = $("#"+id); if (el) el.onclick = openAdd; });
   const promptLog = $("#roomPromptLog"); if (promptLog) promptLog.onclick = openAdd;
-  const promptLater = $("#roomPromptLater"); if (promptLater) promptLater.onclick = () => { P.roomPromptSeen = new Date().toISOString().slice(0,10); saveP(); $("#roomPrompt")?.remove(); };
+  /* today(), not toISOString: roomPrompt() compares against the local date, and a UTC
+     one drifts a day out of step with it for hours at a time in most timezones — which
+     read as "Later" not sticking, because tomorrow's local day was still today in UTC. */
+  const promptLater = $("#roomPromptLater"); if (promptLater) promptLater.onclick = () => { P.roomPromptSeen = today(); saveP(); $("#roomPrompt")?.remove(); };
   const ryc = $("#roomYearCard"); if (ryc) ryc.onclick = () => { const pal = roomPalmares(es);
     if (pal) openCuts("roomyear", { room:R, pal, year:String(new Date().getFullYear()) }, "Share the room's year"); };
   $$("[data-cw]", fb).forEach(x => x.onclick = () => openWork(x.dataset.cw));
@@ -4138,7 +4211,10 @@ function renderShelf() { if (cabView() === "cabinet") return renderCabinet();
     <input id="search" type="search" placeholder="Search film, TV, books, games" autocomplete="off" style="margin-top:12px">
     <div class="chips">${Object.keys(KINDS).map(k => `<button class="chip k ${P.kinds.includes(k)?"on":""}" data-sk="${k}">${K(k).label}</button>`).join("")}</div>
     <div class="msg" id="msg"></div><div id="results"></div>
-    ${all.length ? `<div class="library-filterbar"><p class="sub">${P.shelfFilter ? K(P.shelfFilter).plural : "Everything"}${P.when ? ` · ${P.when === "out" ? "out now" : P.when === "now" ? "in the middle of" : "coming soon"}` : ""}</p><button class="btn ghost" id="libraryFilters">Filters${P.shelfFilter || P.when ? " · on" : ""}</button></div>
+    ${all.length ? `<div class="chips" style="margin-top:12px">${[["","Everything"],...Object.keys(KINDS).filter(k=>counts[k]).map(k=>[k,K(k).plural+" · "+counts[k]])].map(([k,l]) => `<button class="chip ${P.shelfFilter===k?"on":""}" data-kf="${k}">${l}</button>`).join("")}</div>
+      ${soonCount || nowCount ? `<div class="chips">${[["","All"],["out","Out now"],
+        ...(nowCount ? [["now",`In the middle of · ${nowCount}`]] : []),
+        ...(soonCount ? [["soon",`Coming · ${soonCount}`]] : [])].map(([k,l]) => `<button class="chip ${(P.when||"")===k?"on":""}" data-wf="${k}">${l}</button>`).join("")}</div>` : ""}
       ${pickBar}
       <div class="grid" id="shelfGrid">${rows.map(w => { const soon = isSoon(w), n = nowOf(w.id);
         return `<div class="cell" data-cell="${esc(w.id)}"><div class="po ${logged(w.id)?"done":""} ${soon?"soon":""} ${n?"onit":""}" data-w="${esc(w.id)}">${cover(w,"")}<b>${esc(w.title)}</b>${tag(w.kind)}
@@ -4198,15 +4274,10 @@ function renderShelf() { if (cabView() === "cabinet") return renderCabinet();
   wireSearch();
   $$("[data-view]").forEach(b => b.onclick = () => { P.view = b.dataset.view; saveP(); renderShelf(); });
   if (P.picked && !logged(P.picked) && works[P.picked]) showResult(works[P.picked]); renderWaiting(); renderShelfRecs(); }
-function openLibraryFilters(counts, soonCount, nowCount) {
-  const kinds = [["", "Everything"], ...Object.keys(KINDS).filter(k => counts[k]).map(k => [k, `${K(k).plural} · ${counts[k]}`])];
-  const states = [["", "All"], ["out", "Out now"], ...(nowCount ? [["now", `In the middle of · ${nowCount}`]] : []), ...(soonCount ? [["soon", `Coming · ${soonCount}`]] : [])];
-  openSheet(`<div class="filter-sheet"><h3>Library filters</h3><p class="sub">Narrow the shelf without losing your place.</p><div class="lbl">Medium</div><div class="chips">${kinds.map(([k,l]) => `<button class="chip ${P.shelfFilter===k?"on":""}" data-lf-kind="${k}">${l}</button>`).join("")}</div><div class="lbl">Availability</div><div class="chips">${states.map(([k,l]) => `<button class="chip ${(P.when||"")===k?"on":""}" data-lf-when="${k}">${l}</button>`).join("")}</div><div class="stack"><button class="btn quiet" id="filterReset">Clear filters</button><button class="btn" id="filterDone">Done</button></div></div>`);
-  $$('[data-lf-kind]').forEach(b => b.onclick = () => { P.shelfFilter=b.dataset.lfKind; saveP(); closeSheet(); renderShelf(); });
-  $$('[data-lf-when]').forEach(b => b.onclick = () => { P.when=b.dataset.lfWhen; saveP(); closeSheet(); renderShelf(); });
-  $("#filterReset").onclick = () => { P.shelfFilter=""; P.when=""; saveP(); closeSheet(); renderShelf(); };
-  $("#filterDone").onclick = closeSheet;
-}
+/* openLibraryFilters is gone: it moved both filter rows behind a "Filters" button and
+   a sheet, which hid the counts and cost an extra tap to see what you were part-way
+   through — the shelf used to answer "what am I on right now" at a glance, and this
+   sheet made you go looking for it. The chips are back inline, above, where they were. */
 /* The shelf is where you decide what's next, so what your taste suggests belongs here and
    not only on your own profile page — the same recommendations, one tap from landing. It
    filters again on render rather than trusting the cache, so adding one makes it leave the
@@ -5791,9 +5862,14 @@ function openWholeLog() {
     <div class="stack"><button class="btn quiet" id="wlClose">Close</button></div>`);
   wireLog("wholeLog"); $("#wlClose").onclick = closeSheet; }
 
-/* ============ CLUBS ============ */
-async function renderClubsProgrammes() { const body = $("#clubsBody"), R = activeRoom();
-  P.clubTab = P.clubTab || "yours";
+/* ============ CLUBS ============
+   The full feature — a programme with a deadline, ballots, and open clubs anybody can
+   join — lives under the "Friend clubs" tab, alongside the public season. It renders
+   into whatever element the season screen hands it, so it owns none of the outer
+   heading or tabs; P.clubSub is its own yours/open toggle, kept apart from P.clubTab
+   (season vs. friend clubs) so the two screens don't fight over one preference. */
+async function renderFriendClubs(el) { const R = activeRoom();
+  P.clubSub = P.clubSub || "yours";
   const daysTo = d => d ? Math.ceil((new Date(d + "T12:00:00Z") - Date.now()) / 864e5) : null;
   const clubCard = (c, joined) => { const items = c.items || [], done = items.filter(id => logged(id)).length,
       pct = items.length ? Math.round(done/items.length*100) : 0, ks = [...new Set(items.map(kindOf))], d = daysTo(c.due);
@@ -5822,29 +5898,28 @@ async function renderClubsProgrammes() { const body = $("#clubsBody"), R = activ
 
   const yours = [...clubs, ...openClubs.filter(c => myClubIds.has(c.id))];
   const open = openClubs.filter(c => !myClubIds.has(c.id));
-  body.innerHTML = `<h2><span class="hl" style="background:var(--lilac)">Clubs</span></h2>
-    <p class="sub">A programme with a deadline. Yours are private to a room; open ones anybody can join.</p>
+  el.innerHTML = `<p class="sub">A programme with a deadline. Yours are private to a room; open ones anybody can join.</p>
     <div class="seg">${[["yours",`Yours${yours.length?" · "+yours.length:""}`],["open",`Open to everyone${open.length?" · "+open.length:""}`]].map(([k,l]) =>
-      `<button data-ct2="${k}" class="${P.clubTab===k?"on":""}">${l}</button>`).join("")}</div>
+      `<button data-ct2="${k}" class="${P.clubSub===k?"on":""}">${l}</button>`).join("")}</div>
     <div id="clubList"></div>
-    ${P.clubTab === "yours" ? `<div class="stack"><button class="btn soft" id="newClub">Start a club</button>${R ? "" : ""}</div>` : `<div class="stack"><button class="btn ghost" id="newOpenClub">Start one for everyone</button></div>`}`;
-  $$("[data-ct2]", body).forEach(b => b.onclick = () => { P.clubTab = b.dataset.ct2; saveP(); renderClubs(); });
+    ${P.clubSub === "yours" ? `<div class="stack"><button class="btn soft" id="newClub">Start a club</button>${R ? "" : ""}</div>` : `<div class="stack"><button class="btn ghost" id="newOpenClub">Start one for everyone</button></div>`}`;
+  $$("[data-ct2]", el).forEach(b => b.onclick = () => { P.clubSub = b.dataset.ct2; saveP(); renderClubs(); });
   const nc = $("#newClub"); if (nc) nc.onclick = () => openClubEditor(null, R ? "room" : "open");
   const noc = $("#newOpenClub"); if (noc) noc.onclick = () => openClubEditor(null, "open");
-  const el = $("#clubList"), list = P.clubTab === "yours" ? yours : open;
-  if (!list.length) { el.innerHTML = P.clubTab === "yours"
+  const list2 = $("#clubList"), list = P.clubSub === "yours" ? yours : open;
+  if (!list.length) { list2.innerHTML = P.clubSub === "yours"
     ? blank("var(--lilac)","◷","No clubs yet","Thirteen horrors before Halloween, every Le Guin, six games before winter. Start one for your room, or join an open one.",[["clubJoinOpen","See open clubs"]])
     : blank("var(--lilac)","◷","Nothing open right now","Open clubs are programmes anyone can join — a season, a director, a shared deadline. Start the first one.",[["clubStartOpen","Start one for everyone"]]);
-    const j = $("#clubJoinOpen"); if (j) j.onclick = () => { P.clubTab = "open"; saveP(); renderClubs(); };
+    const j = $("#clubJoinOpen"); if (j) j.onclick = () => { P.clubSub = "open"; saveP(); renderClubs(); };
     const so = $("#clubStartOpen"); if (so) so.onclick = () => openClubEditor(null, "open");
     return; }
-  el.innerHTML = list.map(c => clubCard(c, myClubIds.has(c.id))).join("");
+  list2.innerHTML = list.map(c => clubCard(c, myClubIds.has(c.id))).join("");
   requestAnimationFrame(paintBars);
-  $$("[data-c]", el).forEach(x => x.onclick = e => { if (e.target.closest("[data-join]")) return;
+  $$("[data-c]", list2).forEach(x => x.onclick = e => { if (e.target.closest("[data-join]")) return;
     openClub([...clubs, ...openClubs].find(c => c.id === x.dataset.c)); });
-  $$("[data-join]", el).forEach(b => b.onclick = async e => { e.stopPropagation();
+  $$("[data-join]", list2).forEach(b => b.onclick = async e => { e.stopPropagation();
     try { await q(sb.from("club_members").insert({ club_id:b.dataset.join, user_id:me.id })); await loadClubs(); renderClubs(); } catch (err) { alert(err.message); } });
-  revealIn(el);
+  revealIn(list2);
   /* who else is in each one */
   for (const c of list) { const people = await clubMembers(c.id); const box = $("#who-"+c.id); if (!box) continue;
     if (!people.length) { box.innerHTML = `<span class="more" style="margin-left:0">just you so far</span>`; continue; }
@@ -5880,7 +5955,10 @@ const SEASON_PICKS = [
 const seasonDate = e => String(e.created_at || e.rated_on || "").slice(0,10);
 const seasonKind = e => e.works?.kind || works[e.work_id]?.kind || kindOf(e.work_id);
 const seasonGenres = e => (e.works?.meta?.genres || works[e.work_id]?.meta?.genres || []).map(g => String(g).toLowerCase());
-const isSeasonHorror = e => seasonGenres(e).some(g => g === "horror" || g.includes("horror fiction"));
+/* Open Library doesn't have a "Horror" subject, it has "Horror tales", "Horror stories",
+   "Horror fiction", "Fiction, horror" — an exact match against "horror" only ever caught
+   the TMDB case. A plain substring covers all of them, films and TV included. */
+const isSeasonHorror = e => seasonGenres(e).some(g => g.includes("horror"));
 function seasonChallengeFor(e, season = HALLOWEEN_2026) {
   const d = seasonDate(e); if (!d || d < season.starts || d > season.ends || !isSeasonHorror(e)) return null;
   return season.challenges.find(c => c.kind === seasonKind(e)) || null;
@@ -5919,7 +5997,14 @@ function seasonPhase(season = HALLOWEEN_2026) {
 async function seasonRank(season = HALLOWEEN_2026) {
   if (seasonPhase(season).key === "upcoming") return null;
   try {
-    const rows = await q(sb.from("entries").select("user_id,work_id,created_at,rated_on,works(kind,meta)").limit(2000));
+    /* This used to pull the whole entries table with no ORDER BY and a flat limit — an
+       arbitrary slice past 2000 rows, silently wrong in whichever direction the database
+       happened to hand rows back. A season is a month long, so bound the fetch to the
+       month it's asking about: smaller, and an ordered slice is at least a consistent one
+       if a very large season ever does hit the limit. */
+    const rows = await q(sb.from("entries").select("user_id,work_id,created_at,rated_on,works(kind,meta)")
+      .gte("created_at", season.starts + "T00:00:00.000Z").lte("created_at", season.ends + "T23:59:59.999Z")
+      .order("created_at").limit(10000));
     const by = new Map();
     for (const e of rows) {
       if (!seasonChallengeFor(e, season)) continue;
@@ -5933,26 +6018,16 @@ async function seasonRank(season = HALLOWEEN_2026) {
   } catch { return { people:0, inTop:false }; }
 }
 async function renderClubs() {
-  const body = $("#clubsBody"), room = activeRoom();
+  const body = $("#clubsBody");
   if (!["season", "clubs"].includes(P.clubTab)) P.clubTab = "season";
   const season = HALLOWEEN_2026, phase = seasonPhase(season);
-  const friendCard = c => { const items = c.items || [], done = items.filter(id => logged(id)).length;
-    const pct = items.length ? Math.round(done/items.length * 100) : 0;
-    return `<div class="club" data-c="${esc(c.id)}"><div class="top"><span class="tag" style="background:var(--lilac)">${esc(c.label)}</span><span class="deadline">${c.due ? "ends " + when(c.due) : "rolling"}</span></div><b>${esc(c.name)}</b><div class="tr"><i style="width:${pct}%"></i></div><div class="pr"><b>${done}</b> of ${items.length} · friends in your room</div></div>`; };
   body.innerHTML = `<h2><span class="hl" style="background:var(--lilac)">Clubs</span></h2>
     <p class="sub">The current public season sits alongside the small clubs you make with friends.</p>
-    <div class="seg"><button data-season-tab="season" class="${P.clubTab === "season" ? "on" : ""}">Halloween</button><button data-season-tab="clubs" class="${P.clubTab === "clubs" ? "on" : ""}">Friend clubs${clubs.length ? " · " + clubs.length : ""}</button></div>
+    <div class="seg"><button data-season-tab="season" class="${P.clubTab === "season" ? "on" : ""}">Halloween</button><button data-season-tab="clubs" class="${P.clubTab === "clubs" ? "on" : ""}">Friend clubs${clubs.length + openClubs.length ? " · " + (clubs.length + openClubs.length) : ""}</button></div>
     <div id="seasonContent"></div>`;
   $$('[data-season-tab]', body).forEach(b => b.onclick = () => { P.clubTab = b.dataset.seasonTab; saveP(); renderClubs(); });
   const out = $("#seasonContent");
-  if (P.clubTab === "clubs") {
-    out.innerHTML = room ? `<div id="friendClubList">${clubs.length ? clubs.map(friendCard).join("") : blank("var(--lilac)","◷","No friend clubs yet","Make a shared programme for this room — a director, a series, or a list you want to get through together.",[])}</div><div class="stack"><button class="btn soft" id="newFriendClub">Start a club</button></div>`
-      : blank("var(--lilac)","◷","Clubs live in a room","Open or join a room first, then start a small shared programme with the people in it.",[["clubRoom","Open a room"]]);
-    $$("[data-c]", out).forEach(x => x.onclick = () => openClub(clubs.find(c => c.id === x.dataset.c)));
-    const nc = $("#newFriendClub"); if (nc) nc.onclick = () => openClubEditor(null, "room");
-    const cr = $("#clubRoom"); if (cr) cr.onclick = () => switchTab("doors");
-    revealIn(out); return;
-  }
+  if (P.clubTab === "clubs") { await renderFriendClubs(out); return; }
   const cards = season.challenges.map(c => { const entries = seasonEntries(c), n = entries.length, medal = seasonMedal(n), pickCount = SEASON_PICKS.filter(([kind]) => kind === c.kind).length;
     const pct = Math.min(100, Math.round(n / SEASON_MEDALS.at(-1).at * 100));
     return `<button class="season-challenge" type="button" data-season-challenge="${c.id}"><div class="season-object ${c.kind}">${c.icon}</div><div><h3>${esc(c.name)}</h3><p>${esc(c.copy)}</p><span class="season-open">${pickCount} ${pickCount === 1 ? "pick" : "picks"} <b>›</b></span><div class="season-progress"><i style="width:${pct}%"></i></div><div class="season-tier"><span><b>${n}</b> logged</span><span>${medal ? medal.name + " earned" : "Bronze at 1"}</span></div><div class="season-haul">${SEASON_MEDALS.map(m => `<span class="${n >= m.at ? "on " + m.tier : ""}" title="${m.name} · ${m.at}">${m.icon}</span>`).join("")}</div></div></button>`;
@@ -5966,16 +6041,8 @@ async function renderClubs() {
   revealIn(out);
 }
 
-function renderClubsOld() { const body = $("#clubsBody"), R = activeRoom();
-  if (!R) { body.innerHTML = `<h2><span class="hl" style="background:var(--lilac)">Clubs</span></h2>` +
-    blank("var(--lilac)","◷","Clubs live in a room","A programme with a deadline: thirteen horrors before Halloween, every Le Guin, six games before winter. Open a room and start one.",[["clubsToRoom","Open a room"]]);
-    $("#clubsToRoom").onclick = () => { switchTab("doors"); setTimeout(() => $("#newRoom")?.click(), 400); }; return; }
-  body.innerHTML = ``; const el = $("#clubList");
-  if (!clubs.length) { el.innerHTML = blank("var(--lilac)","◷","No clubs yet","A programme with a deadline: thirteen horrors before Halloween, every Le Guin, six games before winter.",[["clubStart","Start one"]]);
-    $("#clubStart").onclick = () => openClubEditor(); return; }
-  el.innerHTML = clubs.map(c => { const items = c.items||[], done = items.filter(id => logged(id)).length, pct = items.length ? Math.round(done/items.length*100) : 0; const ks = [...new Set(items.map(kindOf))];
-    return `<div class="club" data-c="${c.id}"><div class="top"><span class="tag" style="background:var(--lilac)">${esc(c.label)}</span><span class="tag dim">${c.due ? "ends " + when(c.due) : "rolling"}</span></div><b>${esc(c.name)}</b><div class="tr"><i style="width:${pct}%"></i></div><div class="pr">${done} of ${items.length}${pct===100?" · finished":""} ${ks.map(tag).join(" ")}</div></div>`; }).join("");
-  $$("[data-c]", el).forEach(x => x.onclick = () => openClub(clubs.find(c => c.id === x.dataset.c))); }
+/* renderClubsOld is gone: it was already dead before the season screen arrived,
+   superseded twice over, and nothing routed to it. */
 async function openClub(c) {
   const owner = sb.__local || !c.created_by || c.created_by === me.id;
   const joined = myClubIds.has(c.id), isOpen = c.scope === "open";
@@ -6130,7 +6197,9 @@ function openClubEditor(existing = null, scope = "room") { const c = existing
       else { const row = await q(sb.from("clubs").insert({ room_id: c.scope === "open" ? null : (activeRoom()?.id || null), scope:c.scope,
           name:c.name, label:c.label, due:c.due, items:c.items, created_by:me.id }).select().single());
         if (c.scope === "open" && row?.id) { try { await q(sb.from("club_members").insert({ club_id:row.id, user_id:me.id })); } catch (err) { oops(err, "Couldn't join the club"); } } }
-      P.clubTab = c.scope === "room" ? "clubs" : "season"; saveP();
+      /* whatever scope you made it in, a club lives under Friend clubs — the season
+         tab is the public Halloween programme and nothing you create belongs there */
+      P.clubTab = "clubs"; P.clubSub = c.scope === "open" ? "open" : "yours"; saveP();
       await loadClubs(); closeSheet(); renderClubs(); } catch (e) { $("#cMsg").textContent = e.message; } }; }
 
 /* numbers that mean a quantity count up to it */
@@ -7288,7 +7357,9 @@ window.__rooms = { pullRefresh, openFind, setFollow, isFollowing, get follows(){
   setSkin:k => { P.cardSkin = k; saveP(); }, get deckItems(){return deckItems},
   addToShelf, __isSoon:isSoon, __list:activeList,
   marksFor, openPaid, COMET, loadFounders, get founderIds(){return founderIds},
-  CAB_SORTS, CAB_ORDER, cabinetRows, cabSort, CHART_WINDOWS, chartSince, chartWin, chartFor, competition };
+  CAB_SORTS, CAB_ORDER, cabinetRows, cabSort, CHART_WINDOWS, chartSince, chartWin, chartFor, competition,
+  findPeople, handleMatch, handleDistance, deleteReview, seasonRank, seasonPhase, seasonEntries,
+  isSeasonHorror, seasonChallengeFor, renderClubs, renderFriendClubs };
 
 /* ============ boot ============ */
 if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("./sw.js", { scope: "./" }).catch(() => {});

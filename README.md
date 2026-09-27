@@ -57,7 +57,7 @@ The service-role key must never go near this repo.
 |---|---|
 | `index.html` | the whole app — markup, styles, logic, the card renderer, the avatar generator |
 | `site.html` | the marketing page |
-| `schema.sql` | Postgres tables, policies and RPCs, v1 through v14 |
+| `schema.sql` | Postgres tables, policies and RPCs, v1 through v28 — one file, run start to finish |
 | `worker.js` | Cloudflare Worker: TMDB proxy, Open Library proxy, IGDB OAuth |
 | `manifest.webmanifest`, `sw.js`, `icons/` | what makes it installable |
 
@@ -109,25 +109,27 @@ the TMDB API but is not endorsed or certified by TMDB. Books are from Open Libra
 games from IGDB. None of those are covered by the above.
 
 
-## Three-room limit update
+## Recent additions
 
-People can create or join up to three rooms in total. Existing memberships are retained;
-people already in three or more rooms must leave one before adding another. Joining a
-room they already belong to remains allowed.
+There is no `migrations/` folder — `schema.sql` is the only file to run, cumulative and
+idempotent, so re-running the whole thing against a database that already has some of
+it applied is always safe.
 
-For an existing Supabase project, run `migrations/026-room-limit.sql` in the SQL editor
-before deploying this update. New projects can run the complete `schema.sql` as usual.
-The database trigger serializes membership changes per person and enforces the limit
-for both room creation and joining, including invite links.
+**Up to three rooms.** People can create or join up to three rooms in total. Existing
+memberships are retained; people already in three or more must leave one before adding
+another. Joining a room they already belong to still works past the limit. Enforced by
+a trigger on `room_members` (v26) that locks the member's profile row first, so
+simultaneous create/join requests can't race past three.
 
-Your review cards now include Edit and Delete buttons. Deleting asks for confirmation
-and removes the entry and its likes. “What the room said” appears first beneath the
-room header, ahead of picks, competition and the room's year.
+**Edit and Delete on your own reviews**, wherever a review appears — the room feed, a
+profile, the everyone feed — not only from the work page.
 
-## Room quality update
+**Finding somebody ranks by closeness** rather than requiring an exact substring, and
+does the ranking in the database (`find_people`, v27) rather than sending the whole
+directory to whoever opens the search sheet.
 
-Run `migrations/027-room-quality.sql` after the room-limit migration for existing
-Supabase projects. It adds durable invite status, pinned room entries, room activity,
-and per-room notification preferences for the room switcher and activity tools.
-It also exposes `toggle_room_pin`, `record_room_activity`, `room_remove_member`,
-and `room_transfer_owner` for connected room controls.
+**Provisioned, not yet wired up (v28):** durable invite status, a room member pinning an
+entry, a room activity log, and per-room notification preferences — `room_invites`,
+`room_pins`, `room_activity`, `room_notification_preferences`, and the functions
+`toggle_room_pin`, `record_room_activity`, `room_remove_member`, `room_transfer_owner`.
+The database side is in place; no screen calls into it yet.
