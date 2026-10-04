@@ -419,6 +419,14 @@ button:focus-visible,.linky:focus-visible{outline:3px solid var(--blue);outline-
 .tray>.lbl{margin:0 0 8px;display:flex;justify-content:space-between;align-items:baseline}
 .tray>.lbl em{font-family:var(--body);font-style:normal;font-weight:600;font-size:11px;
   letter-spacing:0;text-transform:none;color:var(--mute)}
+/* loud exactly once per shelf, not on every token: a splatter in the app's own four
+   kind-colours, sitting behind the name instead of a stock category label. Which marks,
+   where, and in what colour all come from splashFor() below, keyed off the shelf's own
+   kind — so Films and Games get a different throw, not the same three stamps recoloured */
+.tray>.lbl.splash{position:relative}
+.tray>.lbl.splash span{position:relative;z-index:1;font-family:var(--head);font-weight:900;
+  font-size:16px;letter-spacing:-.01em;text-transform:none;color:var(--ink)}
+.tray>.lbl.splash .bl{position:absolute;z-index:0;opacity:.62;pointer-events:none}
 .run{display:flex;align-items:flex-end;gap:10px;overflow-x:auto;padding:2px 2px 6px;
   scrollbar-width:none;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity}
 .run::-webkit-scrollbar{display:none}
@@ -446,28 +454,30 @@ button:focus-visible,.linky:focus-visible{outline:3px solid var(--blue);outline-
   animation:tokBob 3.6s ease-in-out infinite;animation-delay:calc(var(--t, 0s) * -1);
   animation-play-state:paused}
 .tok.live .rise{animation-play-state:running}
-@keyframes tokBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+@keyframes tokBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
 .tok .fc{position:absolute;overflow:hidden;backface-visibility:hidden;background:var(--cream2)}
 .tok .fc img{width:100%;height:100%;object-fit:cover;display:block;opacity:0;transition:opacity .3s}
 .tok .fc img.ok{opacity:1}
 .tok .fc svg{display:block;width:100%;height:100%}
-.tok .plinth{position:absolute;border-radius:50%;opacity:.72;
-  box-shadow:inset 0 2px 2px rgba(255,255,255,.42),0 7px 12px -7px rgba(21,19,32,.48);
-  transition:opacity .28s ease,transform .28s cubic-bezier(.2,.9,.25,1),box-shadow .28s ease}
-.tok .halo{position:absolute;border-radius:50%;border:2px solid var(--ink);opacity:.38}
+/* the rating rides on the front face itself, inside the same box the cover is in, so it
+   turns with the token instead of sitting still underneath it the way the plinth did */
+.tok .fc .tokstars{position:absolute;left:0;right:0;bottom:0;padding:3px 3px 4px;
+  display:flex;justify-content:center;background:linear-gradient(180deg,transparent,rgba(21,19,32,.7))}
+.tok .fc .tokstars .stars{gap:2px}
+.tok .fc .tokstars .stars i{width:7px;height:7px;background:rgba(255,255,255,.32)}
+.tok .fc .tokstars .stars i.half{background:linear-gradient(90deg,#fff 50%,rgba(255,255,255,.32) 50%)}
+.tok .fc .tokstars .stars i:not(.off):not(.half){background:#fff}
 .tok .nm{position:absolute;left:0;right:0;bottom:0;height:15px;line-height:15px;font-size:9.5px;font-weight:600;color:var(--mute);
   text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tok:focus-visible{outline:3px solid var(--blue);outline-offset:3px;border-radius:12px}
-.tok:focus-visible .plinth,.tok.picked .plinth{opacity:1}
 .tok.picked .rise{animation-duration:1.6s}
 @media (hover:hover){
   .tok:hover{transform:translateY(-3px) scale(1.025)}
   .tok:hover .ob{animation-duration:9s;filter:drop-shadow(0 13px 9px rgba(21,19,32,.22))}
   .tok:hover .rise{animation-duration:2.4s}
-  .tok:hover .plinth{opacity:.92;transform:scale(1.05);box-shadow:inset 0 2px 2px rgba(255,255,255,.5),0 9px 14px -7px rgba(21,19,32,.52)}
 }
 @media (prefers-reduced-motion:reduce){
-  .tok,.tok .plinth{transition:none}
+  .tok{transition:none}
   .tok .ob{animation:none;transform:rotateY(-14deg);transition:none}
   .tok .rise{animation:none;transform:none}
   .tok:hover,.tok.picked{transform:none}
@@ -4162,6 +4172,35 @@ function renderCabinet() {
     ${logCount() ? `<div class="shelfbar"><button class="btn quiet" id="cabList">See it as a list \u00b7 ${logCount()} logged</button></div>` : ""}`;
   paintTrays(); wireCabinet();
 }
+/* four marks a shelf's splash can be thrown from, each taking a colour and a hash to
+   place and size itself by, so no two calls with different hashes look stamped from
+   the same mould */
+const SPLASH_COLS = ["var(--apricot)", "var(--pink)", "var(--mint)", "var(--butter)"];
+const SPLASH_MARKS = [
+  (c, h) => `<i class="bl" style="left:${-8+(h%7)}px;top:${-9+(h%6)}px;width:${21+(h%11)}px;height:${14+(h%9)}px;
+      background:${c};border-radius:${60+(h%20)}% ${40-(h%15)}% ${55+(h%15)}% ${45-(h%10)}%/50% 60% 40% 50%;
+      transform:rotate(${-18+(h%30)}deg)">
+    <i style="position:absolute;left:${16+(h%9)}px;top:${7+(h%6)}px;width:${5+(h%4)}px;height:${5+(h%4)}px;
+      background:${c};border-radius:60% 40% 70% 30%/40% 60% 40% 60%"></i></i>`,
+  (c, h) => `<i class="bl" style="left:${10+(h%14)}px;top:${-10+(h%7)}px;width:${11+(h%9)}px;height:${11+(h%9)}px;
+      background:${c};clip-path:polygon(50% 0%,62% 38%,100% 50%,62% 62%,50% 100%,38% 62%,0% 50%,38% 38%);
+      transform:rotate(${(h%40)-20}deg)"></i>`,
+  (c, h) => `<i class="bl" style="left:${(h%40)}px;top:${-6+(h%7)}px;width:${5+(h%3)}px;height:${5+(h%3)}px;
+      border-radius:50%;background:${c};box-shadow:${8+(h%7)}px ${-5+(h%5)}px 0 -1px ${c},
+      ${14+(h%6)}px ${1+(h%5)}px 0 -2px ${c}, ${4+(h%5)}px ${7+(h%5)}px 0 -2px ${c}"></i>`,
+  (c, h) => `<i class="bl" style="left:${8+(h%15)}px;top:${-8+(h%6)}px;width:${13+(h%9)}px;height:${13+(h%9)}px;
+      border-radius:50%;border:3px solid ${c};transform:rotate(${(h%30)-15}deg)"></i>`
+];
+/* which three marks, in what colours, come from the kind's own hash — stable on every
+   reload, different from one shelf to the next */
+function splashFor(kind) {
+  const h = avHash(kind);
+  const order = [0, 1, 2, 3].sort((a, b) => ((h >> (a * 3)) & 7) - ((h >> (b * 3)) & 7)).slice(0, 3);
+  return order.map((mi, i) => {
+    const sub = h >> (i * 7 + mi);
+    return SPLASH_MARKS[mi](SPLASH_COLS[(h >> (mi * 5)) % SPLASH_COLS.length], Math.abs(sub));
+  }).join("");
+}
 /* only the trays are redrawn as you type, because redrawing the box you are typing in
    takes the cursor out of it */
 function paintTrays() {
@@ -4173,9 +4212,10 @@ function paintTrays() {
   if (sub) sub.innerHTML = rows.length ? `${rows.length} ${cabQ ? "match" : "finished"}${
       kinds.length > 1 ? ` \u00b7 ${kinds.map(k => `${by[k].length} ${inWords(k, by[k].length)}`).join(" \u00b7 ")}` : ""}`
     : logCount() ? "Nothing in here matches that." : "Everything you finish stands here.";
-  el.innerHTML = rows.length ? kinds.map(k => `<div class="tray"><div class="lbl">
+  el.innerHTML = rows.length ? kinds.map(k => `<div class="tray"><div class="lbl splash">
+        ${splashFor(k)}
         <span>${esc(K(k).plural)}</span><em>${by[k].length}</em></div>
-      <div class="run">${by[k].map(r => tokenHTML(r.w, 52, r.score >= 10)).join("")}</div></div>`).join("")
+      <div class="run">${by[k].map(r => tokenHTML(r.w, 52, r.score)).join("")}</div></div>`).join("")
     : cabQ ? `<p class="empty">Nothing in here matches \u201c${esc(cabQ)}\u201d.</p>`
     : blank("var(--mint)", "\u25af", "Nothing in here yet",
         "Log something and it stands here, with its own cover on it. The shelf is what you mean to get to; this is what you got to.",
@@ -6556,11 +6596,11 @@ const TOK_DEPTH = { film:0.20, tv:0.34, book:0.28, game:0.24 };
 const TOK_TINT = { film:"var(--film)", tv:"var(--tv)", book:"var(--book)", game:"var(--game)" };
 /* a stand-in when there is no cover, which for books is most of the time — and also what
    the back face shows, since the token turns all the way around. Every work gets its own
-   8x12 pixel fingerprint, deterministic from its id and drawn from the avatar palette, so
+   8x8 pixel fingerprint, deterministic from its id and drawn from the avatar palette, so
    it reads as a little save-icon that belongs to this one work rather than a blank back
    or a picture that failed to load. */
 function tokPixelGrid(h, base, cols, rows) {
-  const cw = 60 / cols, ch = 90 / rows;
+  const cw = 60 / cols, ch = 60 / rows;
   let out = "";
   for (let i = 0; i < rows * cols; i++) {
     const bit = (h >> (i % 24)) & 1;
@@ -6571,7 +6611,7 @@ function tokPixelGrid(h, base, cols, rows) {
 }
 function tokPixels(id) {
   const h = avHash(id), base = AV_COLS[h % (AV_COLS.length - 1)], deep = avShade(base, -.5);
-  return `<svg viewBox="0 0 60 90" aria-hidden="true"><rect width="60" height="90" fill="${deep}"/>${tokPixelGrid(h, base, 8, 12)}</svg>`;
+  return `<svg viewBox="0 0 60 60" aria-hidden="true"><rect width="60" height="60" fill="${deep}"/>${tokPixelGrid(h, base, 8, 8)}</svg>`;
 }
 function tokFace(w) { return tokPixels(w.id); }
 const tokEdge = kind => kind === "book"
@@ -6580,15 +6620,11 @@ const tokEdge = kind => kind === "book"
   : `<svg viewBox="0 0 60 90" preserveAspectRatio="none" aria-hidden="true"><rect width="60" height="90" fill="var(--line)"/></svg>`;
 
 const TOK_NAME = 15;                      /* the band the title sits in, inside the box */
-function tokenHTML(w, face = 52, five = false) {
-  const fw = face, fh = Math.round(fw * 1.42);
+function tokenHTML(w, face = 52, score = 0) {
+  const fw = face, fh = fw;                 /* square, not a poster's portrait aspect */
   const dep = Math.max(4, Math.round(fw * (TOK_DEPTH[w.kind] || .22)));
   const pad = Math.round(fw * .30), sideL = Math.round((fw - dep) / 2);
-  /* the plinth is centred on the object's bottom edge: half of it is behind the thing
-     standing on it and half shows in front, which is what makes it read as a plinth
-     rather than as a bar under a picture */
-  const bw = Math.round(fw * 1.14), bh = Math.max(7, Math.round(fw * .22));
-  const box = fw + pad * 2, boxh = fh + Math.ceil(bh / 2);
+  const box = fw + pad * 2, boxh = fh;
   const front = w.cover
     ? `<img src="${esc(w.cover)}" alt="" onload="this.classList.add('ok')" onerror="this.replaceWith(document.createRange().createContextualFragment(this.dataset.fb))" data-fb="${esc(tokFace(w))}">`
     : tokFace(w);
@@ -6597,14 +6633,13 @@ function tokenHTML(w, face = 52, five = false) {
     <span class="ob" style="left:${pad}px;top:0;width:${fw}px;height:${fh}px">
       <span class="rise">
         <span class="fc" style="inset:0;border-radius:2px 3px 3px 2px;transform:translateZ(${dep/2}px);
-          box-shadow:0 ${Math.round(fw*.09)}px ${Math.round(fw*.2)}px -${Math.round(fw*.08)}px rgba(21,19,32,.45)">${front}</span>
+          box-shadow:0 ${Math.round(fw*.09)}px ${Math.round(fw*.2)}px -${Math.round(fw*.08)}px rgba(21,19,32,.45)">${front}${
+            score > 0 ? `<span class="tokstars">${stars(score)}</span>` : ""}</span>
         <span class="fc" style="inset:0;border-radius:3px 2px 2px 3px;transform:rotateY(180deg) translateZ(${dep/2}px);background:var(--line)">${tokPixels(w.id + ":b")}</span>
         <span class="fc" style="left:${sideL}px;top:0;width:${dep}px;height:${fh}px;transform:rotateY(-90deg) translateZ(${fw/2}px);background:${TOK_TINT[w.kind]||"var(--line)"};filter:brightness(.88)"></span>
         <span class="fc" style="left:${sideL}px;top:0;width:${dep}px;height:${fh}px;transform:rotateY(90deg) translateZ(${fw/2}px)">${tokEdge(w.kind)}</span>
       </span>
     </span>
-    <span class="plinth" style="left:${Math.round((box-bw)/2)}px;bottom:${TOK_NAME}px;width:${bw}px;height:${bh}px;background:${TOK_TINT[w.kind]||"var(--line)"}"></span>
-    ${five ? `<span class="halo" style="left:${Math.round((box-bw)/2)-5}px;bottom:${TOK_NAME-5}px;width:${bw+10}px;height:${bh+10}px"></span>` : ""}
     <span class="nm">${esc(w.title)}</span></button>`;
 }
 
