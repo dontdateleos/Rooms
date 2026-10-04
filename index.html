@@ -427,9 +427,27 @@ button:focus-visible,.linky:focus-visible{outline:3px solid var(--blue);outline-
 .tray>.lbl.splash span{position:relative;z-index:1;font-family:var(--head);font-weight:900;
   font-size:16px;letter-spacing:-.01em;text-transform:none;color:var(--ink)}
 .tray>.lbl.splash .bl{position:absolute;z-index:0;opacity:.62;pointer-events:none}
-.run{display:flex;align-items:flex-end;gap:10px;overflow-x:auto;padding:2px 2px 6px;
+.run{position:relative;display:flex;align-items:flex-end;gap:10px;overflow-x:auto;padding:2px 2px 6px;
   scrollbar-width:none;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity}
 .run::-webkit-scrollbar{display:none}
+/* you, wandering the shelf — the same avatar as the header, hopping between a few spots
+   along the row rather than tracking any one token, so it keeps working regardless of
+   how many things are in a tray or how far it's scrolled */
+.pet{position:absolute;bottom:17px;left:2%;width:22px;height:22px;pointer-events:none;z-index:2;
+  animation:petHop 17s ease-in-out infinite;filter:drop-shadow(0 3px 3px rgba(21,19,32,.3))}
+.pet svg{width:100%;height:100%;display:block}
+@keyframes petHop{
+  0%,6%{left:2%;transform:translateY(0) rotate(0deg)}
+  10%{left:10%;transform:translateY(-18px) rotate(-12deg)}
+  16%,30%{left:22%;transform:translateY(0) rotate(0deg)}
+  34%{left:30%;transform:translateY(-18px) rotate(12deg)}
+  40%,58%{left:48%;transform:translateY(0) rotate(0deg)}
+  62%{left:56%;transform:translateY(-18px) rotate(-12deg)}
+  68%,84%{left:72%;transform:translateY(0) rotate(0deg)}
+  88%{left:80%;transform:translateY(-18px) rotate(12deg)}
+  94%,100%{left:2%;transform:translateY(0) rotate(0deg)}
+}
+@media (prefers-reduced-motion:reduce){.pet{animation:none}}
 .tok{position:relative;flex:none;background:none;border:0;padding:0;cursor:pointer;
   perspective:620px;scroll-snap-align:start;color:var(--ink);-webkit-tap-highlight-color:transparent;
   transition:transform .28s cubic-bezier(.2,.9,.25,1)}
@@ -4215,7 +4233,8 @@ function paintTrays() {
   el.innerHTML = rows.length ? kinds.map(k => `<div class="tray"><div class="lbl splash">
         ${splashFor(k)}
         <span>${esc(K(k).plural)}</span><em>${by[k].length}</em></div>
-      <div class="run">${by[k].map(r => tokenHTML(r.w, 52, r.score)).join("")}</div></div>`).join("")
+      <div class="run">${by[k].map(r => tokenHTML(r.w, 52, r.score)).join("")}${
+        me && by[k].length > 1 ? `<span class="pet" style="animation-delay:-${avHash(k) % 17}s">${avSVG(avFor(me))}</span>` : ""}</div></div>`).join("")
     : cabQ ? `<p class="empty">Nothing in here matches \u201c${esc(cabQ)}\u201d.</p>`
     : blank("var(--mint)", "\u25af", "Nothing in here yet",
         "Log something and it stands here, with its own cover on it. The shelf is what you mean to get to; this is what you got to.",
@@ -4254,6 +4273,21 @@ function wireTokens() {
 const viewSeg = () => `<div class="seg" style="margin-top:12px">${
   [["shelf", "The shelf"], ["cabinet", "The cabinet"]].map(([k, l]) =>
     `<button data-view="${k}" class="${cabView() === k ? "on" : ""}">${l}</button>`).join("")}</div>`;
+/* medium and "when" used to sit as two more chip rows on the shelf, on top of the view
+   toggle, the search box and its own kind chips — four rows of controls before any
+   content. They're the same shape of choice (narrow what's showing, not change what
+   screen you're on), so they share one sheet now instead of one row each. */
+function shelfFilterSheet(counts, soonCount, nowCount) {
+  const kindOpts = [["", "Everything"], ...Object.keys(KINDS).filter(k => counts[k]).map(k => [k, K(k).plural + " · " + counts[k]])];
+  const whenOpts = [["", "All"], ["out", "Out now"],
+    ...(nowCount ? [["now", `In the middle of · ${nowCount}`]] : []),
+    ...(soonCount ? [["soon", `Coming · ${soonCount}`]] : [])];
+  return `<h3>Filter the shelf</h3>
+    <div class="lbl">Medium</div>
+    <div class="chips">${kindOpts.map(([k, l]) => `<button class="chip ${P.shelfFilter===k?"on":""}" data-kf="${k}">${l}</button>`).join("")}</div>
+    ${soonCount || nowCount ? `<div class="lbl" style="margin-top:14px">When</div>
+    <div class="chips">${whenOpts.map(([k, l]) => `<button class="chip ${(P.when||"")===k?"on":""}" data-wf="${k}">${l}</button>`).join("")}</div>` : ""}`;
+}
 /* the cabinet is only worth offering once there is something in it — and a show you
    only ever rated in seasons is something in it, which counting whole entries missed:
    the one person whose log is all seasons had a cabinet and no way to reach it. */
@@ -4288,10 +4322,8 @@ function renderShelf() { if (cabView() === "cabinet") return renderCabinet();
     <input id="search" type="search" placeholder="Search film, TV, books, games" autocomplete="off" style="margin-top:12px">
     <div class="chips">${Object.keys(KINDS).map(k => `<button class="chip k ${P.kinds.includes(k)?"on":""}" data-sk="${k}">${K(k).label}</button>`).join("")}</div>
     <div class="msg" id="msg"></div><div id="results"></div>
-    ${all.length ? `<div class="chips" style="margin-top:12px">${[["","Everything"],...Object.keys(KINDS).filter(k=>counts[k]).map(k=>[k,K(k).plural+" · "+counts[k]])].map(([k,l]) => `<button class="chip ${P.shelfFilter===k?"on":""}" data-kf="${k}">${l}</button>`).join("")}</div>
-      ${soonCount || nowCount ? `<div class="chips">${[["","All"],["out","Out now"],
-        ...(nowCount ? [["now",`In the middle of · ${nowCount}`]] : []),
-        ...(soonCount ? [["soon",`Coming · ${soonCount}`]] : [])].map(([k,l]) => `<button class="chip ${(P.when||"")===k?"on":""}" data-wf="${k}">${l}</button>`).join("")}</div>` : ""}
+    ${all.length ? `<button class="btn quiet" id="shelfFilterBtn" style="margin-top:12px">Filter${
+        (P.shelfFilter?1:0)+(P.when?1:0) ? ` · ${(P.shelfFilter?1:0)+(P.when?1:0)}` : ""}</button>
       ${pickBar}
       <div class="grid" id="shelfGrid">${rows.map(w => { const soon = isSoon(w), n = nowOf(w.id);
         return `<div class="cell" data-cell="${esc(w.id)}"><div class="po ${logged(w.id)?"done":""} ${soon?"soon":""} ${n?"onit":""}" data-w="${esc(w.id)}">${cover(w,"")}<b>${esc(w.title)}</b>${tag(w.kind)}
@@ -4313,8 +4345,11 @@ function renderShelf() { if (cabView() === "cabinet") return renderCabinet();
   $$("[data-sk]").forEach(b => b.onclick = () => { const k = b.dataset.sk; if (P.kinds.includes(k)) { if (P.kinds.length > 1) P.kinds = P.kinds.filter(x => x !== k); } else P.kinds = [...P.kinds, k]; saveP(); renderShelf(); });
   const sf = $("#shelfFocus"); if (sf) sf.onclick = () => $("#search")?.focus();
   $$("[data-kt]").forEach(b => b.onclick = () => { P.kinds = [b.dataset.kt]; saveP(); renderShelf(); $("#search")?.focus(); });
-  $$("[data-kf]").forEach(b => b.onclick = () => { P.shelfFilter = b.dataset.kf; saveP(); renderShelf(); });
-  $$("[data-wf]").forEach(b => b.onclick = () => { P.when = b.dataset.wf; saveP(); renderShelf(); });
+  const ffb = $("#shelfFilterBtn"); if (ffb) ffb.onclick = () => {
+    openSheet(shelfFilterSheet(counts, soonCount, nowCount));
+    $$("[data-kf]").forEach(b => b.onclick = () => { P.shelfFilter = b.dataset.kf; saveP(); closeSheet(); renderShelf(); });
+    $$("[data-wf]").forEach(b => b.onclick = () => { P.when = b.dataset.wf; saveP(); closeSheet(); renderShelf(); });
+  };
   const so = $("#spinOpen"); if (so) so.onclick = async () => {
     if (left.length < 2 && pickFrom() !== "best") { P.pickFrom = "best"; saveP(); bestHand = []; }
     await openWheel(); };
