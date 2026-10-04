@@ -6596,11 +6596,11 @@ const TOK_DEPTH = { film:0.20, tv:0.34, book:0.28, game:0.24 };
 const TOK_TINT = { film:"var(--film)", tv:"var(--tv)", book:"var(--book)", game:"var(--game)" };
 /* a stand-in when there is no cover, which for books is most of the time — and also what
    the back face shows, since the token turns all the way around. Every work gets its own
-   8x8 pixel fingerprint, deterministic from its id and drawn from the avatar palette, so
+   8x12 pixel fingerprint, deterministic from its id and drawn from the avatar palette, so
    it reads as a little save-icon that belongs to this one work rather than a blank back
    or a picture that failed to load. */
 function tokPixelGrid(h, base, cols, rows) {
-  const cw = 60 / cols, ch = 60 / rows;
+  const cw = 60 / cols, ch = 90 / rows;
   let out = "";
   for (let i = 0; i < rows * cols; i++) {
     const bit = (h >> (i % 24)) & 1;
@@ -6611,7 +6611,7 @@ function tokPixelGrid(h, base, cols, rows) {
 }
 function tokPixels(id) {
   const h = avHash(id), base = AV_COLS[h % (AV_COLS.length - 1)], deep = avShade(base, -.5);
-  return `<svg viewBox="0 0 60 60" aria-hidden="true"><rect width="60" height="60" fill="${deep}"/>${tokPixelGrid(h, base, 8, 8)}</svg>`;
+  return `<svg viewBox="0 0 60 90" aria-hidden="true"><rect width="60" height="90" fill="${deep}"/>${tokPixelGrid(h, base, 8, 12)}</svg>`;
 }
 function tokFace(w) { return tokPixels(w.id); }
 const tokEdge = kind => kind === "book"
@@ -6621,7 +6621,7 @@ const tokEdge = kind => kind === "book"
 
 const TOK_NAME = 15;                      /* the band the title sits in, inside the box */
 function tokenHTML(w, face = 52, score = 0) {
-  const fw = face, fh = fw;                 /* square, not a poster's portrait aspect */
+  const fw = face, fh = Math.round(fw * 1.42);
   const dep = Math.max(4, Math.round(fw * (TOK_DEPTH[w.kind] || .22)));
   const pad = Math.round(fw * .30), sideL = Math.round((fw - dep) / 2);
   const box = fw + pad * 2, boxh = fh;
