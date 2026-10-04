@@ -94,6 +94,11 @@ header .wrap{display:flex;align-items:center;justify-content:space-between;heigh
 .bell:not([hidden]){display:grid}
 .bell svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
 .bell:active{transform:scale(.92)}
+.find{width:38px;height:38px;border-radius:50%;border:0;background:var(--card);color:var(--ink);cursor:pointer;
+  display:none;place-items:center;padding:0;transition:transform .18s cubic-bezier(.3,1.4,.5,1)}
+.find:not([hidden]){display:grid}
+.find svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.find:active{transform:scale(.92)}
 /* far enough out of the corner that it does not sit on the bell's dome — a count that
    eats the icon it belongs to leaves you looking at neither */
 .bell .dot{position:absolute;top:-5px;right:-5px;min-width:16px;height:16px;border-radius:99px;background:var(--bad);color:#fff;
@@ -184,13 +189,7 @@ header .wrap{display:flex;align-items:center;justify-content:space-between;heigh
 .chips .chip.seat{animation:seatIn .45s cubic-bezier(.3,1.5,.5,1) both}
 @keyframes seatIn{from{opacity:0;transform:scale(.4)}to{opacity:1;transform:none}}
 
-/* ---- ten you drive ---- */
-/* 21 the fill is under your finger, so it cannot lag behind it */
-.rate{touch-action:none}
-.rate button{position:relative}
-.rate .fill{position:absolute;inset:0;overflow:hidden;pointer-events:none}
-.rate .fill svg path{fill:var(--ink)}
-/* 22 a sheet you can push away */
+/* a sheet you can push away */
 .panel.dragging{transition:none;cursor:grabbing}
 .panel.springing{transition:transform .34s cubic-bezier(.16,1.1,.3,1)}
 /* 23 the rows move rather than the list being redrawn */
@@ -681,6 +680,14 @@ nav .in:has(.navpill.set) button.on{background:none}
 .bar .tr{height:11px;border-radius:99px;background:var(--cream2);overflow:hidden;display:flex;gap:2px}
 .bar .tr i{display:block;height:100%}
 .bar .p{font-weight:800;font-size:12px;color:var(--mute);text-align:right}
+/* taste, as slices rather than a stack of numbers — size says how much, the colour
+   says which medium it mostly came from, matching the kind colours used everywhere else */
+.donutWrap{display:flex;flex-direction:column;align-items:center;padding:4px 0 2px}
+.donut{width:152px;height:152px;display:block}
+.donut circle{stroke-linecap:round}
+.donutLegend{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column;gap:7px;width:100%;max-width:280px}
+.donutLegend li{display:flex;align-items:center;gap:9px;font-size:13.5px;font-weight:600}
+.donutLegend .dot{width:10px;height:10px;border-radius:50%;flex:none}
 .say{font-family:var(--head);font-weight:900;font-size:24px;letter-spacing:-.03em;line-height:1.1;margin:10px 0 6px}
 .trio{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:8px 0 12px;border-bottom:2px solid var(--line)}
 .trio b{font-family:var(--head);font-weight:900;font-size:30px;letter-spacing:-.04em;display:block;line-height:1}
@@ -692,10 +699,10 @@ nav .in:has(.navpill.set) button.on{background:none}
 .tally b{color:var(--ink);font-family:var(--head);font-weight:900;font-size:15px;margin-right:3px}
 
 /* rating */
-.rate{display:flex;gap:6px;padding:8px 0 2px;touch-action:manipulation}
+.rate{display:flex;gap:6px;padding:8px 0 2px;touch-action:none}
 .rate button{width:44px;height:44px;background:none;border:0;padding:0;cursor:pointer;-webkit-user-select:none;user-select:none;transition:transform .12s}
 .rate button svg{width:44px;height:44px;display:block;pointer-events:none}
-.rate button.holding{transform:scale(1.15)}
+.rate.holding button{transform:scale(1.1)}
 .hint{font-size:11px;font-weight:700;color:var(--mute);letter-spacing:.04em;text-transform:uppercase;margin-top:6px}
 .ticks{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
 .tk{font-family:var(--body);font-weight:700;font-size:12.5px;border:2px solid var(--line);background:var(--card);padding:7px 11px;border-radius:999px;cursor:pointer}
@@ -1010,7 +1017,6 @@ svg .comet{transform-box:fill-box;transform-origin:center;animation:cometTurn 4.
 .pv img{width:100%;height:100%;object-fit:cover;display:block}
 .pv b{font-family:var(--head);font-weight:800;font-size:9px;text-align:center;padding:2px;line-height:1.1}
 .markrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
-.findrow{display:flex;justify-content:center;margin-top:10px}
 /* the chip rides in on how far you have pulled, so the gesture has an answer before
    you let go rather than only after */
 .pull{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 8px);z-index:8;
@@ -1171,6 +1177,7 @@ body.demo header{padding-top:34px}
   <div class="logo"><svg class="mark" viewBox="0 0 64 64" aria-hidden="true"><rect x="8" y="14" width="34" height="34" rx="8" fill="var(--apricot)"/><rect x="22" y="14" width="34" height="34" rx="8" fill="var(--sky)" opacity=".85"/></svg>Rooms</div>
   <div class="hr">
     <button class="me" id="meBtn" hidden><span class="av" id="meAv"></span><span id="meName"></span></button>
+    <button class="find" id="findBtn" aria-label="Find someone" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></button>
     <button class="bell" id="bellBtn" aria-label="What happened" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8.5a6 6 0 1 0-12 0c0 5-2 6.5-2 6.5h16s-2-1.5-2-6.5z"/><path d="M13.7 19a2 2 0 0 1-3.4 0"/></svg></button>
     <button class="cog" id="cogBtn" aria-label="Settings" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.6 1.6 0 0 0 .32 1.77l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.6 1.6 0 0 0-1.77-.32 1.6 1.6 0 0 0-1 1.47V21a2 2 0 1 1-4 0v-.11a1.6 1.6 0 0 0-1.05-1.47 1.6 1.6 0 0 0-1.77.32l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.6 1.6 0 0 0 .32-1.77 1.6 1.6 0 0 0-1.47-1H3a2 2 0 1 1 0-4h.11a1.6 1.6 0 0 0 1.47-1.05 1.6 1.6 0 0 0-.32-1.77l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.6 1.6 0 0 0 1.77.32H9a1.6 1.6 0 0 0 1-1.47V3a2 2 0 1 1 4 0v.11a1.6 1.6 0 0 0 1 1.47 1.6 1.6 0 0 0 1.77-.32l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.6 1.6 0 0 0-.32 1.77V9a1.6 1.6 0 0 0 1.47 1H21a2 2 0 1 1 0 4h-.11a1.6 1.6 0 0 0-1.47 1z"/></svg></button>
   </div>
@@ -1406,7 +1413,7 @@ const cover = (w, cls = "co") => w?.cover ? `<img class="${cls}" src="${esc(w.co
 /* ============ prefs + sources ============ */
 const WORKER = "https://rooms.jordandf1.workers.dev";
 const proxy = () => (P.workerUrl || WORKER).replace(/\/+$/, "");
-const P = Object.assign({ workerUrl:"", tmdbKey:"", activeList:null, activeRoom:null, picked:null, kinds:["film","tv","book","game"], shelfFilter:"", pickTag:"", pickFrom:"shelf", bestGenre:{}, howLong:"", spinN:20, feedPicked:false, weekSeen:"", view:"shelf", seen:"", cardSkin:"", feed:"room", theme:"", chart:"month", cabSort:"recent" },
+const P = Object.assign({ workerUrl:"", tmdbKey:"", activeList:null, activeRoom:null, picked:null, kinds:["film","tv","book","game"], shelfFilter:"", pickTag:"", pickFrom:"shelf", bestGenre:{}, howLong:"", spinN:20, feedPicked:false, weekSeen:"", view:"shelf", seen:"", cardSkin:"", feed:"room", theme:"dark", chart:"month", cabSort:"recent" },
   JSON.parse(localStorage.getItem("rooms.prefs") || "{}"));
 const saveP = () => localStorage.setItem("rooms.prefs", JSON.stringify(P));
 async function tmdb(path, params = {}) {
@@ -3385,7 +3392,7 @@ async function loadMe() { const { data:{ session } } = await sb.auth.getSession(
 async function enter() {
   $("#meBtn").hidden = false; $("#meName").textContent = me.handle; paintMeAv();
   $("#nav").classList.add("on"); $("#add").classList.add("live"); $("#cogBtn").hidden = false;
-  $("#bellBtn").hidden = false;
+  $("#bellBtn").hidden = false; $("#findBtn").hidden = false;
   await Promise.all([despite("your shelf", loadLists()), despite("your log", loadMine()),
     despite("your rooms", loadRooms()), despite("who you follow", loadFollows()),
     despite("founders", loadFounders()), despite("what's on now", loadNow()),
@@ -3402,6 +3409,7 @@ function paintMeAv() { const el = $("#meAv"); if (el) el.innerHTML = avSVG(avFor
 $("#meBtn").onclick = () => me && openProfile(me.id);
 $("#cogBtn").onclick = () => me && openYou();
 $("#bellBtn").onclick = () => me && openNotes();
+$("#findBtn").onclick = () => me && openFind();
 
 /* ============ FIRST RUN ============ */
 function openOnboarding() {
@@ -3532,6 +3540,17 @@ const ROOM_PROMPTS = [
   "Pick the thing you would defend most fiercely.",
   "What would make a perfect low-effort night in?"
 ];
+/* the per-medium breakdown, the agreement, the fight of the year — real content, just
+   not content that earns a place before the feed loads. One line shows up there; the
+   rest is a tap away, in the same sheet the Library's filters use. */
+function roomYearSheet(pal) {
+  const t = id => esc(works[id]?.title || "");
+  return `<h3>The room's year</h3>
+    ${Object.entries(pal.byKind).filter(([k,f]) => f.id !== pal.best.id).map(([k,f]) => `<div class="row" data-cw="${esc(f.id)}"><span class="rk">${K(k).label[0]}</span><div class="t"><b>${t(f.id)}</b><small>Best ${K(k).label.toLowerCase()}</small></div></div>`).join("")}
+    ${pal.agreed ? `<div class="row" data-cw="${esc(pal.agreed.id)}"><span class="rk">=</span><div class="t"><b>${t(pal.agreed.id)}</b><small><span class="good">${pal.agreed.agree}% agree</span> · the one you all saw the same way</small></div></div>` : ""}
+    ${pal.split && pal.split.id !== pal.agreed?.id ? `<div class="row" data-cw="${esc(pal.split.id)}"><span class="rk">≠</span><div class="t"><b>${t(pal.split.id)}</b><small><span class="bad">${pal.split.agree}% agree</span> · the fight of the year</small></div></div>` : ""}
+    <div class="stack"><button class="btn soft" id="roomYearCard">Save the card</button></div>`;
+}
 function roomPrompt() { const d = new Date(), key = today();
   if (P.roomPromptSeen === key || myEntries.some(e => String(e.created_at || e.rated_on || "").slice(0,10) === key)) return "";
   const text = ROOM_PROMPTS[(d.getDate() + d.getMonth() * 3) % ROOM_PROMPTS.length];
@@ -3574,7 +3593,6 @@ async function renderDoors() {
   const body = $("#doorsBody"); const R = activeRoom();
   const mem = memories()[0], rev = dueReview();
   body.innerHTML = `<div class="seg">${[["room","Your room"],["following","Following"],["everyone","Everyone"]].map(([k,l]) => `<button data-feed="${k}" class="${feedNow()===k?"on":""}">${l}</button>`).join("")}</div>
-    <div class="findrow"><button class="chip" id="findPeople">Find someone by handle</button></div>
     <div id="feedBody">${skeleton(3)}</div>
     ${weekCard()}${rev ? `<div class="card look" id="revCard"><div class="h"><span>${esc(rev.head)}</span><span class="tag dim">${rev.kind === "year" ? "the year" : "last month"}</span></div>
       <div class="stack"><button class="btn soft" id="revGo">Have a look</button></div></div>` : ""}
@@ -3616,7 +3634,6 @@ async function renderDoors() {
     const was = FEED_ORDER.indexOf(feedNow()), now = FEED_ORDER.indexOf(b.dataset.feed);
     if (was === now) return;
     P.feed = b.dataset.feed; P.feedPicked = true; saveP(); feedTurn = now > was ? -26 : 26; renderDoors(); });
-  $("#findPeople").onclick = openFind;
   /* once a session, on the way in: the room's name, then who is in it, then what they said.
      Never on a redraw — a screen that reassembles every time you come back is a screen that
      never settles. */
@@ -3895,18 +3912,22 @@ async function renderRoomFeed(fb, R) {
   const pick = P.picked && !logged(P.picked) && works[P.picked];
   fb.innerHTML = `<div class="card"><div class="roomhead"><div class="h"><span>${esc(R.name)}</span><span class="tag dim">${R.members.length} in here</span></div><button class="btn ghost roomcode" id="roomCode" title="Copy room code">${esc(R.code)} · Copy</button></div>
       ${rooms.length>1 ? `<div class="roomswitch" aria-label="Your rooms">${rooms.map(r => `<button class="chip ${r.id===R.id?"on":""}" data-rc="${esc(r.id)}">${esc(r.name)}</button>`).join("")}</div>` : ""}
-      <div class="seg roomfilters" aria-label="Room activity filter">${[["all","Everything"],["reviews","Reviews"],["activity","Activity"]].map(([k,l]) => `<button data-rfilter="${k}" class="${roomFilter===k?"on":""}">${l}</button>`).join("")}</div>
-      <div class="chips" id="roomSeats" style="margin-top:8px">${R.members.map(m => `<span class="chip ${m.id===me.id?"on":""}" data-prof="${esc(m.id)}">${esc(m.handle)}</span>`).join("")}<button class="chip" id="invite">+ bring someone in</button></div>
-      ${roomStreak(es)}
+      ${/* who's active comes first — that's the question a room answers at a glance.
+           everyone's names (the full roster) and the one-off nudge to log something move
+           into Room options below; they're useful, not something to step over to reach
+           the toggle and the feed. */""}
       <div class="here" id="hereRow" aria-live="polite"><small>Nobody else in here right now</small></div>
       <div class="nowrow" id="roomNow"></div>
+      ${roomStreak(es)}
+      <div class="seg roomfilters" aria-label="Room activity filter">${[["all","Everything"],["reviews","Reviews"],["activity","Activity"]].map(([k,l]) => `<button data-rfilter="${k}" class="${roomFilter===k?"on":""}">${l}</button>`).join("")}</div>
       ${R.members.length < 2 ? `<div class="alone"><b>It's just you in here.</b>
         <span>Rooms only does anything with other people in it — agreement, the year, the arguments.
         Send one person the link and the whole thing switches on.</span>
         <button class="btn blue" id="aloneInvite">Send the invite link</button>
         ${showcase()}</div>` : ""}
-      ${roomPrompt()}
-      <div class="room-manage"><button id="roomManage" aria-expanded="false"><span class="chip">Room options</span></button><div class="room-manage-actions" id="roomManageActions" hidden><button class="btn soft" id="newRoom">Open another room</button><button class="btn ghost" id="joinRoom">Join with a code</button><button class="btn quiet" id="leaveRoom">Leave this room</button></div></div>${DEMO ? `<p class="demoHint">Demo mode: room changes are preview-only.</p>` : ""}<p class="msg" id="roomMsg"></p></div>
+      <div class="room-manage"><button id="roomManage" aria-expanded="false"><span class="chip">Room options</span></button><div class="room-manage-actions" id="roomManageActions" hidden>
+        <div class="chips" id="roomSeats">${R.members.map(m => `<span class="chip ${m.id===me.id?"on":""}" data-prof="${esc(m.id)}">${esc(m.handle)}</span>`).join("")}<button class="chip" id="invite">+ bring someone in</button></div>
+        <button class="btn soft" id="newRoom">Open another room</button><button class="btn ghost" id="joinRoom">Join with a code</button><button class="btn quiet" id="leaveRoom">Leave this room</button></div></div>${DEMO ? `<p class="demoHint">Demo mode: room changes are preview-only.</p>` : ""}<p class="msg" id="roomMsg"></p></div>
     ${/* Cross-paths and handover moments are their own thing, not one of the three ways
          of filtering "what the room said" — showing them only under the Activity filter
          meant the freshness bookkeeping above (which runs on every render, filter or no)
@@ -3917,6 +3938,7 @@ async function renderRoomFeed(fb, R) {
       return roomEntries.map(e => { const isNew = e.user_id !== me.id && String(e.created_at) > since; let head = "";
         if (isNew && !shown) { shown = true; head = `<div class="newline">New since you were here</div>`; }
         return head + slipHTML(e, { talk:true }); }).join(""); })()}
+    ${roomPrompt()}
     ${pick ? `<div class="result"><small>Tonight's pick</small><b>${esc(pick.title)}</b><div class="stack" style="margin-top:10px"><button class="btn" id="pickLog">${K(pick.kind).verb} it</button></div></div>` : ""}
     ${split ? `<div class="card"><div class="h"><span>A friendly argument</span></div>${compRows([split])}</div>` : ""}
     <div class="card"><div class="h"><span>In competition</span><span class="tag dim">weighted</span></div>${comp.length ? compRows(comp) : blank("var(--butter)","%","No scores yet","Once two of you have rated the same thing, the agreement number appears here.",[["compAdd","Log something"]])}</div>
@@ -3924,10 +3946,7 @@ async function renderRoomFeed(fb, R) {
       const t = id => esc(works[id]?.title || "");
       return `<div class="card"><div class="h"><span>The room's year</span><span class="tag dim">${pal.n} entries</span></div>
         <div class="row" data-cw="${esc(pal.best.id)}"><span class="rk">★</span><div class="t"><b>${t(pal.best.id)}</b><small>The room's best · ${(pal.best.avg/2).toFixed(1)} from ${pal.best.n}</small></div></div>
-        ${Object.entries(pal.byKind).filter(([k,f]) => f.id !== pal.best.id).map(([k,f]) => `<div class="row" data-cw="${esc(f.id)}"><span class="rk">${K(k).label[0]}</span><div class="t"><b>${t(f.id)}</b><small>Best ${K(k).label.toLowerCase()}</small></div></div>`).join("")}
-        ${pal.agreed ? `<div class="row" data-cw="${esc(pal.agreed.id)}"><span class="rk">=</span><div class="t"><b>${t(pal.agreed.id)}</b><small><span class="good">${pal.agreed.agree}% agree</span> · the one you all saw the same way</small></div></div>` : ""}
-        ${pal.split && pal.split.id !== pal.agreed?.id ? `<div class="row" data-cw="${esc(pal.split.id)}"><span class="rk">≠</span><div class="t"><b>${t(pal.split.id)}</b><small><span class="bad">${pal.split.agree}% agree</span> · the fight of the year</small></div></div>` : ""}
-        <div class="stack"><button class="btn soft" id="roomYearCard">Save the card</button></div>
+        <div class="stack"><button class="btn quiet" id="roomYearMore">See the rest · best by medium, the agreement, the fight</button></div>
       </div>`; })()}
     `;
   endLine(fb, es, 60);
@@ -3950,8 +3969,13 @@ async function renderRoomFeed(fb, R) {
      one drifts a day out of step with it for hours at a time in most timezones — which
      read as "Later" not sticking, because tomorrow's local day was still today in UTC. */
   const promptLater = $("#roomPromptLater"); if (promptLater) promptLater.onclick = () => { P.roomPromptSeen = today(); saveP(); $("#roomPrompt")?.remove(); };
-  const ryc = $("#roomYearCard"); if (ryc) ryc.onclick = () => { const pal = roomPalmares(es);
-    if (pal) openCuts("roomyear", { room:R, pal, year:String(new Date().getFullYear()) }, "Share the room's year"); };
+  const rym = $("#roomYearMore"); if (rym) rym.onclick = () => { const pal = roomPalmares(es);
+    if (!pal) return;
+    openSheet(roomYearSheet(pal));
+    $$("[data-cw]", $("#sheetBody")).forEach(x => x.onclick = () => { closeSheet(); openWork(x.dataset.cw); });
+    const ryc = $("#roomYearCard"); if (ryc) ryc.onclick = () =>
+      openCuts("roomyear", { room:R, pal, year:String(new Date().getFullYear()) }, "Share the room's year");
+  };
   $$("[data-cw]", fb).forEach(x => x.onclick = () => openWork(x.dataset.cw));
   $$(".card [data-prof]", fb).forEach(x => x.onclick = () => openProfile(x.dataset.prof));
   $$("[data-rc]", fb).forEach(b => b.onclick = async () => { P.activeRoom = b.dataset.rc; saveP(); await loadClubs(); renderDoors(); });
@@ -5358,12 +5382,27 @@ function openAdd() {
 $("#add").onclick = () => { const b = $("#add"); b.classList.remove("busy"); void b.offsetWidth; b.classList.add("busy"); if (navigator.vibrate) navigator.vibrate(8); openAdd(); };
 
 /* ============ TASTE (your profile) ============ */
+/* a slice is sized by how much of what you love it accounts for, relative to the five
+   others here — not a number next to a bar, the slice itself. Colour comes from whichever
+   medium that craft mostly shows up in, the same colours the rest of the app already uses. */
+function donutSVG(slices) {
+  const r = 40, cx = 50, cy = 50, circ = 2 * Math.PI * r;
+  const total = slices.reduce((s, x) => s + x.v, 0) || 1;
+  let off = 0;
+  const arcs = slices.map(s => { const len = (s.v / total) * circ, gap = Math.min(len * .08, 3);
+    const seg = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${s.col}" stroke-width="17"
+      stroke-dasharray="${Math.max(0,len-gap).toFixed(2)} ${(circ-len+gap).toFixed(2)}" stroke-dashoffset="${(-off).toFixed(2)}"/>`;
+    off += len; return seg; }).join("");
+  return `<svg class="donut" viewBox="0 0 100 100" aria-hidden="true"><g transform="rotate(-90 50 50)">${arcs}</g></svg>`;
+}
 function tasteHTML(t, opts = {}) { if (t.tagged < 3) return blank("var(--butter)","◔","Your taste is still forming",
   `Say what you loved on a few entries — the look, the writing, how it plays — and the profile builds itself. ${t.tagged} of 3 so far.`,
   opts.third ? [] : [["tasteBlankAdd","Log something"]]);
-  const max = t.craft[0][1].total, top = t.craft.slice(0,3).map(c => c[0]); const carries = t.craft.filter(([,v]) => Object.keys(v.by).length > 1).slice(0,3);
+  const top = t.craft.slice(0,3).map(c => c[0]); const carries = t.craft.filter(([,v]) => Object.keys(v.by).length > 1).slice(0,3);
+  const slices = t.craft.slice(0,6).map(([k,v]) => ({ name:k, v:v.total,
+    col:K(Object.entries(v.by).sort((a,b)=>b[1]-a[1])[0][0]).colour }));
   return `<div class="say">${opts.third ? "Goes" : "You go"} for <span class="hl" style="background:var(--butter)">${esc(top[0])}</span>${top[1]?`, ${esc(top[1])}`:""}${top[2]?` and ${esc(top[2])}`:""}.</div>
-    ${t.craft.slice(0,6).map(([k,v]) => `<div class="bar"><span class="n">${esc(k)}</span><span class="tr">${Object.entries(v.by).sort((a,b)=>b[1]-a[1]).map(([kind,val]) => `<i style="width:${Math.round(val/max*100)}%;background:${K(kind).colour}"></i>`).join("")}</span><span class="p">${Math.round(v.total/max*100)}</span></div>`).join("")}
+    <div class="donutWrap">${donutSVG(slices)}<ul class="donutLegend">${slices.map(s => `<li><span class="dot" style="background:${s.col}"></span>${esc(s.name)}</li>`).join("")}</ul></div>
     ${carries.length ? `<div class="lbl">What carries across</div><div class="chips">${carries.map(([k,v]) => `<span class="chip">${esc(k)} <u>${Object.keys(v.by).map(x=>K(x).label).join(", ")}</u></span>`).join("")}</div>` : ""}
     ${t.people.length ? `<div class="lbl">Names ${opts.third ? "they" : "you"} keep picking</div><div class="chips">${t.people.slice(0,6).map(([n,c]) => `<span class="chip who">${esc(n)}${c>1?` <u>×${c}</u>`:""}</span>`).join("")}</div>` : ""}`; }
 /* five tens: the mixed one, then one per medium. the mixed one is the canonical answer. */
@@ -6854,7 +6893,7 @@ function faceEl(name, path) {
 
 /* ============ THE LOG SHEET ============ */
 function openLog(w, edit = null) { const cfg = K(w.kind); const loved = edit?.loved ? edit.loved.slice() : []; const ctx = Object.assign({}, edit?.context); let score = edit ? edit.score : 0;
-  const starRow = () => `<div class="rate">${[0,1,2,3,4].map(i => `<button data-i="${i}" aria-label="${i+1} stars"><svg viewBox="0 0 24 24">${starPath(Math.max(0,Math.min(1,score/2-i)))}</svg></button>`).join("")}</div><div class="hint">Tap for a full star, hold for a half</div>`;
+  const starRow = () => `<div class="rate">${[0,1,2,3,4].map(i => `<button data-i="${i}" aria-label="${i+1} stars"><svg viewBox="0 0 24 24">${starPath(Math.max(0,Math.min(1,score/2-i)))}</svg></button>`).join("")}</div><div class="hint">Press and drag across the stars</div>`;
   openSheet(`<div class="head">${cover(w)}<div class="hh"><h3>${esc(w.title)}</h3><p class="sub">${tag(w.kind)} ${esc(w.year||"")}${w.creator?" · "+esc(w.creator):""}</p></div></div>
     <div class="lbl">Date ${cfg.verb}</div><input type="date" id="wDate" value="${edit?esc(edit.rated_on):today()}">
     ${/* You told the app when you started. It has said nothing about it since, and the
@@ -6915,32 +6954,30 @@ function openLog(w, edit = null) { const cfg = K(w.kind); const loved = edit?.lo
   $$("[data-who]").forEach(b => b.onclick = () => { roomOnly = b.dataset.who === "room";
     P.postTo = roomOnly ? "room" : "all"; saveP(); paintWho(); });
   paintWho();
-  const wireStars = () => $$("#rateWrap [data-i]").forEach(b => { let timer = null, fired = false; const set = half => { fired = true; score = half; $("#rateWrap").innerHTML = starRow(); wireStars(); dragStars(); $("#wSave").disabled = false; if (navigator.vibrate) navigator.vibrate(8);
-      $$("#rateWrap button").slice(0, Math.ceil(half/2)).forEach((sb2, n) => setTimeout(() => { sb2.classList.add("pop"); setTimeout(() => sb2.classList.remove("pop"), 340); }, n*45));
-      drawLoved(); }; const i = +b.dataset.i;
-    b.addEventListener("pointerdown", e => { e.preventDefault(); fired = false; b.classList.add("holding"); timer = setTimeout(() => set(i*2+1), 300); });
-    b.addEventListener("pointerup", e => { e.preventDefault(); b.classList.remove("holding"); if (timer) { clearTimeout(timer); timer = null; } if (!fired) set(i*2+2); });
-    b.addEventListener("pointerleave", () => { b.classList.remove("holding"); if (timer) { clearTimeout(timer); timer = null; } }); b.addEventListener("contextmenu", e => e.preventDefault()); });
-  /* tap for a full, hold for a half, and now drag for all ten in one go. The fill under
-     your finger is the only feedback that is exactly as fast as you are, so it tracks and
-     the settle waits until you let go. */
+  /* one gesture, not two fighting over the same pointer: press anywhere on the row and
+     the nearest half-star fills live under your finger; drag to adjust; lift to commit.
+     A tap that never moves still rates it — it's just a press and release at one spot.
+     This replaced a tap-for-a-full/hold-for-a-half pair of per-star listeners that sat
+     on the same elements as the drag and fired in whichever order the pointer happened
+     to land, so a quick tap could silently overwrite what the drag had just set. */
   const dragStars = () => { const row = $("#rateWrap .rate"); if (!row) return;
-    let on = false, last = score, startX = null;
+    let live = score;
     const at = e => { const r = row.getBoundingClientRect();
-      const x = (e.clientX ?? 0) - r.left;
-      return Math.max(1, Math.min(10, Math.round((x / r.width) * 10))); };
-    row.addEventListener("pointerdown", e => { startX = e.clientX; on = false; });
-    const paint = v => { $$("#rateWrap button svg", row.parentElement).forEach((sv, i) =>
+      const x = e.clientX - r.left;
+      return Math.max(1, Math.min(10, Math.ceil((x / r.width) * 10))); };
+    const paint = v => { $$("#rateWrap button svg", row).forEach((sv, i) =>
       sv.innerHTML = starPath(Math.max(0, Math.min(1, v / 2 - i)))); };
-    row.addEventListener("pointermove", e => { if (!(e.buttons & 1) || startX == null) return;
-      /* six pixels of travel is a drag; anything less is a tap on its way to being one */
-      if (!on && Math.abs(e.clientX - startX) < 6) return;
-      on = true; const v = at(e); if (v !== last) { last = v; paint(v);
-        if (navigator.vibrate) navigator.vibrate(3); } });
-    row.addEventListener("pointerup", () => { startX = null; if (!on) return; on = false;
-      score = last; $("#rateWrap").innerHTML = starRow(); wireStars(); dragStars();
-      $("#wSave").disabled = false; drawLoved(); }); };
-  wireStars(); dragStars(); drawLoved(); $("#wCancel").onclick = closeSheet;
+    row.addEventListener("pointerdown", e => { e.preventDefault(); row.setPointerCapture(e.pointerId);
+      row.classList.add("holding"); live = at(e); paint(live); if (navigator.vibrate) navigator.vibrate(3); });
+    row.addEventListener("pointermove", e => { if (!(e.buttons & 1)) return;
+      const v = at(e); if (v !== live) { live = v; paint(v); if (navigator.vibrate) navigator.vibrate(3); } });
+    row.addEventListener("pointerup", () => { row.classList.remove("holding"); if (live === score) return;
+      score = live; $("#rateWrap").innerHTML = starRow(); dragStars();
+      $$("#rateWrap button").slice(0, Math.ceil(score/2)).forEach((sb2, n) => setTimeout(() => { sb2.classList.add("pop"); setTimeout(() => sb2.classList.remove("pop"), 340); }, n*45));
+      $("#wSave").disabled = false; if (navigator.vibrate) navigator.vibrate(8); drawLoved(); });
+    row.addEventListener("pointercancel", () => { row.classList.remove("holding"); paint(score); });
+    row.addEventListener("contextmenu", e => e.preventDefault()); };
+  dragStars(); drawLoved(); $("#wCancel").onclick = closeSheet;
   $("#wSave").onclick = async () => { if (!score) return; const e = { user_id:me.id, work_id:w.id, rated_on:$("#wDate").value || today(), score, note:$("#wNote").value.trim() || null, loved:loved.length?loved.slice():null, context:Object.keys(ctx).length?ctx:null, breakdown:null, room_only:roomOnly };
     $("#wSave").disabled = true; try { await saveEntry(e, edit?.id); await loadMine();
       const offShelf = !edit?.id && dropFromShelf(w.id);
