@@ -6554,19 +6554,26 @@ async function paintWatch(w, target = "wWatch", compact = false) {
    is fatter than both and shows its pages down the right edge. */
 const TOK_DEPTH = { film:0.20, tv:0.34, book:0.28, game:0.24 };
 const TOK_TINT = { film:"var(--film)", tv:"var(--tv)", book:"var(--book)", game:"var(--game)" };
-/* a stand-in when there is no cover, which for books is most of the time. The same hash
-   and the same palette as the avatars, so it reads as part of the app rather than as a
-   picture that failed to load. */
-function tokFace(w) {
-  const h = avHash(w.id);
-  const base = AV_COLS[h % (AV_COLS.length - 1)], deep = avShade(base, -.42), lite = avShade(base, .26);
-  const k = h % 4;
-  const art = k === 0 ? `<circle cx="30" cy="34" r="15" fill="${base}"/><rect y="56" width="60" height="34" fill="${lite}" opacity=".5"/>`
-    : k === 1 ? `<path d="M0 60L60 24v18L0 78z" fill="${base}"/><circle cx="44" cy="66" r="7" fill="${lite}"/>`
-    : k === 2 ? `<rect x="18" y="16" width="24" height="58" rx="2" fill="${base}"/>`
-    : `<path d="M30 22c9 0 14 8 14 17 0 8-4 12-4 16l2 35H18l2-35c0-4-4-8-4-16 0-9 5-17 14-17z" fill="${base}"/>`;
-  return `<svg viewBox="0 0 60 90" aria-hidden="true"><rect width="60" height="90" fill="${deep}"/>${art}</svg>`;
+/* a stand-in when there is no cover, which for books is most of the time — and also what
+   the back face shows, since the token turns all the way around. Every work gets its own
+   8x12 pixel fingerprint, deterministic from its id and drawn from the avatar palette, so
+   it reads as a little save-icon that belongs to this one work rather than a blank back
+   or a picture that failed to load. */
+function tokPixelGrid(h, base, cols, rows) {
+  const cw = 60 / cols, ch = 90 / rows;
+  let out = "";
+  for (let i = 0; i < rows * cols; i++) {
+    const bit = (h >> (i % 24)) & 1;
+    const c = bit ? base : avShade(base, -.45 + ((i * 11) % 30) / 100);
+    out += `<rect x="${((i % cols) * cw).toFixed(1)}" y="${(Math.floor(i / cols) * ch).toFixed(1)}" width="${cw.toFixed(1)}" height="${ch.toFixed(1)}" fill="${c}"/>`;
+  }
+  return out;
 }
+function tokPixels(id) {
+  const h = avHash(id), base = AV_COLS[h % (AV_COLS.length - 1)], deep = avShade(base, -.5);
+  return `<svg viewBox="0 0 60 90" aria-hidden="true"><rect width="60" height="90" fill="${deep}"/>${tokPixelGrid(h, base, 8, 12)}</svg>`;
+}
+function tokFace(w) { return tokPixels(w.id); }
 const tokEdge = kind => kind === "book"
   ? `<svg viewBox="0 0 60 90" preserveAspectRatio="none" aria-hidden="true"><rect width="60" height="90" fill="#efe6d4"/>${
       Array.from({length:14}, (_, i) => `<rect y="${4+i*6.2}" width="60" height="1.8" fill="#d9cdb6"/>`).join("")}</svg>`
@@ -6591,8 +6598,8 @@ function tokenHTML(w, face = 52, five = false) {
       <span class="rise">
         <span class="fc" style="inset:0;border-radius:2px 3px 3px 2px;transform:translateZ(${dep/2}px);
           box-shadow:0 ${Math.round(fw*.09)}px ${Math.round(fw*.2)}px -${Math.round(fw*.08)}px rgba(21,19,32,.45)">${front}</span>
-        <span class="fc" style="inset:0;border-radius:3px 2px 2px 3px;transform:rotateY(180deg) translateZ(${dep/2}px);background:var(--line)"></span>
-        <span class="fc" style="left:${sideL}px;top:0;width:${dep}px;height:${fh}px;transform:rotateY(-90deg) translateZ(${fw/2}px);background:${TOK_TINT[w.kind]||"var(--line)"}"></span>
+        <span class="fc" style="inset:0;border-radius:3px 2px 2px 3px;transform:rotateY(180deg) translateZ(${dep/2}px);background:var(--line)">${tokPixels(w.id + ":b")}</span>
+        <span class="fc" style="left:${sideL}px;top:0;width:${dep}px;height:${fh}px;transform:rotateY(-90deg) translateZ(${fw/2}px);background:${TOK_TINT[w.kind]||"var(--line)"};filter:brightness(.88)"></span>
         <span class="fc" style="left:${sideL}px;top:0;width:${dep}px;height:${fh}px;transform:rotateY(90deg) translateZ(${fw/2}px)">${tokEdge(w.kind)}</span>
       </span>
     </span>
