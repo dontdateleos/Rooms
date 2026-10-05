@@ -269,8 +269,15 @@ html,body,header,nav{transition:background-color 90s linear,border-color 90s lin
 .peek input{padding-right:64px}
 .peek button{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:0;
   font-family:var(--body);font-weight:700;font-size:12px;color:var(--mute);cursor:pointer;padding:4px}
-main{padding:8px 0 24px}
+main{padding:8px 0 24px;position:relative}
 section{display:none}section.on{display:block}
+/* the outgoing screen used to just vanish the instant you tapped the next tab, while
+   the incoming one eased in — appear-over-void rather than a handoff. It overlays in
+   place (main is its positioning context) just long enough to leave in the direction
+   you came from, then it's gone like before. */
+section.leaving{position:absolute;inset:0;display:block;animation:leaveTab .22s cubic-bezier(.4,0,.8,.3) both;pointer-events:none}
+@keyframes leaveTab{to{transform:translate(calc(var(--slide,0px) * -1),-6px) scale(.97);opacity:0}}
+@media (prefers-reduced-motion:reduce){section.leaving{animation:none;display:none}}
 
 h1,h2,h3{font-family:var(--head);font-weight:900;letter-spacing:-.03em;line-height:1}
 h2{font-size:28px;margin:18px 0 4px}
@@ -418,35 +425,13 @@ button:focus-visible,.linky:focus-visible{outline:3px solid var(--blue);outline-
 .tray>.lbl{margin:0 0 8px;display:flex;justify-content:space-between;align-items:baseline}
 .tray>.lbl em{font-family:var(--body);font-style:normal;font-weight:600;font-size:11px;
   letter-spacing:0;text-transform:none;color:var(--mute)}
-/* loud exactly once per shelf, not on every token: a splatter in the app's own four
-   kind-colours, sitting behind the name instead of a stock category label. Which marks,
-   where, and in what colour all come from splashFor() below, keyed off the shelf's own
-   kind — so Films and Games get a different throw, not the same three stamps recoloured */
-.tray>.lbl.splash{position:relative}
-.tray>.lbl.splash span{position:relative;z-index:1;font-family:var(--head);font-weight:900;
-  font-size:16px;letter-spacing:-.01em;text-transform:none;color:var(--ink)}
-.tray>.lbl.splash .bl{position:absolute;z-index:0;opacity:.62;pointer-events:none}
-.run{position:relative;display:flex;align-items:flex-end;gap:10px;overflow-x:auto;padding:2px 2px 6px;
+.run{display:flex;align-items:flex-end;gap:10px;overflow-x:auto;padding:2px 2px 6px;
   scrollbar-width:none;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity}
 .run::-webkit-scrollbar{display:none}
-/* you, wandering the shelf — the same avatar as the header, hopping between a few spots
-   along the row rather than tracking any one token, so it keeps working regardless of
-   how many things are in a tray or how far it's scrolled */
-.pet{position:absolute;bottom:17px;left:2%;width:22px;height:22px;pointer-events:none;z-index:2;
-  animation:petHop 17s ease-in-out infinite;filter:drop-shadow(0 3px 3px rgba(21,19,32,.3))}
-.pet svg{width:100%;height:100%;display:block}
-@keyframes petHop{
-  0%,6%{left:2%;transform:translateY(0) rotate(0deg)}
-  10%{left:10%;transform:translateY(-18px) rotate(-12deg)}
-  16%,30%{left:22%;transform:translateY(0) rotate(0deg)}
-  34%{left:30%;transform:translateY(-18px) rotate(12deg)}
-  40%,58%{left:48%;transform:translateY(0) rotate(0deg)}
-  62%{left:56%;transform:translateY(-18px) rotate(-12deg)}
-  68%,84%{left:72%;transform:translateY(0) rotate(0deg)}
-  88%{left:80%;transform:translateY(-18px) rotate(12deg)}
-  94%,100%{left:2%;transform:translateY(0) rotate(0deg)}
-}
-@media (prefers-reduced-motion:reduce){.pet{animation:none}}
+/* you, next to the cabinet rather than loose among the tokens — the same avatar as the
+   header, just bigger, standing still and blinking on its own clock the way every
+   avatar already does (.av .eyes below), instead of a second thing in motion */
+.cabmark{width:40px;height:40px;flex:none;filter:drop-shadow(0 4px 4px rgba(21,19,32,.25))}
 .tok{position:relative;flex:none;background:none;border:0;padding:0;cursor:pointer;
   perspective:620px;scroll-snap-align:start;color:var(--ink);-webkit-tap-highlight-color:transparent;
   transition:transform .28s cubic-bezier(.2,.9,.25,1)}
@@ -524,6 +509,10 @@ button:focus-visible,.linky:focus-visible{outline:3px solid var(--blue);outline-
 .tick.on{background:var(--mint);border-color:var(--mint)}
 .tick svg{width:12px;height:12px;opacity:0;transition:opacity .18s;stroke:var(--onAccent);stroke-width:3.4;fill:none;stroke-linecap:round;stroke-linejoin:round}
 .tick.on svg{opacity:1}
+/* the one genuinely finished moment on an episode row got a flat fade while a star
+   landing or a chip bump got a pop — a transient class added on the way to "seen"
+   only, so it plays once per tick rather than replaying on every redraw */
+.tick.pop{animation:chipPop .3s cubic-bezier(.3,1.4,.5,1)}
 .po .rm{position:absolute;top:6px;left:6px;width:26px;height:26px;border-radius:50%;border:0;background:var(--ink);color:var(--cream);font-size:18px;line-height:1;padding:0;z-index:4;cursor:pointer;display:grid;place-items:center;box-shadow:0 2px 8px -2px rgba(21,19,32,.5)}
 .grid.editing .po{animation:jiggle .34s ease-in-out infinite alternate}
 .grid.editing .cell:nth-child(3n+2) .po{animation-duration:.3s}
@@ -683,7 +672,9 @@ nav .in:has(.navpill.set) button.on{background:none}
 /* taste, as slices rather than a stack of numbers — size says how much, the colour
    says which medium it mostly came from, matching the kind colours used everywhere else */
 .donutWrap{display:flex;flex-direction:column;align-items:center;padding:4px 0 2px}
-.donut{width:152px;height:152px;display:block}
+.donut{width:152px;height:152px;display:block;transform-origin:50% 50%;animation:donutIn .5s cubic-bezier(.2,1.1,.3,1) both}
+@keyframes donutIn{from{opacity:0;transform:scale(.55) rotate(-70deg)}}
+@media (prefers-reduced-motion:reduce){.donut{animation:none}}
 .donut circle{stroke-linecap:round}
 .donutLegend{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column;gap:7px;width:100%;max-width:280px}
 .donutLegend li{display:flex;align-items:center;gap:9px;font-size:13.5px;font-weight:600}
@@ -960,6 +951,13 @@ nav button:active{transform:scale(.95)}
 .sheet.out{animation:fadeOut .2s ease both;pointer-events:none}
 .sheet.out .panel{animation:sheetDown .2s cubic-bezier(.4,0,.9,.35) both}
 section.on > div > *{animation:rise .38s cubic-bezier(.2,1.2,.38,1) both}
+/* a beat apart instead of all at once, so the screen builds rather than pops — capped
+   so a long screen's last card isn't still waiting to rise half a second later */
+section.on > div > *:nth-child(2){animation-delay:40ms}
+section.on > div > *:nth-child(3){animation-delay:80ms}
+section.on > div > *:nth-child(4){animation-delay:120ms}
+section.on > div > *:nth-child(5){animation-delay:160ms}
+section.on > div > *:nth-child(n+6){animation-delay:200ms}
 /* cards that arrive as you scroll: they lift into place once, then stay put */
 .reveal{opacity:0;transform:translateX(30px) scale(.965) rotate(1.2deg);
   transition:opacity .34s cubic-bezier(.2,.9,.25,1),transform .58s cubic-bezier(.2,1.22,.36,1);will-change:transform,opacity}
@@ -3106,7 +3104,15 @@ function switchTab(n) { shelfEdit = false;
   const was = TAB_ORDER.indexOf(currentTab()), now = TAB_ORDER.indexOf(n);
   document.documentElement.style.setProperty("--slide", was < 0 || now < 0 || was === now ? "0px" : (now > was ? "22px" : "-22px"));
   $$("nav button[data-tab]").forEach(b => { const on = b.dataset.tab === n;
-    b.classList.toggle("on", on); if (on) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current"); }); $$("main section").forEach(s => s.classList.toggle("on", s.id === "tab-"+n)); movePill(); scrollTo(0,0); RENDER[n]?.();
+    b.classList.toggle("on", on); if (on) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current"); });
+  /* the outgoing screen used to just disappear while the incoming one eased in; now it
+     leaves in the direction you came from instead, so the two read as one handoff */
+  const outgoing = was !== now && !REDUCED ? $$("main section").find(s => s.classList.contains("on")) : null;
+  $$("main section").forEach(s => { const on = s.id === "tab-"+n;
+    if (s === outgoing && !on) { s.classList.remove("on"); s.classList.add("leaving");
+      setTimeout(() => s.classList.remove("leaving"), 230); }
+    else s.classList.toggle("on", on); });
+  movePill(); scrollTo(0,0); RENDER[n]?.();
   if (n === "doors") setTimeout(markSeen, 1200); else paintDot(); }
 $$("nav button[data-tab]").forEach(b => b.onclick = () => switchTab(b.dataset.tab));
 markLive();
@@ -4126,27 +4132,16 @@ async function renderEveryoneFeed(fb) {
     $("#hallAdd").onclick = openAdd; return; }
   let shown = [];
   const weekAgo = new Date(Date.now() - 7*864e5).toISOString().slice(0,10); const recent = es.filter(e => e.rated_on >= weekAgo);
-  const win = chartWin(), since = chartSince(win);
-  const kinds = Object.keys(KINDS);
-  const charts = await Promise.all(kinds.map(k => chartFor(k, since, 5, es).catch(() => [])));
-  const any = charts.some(c => c.length);
   /* divisive stays worked out from what is here: it is about the argument, not the
      ranking, and the rows it needs are the ones on this screen anyway */
   const divisive = competition(recent.length >= 5 ? recent : es, 40)
     .filter(f => f.n >= 2).sort((a,b) => (a.agree ?? 100) - (b.agree ?? 100)).slice(0, 5);
-  fb.innerHTML = `<h2>The <span class="hl" style="background:var(--sky)">hall</span></h2><p class="sub">What everybody rated highest, and what they're saying \u00b7 ${es.length} entries \u00b7 ${recent.length} this week</p>
-    <div class="seg" style="margin-top:12px">${Object.entries(CHART_WINDOWS).map(([k, [l]]) =>
-      `<button data-cwin="${k}" class="${win === k ? "on" : ""}">${l}</button>`).join("")}</div>
-    ${any ? kinds.map((k, i) => charts[i].length
-      ? `<div class="card"><div class="h"><span>Best ${inWords(k)}</span><span class="tag dim">${lc(CHART_WINDOWS[win][0])}</span></div>${chartHTML(charts[i])}</div>`
-      : "").join("")
-      : `<p class="empty">Nobody rated anything ${lc(CHART_WINDOWS[win][0])}. Try a longer stretch.</p>`}
+  fb.innerHTML = `<h2>The <span class="hl" style="background:var(--sky)">hall</span></h2><p class="sub">What people are saying \u00b7 ${es.length} entries \u00b7 ${recent.length} this week</p>
     ${divisive.length ? `<div class="card"><div class="h"><span>Most divisive</span><span class="tag dim">bring these into a room</span></div>${compRows(divisive)}</div>` : ""}
     <div class="lbl">What people said</div>${(() => { const f = feedSort(es);
       shown = f.rows.slice(0, 20); return f.html + shown.map(e => slipHTML(e)).join(""); })()}`;
   endLine(fb, shown, 20);
   wireSlips(fb, es); revealIn(fb); wireFeedSort(fb, renderDoors); $$("[data-cw]", fb).forEach(x => x.onclick = () => openWork(x.dataset.cw));
-  $$("[data-cwin]", fb).forEach(b => b.onclick = () => { P.chart = b.dataset.cwin; saveP(); renderDoors(); });
 }
 
 /* ============ SHELF ============ */
@@ -4208,7 +4203,10 @@ function cabinetRows() {
 function renderCabinet() {
   const body = $("#shelfBody"); if (!body) return;
   const all = cabinetRows();
-  body.innerHTML = `<h2>Your <span class="hl" style="background:var(--mint)">cabinet</span></h2>
+  body.innerHTML = `<div style="display:flex;align-items:center;gap:10px">
+      <h2 style="margin:0">Your <span class="hl" style="background:var(--mint)">cabinet</span></h2>
+      ${me ? `<span class="av cabmark">${avSVG(avFor(me))}</span>` : ""}
+    </div>
     <p class="sub" id="cabSub"></p>
     ${viewSeg()}
     ${logCount() ? `<div class="seg" style="margin-top:8px">${Object.entries(CAB_SORTS).map(([k, l]) =>
@@ -4217,35 +4215,6 @@ function renderCabinet() {
     <div id="cabTrays"></div>
     ${logCount() ? `<div class="shelfbar"><button class="btn quiet" id="cabList">See it as a list \u00b7 ${logCount()} logged</button></div>` : ""}`;
   paintTrays(); wireCabinet();
-}
-/* four marks a shelf's splash can be thrown from, each taking a colour and a hash to
-   place and size itself by, so no two calls with different hashes look stamped from
-   the same mould */
-const SPLASH_COLS = ["var(--apricot)", "var(--pink)", "var(--mint)", "var(--butter)"];
-const SPLASH_MARKS = [
-  (c, h) => `<i class="bl" style="left:${-8+(h%7)}px;top:${-9+(h%6)}px;width:${21+(h%11)}px;height:${14+(h%9)}px;
-      background:${c};border-radius:${60+(h%20)}% ${40-(h%15)}% ${55+(h%15)}% ${45-(h%10)}%/50% 60% 40% 50%;
-      transform:rotate(${-18+(h%30)}deg)">
-    <i style="position:absolute;left:${16+(h%9)}px;top:${7+(h%6)}px;width:${5+(h%4)}px;height:${5+(h%4)}px;
-      background:${c};border-radius:60% 40% 70% 30%/40% 60% 40% 60%"></i></i>`,
-  (c, h) => `<i class="bl" style="left:${10+(h%14)}px;top:${-10+(h%7)}px;width:${11+(h%9)}px;height:${11+(h%9)}px;
-      background:${c};clip-path:polygon(50% 0%,62% 38%,100% 50%,62% 62%,50% 100%,38% 62%,0% 50%,38% 38%);
-      transform:rotate(${(h%40)-20}deg)"></i>`,
-  (c, h) => `<i class="bl" style="left:${(h%40)}px;top:${-6+(h%7)}px;width:${5+(h%3)}px;height:${5+(h%3)}px;
-      border-radius:50%;background:${c};box-shadow:${8+(h%7)}px ${-5+(h%5)}px 0 -1px ${c},
-      ${14+(h%6)}px ${1+(h%5)}px 0 -2px ${c}, ${4+(h%5)}px ${7+(h%5)}px 0 -2px ${c}"></i>`,
-  (c, h) => `<i class="bl" style="left:${8+(h%15)}px;top:${-8+(h%6)}px;width:${13+(h%9)}px;height:${13+(h%9)}px;
-      border-radius:50%;border:3px solid ${c};transform:rotate(${(h%30)-15}deg)"></i>`
-];
-/* which three marks, in what colours, come from the kind's own hash — stable on every
-   reload, different from one shelf to the next */
-function splashFor(kind) {
-  const h = avHash(kind);
-  const order = [0, 1, 2, 3].sort((a, b) => ((h >> (a * 3)) & 7) - ((h >> (b * 3)) & 7)).slice(0, 3);
-  return order.map((mi, i) => {
-    const sub = h >> (i * 7 + mi);
-    return SPLASH_MARKS[mi](SPLASH_COLS[(h >> (mi * 5)) % SPLASH_COLS.length], Math.abs(sub));
-  }).join("");
 }
 /* only the trays are redrawn as you type, because redrawing the box you are typing in
    takes the cursor out of it */
@@ -4258,11 +4227,9 @@ function paintTrays() {
   if (sub) sub.innerHTML = rows.length ? `${rows.length} ${cabQ ? "match" : "finished"}${
       kinds.length > 1 ? ` \u00b7 ${kinds.map(k => `${by[k].length} ${inWords(k, by[k].length)}`).join(" \u00b7 ")}` : ""}`
     : logCount() ? "Nothing in here matches that." : "Everything you finish stands here.";
-  el.innerHTML = rows.length ? kinds.map(k => `<div class="tray"><div class="lbl splash">
-        ${splashFor(k)}
+  el.innerHTML = rows.length ? kinds.map(k => `<div class="tray"><div class="lbl">
         <span>${esc(K(k).plural)}</span><em>${by[k].length}</em></div>
-      <div class="run">${by[k].map(r => tokenHTML(r.w, 52, r.score)).join("")}${
-        me && by[k].length > 1 ? `<span class="pet" style="animation-delay:-${avHash(k) % 17}s">${avSVG(avFor(me))}</span>` : ""}</div></div>`).join("")
+      <div class="run">${by[k].map(r => tokenHTML(r.w, 52, r.score)).join("")}</div></div>`).join("")
     : cabQ ? `<p class="empty">Nothing in here matches \u201c${esc(cabQ)}\u201d.</p>`
     : blank("var(--mint)", "\u25af", "Nothing in here yet",
         "Log something and it stands here, with its own cover on it. The shelf is what you mean to get to; this is what you got to.",
@@ -5444,6 +5411,10 @@ async function renderTaste() { const body = $("#tasteBody"); const t = tasteOf(m
     <p class="sub" style="margin-top:10px">${esc(tasteLead)}</p>
     <div class="tally">${Object.keys(KINDS).filter(k=>t.kinds[k]).map(k => `<span><b>${t.kinds[k]}</b>${K(k).label.toLowerCase()}</span>`).join("")}<span><b>${follows.length}</b>following</span><span id="followerCount"></span></div>
     <div class="card">${tasteHTML(t)}${t.tagged >= 3 ? `<div class="stack"><button class="btn ghost" id="myTasteCard">Save the card</button></div>` : ""}</div>
+    <div class="card"><div class="h"><span>What's rated best</span></div>
+      <div class="seg" style="margin-top:4px" id="chartWinSeg">${Object.entries(CHART_WINDOWS).map(([k,l]) =>
+        `<button data-cwin="${k}" class="${chartWin()===k?"on":""}">${l[0]}</button>`).join("")}</div>
+      <div id="chartBody">${skeleton(2)}</div></div>
     <div class="card"><div class="h"><span>For tonight</span><span class="tag dim">from what you loved</span></div><div id="recBody">${skeleton(2)}</div></div>
     <div class="card"><div class="h"><span>Your ten</span><button class="chip" id="editTop">Edit</button></div>
       <div class="chips" id="tenPick">${TENS.map(([k,l]) => `<button class="chip ${(P.ten||"all time")===k?"on":""}" data-ten="${k}">${l}</button>`).join("")}</div>
@@ -5476,6 +5447,28 @@ async function renderTaste() { const body = $("#tasteBody"); const t = tasteOf(m
   const sy = $("#shareYear"); if (sy) sy.onclick = () => { const year = String(new Date().getFullYear());
     openCuts("year", Object.assign(reviewData(yearOf(myEntries, year)), { year }), "Share your year"); };
   try { const fc = await q(sb.from("follows").select("follower").eq("followee", me.id)); $("#followerCount").innerHTML = `<b>${fc.length}</b>followers`; } catch {}
+  /* this used to live in the everyone feed, bolted on top of what people were saying.
+     it's its own thing — what's rated best, by window — so it gets its own card here
+     instead of sharing one with the hall's actual conversation. */
+  const paintCharts = async () => {
+    const el = $("#chartBody"); if (!el) return; el.innerHTML = skeleton(2);
+    let es = []; try { es = notApart(await wholeEntries(f => { let x = sb.from("entries").select(ENTRY_SEL);
+      if (f) x = x.eq("part", false);
+      return x.order("created_at",{ascending:false}).limit(300); })); } catch { }
+    es.forEach(e => remember(e.works));
+    if ($("#chartBody") !== el) return;
+    const win = chartWin(), since = chartSince(win);
+    const kinds = Object.keys(KINDS);
+    const charts = await Promise.all(kinds.map(k => chartFor(k, since, 5, es).catch(() => [])));
+    if ($("#chartBody") !== el) return;
+    el.innerHTML = charts.some(c => c.length)
+      ? kinds.map((k, i) => charts[i].length ? `<div class="h" style="margin-top:14px"><span>Best ${inWords(k)}</span></div>${chartHTML(charts[i])}` : "").join("")
+      : `<p class="empty">Nobody rated anything ${lc(CHART_WINDOWS[win][0])}. Try a longer stretch.</p>`;
+    $$("[data-cw]", el).forEach(x => x.onclick = () => openWork(x.dataset.cw));
+  };
+  $$("[data-cwin]", body).forEach(b => b.onclick = () => { P.chart = b.dataset.cwin; saveP();
+    $$("[data-cwin]", body).forEach(x => x.classList.toggle("on", x === b)); paintCharts(); });
+  paintCharts();
   const paintTen = async () => {
     const which = P.ten || "all time"; const el = $("#tenBody"); if (!el) return; el.innerHTML = skeleton(1);
     let top = { id:null, name:which, items:[] }; try { top = await ensureMyTop(which); } catch {}
@@ -6797,6 +6790,7 @@ function wireEps(box, show) {
     const on = !mySeen.has(w.id);
     b.classList.toggle("on", on); b.setAttribute("aria-pressed", String(on));
     b.closest(".er")?.classList.toggle("seen", on);
+    if (on) { b.classList.remove("pop"); void b.offsetWidth; b.classList.add("pop"); }
     try { await tickEpisode(w, on); } catch { b.classList.toggle("on", !on); b.closest(".er")?.classList.toggle("seen", !on); }
   });
   $$("[data-rate]", box).forEach(b => b.onclick = async () => {
