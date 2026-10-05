@@ -3348,9 +3348,13 @@ function renderAuth() {
    So a handle stays with whoever had it. The check here is only so the app can say no
    before you press anything; claim_handle is what actually decides, in one statement,
    because two people pressing save at the same moment must not both be told yes. */
+/* a handle you used to have stays in this table, "owned, unavailable" — to everyone but
+   you. claim_handle() on the server already knows that (`holder is distinct from me`);
+   this check has to know it too, or trying to change back to a name you once had gets
+   rejected here before the request that would have allowed it is ever sent. */
 async function handleTaken(h) {
-  try { const rows = await q(sb.from("handles").select("handle").eq("handle", lc(h)).limit(1));
-    return rows.length > 0; } catch { return false; }
+  try { const rows = await q(sb.from("handles").select("owner").eq("handle", lc(h)).limit(1));
+    return rows.length > 0 && rows[0].owner !== me?.id; } catch { return false; }
 }
 
 /* ---------- looking at a room before you are in it ----------
