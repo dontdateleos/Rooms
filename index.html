@@ -375,8 +375,11 @@ button:focus-visible,.linky:focus-visible{outline:3px solid var(--blue);outline-
 .sw{width:100%;aspect-ratio:1;border-radius:99px;border:3px solid transparent;cursor:pointer;padding:0}
 .sw.on{border-color:var(--ink)}
 
-/* slips (feed) */
-.slip{background:var(--card);border-radius:22px;padding:14px 16px;margin-top:12px;box-shadow:0 14px 34px -26px rgba(21,19,32,.3)}
+/* slips (feed) — a slight ambient drift, on the standalone translate property so it
+   never fights the :active press-scale (that's still plain `transform`) */
+.slip{background:var(--card);border-radius:22px;padding:14px 16px;margin-top:12px;box-shadow:0 14px 34px -26px rgba(21,19,32,.3);
+  animation:slipFloat 6.5s ease-in-out infinite}
+@keyframes slipFloat{0%,100%{translate:0 0}50%{translate:0 -4px}}
 .slip .who{display:flex;align-items:center;gap:9px;font-size:12.5px;font-weight:700;color:var(--mute)}
 .slip .who b{color:var(--ink)}
 .slip .ttl{display:flex;gap:10px;align-items:center;margin-top:10px;cursor:pointer}
@@ -429,9 +432,11 @@ button:focus-visible,.linky:focus-visible{outline:3px solid var(--blue);outline-
   scrollbar-width:none;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity}
 .run::-webkit-scrollbar{display:none}
 /* you, next to the cabinet rather than loose among the tokens — the same avatar as the
-   header, just bigger, standing still and blinking on its own clock the way every
-   avatar already does (.av .eyes below), instead of a second thing in motion */
-.cabmark{width:40px;height:40px;flex:none;filter:drop-shadow(0 4px 4px rgba(21,19,32,.25))}
+   header, just bigger, blinking on its own clock the way every avatar already does
+   (.av .eyes below), plus an occasional perk of its own since this one's standing still */
+.cabmark{width:40px;height:40px;flex:none;filter:drop-shadow(0 4px 4px rgba(21,19,32,.25));
+  animation:cabPerk 10.5s ease-in-out infinite;animation-delay:3.2s}
+@keyframes cabPerk{0%,76%,100%{scale:1;translate:0 0}82%{scale:1.08;translate:0 -5px}88%{scale:.97;translate:0 1px}93%{scale:1;translate:0 0}}
 .tok{position:relative;flex:none;background:none;border:0;padding:0;cursor:pointer;
   perspective:620px;scroll-snap-align:start;color:var(--ink);-webkit-tap-highlight-color:transparent;
   transition:transform .28s cubic-bezier(.2,.9,.25,1)}
@@ -1164,6 +1169,7 @@ body.demo header{padding-top:34px}
   .newline,.newline:before,.newline:after{animation:none}
   .navpill,.odo .reel .strip,.trio .agree .ring .val{transition:none}
   .av:not(#meAv) svg[data-shape]{animation:none}
+  .cabmark,.slip{animation:none}
   .bell.jolt svg{animation:none}
   .tile,.po,.club,.slip,.btn{transition:none}
   .reveal{opacity:1;transform:none;transition:none}}
@@ -1220,10 +1226,10 @@ const when = d => { if (!d) return ""; if (d === today()) return "today"; const 
 const STAR = "M12 2.6l2.9 6.1 6.6.9-4.8 4.6 1.2 6.6L12 17.6 6.1 20.8l1.2-6.6L2.5 9.6l6.6-.9z";
 let gid = 0;
 function starPath(f) {
-  if (f >= 1) return `<path d="${STAR}" fill="#151320"/>`;
-  if (f <= 0) return `<path d="${STAR}" fill="#EFE6D8"/>`;
+  if (f >= 1) return `<path d="${STAR}" fill="var(--ink)"/>`;
+  if (f <= 0) return `<path d="${STAR}" fill="var(--line)"/>`;
   const g = "g" + (++gid);
-  return `<defs><linearGradient id="${g}"><stop offset="50%" stop-color="#151320"/><stop offset="50%" stop-color="#EFE6D8"/></linearGradient></defs><path d="${STAR}" fill="url(#${g})"/>`;
+  return `<defs><linearGradient id="${g}"><stop offset="50%" stop-color="var(--ink)"/><stop offset="50%" stop-color="var(--line)"/></linearGradient></defs><path d="${STAR}" fill="url(#${g})"/>`;
 }
 const stars = (half, cls = "") => `<div class="stars ${cls}">${[0,1,2,3,4].map(i => { const f = half/2 - i;
   return `<i class="${f >= 1 ? "" : f > 0 ? "half" : "off"}"></i>`; }).join("")}</div>`;
@@ -3785,7 +3791,7 @@ function likeLine(e) {
 
 function slipHTML(e, opts = {}) { const w = remember(e.works) || works[e.work_id] || {}; const mine = e.user_id === me.id;
   const same = (e.reactions||[]).some(r => r.user_id === me.id), n = (e.reactions||[]).length;
-  return `<div class="slip" data-slip="${e.id}">
+  return `<div class="slip" data-slip="${e.id}" style="animation-delay:-${(avHash(e.id) % 65) / 10}s">
     <div class="who" data-prof="${esc(e.user_id)}" style="cursor:pointer">${avatar(e.profiles)} <b>${esc(mine ? "you" : e.profiles?.handle)}</b> · ${K(w.kind).verb} ${when(e.rated_on)}</div>
     <div class="ttl" data-work="${esc(e.work_id)}"><span class="season-cover">${cover(w)}${seasonEntryStamp(e)}</span><div><b>${esc(w.title)}</b><small>${tag(w.kind)} ${esc(w.year||"")}</small></div></div>
     ${e.note?`<div class="q${String(e.note).length > 210 ? " clip" : ""}">“${esc(e.note)}”</div>${String(e.note).length > 210 ? `<button class="more" data-more="${e.id}">More</button>` : ""}`:""}
