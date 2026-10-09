@@ -1423,7 +1423,7 @@ const cover = (w, cls = "co") => w?.cover ? `<img class="${cls}" src="${esc(w.co
 /* ============ prefs + sources ============ */
 const WORKER = "https://rooms.jordandf1.workers.dev";
 const proxy = () => (P.workerUrl || WORKER).replace(/\/+$/, "");
-const P = Object.assign({ workerUrl:"", tmdbKey:"", activeList:null, activeRoom:null, picked:null, kinds:["film","tv","book","game"], shelfFilter:"", pickTag:"", pickFrom:"shelf", bestGenre:{}, howLong:"", spinN:20, feedPicked:false, weekSeen:"", view:"shelf", seen:"", cardSkin:"", feed:"room", theme:"dark", chart:"month", cabSort:"recent" },
+const P = Object.assign({ workerUrl:"", tmdbKey:"", activeList:null, activeRoom:null, picked:null, kinds:["film","tv","book","game"], shelfFilter:"", pickTag:"", pickFrom:"shelf", bestGenre:{}, howLong:"", spinN:20, feedPicked:false, weekSeen:"", view:"shelf", seen:"", cardSkin:"", feed:"room", theme:"dark", chart:"month", cabSort:"recent", cabKind:"" },
   JSON.parse(localStorage.getItem("rooms.prefs") || "{}"));
 const saveP = () => localStorage.setItem("rooms.prefs", JSON.stringify(P));
 async function tmdb(path, params = {}) {
@@ -4196,6 +4196,7 @@ function cabinetRows() {
     best[sid] = { w, e:{ created_at:"", rated_on:"" }, score:d.score, worked:true };
   }
   let rows = Object.values(best);
+  if (P.cabKind) rows = rows.filter(r => r.w.kind === P.cabKind);
   const qtext = lc(cabQ).trim();
   if (qtext) rows = rows.filter(r => lc([r.w.title, r.w.creator, r.w.year, K(r.w.kind).label]
     .filter(Boolean).join(" ")).includes(qtext));
@@ -4217,6 +4218,14 @@ function cabinetRows() {
   else rows.sort(byNew);
   return rows;
 }
+/* every medium you've logged, regardless of the kind toggle, the search box or the
+   sort — so the toggle itself never loses an option you could switch back to. */
+function cabinetKinds() {
+  const set = new Set();
+  for (const e of myEntries) { const w = works[e.work_id]; if (w) set.add(w.kind); }
+  for (const [sid] of showsFromParts()) { const w = works[sid]; if (w) set.add(w.kind); }
+  return CAB_ORDER.filter(k => set.has(k));
+}
 function renderCabinet() {
   const body = $("#shelfBody"); if (!body) return;
   const all = cabinetRows();
@@ -4226,6 +4235,8 @@ function renderCabinet() {
     </div>
     <p class="sub" id="cabSub"></p>
     ${viewSeg()}
+    ${logCount() && cabinetKinds().length > 1 ? `<div class="seg" style="margin-top:12px">${[["", "All"], ...cabinetKinds().map(k => [k, K(k).plural])].map(([k, l]) =>
+      `<button data-ck="${k}" class="${(P.cabKind||"") === k ? "on" : ""}">${l}</button>`).join("")}</div>` : ""}
     ${logCount() ? `<div class="seg" style="margin-top:8px">${Object.entries(CAB_SORTS).map(([k, l]) =>
       `<button data-cs="${k}" class="${cabSort() === k ? "on" : ""}">${l}</button>`).join("")}</div>
       <input id="cabQ" class="searchlog" type="search" placeholder="Find something in here" autocomplete="off" value="${esc(cabQ)}">` : ""}
@@ -4274,6 +4285,8 @@ function paintTrays() {
 }
 function wireCabinet() {
   $$("[data-view]").forEach(b => b.onclick = () => { P.view = b.dataset.view; saveP(); renderShelf(); });
+  $$("[data-ck]").forEach(b => b.onclick = () => { P.cabKind = b.dataset.ck; saveP();
+    $$("[data-ck]").forEach(x => x.classList.toggle("on", x === b)); paintTrays(); });
   $$("[data-cs]").forEach(b => b.onclick = () => { P.cabSort = b.dataset.cs; saveP();
     $$("[data-cs]").forEach(x => x.classList.toggle("on", x === b)); paintTrays(); });
   const q2 = $("#cabQ"); if (q2) { let t; q2.oninput = ev => { clearTimeout(t); cabQ = ev.target.value;
