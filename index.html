@@ -356,9 +356,12 @@ button:focus-visible,.linky:focus-visible{outline:3px solid var(--blue);outline-
 .row .n small{display:block;font-size:10px;font-weight:700;color:var(--mute);letter-spacing:.04em;text-transform:uppercase;text-align:right}
 .row.done .t,.row.done .co{opacity:.45}
 .rk{font-family:var(--head);font-weight:900;font-size:13px;width:18px;color:var(--mute);flex:none}
-.tok .rkbadge{position:absolute;top:-6px;left:-6px;background:var(--ink);color:var(--cream);font-family:var(--head);
-  font-weight:900;font-size:11px;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;
-  z-index:2;box-shadow:0 2px 4px rgba(21,19,32,.3)}
+.ranklist{display:flex;flex-direction:column}
+.rkrow .stars{flex:none}
+.rkmove{display:flex;flex-direction:column;gap:4px;flex:none}
+.rkmove button{width:28px;height:28px;border-radius:8px;border:1.5px solid var(--line);background:var(--card);
+  color:var(--ink);font-size:13px;font-weight:700;cursor:pointer;display:grid;place-items:center;padding:0}
+.rkmove button:disabled{opacity:.3;cursor:default}
 .good{color:var(--good)}.bad{color:var(--bad)}
 .stars{display:flex;gap:4px}
 .stars i{width:15px;height:15px;display:block;background:var(--ink);clip-path:polygon(50% 2%,62% 36%,98% 38%,70% 60%,80% 96%,50% 76%,20% 96%,30% 60%,2% 38%,38% 36%)}
@@ -417,7 +420,7 @@ button:focus-visible,.linky:focus-visible{outline:3px solid var(--blue);outline-
 .po.onit{box-shadow:0 0 0 2px var(--ink)}
 .cell .po.onit + .cap span:first-child{color:var(--ink);font-weight:600}
 .po{-webkit-touch-callout:none}
-/* ---------- the cabinet ----------
+/* ---------- the archive ----------
    A thing you have finished, as a thing: a box standing on a plinth. The poster is the
    front, the spine is the left edge, the plinth is tinted by medium so a row says what
    it is without a word of label. The shelf is what you have not got to; this is what you
@@ -434,7 +437,7 @@ button:focus-visible,.linky:focus-visible{outline:3px solid var(--blue);outline-
 .run{display:flex;align-items:flex-end;gap:10px;overflow-x:auto;padding:2px 2px 6px;
   scrollbar-width:none;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity}
 .run::-webkit-scrollbar{display:none}
-/* you, next to the cabinet rather than loose among the tokens — the same avatar as the
+/* you, next to the archive rather than loose among the tokens — the same avatar as the
    header, just bigger, blinking on its own clock the way every avatar already does
    (.av .eyes below), plus an occasional perk of its own since this one's standing still */
 .cabmark{width:40px;height:40px;flex:none;filter:drop-shadow(0 4px 4px rgba(21,19,32,.25));
@@ -456,7 +459,7 @@ button:focus-visible,.linky:focus-visible{outline:3px solid var(--blue);outline-
 .tok.picked{transform:translateY(-3px) scale(1.035)}
 .tok.picked .ob{animation-duration:2.4s;filter:drop-shadow(0 13px 9px rgba(21,19,32,.24))}
 @keyframes tokSpin{from{transform:rotateY(0deg)}to{transform:rotateY(360deg)}}
-/* the float — the memory-card-screen feeling this cabinet took its cue from — rides on
+/* the float — the memory-card-screen feeling this archive took its cue from — rides on
    an inner layer, not on .ob itself: .ob's own box is what the plinth is measured
    against, and a wrapper that shifts underneath it would make "stands on the plinth"
    true only some of the time. transform, not margin, so nothing here is ever reflowed. */
@@ -4165,22 +4168,22 @@ const reelCopies = n => Math.max(1, Math.ceil((REEL.lead + 10) / n));
 /* item index -> a cell in the middle of the rendered strip */
 const reelHome = (n, copies, i) => Math.floor((copies - 1) / 2) * n + i;
 const isSoon = w => !!(w?.release && w.release > today());
-/* ---------- the cabinet ----------
+/* ---------- the archive ----------
    The shelf is what you mean to get to. This is what you got to. Grouped by medium,
    because "everything I have read" is a question people actually ask and a row answers
    it without counting. Newest first inside a tray, so the thing you just finished is the
    thing you see.
 
    A show you only ever rated in seasons belongs here too: you have said what you think
-   of it, and a cabinet that left it out would be missing something you own. */
+   of it, and an archive that left it out would be missing something you own. */
 const CAB_ORDER = ["film", "tv", "book", "game"];
 /* How you want to look at it. Recent is what it opens on — the thing you just finished
-   is the thing you want to see — but a cabinet you cannot sort is a pile, and "what did
+   is the thing you want to see — but an archive you cannot sort is a pile, and "what did
    I actually think was best" is the question the scores are there to answer. */
 const CAB_SORTS = { recent:"Recent", rank:"Ranked", best:"Highest", az:"A\u2013Z", year:"By year" };
 const cabSort = () => CAB_SORTS[P.cabSort] ? P.cabSort : "recent";
 /* the sort is a preference and is kept; what you typed into the box is not. A search
-   remembered from last week is an empty cabinet with no explanation for it. */
+   remembered from last week is an empty archive with no explanation for it. */
 let cabQ = "";
 let cabSeen = null;
 function cabinetRows() {
@@ -4218,7 +4221,7 @@ function renderCabinet() {
   const body = $("#shelfBody"); if (!body) return;
   const all = cabinetRows();
   body.innerHTML = `<div style="display:flex;align-items:center;gap:10px">
-      <h2 style="margin:0">Your <span class="hl" style="background:var(--mint)">cabinet</span></h2>
+      <h2 style="margin:0">Your <span class="hl" style="background:var(--mint)">archive</span></h2>
       ${me ? `<span class="av cabmark">${avSVG(avFor(me))}</span>` : ""}
     </div>
     <p class="sub" id="cabSub"></p>
@@ -4232,6 +4235,16 @@ function renderCabinet() {
 }
 /* only the trays are redrawn as you type, because redrawing the box you are typing in
    takes the cursor out of it */
+/* ranked is the one sort with a real, standing order \u2014 vertical, so there's a clear
+   up and a clear down to move something along, instead of a horizontal row where
+   "earlier" and "better" aren't obviously the same direction. */
+const rankRowHTML = (r, i, n) => `<div class="row rkrow" data-work="${esc(r.w.id)}">
+    <span class="rk">${i+1}</span>${cover(r.w)}
+    <div class="t"><b>${esc(r.w.title)}</b><small>${tag(r.w.kind)} ${esc(r.w.year||"")}</small></div>
+    ${stars(r.score, "sm")}
+    <div class="rkmove"><button class="chip" data-rkup="${esc(r.w.id)}" data-rkkind="${esc(r.w.kind)}" ${i===0?"disabled":""} aria-label="Move up">\u2191</button>
+      <button class="chip" data-rkdown="${esc(r.w.id)}" data-rkkind="${esc(r.w.kind)}" ${i===n-1?"disabled":""} aria-label="Move down">\u2193</button></div>
+  </div>`;
 function paintTrays() {
   const el = $("#cabTrays"); if (!el) return;
   const rows = cabinetRows();
@@ -4246,14 +4259,17 @@ function paintTrays() {
     : logCount() ? "Nothing in here matches that." : "Everything you finish stands here.";
   el.innerHTML = rows.length ? kinds.map(k => `<div class="tray"><div class="lbl">
         <span>${esc(K(k).plural)}</span><em>${by[k].length}</em></div>
-      <div class="run">${by[k].map((r, i) => ranked
-        ? tokenHTML(r.w, 52, r.score).replace(/^<button /, `<button data-rankn="${i+1}" `)
-        : tokenHTML(r.w, 52, r.score)).join("")}</div></div>`).join("")
+      ${ranked ? `<div class="ranklist">${by[k].map((r, i) => rankRowHTML(r, i, by[k].length)).join("")}</div>`
+        : `<div class="run">${by[k].map(r => tokenHTML(r.w, 52, r.score)).join("")}</div>`}</div>`).join("")
     : cabQ ? `<p class="empty">Nothing in here matches \u201c${esc(cabQ)}\u201d.</p>`
     : blank("var(--mint)", "\u25af", "Nothing in here yet",
         "Log something and it stands here, with its own cover on it. The shelf is what you mean to get to; this is what you got to.",
         [["cabShelf", "Back to the shelf", "soft"]]);
-  if (ranked) $$("[data-rankn]", el).forEach(b => b.insertAdjacentHTML("afterbegin", `<span class="rkbadge">${b.dataset.rankn}</span>`));
+  if (ranked) {
+    $$(".rkrow[data-work]", el).forEach(r => r.onclick = () => openWork(r.dataset.work));
+    $$("[data-rkup]", el).forEach(b => b.onclick = ev => { ev.stopPropagation(); moveRank(b.dataset.rkkind, b.dataset.rkup, -1); });
+    $$("[data-rkdown]", el).forEach(b => b.onclick = ev => { ev.stopPropagation(); moveRank(b.dataset.rkkind, b.dataset.rkdown, 1); });
+  }
   wireTokens();
 }
 function wireCabinet() {
@@ -4276,7 +4292,7 @@ function wireTokens() {
     setTimeout(() => b.classList.remove("picked"), 900);
     setTimeout(() => openWork(id), 260);
   });
-  /* only what you can see moves. Without this, a cabinet of four hundred things is four
+  /* only what you can see moves. Without this, an archive of four hundred things is four
      hundred compositor layers turning behind a scroll nobody is looking at. */
   if (!REDUCED) {
     cabSeen?.disconnect();
@@ -4286,7 +4302,7 @@ function wireTokens() {
   }
 }
 const viewSeg = () => `<div class="seg" style="margin-top:12px">${
-  [["shelf", "The shelf"], ["cabinet", "The cabinet"]].map(([k, l]) =>
+  [["shelf", "The shelf"], ["cabinet", "The archive"]].map(([k, l]) =>
     `<button data-view="${k}" class="${cabView() === k ? "on" : ""}">${l}</button>`).join("")}</div>`;
 /* medium and "when" used to sit as two more chip rows on the shelf, on top of the view
    toggle, the search box and its own kind chips — four rows of controls before any
@@ -4303,9 +4319,9 @@ function shelfFilterSheet(counts, soonCount, nowCount) {
     ${soonCount || nowCount ? `<div class="lbl" style="margin-top:14px">When</div>
     <div class="chips">${whenOpts.map(([k, l]) => `<button class="chip ${(P.when||"")===k?"on":""}" data-wf="${k}">${l}</button>`).join("")}</div>` : ""}`;
 }
-/* the cabinet is only worth offering once there is something in it — and a show you
+/* the archive is only worth offering once there is something in it — and a show you
    only ever rated in seasons is something in it, which counting whole entries missed:
-   the one person whose log is all seasons had a cabinet and no way to reach it. */
+   the one person whose log is all seasons had an archive and no way to reach it. */
 const cabView = () => P.view === "cabinet" && logCount() ? "cabinet" : "shelf";
 
 function renderShelf() { if (cabView() === "cabinet") return renderCabinet();
@@ -5412,7 +5428,7 @@ async function ensureMyTop(name = "all time") {
     if (items.length) { try { await q(sb.from("top_list_items").insert(items.map((id,i) => ({ top_list_id:t.id, work_id:id, rank:i+1 })))); t.items = items; } catch {} }
   }
   return t; }
-/* ---------- the cabinet's own order ----------
+/* ---------- the archive's own order ----------
    a second, uncapped top_list per kind ("rank:film" etc, never "film" itself — that
    name is the curated ten) holding every finished thing, best to worst. The first time
    it's touched it's seeded from your scores, same as the ten is; after that, new things
@@ -5442,20 +5458,29 @@ function askRank(a, b) {
     $$("[data-rk]", $("#rkRow")).forEach(r => r.onclick = () => done(r.dataset.rk === "0"));
     $("#askNo").onclick = () => done(null);
   }); }
-let rankCache = {};
+let rankCache = {}, rankListId = {};
 async function ensureRankCache(kinds) {
   await Promise.all(kinds.filter(k => !rankCache[k]).map(async k => {
-    try { const t = await ensureMyRank(k); rankCache[k] = t.items; } catch { rankCache[k] = []; } })); }
+    try { const t = await ensureMyRank(k); rankCache[k] = t.items; rankListId[k] = t.id; } catch { rankCache[k] = []; } })); }
+/* the score you gave it says roughly where it belongs, so the first question asked is
+   against something near that score, not the thing sitting dead in the middle of the
+   whole list — one plausible-looking comparison instead of a coin flip to start on.
+   Everything after that first question is a normal bisection of whatever range is left. */
+const scoreOf = id => (myEntries.find(e => e.work_id === id) || {}).score;
 /* a handful of "which beats which" taps place it exactly, in about log2(n) questions
    instead of one per existing thing. Only called for a work not already in the list. */
 async function rankInsert(kind, workId) {
   const t = await ensureMyRank(kind);
   const items = t.items.filter(id => id !== workId);
-  if (rankCache[kind]) rankCache[kind] = items;
+  rankListId[kind] = t.id; if (rankCache[kind]) rankCache[kind] = items;
   if (!items.length) { const out = [workId]; await persistRank(t.id, out); if (rankCache[kind]) rankCache[kind] = out; return; }
+  const myScore = scoreOf(workId);
   let lo = 0, hi = items.length;
+  let suggested = myScore == null ? null : items.findIndex(id => { const s = scoreOf(id); return s != null && s <= myScore; });
+  if (suggested === -1) suggested = items.length - 1;
   while (lo < hi) {
-    const mid = (lo + hi) >> 1;
+    const mid = suggested != null ? Math.max(lo, Math.min(hi - 1, suggested)) : (lo + hi) >> 1;
+    suggested = null;
     const w = works[workId], other = works[items[mid]];
     if (!w || !other) break;
     const preferNew = await askRank(w, other);
@@ -5464,6 +5489,16 @@ async function rankInsert(kind, workId) {
   }
   const out = items.slice(); out.splice(lo, 0, workId);
   await persistRank(t.id, out); if (rankCache[kind]) rankCache[kind] = out; }
+/* the comparisons get it close; this is for when you still want to hand-correct it.
+   Swaps with a neighbour rather than reopening the whole bisection on one nudge. */
+function moveRank(kind, workId, dir) {
+  const items = rankCache[kind]; if (!items) return;
+  const i = items.indexOf(workId); const j = i + dir;
+  if (i < 0 || j < 0 || j >= items.length) return;
+  [items[i], items[j]] = [items[j], items[i]];
+  paintTrays();
+  persistRank(rankListId[kind], items).catch(() => {});
+}
 const fourHTML = items => `<div class="four">${[0,1,2,3].map(i => { const w = works[items[i]]; return w ? `<div class="po" data-work="${esc(w.id)}">${cover(w,"")}<b>${esc(w.title)}</b></div>` : `<div class="po" style="opacity:.4"></div>`; }).join("")}</div>`;
 let recs = null;
 async function loadRecs() { if (recs) return recs; const onShelf = new Set(lists.flatMap(l => l.items)); const seeds = myEntries.filter(e => e.score >= 8).slice(0, 6); const pool = {}; let reached = false;
@@ -7053,7 +7088,7 @@ function openLog(w, edit = null) { const cfg = K(w.kind); const loved = edit?.lo
       const offShelf = !edit?.id && dropFromShelf(w.id);
       /* you are not in the middle of something you have just finished */
       if (!edit?.id && nowOf(w.id)) stopNow(w.id);
-      /* a rewatch doesn't ask again — only the first time this work stands in the cabinet */
+      /* a rewatch doesn't ask again — only the first time this work stands in the archive */
       const firstTime = !edit?.id && myEntries.filter(x => x.work_id === w.id).length === 1;
       justSwept = w.id; inkWash(w.kind); recs = null; delete tagCache[w.id]; if (P.picked === w.id) { P.picked = null; saveP(); } closeSheet(); refresh();
       if (offShelf) say("Off the shelf");
