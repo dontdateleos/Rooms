@@ -356,6 +356,9 @@ button:focus-visible,.linky:focus-visible{outline:3px solid var(--blue);outline-
 .row .n small{display:block;font-size:10px;font-weight:700;color:var(--mute);letter-spacing:.04em;text-transform:uppercase;text-align:right}
 .row.done .t,.row.done .co{opacity:.45}
 .rk{font-family:var(--head);font-weight:900;font-size:13px;width:18px;color:var(--mute);flex:none}
+.tok .rkbadge{position:absolute;top:-6px;left:-6px;background:var(--ink);color:var(--cream);font-family:var(--head);
+  font-weight:900;font-size:11px;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;
+  z-index:2;box-shadow:0 2px 4px rgba(21,19,32,.3)}
 .good{color:var(--good)}.bad{color:var(--bad)}
 .stars{display:flex;gap:4px}
 .stars i{width:15px;height:15px;display:block;background:var(--ink);clip-path:polygon(50% 2%,62% 36%,98% 38%,70% 60%,80% 96%,50% 76%,20% 96%,30% 60%,2% 38%,38% 36%)}
@@ -4174,7 +4177,7 @@ const CAB_ORDER = ["film", "tv", "book", "game"];
 /* How you want to look at it. Recent is what it opens on — the thing you just finished
    is the thing you want to see — but a cabinet you cannot sort is a pile, and "what did
    I actually think was best" is the question the scores are there to answer. */
-const CAB_SORTS = { recent:"Recent", best:"Highest", az:"A\u2013Z", year:"By year" };
+const CAB_SORTS = { recent:"Recent", rank:"Ranked", best:"Highest", az:"A\u2013Z", year:"By year" };
 const cabSort = () => CAB_SORTS[P.cabSort] ? P.cabSort : "recent";
 /* the sort is a preference and is kept; what you typed into the box is not. A search
    remembered from last week is an empty cabinet with no explanation for it. */
@@ -4199,7 +4202,12 @@ function cabinetRows() {
   const byNew = (a, b) => newestFirst(a.e, b.e);
   const byName = (a, b) => String(a.w.title || "").localeCompare(String(b.w.title || ""),
     undefined, { sensitivity:"base", numeric:true });
-  if (how === "best") rows.sort((a, b) => (b.score || 0) - (a.score || 0) || byNew(a, b));
+  if (how === "rank") rows.sort((a, b) => { if (a.w.kind !== b.w.kind) return 0;
+    const arr = rankCache[a.w.kind]; if (!arr) return (b.score || 0) - (a.score || 0) || byNew(a, b);
+    const ia = arr.indexOf(a.w.id), ib = arr.indexOf(b.w.id);
+    if (ia === -1 && ib === -1) return (b.score || 0) - (a.score || 0) || byNew(a, b);
+    if (ia === -1) return 1; if (ib === -1) return -1; return ia - ib; });
+  else if (how === "best") rows.sort((a, b) => (b.score || 0) - (a.score || 0) || byNew(a, b));
   else if (how === "az") rows.sort(byName);
   else if (how === "year") rows.sort((a, b) =>
     String(b.w.year || "").localeCompare(String(a.w.year || "")) || byName(a, b));
@@ -4229,17 +4237,23 @@ function paintTrays() {
   const rows = cabinetRows();
   const by = {}; rows.forEach(r => (by[r.w.kind] ||= []).push(r));
   const kinds = CAB_ORDER.filter(k => by[k]?.length);
+  const ranked = cabSort() === "rank";
+  if (ranked) { const missing = kinds.filter(k => !rankCache[k]);
+    if (missing.length) ensureRankCache(missing).then(() => { if (cabSort() === "rank") paintTrays(); }); }
   const sub = $("#cabSub");
   if (sub) sub.innerHTML = rows.length ? `${rows.length} ${cabQ ? "match" : "finished"}${
       kinds.length > 1 ? ` \u00b7 ${kinds.map(k => `${by[k].length} ${inWords(k, by[k].length)}`).join(" \u00b7 ")}` : ""}`
     : logCount() ? "Nothing in here matches that." : "Everything you finish stands here.";
   el.innerHTML = rows.length ? kinds.map(k => `<div class="tray"><div class="lbl">
         <span>${esc(K(k).plural)}</span><em>${by[k].length}</em></div>
-      <div class="run">${by[k].map(r => tokenHTML(r.w, 52, r.score)).join("")}</div></div>`).join("")
+      <div class="run">${by[k].map((r, i) => ranked
+        ? tokenHTML(r.w, 52, r.score).replace(/^<button /, `<button data-rankn="${i+1}" `)
+        : tokenHTML(r.w, 52, r.score)).join("")}</div></div>`).join("")
     : cabQ ? `<p class="empty">Nothing in here matches \u201c${esc(cabQ)}\u201d.</p>`
     : blank("var(--mint)", "\u25af", "Nothing in here yet",
         "Log something and it stands here, with its own cover on it. The shelf is what you mean to get to; this is what you got to.",
         [["cabShelf", "Back to the shelf", "soft"]]);
+  if (ranked) $$("[data-rankn]", el).forEach(b => b.insertAdjacentHTML("afterbegin", `<span class="rkbadge">${b.dataset.rankn}</span>`));
   wireTokens();
 }
 function wireCabinet() {
@@ -5398,6 +5412,58 @@ async function ensureMyTop(name = "all time") {
     if (items.length) { try { await q(sb.from("top_list_items").insert(items.map((id,i) => ({ top_list_id:t.id, work_id:id, rank:i+1 })))); t.items = items; } catch {} }
   }
   return t; }
+/* ---------- the cabinet's own order ----------
+   a second, uncapped top_list per kind ("rank:film" etc, never "film" itself — that
+   name is the curated ten) holding every finished thing, best to worst. The first time
+   it's touched it's seeded from your scores, same as the ten is; after that, new things
+   are placed by asking what beats what, and old scores never move it again. */
+async function ensureMyRank(kind) {
+  const name = "rank:" + kind;
+  let t = await loadTop(me.id, name);
+  if (!t) { const r = await q(sb.from("top_lists").insert({ owner:me.id, name }).select().single()); t = { id:r.id, name, items:[] }; }
+  if (!t.items.length) {
+    const seed = myEntries.filter(e => kindOf(e.work_id) === kind).sort((a,b) => b.score - a.score || String(b.rated_on).localeCompare(String(a.rated_on)));
+    const seen = new Set(), items = [];
+    for (const e of seed) { if (seen.has(e.work_id)) continue; seen.add(e.work_id); items.push(e.work_id); }
+    if (items.length) { try { await q(sb.from("top_list_items").insert(items.map((id,i) => ({ top_list_id:t.id, work_id:id, rank:i+1 })))); t.items = items; } catch {} }
+  }
+  return t; }
+async function persistRank(listId, items) {
+  await q(sb.from("top_list_items").delete().eq("top_list_id", listId));
+  if (items.length) await q(sb.from("top_list_items").insert(items.map((id,i) => ({ top_list_id:listId, work_id:id, rank:i+1 })))); }
+/* which do you like more, shown as two covers rather than two titles — true picks a,
+   false picks b, null means "just put it last" and ends the bisection on the spot */
+function askRank(a, b) {
+  return openAsk(`<h3>Which do you like more?</h3>
+    <p class="sub">Placing <b>${esc(a.title)}</b> among your ${inWords(a.kind)}.</p>
+    <div id="rkRow"></div>
+    <div class="stack"><button class="btn quiet" id="askNo">Just put it last</button></div>`, done => {
+    $("#rkRow").innerHTML = [a, b].map((w, i) => `<div class="row" data-rk="${i}">${cover(w)}<div class="t"><b>${esc(w.title)}</b><small>${tag(w.kind)} ${esc(w.year||"")}</small></div></div>`).join("");
+    $$("[data-rk]", $("#rkRow")).forEach(r => r.onclick = () => done(r.dataset.rk === "0"));
+    $("#askNo").onclick = () => done(null);
+  }); }
+let rankCache = {};
+async function ensureRankCache(kinds) {
+  await Promise.all(kinds.filter(k => !rankCache[k]).map(async k => {
+    try { const t = await ensureMyRank(k); rankCache[k] = t.items; } catch { rankCache[k] = []; } })); }
+/* a handful of "which beats which" taps place it exactly, in about log2(n) questions
+   instead of one per existing thing. Only called for a work not already in the list. */
+async function rankInsert(kind, workId) {
+  const t = await ensureMyRank(kind);
+  const items = t.items.filter(id => id !== workId);
+  if (rankCache[kind]) rankCache[kind] = items;
+  if (!items.length) { const out = [workId]; await persistRank(t.id, out); if (rankCache[kind]) rankCache[kind] = out; return; }
+  let lo = 0, hi = items.length;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    const w = works[workId], other = works[items[mid]];
+    if (!w || !other) break;
+    const preferNew = await askRank(w, other);
+    if (preferNew === null) { lo = hi = items.length; break; }
+    if (preferNew) hi = mid; else lo = mid + 1;
+  }
+  const out = items.slice(); out.splice(lo, 0, workId);
+  await persistRank(t.id, out); if (rankCache[kind]) rankCache[kind] = out; }
 const fourHTML = items => `<div class="four">${[0,1,2,3].map(i => { const w = works[items[i]]; return w ? `<div class="po" data-work="${esc(w.id)}">${cover(w,"")}<b>${esc(w.title)}</b></div>` : `<div class="po" style="opacity:.4"></div>`; }).join("")}</div>`;
 let recs = null;
 async function loadRecs() { if (recs) return recs; const onShelf = new Set(lists.flatMap(l => l.items)); const seeds = myEntries.filter(e => e.score >= 8).slice(0, 6); const pool = {}; let reached = false;
@@ -6987,6 +7053,8 @@ function openLog(w, edit = null) { const cfg = K(w.kind); const loved = edit?.lo
       const offShelf = !edit?.id && dropFromShelf(w.id);
       /* you are not in the middle of something you have just finished */
       if (!edit?.id && nowOf(w.id)) stopNow(w.id);
+      /* a rewatch doesn't ask again — only the first time this work stands in the cabinet */
+      const firstTime = !edit?.id && myEntries.filter(x => x.work_id === w.id).length === 1;
       justSwept = w.id; inkWash(w.kind); recs = null; delete tagCache[w.id]; if (P.picked === w.id) { P.picked = null; saveP(); } closeSheet(); refresh();
       if (offShelf) say("Off the shelf");
       const saved = (edit ? myEntries.find(x => x.id === edit.id) : myEntries.find(x => x.work_id === w.id)) || e;
@@ -6994,6 +7062,7 @@ function openLog(w, edit = null) { const cfg = K(w.kind); const loved = edit?.lo
       if (!edit?.id && saved.id) sayUndo("Logged", async () => {
         try { await q(sb.from("entries").delete().eq("id", saved.id)); await loadMine(); refresh();
           say("Taken back"); } catch (err) { oops(err, "Couldn't take that back"); } });
+      if (firstTime) { try { await rankInsert(w.kind, w.id); } catch {} }
       openEntry(saved, true); } catch (err) { $("#wMsg").textContent = err.message; $("#wSave").disabled = false; } }; }
 
 /* ============ ENTRY PAGE ============ */
