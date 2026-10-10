@@ -357,6 +357,10 @@ button:focus-visible,.linky:focus-visible{outline:3px solid var(--blue);outline-
 .row.done .t,.row.done .co{opacity:.45}
 .rk{font-family:var(--head);font-weight:900;font-size:13px;width:18px;color:var(--mute);flex:none}
 .ranklist{display:flex;flex-direction:column}
+.logobar{flex:1;min-width:0;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;padding:0 10px;overflow:hidden}
+.logobar.has-logo{background:rgba(21,19,32,.92)}
+.logobar img{max-width:100%;max-height:26px;object-fit:contain;display:block}
+.logobar b{font-family:var(--head);font-weight:800;font-size:13.5px;color:var(--ink);text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
 .rkrow .stars{flex:none}
 .rkmove{display:flex;flex-direction:column;gap:4px;flex:none}
 .rkmove button{width:28px;height:28px;border-radius:8px;border:1.5px solid var(--line);background:var(--card);
@@ -4249,13 +4253,36 @@ function renderCabinet() {
 /* ranked is the one sort with a real, standing order \u2014 vertical, so there's a clear
    up and a clear down to move something along, instead of a horizontal row where
    "earlier" and "better" aren't obviously the same direction. */
-const rankRowHTML = (r, i, n) => `<div class="row rkrow" data-work="${esc(r.w.id)}">
-    <span class="rk">${i+1}</span>${cover(r.w)}
-    <div class="t"><b>${esc(r.w.title)}</b><small>${tag(r.w.kind)} ${esc(r.w.year||"")}</small></div>
+/* a wordmark instead of a poster \u2014 TMDB keeps title logos on a separate endpoint from
+   the cover, one request per title, so this is fetched lazily per row (see ensureLogo)
+   and the plain title stands in, tinted by kind, until it lands or if none exists. */
+let logoCache = {}, logoLoading = new Set();
+async function ensureLogo(w) {
+  if (!(w.kind === "film" || w.kind === "tv")) return null;
+  if (w.id in logoCache) return logoCache[w.id];
+  if (logoLoading.has(w.id)) return null;
+  logoLoading.add(w.id);
+  const raw = w.id.split(":")[1];
+  try {
+    const d = await tmdb(`${w.kind === "film" ? "movie" : "tv"}/${raw}/images`, { include_image_language:"en,null" });
+    const logos = (d.logos || []).filter(l => l.file_path);
+    logos.sort((a, b) => { const al = a.iso_639_1 === "en" ? 0 : 1, bl = b.iso_639_1 === "en" ? 0 : 1;
+      return al - bl || (b.vote_average || 0) - (a.vote_average || 0); });
+    logoCache[w.id] = logos[0] ? TMDB_IMG(logos[0].file_path) : null;
+  } catch { logoCache[w.id] = null; }
+  logoLoading.delete(w.id);
+  return logoCache[w.id];
+}
+const rankRowHTML = (r, i, n) => { const logo = logoCache[r.w.id];
+  return `<div class="row rkrow" data-work="${esc(r.w.id)}">
+    <span class="rk">${i+1}</span>
+    <div class="logobar${logo ? " has-logo" : ""}"${logo ? "" : ` style="background:${TOK_TINT[r.w.kind]||"var(--line)"}"`}>
+      ${logo ? `<img src="${esc(logo)}" alt="${esc(r.w.title)}" loading="lazy">` : `<b>${esc(r.w.title)}</b>`}
+    </div>
     ${stars(r.score, "sm")}
     <div class="rkmove"><button class="chip" data-rkup="${esc(r.w.id)}" data-rkkind="${esc(r.w.kind)}" ${i===0?"disabled":""} aria-label="Move up">\u2191</button>
       <button class="chip" data-rkdown="${esc(r.w.id)}" data-rkkind="${esc(r.w.kind)}" ${i===n-1?"disabled":""} aria-label="Move down">\u2193</button></div>
-  </div>`;
+  </div>`; };
 function paintTrays() {
   const el = $("#cabTrays"); if (!el) return;
   const rows = cabinetRows();
@@ -4263,7 +4290,9 @@ function paintTrays() {
   const kinds = CAB_ORDER.filter(k => by[k]?.length);
   const ranked = cabSort() === "rank";
   if (ranked) { const missing = kinds.filter(k => !rankCache[k]);
-    if (missing.length) ensureRankCache(missing).then(() => { if (cabSort() === "rank") paintTrays(); }); }
+    if (missing.length) ensureRankCache(missing).then(() => { if (cabSort() === "rank") paintTrays(); });
+    const needLogos = rows.filter(r => (r.w.kind === "film" || r.w.kind === "tv") && !(r.w.id in logoCache) && !logoLoading.has(r.w.id));
+    if (needLogos.length) Promise.all(needLogos.map(r => ensureLogo(r.w))).then(() => { if (cabSort() === "rank") paintTrays(); }); }
   const sub = $("#cabSub");
   if (sub) sub.innerHTML = rows.length ? `${rows.length} ${cabQ ? "match" : "finished"}${
       kinds.length > 1 ? ` \u00b7 ${kinds.map(k => `${by[k].length} ${inWords(k, by[k].length)}`).join(" \u00b7 ")}` : ""}`
