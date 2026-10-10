@@ -356,16 +356,39 @@ button:focus-visible,.linky:focus-visible{outline:3px solid var(--blue);outline-
 .row .n small{display:block;font-size:10px;font-weight:700;color:var(--mute);letter-spacing:.04em;text-transform:uppercase;text-align:right}
 .row.done .t,.row.done .co{opacity:.45}
 .rk{font-family:var(--head);font-weight:900;font-size:13px;width:18px;color:var(--mute);flex:none}
-.ranklist{display:flex;flex-direction:column}
-.logobar{flex:1;min-width:0;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;padding:0 10px;overflow:hidden}
-.logobar.has-logo{background:rgba(21,19,32,.92)}
-.logobar img{max-width:100%;max-height:26px;object-fit:contain;display:block}
-.logobar b{font-family:var(--head);font-weight:800;font-size:13.5px;color:var(--ink);text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
-.rkrow .stars{flex:none}
-.rkmove{display:flex;flex-direction:column;gap:4px;flex:none}
-.rkmove button{width:28px;height:28px;border-radius:8px;border:1.5px solid var(--line);background:var(--card);
-  color:var(--ink);font-size:13px;font-weight:700;cursor:pointer;display:grid;place-items:center;padding:0}
-.rkmove button:disabled{opacity:.3;cursor:default}
+/* the archive, as banners rather than a row sharing space with its rank and stars —
+   full width, your actual cover blurred-dark behind the title, a title card rather
+   than a list item. No cover to work with at all: the hashed colour+type treatment
+   stands in instead, flat, since there's nothing to darken under it. */
+.archlist{display:flex;flex-direction:column;gap:12px}
+.archcard{position:relative;width:100%;height:124px;border-radius:18px;overflow:hidden;
+  cursor:pointer;flex:none;box-shadow:0 14px 34px -24px rgba(21,19,32,.5)}
+.archcard .bg{position:absolute;inset:0;background-size:cover;background-position:center;
+  filter:blur(14px);transform:scale(1.15)}
+.archcard .scrim{position:absolute;inset:0;
+  background:linear-gradient(180deg,rgba(14,12,20,.12) 0%,rgba(14,12,20,.24) 40%,rgba(14,12,20,.88) 100%)}
+.archcard .rk{position:absolute;top:10px;left:12px;width:22px;height:22px;border-radius:999px;
+  background:rgba(14,12,20,.55);color:#F4EDE2;font-size:11px;z-index:1;
+  display:flex;align-items:center;justify-content:center}
+.archcard .rkmove{position:absolute;top:10px;right:10px;display:flex;gap:6px;z-index:1}
+.archcard .rkmove button{width:26px;height:26px;border-radius:8px;border:1.5px solid rgba(244,237,226,.35);
+  background:rgba(14,12,20,.45);color:#F4EDE2;font-size:11px;cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center}
+.archcard .rkmove button:disabled{opacity:.35;cursor:default}
+.archcard .meta{position:absolute;left:14px;right:14px;bottom:10px;z-index:1;
+  display:flex;align-items:flex-end;justify-content:space-between;gap:10px}
+.archcard .ttlwrap{min-width:0;overflow:hidden}
+.archcard .ttl{font-family:var(--head);font-weight:800;font-size:18px;letter-spacing:-.01em;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}
+.archcard .logoimg{max-width:100%;max-height:30px;object-fit:contain;display:block;
+  filter:drop-shadow(0 2px 8px rgba(0,0,0,.5))}
+.archcard .sub{font-family:var(--body);font-weight:600;font-size:11px;margin-top:3px;display:block}
+.archcard .stars{flex:none}
+.archcard .stars.light i{background:#fff}
+.archcard .stars.light i.off{background:rgba(255,255,255,.3)}
+.archcard .stars.light i.half{background:linear-gradient(90deg,#fff 50%,rgba(255,255,255,.3) 50%)}
+.archcard .stars.dark i{background:#151320}
+.archcard .stars.dark i.off{background:rgba(21,19,32,.25)}
+.archcard .stars.dark i.half{background:linear-gradient(90deg,#151320 50%,rgba(21,19,32,.25) 50%)}
 .good{color:var(--good)}.bad{color:var(--bad)}
 .stars{display:flex;gap:4px}
 .stars i{width:15px;height:15px;display:block;background:var(--ink);clip-path:polygon(50% 2%,62% 36%,98% 38%,70% 60%,80% 96%,50% 76%,20% 96%,30% 60%,2% 38%,38% 36%)}
@@ -4289,22 +4312,31 @@ const LOGO_FONTS = [
 ];
 function textContrast(hex) { const n = parseInt(hex.slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255;
   return (0.299*r + 0.587*g + 0.114*b) / 255 > 0.6 ? "#151320" : "#FFF7EC"; }
+/* a banner, not a row: your actual cover art, blurred dark behind the title, the way a
+   streaming title card works, instead of sharing the row with the rank and stars
+   beside it. Nothing to darken under it (no cover at all) falls back to the hashed
+   colour+type treatment flat, full width still, just without the image. */
 const rankRowHTML = (r, i, n, showMove) => { const logo = logoCache[r.w.id];
+  const cover = r.w.cover;
   const bg = AV_COLS[avHash(r.w.id) % AV_COLS.length];
   const fs = LOGO_FONTS[avHash(r.w.id + ":f") % LOGO_FONTS.length];
-  return `<div class="row rkrow" data-work="${esc(r.w.id)}">
+  const starLight = cover ? true : textContrast(bg) === "#FFF7EC";
+  const subStyle = cover ? "color:rgba(244,237,226,.75);text-shadow:0 1px 4px rgba(0,0,0,.4)" : `color:${textContrast(bg)};opacity:.72`;
+  const titleHTML = logo ? `<img class="logoimg" src="${esc(logo)}" alt="${esc(r.w.title)}" loading="lazy">`
+    : `<b class="ttl" style="${cover ? "color:#fff;text-shadow:0 2px 10px rgba(0,0,0,.5);" : `color:${textContrast(bg)};`}font-family:${fs.family};font-weight:${fs.weight};font-style:${fs.style||"normal"};letter-spacing:${fs.spacing};text-transform:${fs.transform||"none"}">${esc(r.w.title)}</b>`;
+  return `<div class="archcard" data-work="${esc(r.w.id)}" style="${cover ? "" : `background:${bg}`}">
+    ${cover ? `<div class="bg" style="background-image:url('${esc(cover)}')"></div><div class="scrim"></div>` : ""}
     <span class="rk">${i+1}</span>
-    <div class="logobar${logo ? " has-logo" : ""}"${logo ? "" : ` style="background:${bg}"`}>
-      ${logo ? `<img src="${esc(logo)}" alt="${esc(r.w.title)}" loading="lazy">`
-        : `<b style="color:${textContrast(bg)};font-family:${fs.family};font-weight:${fs.weight};font-style:${fs.style||"normal"};letter-spacing:${fs.spacing};text-transform:${fs.transform||"none"}">${esc(r.w.title)}</b>`}
+    ${showMove ? `<div class="rkmove"><button data-rkup="${esc(r.w.id)}" data-rkkind="${esc(r.w.kind)}" ${i===0?"disabled":""} aria-label="Move up">\u2191</button>
+      <button data-rkdown="${esc(r.w.id)}" data-rkkind="${esc(r.w.kind)}" ${i===n-1?"disabled":""} aria-label="Move down">\u2193</button></div>` : ""}
+    <div class="meta">
+      <div class="ttlwrap">${titleHTML}<small class="sub" style="${subStyle}">${tag(r.w.kind)} ${esc(r.w.year||"")}</small></div>
+      ${stars(r.score, `sm ${starLight ? "light" : "dark"}`)}
     </div>
-    ${stars(r.score, "sm")}
-    ${showMove ? `<div class="rkmove"><button class="chip" data-rkup="${esc(r.w.id)}" data-rkkind="${esc(r.w.kind)}" ${i===0?"disabled":""} aria-label="Move up">\u2191</button>
-      <button class="chip" data-rkdown="${esc(r.w.id)}" data-rkkind="${esc(r.w.kind)}" ${i===n-1?"disabled":""} aria-label="Move down">\u2193</button></div>` : ""}
   </div>`; };
-/* the vertical, logo-barred list is the one display now, whatever the sort \u2014 only the
-   up/down handles are rank-only, since every other sort's order is computed, not a
-   thing you'd drag. */
+/* the full-width banner is the one display now, whatever the sort \u2014 only the up/down
+   handles are rank-only, since every other sort's order is computed, not a thing
+   you'd drag. */
 function paintTrays() {
   const el = $("#cabTrays"); if (!el) return;
   const rows = cabinetRows();
@@ -4321,12 +4353,12 @@ function paintTrays() {
     : logCount() ? "Nothing in here matches that." : "Everything you finish stands here.";
   el.innerHTML = rows.length ? kinds.map(k => `<div class="tray"><div class="lbl">
         <span>${esc(K(k).plural)}</span><em>${by[k].length}</em></div>
-      <div class="ranklist">${by[k].map((r, i) => rankRowHTML(r, i, by[k].length, ranked)).join("")}</div></div>`).join("")
+      <div class="archlist">${by[k].map((r, i) => rankRowHTML(r, i, by[k].length, ranked)).join("")}</div></div>`).join("")
     : cabQ ? `<p class="empty">Nothing in here matches \u201c${esc(cabQ)}\u201d.</p>`
     : blank("var(--mint)", "\u25af", "Nothing in here yet",
         "Log something and it stands here, with its own cover on it. The shelf is what you mean to get to; this is what you got to.",
         [["cabShelf", "Back to the shelf", "soft"]]);
-  $$(".rkrow[data-work]", el).forEach(r => r.onclick = () => openWork(r.dataset.work));
+  $$(".archcard[data-work]", el).forEach(r => r.onclick = () => openWork(r.dataset.work));
   if (ranked) {
     $$("[data-rkup]", el).forEach(b => b.onclick = ev => { ev.stopPropagation(); moveRank(b.dataset.rkkind, b.dataset.rkup, -1); });
     $$("[data-rkdown]", el).forEach(b => b.onclick = ev => { ev.stopPropagation(); moveRank(b.dataset.rkkind, b.dataset.rkdown, 1); });
