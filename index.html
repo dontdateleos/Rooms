@@ -4272,11 +4272,31 @@ async function ensureLogo(w) {
   logoLoading.delete(w.id);
   return logoCache[w.id];
 }
+/* TMDB only has real logos for a slice of films and barely any TV, and nothing for
+   books or games — so most rows never get a fetched one. Rather than one flat tint
+   per kind, this fakes a wordmark: a colour and a type treatment, each picked the same
+   way the avatar's shape and colour are — hashed from the work itself, so it's not
+   literally random (it won't flicker between renders or differ between your devices),
+   just different from one title to the next. Georgia/Courier cost nothing to reach for
+   since every platform already has them; no new font gets downloaded for this. */
+const LOGO_FONTS = [
+  { family:"var(--head)", weight:900, transform:"uppercase", spacing:"-.01em" },
+  { family:"var(--head)", weight:800, style:"italic", spacing:"-.01em" },
+  { family:"Georgia,'Times New Roman',serif", weight:700, spacing:".01em" },
+  { family:"'Courier New',ui-monospace,monospace", weight:700, transform:"uppercase", spacing:".04em" },
+  { family:"var(--body)", weight:800, transform:"uppercase", spacing:".07em" },
+  { family:"Georgia,serif", weight:700, style:"italic", spacing:"0" },
+];
+function textContrast(hex) { const n = parseInt(hex.slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255;
+  return (0.299*r + 0.587*g + 0.114*b) / 255 > 0.6 ? "#151320" : "#FFF7EC"; }
 const rankRowHTML = (r, i, n, showMove) => { const logo = logoCache[r.w.id];
+  const bg = AV_COLS[avHash(r.w.id) % AV_COLS.length];
+  const fs = LOGO_FONTS[avHash(r.w.id + ":f") % LOGO_FONTS.length];
   return `<div class="row rkrow" data-work="${esc(r.w.id)}">
     <span class="rk">${i+1}</span>
-    <div class="logobar${logo ? " has-logo" : ""}"${logo ? "" : ` style="background:${TOK_TINT[r.w.kind]||"var(--line)"}"`}>
-      ${logo ? `<img src="${esc(logo)}" alt="${esc(r.w.title)}" loading="lazy">` : `<b>${esc(r.w.title)}</b>`}
+    <div class="logobar${logo ? " has-logo" : ""}"${logo ? "" : ` style="background:${bg}"`}>
+      ${logo ? `<img src="${esc(logo)}" alt="${esc(r.w.title)}" loading="lazy">`
+        : `<b style="color:${textContrast(bg)};font-family:${fs.family};font-weight:${fs.weight};font-style:${fs.style||"normal"};letter-spacing:${fs.spacing};text-transform:${fs.transform||"none"}">${esc(r.w.title)}</b>`}
     </div>
     ${stars(r.score, "sm")}
     ${showMove ? `<div class="rkmove"><button class="chip" data-rkup="${esc(r.w.id)}" data-rkkind="${esc(r.w.kind)}" ${i===0?"disabled":""} aria-label="Move up">\u2191</button>
