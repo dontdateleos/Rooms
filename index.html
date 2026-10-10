@@ -4189,7 +4189,6 @@ const cabSort = () => CAB_SORTS[P.cabSort] ? P.cabSort : "recent";
 /* the sort is a preference and is kept; what you typed into the box is not. A search
    remembered from last week is an empty archive with no explanation for it. */
 let cabQ = "";
-let cabSeen = null;
 function cabinetRows() {
   const best = {};                       /* one token per thing, at your latest word */
   for (const e of myEntries) { const w = works[e.work_id]; if (!w) continue;
@@ -4273,16 +4272,19 @@ async function ensureLogo(w) {
   logoLoading.delete(w.id);
   return logoCache[w.id];
 }
-const rankRowHTML = (r, i, n) => { const logo = logoCache[r.w.id];
+const rankRowHTML = (r, i, n, showMove) => { const logo = logoCache[r.w.id];
   return `<div class="row rkrow" data-work="${esc(r.w.id)}">
     <span class="rk">${i+1}</span>
     <div class="logobar${logo ? " has-logo" : ""}"${logo ? "" : ` style="background:${TOK_TINT[r.w.kind]||"var(--line)"}"`}>
       ${logo ? `<img src="${esc(logo)}" alt="${esc(r.w.title)}" loading="lazy">` : `<b>${esc(r.w.title)}</b>`}
     </div>
     ${stars(r.score, "sm")}
-    <div class="rkmove"><button class="chip" data-rkup="${esc(r.w.id)}" data-rkkind="${esc(r.w.kind)}" ${i===0?"disabled":""} aria-label="Move up">\u2191</button>
-      <button class="chip" data-rkdown="${esc(r.w.id)}" data-rkkind="${esc(r.w.kind)}" ${i===n-1?"disabled":""} aria-label="Move down">\u2193</button></div>
+    ${showMove ? `<div class="rkmove"><button class="chip" data-rkup="${esc(r.w.id)}" data-rkkind="${esc(r.w.kind)}" ${i===0?"disabled":""} aria-label="Move up">\u2191</button>
+      <button class="chip" data-rkdown="${esc(r.w.id)}" data-rkkind="${esc(r.w.kind)}" ${i===n-1?"disabled":""} aria-label="Move down">\u2193</button></div>` : ""}
   </div>`; };
+/* the vertical, logo-barred list is the one display now, whatever the sort \u2014 only the
+   up/down handles are rank-only, since every other sort's order is computed, not a
+   thing you'd drag. */
 function paintTrays() {
   const el = $("#cabTrays"); if (!el) return;
   const rows = cabinetRows();
@@ -4290,23 +4292,22 @@ function paintTrays() {
   const kinds = CAB_ORDER.filter(k => by[k]?.length);
   const ranked = cabSort() === "rank";
   if (ranked) { const missing = kinds.filter(k => !rankCache[k]);
-    if (missing.length) ensureRankCache(missing).then(() => { if (cabSort() === "rank") paintTrays(); });
-    const needLogos = rows.filter(r => (r.w.kind === "film" || r.w.kind === "tv") && !(r.w.id in logoCache) && !logoLoading.has(r.w.id));
-    if (needLogos.length) Promise.all(needLogos.map(r => ensureLogo(r.w))).then(() => { if (cabSort() === "rank") paintTrays(); }); }
+    if (missing.length) ensureRankCache(missing).then(() => { if (cabSort() === "rank") paintTrays(); }); }
+  const needLogos = rows.filter(r => (r.w.kind === "film" || r.w.kind === "tv") && !(r.w.id in logoCache) && !logoLoading.has(r.w.id));
+  if (needLogos.length) Promise.all(needLogos.map(r => ensureLogo(r.w))).then(() => paintTrays());
   const sub = $("#cabSub");
   if (sub) sub.innerHTML = rows.length ? `${rows.length} ${cabQ ? "match" : "finished"}${
       kinds.length > 1 ? ` \u00b7 ${kinds.map(k => `${by[k].length} ${inWords(k, by[k].length)}`).join(" \u00b7 ")}` : ""}`
     : logCount() ? "Nothing in here matches that." : "Everything you finish stands here.";
   el.innerHTML = rows.length ? kinds.map(k => `<div class="tray"><div class="lbl">
         <span>${esc(K(k).plural)}</span><em>${by[k].length}</em></div>
-      ${ranked ? `<div class="ranklist">${by[k].map((r, i) => rankRowHTML(r, i, by[k].length)).join("")}</div>`
-        : `<div class="run">${by[k].map(r => tokenHTML(r.w, 52, r.score)).join("")}</div>`}</div>`).join("")
+      <div class="ranklist">${by[k].map((r, i) => rankRowHTML(r, i, by[k].length, ranked)).join("")}</div></div>`).join("")
     : cabQ ? `<p class="empty">Nothing in here matches \u201c${esc(cabQ)}\u201d.</p>`
     : blank("var(--mint)", "\u25af", "Nothing in here yet",
         "Log something and it stands here, with its own cover on it. The shelf is what you mean to get to; this is what you got to.",
         [["cabShelf", "Back to the shelf", "soft"]]);
+  $$(".rkrow[data-work]", el).forEach(r => r.onclick = () => openWork(r.dataset.work));
   if (ranked) {
-    $$(".rkrow[data-work]", el).forEach(r => r.onclick = () => openWork(r.dataset.work));
     $$("[data-rkup]", el).forEach(b => b.onclick = ev => { ev.stopPropagation(); moveRank(b.dataset.rkkind, b.dataset.rkup, -1); });
     $$("[data-rkdown]", el).forEach(b => b.onclick = ev => { ev.stopPropagation(); moveRank(b.dataset.rkkind, b.dataset.rkdown, 1); });
   }
@@ -4326,22 +4327,6 @@ function wireCabinet() {
 }
 function wireTokens() {
   const bk = $("#cabShelf"); if (bk) bk.onclick = () => { P.view = "shelf"; saveP(); renderShelf(); };
-  /* the one you touch speeds up for a moment, the way picking something up spins it */
-  $$("[data-tok]").forEach(b => b.onclick = () => {
-    const id = b.dataset.tok;
-    if (REDUCED) return openWork(id);
-    b.classList.add("picked");
-    setTimeout(() => b.classList.remove("picked"), 900);
-    setTimeout(() => openWork(id), 260);
-  });
-  /* only what you can see moves. Without this, an archive of four hundred things is four
-     hundred compositor layers turning behind a scroll nobody is looking at. */
-  if (!REDUCED) {
-    cabSeen?.disconnect();
-    cabSeen = new IntersectionObserver(rows => rows.forEach(r =>
-      r.target.classList.toggle("live", r.isIntersecting)), { rootMargin: "80px" });
-    $$("[data-tok]").forEach(b => cabSeen.observe(b));
-  }
 }
 const viewSeg = () => `<div class="seg" style="margin-top:12px">${
   [["shelf", "The shelf"], ["cabinet", "The archive"]].map(([k, l]) =>
