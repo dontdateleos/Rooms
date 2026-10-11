@@ -374,6 +374,7 @@ button:focus-visible,.linky:focus-visible{outline:3px solid var(--blue);outline-
 .archcard .rkmove button{width:26px;height:26px;border-radius:8px;border:1.5px solid rgba(244,237,226,.35);
   background:rgba(14,12,20,.45);color:#F4EDE2;font-size:11px;cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center}
 .archcard .rkmove button:disabled{opacity:.35;cursor:default}
+.archcard .rkmove .rkplace{width:auto;padding:0 10px;font-family:var(--head);font-weight:800;font-size:11px;letter-spacing:.01em}
 .archcard .meta{position:absolute;left:14px;right:14px;bottom:10px;z-index:1;
   display:flex;align-items:flex-end;justify-content:space-between;gap:10px}
 .archcard .ttlwrap{min-width:0;overflow:hidden}
@@ -389,6 +390,14 @@ button:focus-visible,.linky:focus-visible{outline:3px solid var(--blue);outline-
 .archcard .stars.dark i{background:#151320}
 .archcard .stars.dark i.off{background:rgba(21,19,32,.25)}
 .archcard .stars.dark i.half{background:linear-gradient(90deg,#151320 50%,rgba(21,19,32,.25) 50%)}
+/* the same cards, short, on a profile: the order is the point there, not the score */
+.archlist.mini{gap:8px}
+.archlist.mini .archcard{height:60px;border-radius:14px}
+.archlist.mini .archcard .stars,.archlist.mini .archcard .sub{display:none}
+.archlist.mini .archcard .rk{top:50%;transform:translateY(-50%);left:10px}
+.archlist.mini .archcard .meta{left:42px;right:12px;bottom:auto;top:50%;transform:translateY(-50%)}
+.archlist.mini .archcard .ttl{font-size:15px}
+.archlist.mini .archcard .logoimg{max-height:24px}
 .good{color:var(--good)}.bad{color:var(--bad)}
 .stars{display:flex;gap:4px}
 .stars i{width:15px;height:15px;display:block;background:var(--ink);clip-path:polygon(50% 2%,62% 36%,98% 38%,70% 60%,80% 96%,50% 76%,20% 96%,30% 60%,2% 38%,38% 36%)}
@@ -3991,6 +4000,7 @@ async function renderRoomFeed(fb, R) {
     ${pick ? `<div class="result"><small>Tonight's pick</small><b>${esc(pick.title)}</b><div class="stack" style="margin-top:10px"><button class="btn" id="pickLog">${K(pick.kind).verb} it</button></div></div>` : ""}
     ${split ? `<div class="card"><div class="h"><span>A friendly argument</span></div>${compRows([split])}</div>` : ""}
     <div class="card"><div class="h"><span>In competition</span><span class="tag dim">weighted</span></div>${comp.length ? compRows(comp) : blank("var(--butter)","%","No scores yet","Once two of you have rated the same thing, the agreement number appears here.",[["compAdd","Log something"]])}</div>
+    <div id="rankMeet"></div>
     ${(() => { const pal = roomPalmares(es); if (!pal || pal.n < 6) return "";
       const t = id => esc(works[id]?.title || "");
       return `<div class="card"><div class="h"><span>The room's year</span><span class="tag dim">${pal.n} entries</span></div>
@@ -4000,6 +4010,7 @@ async function renderRoomFeed(fb, R) {
     `;
   endLine(fb, es, 60);
   compFlip(fb);
+  paintRankMeet(R);
   /* who is in here, arriving. Only when the room has actually grown since you last
      looked — a room that refills itself on every redraw is a room that never settles. */
   (() => { const seats = $("#roomSeats"); if (!seats || REDUCED) return;
@@ -4278,7 +4289,13 @@ function renderCabinet() {
 /* a wordmark instead of a poster \u2014 TMDB keeps title logos on a separate endpoint from
    the cover, one request per title, so this is fetched lazily per row (see ensureLogo)
    and the plain title stands in, tinted by kind, until it lands or if none exists. */
-let logoCache = {}, logoLoading = new Set();
+/* only an answer TMDB actually gave is kept between visits — "this one has no logo"
+   included — never a failed request, or one bad connection would blank a title for good */
+const LOGO_KEY = "rooms.logos";
+const logoSaved = (() => { try { return JSON.parse(localStorage.getItem(LOGO_KEY) || "{}") || {}; } catch { return {}; } })();
+let logoCache = Object.assign({}, logoSaved), logoLoading = new Set(), logoSaveT = 0;
+const saveLogos = () => { if (DEMO) return; clearTimeout(logoSaveT);
+  logoSaveT = setTimeout(() => { try { localStorage.setItem(LOGO_KEY, JSON.stringify(logoSaved)); } catch {} }, 500); };
 async function ensureLogo(w) {
   if (!(w.kind === "film" || w.kind === "tv")) return null;
   if (w.id in logoCache) return logoCache[w.id];
@@ -4290,7 +4307,8 @@ async function ensureLogo(w) {
     const logos = (d.logos || []).filter(l => l.file_path);
     logos.sort((a, b) => { const al = a.iso_639_1 === "en" ? 0 : 1, bl = b.iso_639_1 === "en" ? 0 : 1;
       return al - bl || (b.vote_average || 0) - (a.vote_average || 0); });
-    logoCache[w.id] = logos[0] ? TMDB_IMG(logos[0].file_path) : null;
+    logoCache[w.id] = logoSaved[w.id] = logos[0] ? TMDB_IMG(logos[0].file_path) : null;
+    saveLogos();
   } catch { logoCache[w.id] = null; }
   logoLoading.delete(w.id);
   return logoCache[w.id];
@@ -4316,7 +4334,13 @@ function textContrast(hex) { const n = parseInt(hex.slice(1), 16), r = n >> 16, 
    streaming title card works, instead of sharing the row with the rank and stars
    beside it. Nothing to darken under it (no cover at all) falls back to the hashed
    colour+type treatment flat, full width still, just without the image. */
-const rankRowHTML = (r, i, n, showMove) => { const logo = logoCache[r.w.id];
+/* blurred to nothing anyway, so the smallest size each source serves looks the same as
+   the full one, at a fraction of the download for an archive of a few hundred */
+const blurSrc = u => String(u || "")
+  .replace("image.tmdb.org/t/p/w342/", "image.tmdb.org/t/p/w92/")
+  .replace("/t_cover_big/", "/t_cover_small/")
+  .replace(/(covers\.openlibrary\.org\/b\/id\/\d+)-M\.jpg/, "$1-S.jpg");
+const rankRowHTML = (r, i, showMove) => { const logo = logoCache[r.w.id];
   const cover = r.w.cover;
   const bg = AV_COLS[avHash(r.w.id) % AV_COLS.length];
   const fs = LOGO_FONTS[avHash(r.w.id + ":f") % LOGO_FONTS.length];
@@ -4324,11 +4348,20 @@ const rankRowHTML = (r, i, n, showMove) => { const logo = logoCache[r.w.id];
   const subStyle = cover ? "color:rgba(244,237,226,.75);text-shadow:0 1px 4px rgba(0,0,0,.4)" : `color:${textContrast(bg)};opacity:.72`;
   const titleHTML = logo ? `<img class="logoimg" src="${esc(logo)}" alt="${esc(r.w.title)}" loading="lazy">`
     : `<b class="ttl" style="${cover ? "color:#fff;text-shadow:0 2px 10px rgba(0,0,0,.5);" : `color:${textContrast(bg)};`}font-family:${fs.family};font-weight:${fs.weight};font-style:${fs.style||"normal"};letter-spacing:${fs.spacing};text-transform:${fs.transform||"none"}">${esc(r.w.title)}</b>`;
-  return `<div class="archcard" data-work="${esc(r.w.id)}" style="${cover ? "" : `background:${bg}`}">
-    ${cover ? `<div class="bg" style="background-image:url('${esc(cover)}')"></div><div class="scrim"></div>` : ""}
-    <span class="rk">${i+1}</span>
-    ${showMove ? `<div class="rkmove"><button data-rkup="${esc(r.w.id)}" data-rkkind="${esc(r.w.kind)}" ${i===0?"disabled":""} aria-label="Move up">\u2191</button>
-      <button data-rkdown="${esc(r.w.id)}" data-rkkind="${esc(r.w.kind)}" ${i===n-1?"disabled":""} aria-label="Move down">\u2193</button></div>` : ""}
+  /* on Ranked the number is its place in your whole order, not its place in whatever the
+     search box has left showing; something never placed (logged before ranking, or a
+     show you only ticked episodes of) gets no number and a way to place it instead */
+  const arr = showMove ? rankCache[r.w.kind] : null, pos = arr ? arr.indexOf(r.w.id) : i;
+  const unplaced = !!arr && pos === -1;
+  const id = esc(r.w.id), kind = esc(r.w.kind);
+  return `<div class="archcard" data-work="${id}" style="${cover ? "" : `background:${bg}`}">
+    ${cover ? `<div class="bg" style="background-image:url('${esc(blurSrc(cover))}')"></div><div class="scrim"></div>` : ""}
+    ${unplaced ? "" : `<span class="rk">${pos+1}</span>`}
+    ${!showMove ? "" : unplaced
+      ? `<div class="rkmove"><button class="rkplace" data-rkplace="${id}" data-rkkind="${kind}">Place it</button></div>`
+      : `<div class="rkmove"><button class="rkplace" data-rkagain="${id}" data-rkkind="${kind}">Re-place</button>
+      <button data-rkup="${id}" data-rkkind="${kind}" ${pos===0?"disabled":""} aria-label="Move up">\u2191</button>
+      <button data-rkdown="${id}" data-rkkind="${kind}" ${arr && pos===arr.length-1?"disabled":""} aria-label="Move down">\u2193</button></div>`}
     <div class="meta">
       <div class="ttlwrap">${titleHTML}<small class="sub" style="${subStyle}">${tag(r.w.kind)} ${esc(r.w.year||"")}</small></div>
       ${stars(r.score, `sm ${starLight ? "light" : "dark"}`)}
@@ -4353,7 +4386,7 @@ function paintTrays() {
     : logCount() ? "Nothing in here matches that." : "Everything you finish stands here.";
   el.innerHTML = rows.length ? kinds.map(k => `<div class="tray"><div class="lbl">
         <span>${esc(K(k).plural)}</span><em>${by[k].length}</em></div>
-      <div class="archlist">${by[k].map((r, i) => rankRowHTML(r, i, by[k].length, ranked)).join("")}</div></div>`).join("")
+      <div class="archlist">${by[k].map((r, i) => rankRowHTML(r, i, ranked)).join("")}</div></div>`).join("")
     : cabQ ? `<p class="empty">Nothing in here matches \u201c${esc(cabQ)}\u201d.</p>`
     : blank("var(--mint)", "\u25af", "Nothing in here yet",
         "Log something and it stands here, with its own cover on it. The shelf is what you mean to get to; this is what you got to.",
@@ -4362,6 +4395,11 @@ function paintTrays() {
   if (ranked) {
     $$("[data-rkup]", el).forEach(b => b.onclick = ev => { ev.stopPropagation(); moveRank(b.dataset.rkkind, b.dataset.rkup, -1); });
     $$("[data-rkdown]", el).forEach(b => b.onclick = ev => { ev.stopPropagation(); moveRank(b.dataset.rkkind, b.dataset.rkdown, 1); });
+    $$("[data-rkplace],[data-rkagain]", el).forEach(b => b.onclick = async ev => { ev.stopPropagation();
+      const again = !!b.dataset.rkagain; b.disabled = true;
+      try { await rankInsert(b.dataset.rkkind, b.dataset.rkagain || b.dataset.rkplace, again); }
+      catch (err) { oops(err, "Couldn't place that"); }
+      paintTrays(); });
   }
   wireTokens();
 }
@@ -5517,22 +5555,35 @@ async function ensureMyRank(kind) {
   let t = await loadTop(me.id, name);
   if (!t) { const r = await q(sb.from("top_lists").insert({ owner:me.id, name }).select().single()); t = { id:r.id, name, items:[] }; }
   if (!t.items.length) {
-    const seed = myEntries.filter(e => kindOf(e.work_id) === kind).sort((a,b) => b.score - a.score || String(b.rated_on).localeCompare(String(a.rated_on)));
+    /* a show you only ever ticked episodes of has no entry of its own, but it stands in
+       the archive all the same, at the average of what you gave its seasons */
+    const seed = myEntries.filter(e => kindOf(e.work_id) === kind).map(e => ({ id:e.work_id, score:e.score, on:String(e.rated_on) }));
+    if (kind === "tv") for (const [sid, d, last] of showsFromParts()) seed.push({ id:sid, score:d.score, on:String(last?.rated_on || "") });
+    seed.sort((a,b) => b.score - a.score || b.on.localeCompare(a.on));
     const seen = new Set(), items = [];
-    for (const e of seed) { if (seen.has(e.work_id)) continue; seen.add(e.work_id); items.push(e.work_id); }
+    for (const s of seed) { if (seen.has(s.id)) continue; seen.add(s.id); items.push(s.id); }
     if (items.length) { try { await q(sb.from("top_list_items").insert(items.map((id,i) => ({ top_list_id:t.id, work_id:id, rank:i+1 })))); t.items = items; } catch {} }
   }
   return t; }
 async function persistRank(listId, items) {
   await q(sb.from("top_list_items").delete().eq("top_list_id", listId));
   if (items.length) await q(sb.from("top_list_items").insert(items.map((id,i) => ({ top_list_id:listId, work_id:id, rank:i+1 })))); }
+const inArchive = id => myEntries.some(e => e.work_id === id) || showsFromParts().some(([s]) => s === id);
+/* deleting the last entry for something, or taking back a log the moment it was made,
+   takes it out of its order too — otherwise the slot it held stays reserved, invisibly */
+async function rankRemove(kind, workId) {
+  try { const t = await loadTop(me.id, "rank:" + kind); if (!t || !t.items.includes(workId)) return;
+    const out = t.items.filter(id => id !== workId);
+    await persistRank(t.id, out); rankListId[kind] = t.id; if (rankCache[kind]) rankCache[kind] = out; } catch {} }
+const unrankIfGone = id => { if (!inArchive(id)) rankRemove(kindOf(id), id); };
 /* which do you like more, shown as two covers rather than two titles — true picks a,
-   false picks b, null means "just put it last" and ends the bisection on the spot */
-function askRank(a, b) {
+   false picks b, null means "just put it last" (or, placing it again, "leave it where it
+   was") and ends the bisection on the spot */
+function askRank(a, b, again = false) {
   return openAsk(`<h3>Which do you like more?</h3>
     <p class="sub">Placing <b>${esc(a.title)}</b> among your ${inWords(a.kind)}.</p>
     <div id="rkRow"></div>
-    <div class="stack"><button class="btn quiet" id="askNo">Just put it last</button></div>`, done => {
+    <div class="stack"><button class="btn quiet" id="askNo">${again ? "Leave it where it was" : "Just put it last"}</button></div>`, done => {
     $("#rkRow").innerHTML = [a, b].map((w, i) => `<div class="row" data-rk="${i}">${cover(w)}<div class="t"><b>${esc(w.title)}</b><small>${tag(w.kind)} ${esc(w.year||"")}</small></div></div>`).join("");
     $$("[data-rk]", $("#rkRow")).forEach(r => r.onclick = () => done(r.dataset.rk === "0"));
     $("#askNo").onclick = () => done(null);
@@ -5545,13 +5596,16 @@ async function ensureRankCache(kinds) {
    against something near that score, not the thing sitting dead in the middle of the
    whole list — one plausible-looking comparison instead of a coin flip to start on.
    Everything after that first question is a normal bisection of whatever range is left. */
-const scoreOf = id => (myEntries.find(e => e.work_id === id) || {}).score;
+const scoreOf = id => { const e = myEntries.find(x => x.work_id === id);
+  return e ? e.score : derivedScore(myParts, id)?.score; };
 /* a handful of "which beats which" taps place it exactly, in about log2(n) questions
-   instead of one per existing thing. Only called for a work not already in the list. */
-async function rankInsert(kind, workId) {
+   instead of one per existing thing. `again` is placing something already in the list:
+   backing out then leaves it where it was rather than dropping it to the bottom. */
+async function rankInsert(kind, workId, again = false) {
   const t = await ensureMyRank(kind);
+  rankListId[kind] = t.id;
+  const was = t.items.indexOf(workId);
   const items = t.items.filter(id => id !== workId);
-  rankListId[kind] = t.id; if (rankCache[kind]) rankCache[kind] = items;
   if (!items.length) { const out = [workId]; await persistRank(t.id, out); if (rankCache[kind]) rankCache[kind] = out; return; }
   const myScore = scoreOf(workId);
   let lo = 0, hi = items.length;
@@ -5562,10 +5616,12 @@ async function rankInsert(kind, workId) {
     suggested = null;
     const w = works[workId], other = works[items[mid]];
     if (!w || !other) break;
-    const preferNew = await askRank(w, other);
-    if (preferNew === null) { lo = hi = items.length; break; }
+    const preferNew = await askRank(w, other, again && was >= 0);
+    if (preferNew === null) { if (again && was >= 0) return; lo = hi = items.length; break; }
     if (preferNew) hi = mid; else lo = mid + 1;
   }
+  /* taken back (Undo, delete) while the questions were still on screen */
+  if (!inArchive(workId)) return;
   const out = items.slice(); out.splice(lo, 0, workId);
   await persistRank(t.id, out); if (rankCache[kind]) rankCache[kind] = out; }
 /* the comparisons get it close; this is for when you still want to hand-correct it.
@@ -5577,6 +5633,46 @@ function moveRank(kind, workId, dir) {
   [items[i], items[j]] = [items[j], items[i]];
   paintTrays();
   persistRank(rankListId[kind], items).catch(() => {});
+}
+/* everyone's own order, read the same way the ten already is: top_lists is readable by
+   anyone you share a room with, so this needs nothing new from the server */
+async function rankListsOf(ids) {
+  const rows = await q(sb.from("top_lists").select("owner,name,top_list_items(rank,work_id)").in("owner", ids));
+  const out = {};
+  for (const t of rows) { if (!String(t.name).startsWith("rank:")) continue;
+    (out[t.owner] ||= {})[t.name.slice(5)] = (t.top_list_items || []).slice().sort((a,b) => a.rank - b.rank).map(i => i.work_id); }
+  return out; }
+/* scores say whether you liked something; an order says what you'd give up for it. So the
+   room gets what only the orders can tell it: the same thing at the top of two lists,
+   and the one thing two of you are furthest apart on, by where it sits in each list */
+async function paintRankMeet(R) {
+  const el = $("#rankMeet"); if (!el || R.members.length < 2) return;
+  let lists; try { lists = await rankListsOf(R.members.map(m => m.id)); } catch { return; }
+  const theirKinds = [...new Set(R.members.filter(m => m.id !== me.id).flatMap(m => Object.keys(lists[m.id] || {})))];
+  if (!theirKinds.length) return;
+  await ensureRankCache(theirKinds);
+  if ($("#rankMeet") !== el) return;
+  const lines = [];
+  for (const m of R.members) { if (m.id === me.id) continue;
+    const name = m.handle || "them";
+    for (const k of theirKinds) { const a = rankCache[k], b = lists[m.id]?.[k]; if (!a?.length || !b?.length) continue;
+      if (a[0] === b[0]) lines.push({ w:a[0], weight:10, text:`Your #1 ${inWords(k, 1)}, and ${name}'s too` });
+      for (const id of a.slice(0, 3)) { const j = b.indexOf(id);
+        if (j > -1 && j < 3) lines.push({ w:id, weight:2, text:`In your top three ${inWords(k)}, and ${name}'s` }); }
+      if (a.length >= 4 && b.length >= 4) { let far = null;
+        a.forEach((id, i) => { const j = b.indexOf(id); if (j < 0) return;
+          const gap = Math.abs(i / (a.length - 1) - j / (b.length - 1)); if (!far || gap > far.gap) far = { id, i, j, gap }; });
+        if (far && far.gap >= .5) lines.push({ w:far.id, weight:5 + far.gap,
+          text:`Furthest apart — your #${far.i + 1} of ${a.length}, ${name}'s #${far.j + 1} of ${b.length}` }); } } }
+  if (!lines.length) { el.innerHTML = ""; return; }
+  lines.sort((x, y) => y.weight - x.weight);
+  const seen = new Set(), top = lines.filter(l => !seen.has(l.w) && seen.add(l.w)).slice(0, 4);
+  await fillWorks(top.map(l => l.w));
+  if ($("#rankMeet") !== el) return;
+  el.innerHTML = `<div class="card"><div class="h"><span>Where your orders meet</span><span class="tag dim">from everyone's ranked lists</span></div>
+    ${top.map(l => { const w = works[l.w] || {};
+      return `<div class="row" data-rmw="${esc(l.w)}">${cover(w)}<div class="t"><b>${esc(w.title || "")}</b><small>${esc(l.text)}</small></div></div>`; }).join("")}</div>`;
+  $$("[data-rmw]", el).forEach(x => x.onclick = () => openWork(x.dataset.rmw));
 }
 const fourHTML = items => `<div class="four">${[0,1,2,3].map(i => { const w = works[items[i]]; return w ? `<div class="po" data-work="${esc(w.id)}">${cover(w,"")}<b>${esc(w.title)}</b></div>` : `<div class="po" style="opacity:.4"></div>`; }).join("")}</div>`;
 let recs = null;
@@ -6994,6 +7090,11 @@ async function openProfile(userId) { const self = userId === me.id;
   const t = tasteOf(es), mine = tasteOf(myEntries), match = tasteMatch(mine, t);
   let top = null; try { top = await loadTop(userId); } catch {}
   const theirTens = {}; for (const [k] of TENS) { if (k === "all time") continue; try { const l = await loadTop(userId, k); if (l?.items.length) theirTens[k] = l.items; } catch {} }
+  /* the head of each of their ranked archives — readable here only if you share a room,
+     the same as the ten, so for a stranger this simply comes back empty */
+  let ranks = {}; try { ranks = (await rankListsOf([userId]))[userId] || {}; } catch {}
+  const rankKinds = CAB_ORDER.filter(k => ranks[k]?.length);
+  if (rankKinds.length) await fillWorks(rankKinds.flatMap(k => ranks[k].slice(0, 3)));
   let fc = 0, fg = 0; try { fc = (await q(sb.from("follows").select("follower").eq("followee", userId))).length; fg = (await q(sb.from("follows").select("followee").eq("follower", userId))).length; } catch {}
   const shared = mine.craft.slice(0,5).map(c=>c[0]).filter(k => t.craft.slice(0,5).some(c => c[0] === k));
   const marks = marksFor(p, es, t, match, { clubsFinished: await clubsFinishedBy(userId) });
@@ -7014,6 +7115,9 @@ async function openProfile(userId) { const self = userId === me.id;
     ${Object.keys(theirTens).length ? `<div class="card"><div class="h"><span>${self?"Your":esc(p.handle)+"'s"} tens</span><span class="tag dim">by medium</span></div>
       ${Object.entries(theirTens).map(([k,items]) => `<div class="lbl" style="margin-top:10px">${K(k).plural}</div>
         <div class="chips">${items.slice(0,5).map((id,i) => `<span class="chip" data-work="${esc(id)}">${i+1}. ${esc(works[id]?.title||"")}</span>`).join("")}</div>`).join("")}</div>` : ""}
+    ${rankKinds.length ? `<div class="card"><div class="h"><span>${self?"Your":esc(p.handle)+"'s"} archive, ranked</span><span class="tag dim">top three by medium</span></div>
+      ${rankKinds.map(k => `<div class="lbl" style="margin-top:10px">${K(k).plural}</div>
+        <div class="archlist mini">${ranks[k].slice(0, 3).filter(id => works[id]).map((id, i) => rankRowHTML({ w:works[id], score:0 }, i, false)).join("")}</div>`).join("")}</div>` : ""}
     <div class="lbl">Entries</div>${es.length ? es.slice(0,20).map(e => slipHTML(e)).join("") : `<p class="empty">Nothing logged yet.</p>`}
     <div class="stack"><button class="btn soft" id="pCard">Save the card</button><button class="btn quiet" id="pClose">Close</button></div>
     ${self ? "" : `<p class="sub" style="text-align:center;margin-top:16px">
@@ -7022,7 +7126,7 @@ async function openProfile(userId) { const self = userId === me.id;
   const pr = $("#pReport"); if (pr) pr.onclick = () => openReport({ about_user:userId, who:p.handle });
   const pb = $("#pBlock"); if (pb) pb.onclick = () => openBlock(userId, p.handle);
   $("#pCard").onclick = () => openCuts("taste", { p, t }, "Share this taste");
-  $("#pClose").onclick = closeSheet; wireSlips($("#sheetBody"), es); revealIn($("#sheetBody")); $$("#sheetBody .four [data-work]").forEach(x => x.onclick = () => openWork(x.dataset.work));
+  $("#pClose").onclick = closeSheet; wireSlips($("#sheetBody"), es); revealIn($("#sheetBody")); $$("#sheetBody .four [data-work], #sheetBody .archcard[data-work]").forEach(x => x.onclick = () => openWork(x.dataset.work));
   const fb = $("#followBtn"); if (fb) fb.onclick = async () => {
     if (await setFollow(p.id, !isFollowing(p.id))) openProfile(p.id); };
   const em = $("#editMe"); if (em) em.onclick = openYou;
@@ -7174,7 +7278,7 @@ function openLog(w, edit = null) { const cfg = K(w.kind); const loved = edit?.lo
       const saved = (edit ? myEntries.find(x => x.id === edit.id) : myEntries.find(x => x.work_id === w.id)) || e;
       /* a new entry is the one change worth offering back, and the ring says how long for */
       if (!edit?.id && saved.id) sayUndo("Logged", async () => {
-        try { await q(sb.from("entries").delete().eq("id", saved.id)); await loadMine(); refresh();
+        try { await q(sb.from("entries").delete().eq("id", saved.id)); await loadMine(); unrankIfGone(w.id); refresh();
           say("Taken back"); } catch (err) { oops(err, "Couldn't take that back"); } });
       if (firstTime) { try { await rankInsert(w.kind, w.id); } catch {} }
       openEntry(saved, true); } catch (err) { $("#wMsg").textContent = err.message; $("#wSave").disabled = false; } }; }
@@ -7240,7 +7344,7 @@ async function deleteReview(e) {
   if (!await askYesNo({ title:"Delete this review?", sub:"Your rating, review and its likes will be deleted. This cannot be undone.", ok:"Delete it", bad:true })) return;
   try {
     await q(sb.from("entries").delete().eq("id", e.id).eq("user_id", me.id));
-    await loadMine(); recs = null; delete tagCache[e.work_id]; closeSheet();
+    await loadMine(); unrankIfGone(e.work_id); recs = null; delete tagCache[e.work_id]; closeSheet();
     const slip = $(`[data-slip="${CSS.escape(e.id)}"]`);
     if (slip) leaveOut(slip, refresh); else refresh();
     say("Review deleted");

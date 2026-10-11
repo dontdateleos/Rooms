@@ -168,9 +168,14 @@ export function demoSeed() {
         body:"It is however still very long.", created_at:ago(2) },
     ].filter(r => r.entry_id),
 
-    top_lists:[{ id:"t1", owner:"me", name:"all time", created_at:ago(200) }],
-    top_list_items:["tv:1","game:1","film:1","book:2","film:6"]
-      .map((work_id, i) => ({ top_list_id:"t1", work_id, rank:i + 1 })),
+    top_lists:[{ id:"t1", owner:"me", name:"all time", created_at:ago(200) },
+      { id:"t2", owner:"u-mo", name:"rank:film", created_at:ago(40) },
+      { id:"t3", owner:"u-cass", name:"rank:film", created_at:ago(30) }],
+    top_list_items:[
+      ...["tv:1","game:1","film:1","book:2","film:6"].map((work_id, i) => ({ top_list_id:"t1", work_id, rank:i + 1 })),
+      ...["film:1","film:6","film:7","film:8","film:5","film:2","film:3"].map((work_id, i) => ({ top_list_id:"t2", work_id, rank:i + 1 })),
+      ...["film:3","film:7","film:1","film:5","film:6"].map((work_id, i) => ({ top_list_id:"t3", work_id, rank:i + 1 })),
+    ],
 
     follows:[{ follower:"me", followee:"u-rue" }, { follower:"me", followee:"u-ali" },
       { follower:"u-mo", followee:"me" }, { follower:"u-cass", followee:"me" }],
