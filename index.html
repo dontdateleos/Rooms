@@ -76,7 +76,26 @@ header{position:sticky;top:0;z-index:5;background:var(--veil);backdrop-filter:bl
 header .wrap{display:flex;align-items:center;justify-content:space-between;height:58px}
 .logo{display:flex;align-items:center;gap:9px;font-family:var(--head);font-weight:900;font-size:22px;letter-spacing:-.03em}
 .logo .mark{width:30px;height:30px;display:block;flex:none}
-.me{font-family:var(--head);font-weight:800;font-size:13px;background:var(--card);border:0;padding:8px 12px;border-radius:999px;cursor:pointer;color:var(--ink);display:flex;align-items:center;gap:8px}
+.me{font-family:var(--head);font-weight:800;font-size:13px;background:var(--card);border:0;padding:8px 12px;border-radius:999px;cursor:pointer;color:var(--ink);display:flex;align-items:center;gap:8px;transition:background .2s,color .2s}
+/* Taste is behind your name now, so your name is lit while you're on it, as a tab would be */
+.me.on{background:var(--ink);color:var(--cream)}
+.tasteme{display:flex;align-items:center;gap:12px;margin-top:10px;background:none;border:0;padding:0;color:inherit;font:inherit;text-align:left;cursor:pointer}
+.cabbar{display:flex;align-items:center;gap:8px;margin-top:6px}
+.cabbar .sub{flex:1;min-width:0;margin:0}
+.cabkinds{display:flex;gap:5px;margin-top:10px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+/* only when the chips don't all fit: fade the edge they continue past, so the row reads
+   as one you can push sideways rather than one that's been cut off */
+.cabkinds.more{-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 32px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 32px),transparent)}
+.cabkinds::-webkit-scrollbar{display:none}
+.cabkinds .chip{flex:none;padding:7px 10px;font-size:12.5px;gap:4px}
+.cabsort{flex:none;display:inline-flex;align-items:center;gap:4px;background:var(--card);border:2px solid var(--line);color:var(--ink);
+  border-radius:999px;padding:7px 10px 7px 12px;font-family:var(--head);font-weight:800;font-size:12.5px;cursor:pointer}
+.cabsort svg,.cabfind svg{fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round}
+.cabsort svg{width:13px;height:13px;stroke-width:2.6}
+.cabfind{flex:none;width:36px;height:36px;border-radius:999px;background:var(--card);border:2px solid var(--line);color:var(--ink);
+  display:grid;place-items:center;cursor:pointer;padding:0}
+.cabfind svg{width:16px;height:16px;stroke-width:2.4}
+.cabfind.on{background:var(--ink);color:var(--cream);border-color:var(--ink)}
 .hr{display:flex;align-items:center;gap:8px}
 /* settings used to be two taps down, behind your own profile; a cog is the one place
    people already look for it */
@@ -311,6 +330,8 @@ textarea{min-height:76px;resize:none;line-height:1.45}
 button:focus-visible,.linky:focus-visible{outline:3px solid var(--blue);outline-offset:3px}
 .stack{display:flex;flex-direction:column;gap:9px;margin-top:14px}
 .seg{display:flex;background:var(--cream2);padding:4px;border-radius:999px;gap:2px;margin:6px 0 10px}
+.seg[hidden],[data-rsec][hidden]{display:none}
+.roomsecs{margin-top:12px}
 .seg button{flex:1;background:none;border:0;font-family:var(--head);font-weight:800;font-size:13px;padding:9px 6px;border-radius:999px;color:var(--mute);cursor:pointer}
 .seg button.on{background:var(--ink);color:var(--cream)}
 .chips{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 4px}
@@ -398,6 +419,13 @@ button:focus-visible,.linky:focus-visible{outline:3px solid var(--blue);outline-
 .archlist.mini .archcard .meta{left:42px;right:12px;bottom:auto;top:50%;transform:translateY(-50%)}
 .archlist.mini .archcard .ttl{font-size:15px}
 .archlist.mini .archcard .logoimg{max-height:24px}
+.vs{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+.vsit{display:flex;flex-direction:column;gap:6px;background:var(--card);border:2px solid var(--line);border-radius:16px;padding:10px;
+  cursor:pointer;color:var(--ink);font:inherit;text-align:left;min-width:0;transition:transform .12s,border-color .15s}
+.vsit .co{width:100%;aspect-ratio:2/3;max-height:230px;border-radius:10px;object-fit:cover;background:var(--cream2);display:block}
+.vsit b{font-family:var(--head);font-weight:800;font-size:14px;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vsit small{display:flex;gap:6px;align-items:center;color:var(--mute);font-size:11.5px;font-weight:600}
+.vsit:active{transform:scale(.97);border-color:var(--ink)}
 .good{color:var(--good)}.bad{color:var(--bad)}
 .stars{display:flex;gap:4px}
 .stars i{width:15px;height:15px;display:block;background:var(--ink);clip-path:polygon(50% 2%,62% 36%,98% 38%,70% 60%,80% 96%,50% 76%,20% 96%,30% 60%,2% 38%,38% 36%)}
@@ -1232,6 +1260,7 @@ body.demo header{padding-top:34px}
 <main class="wrap">
   <section id="tab-auth" class="on"><div class="auth" id="authBody"></div></section>
   <section id="tab-doors"><div id="doorsBody"></div></section>
+  <section id="tab-archive"><div id="archiveBody"></div></section>
   <section id="tab-shelf"><div id="shelfBody"></div></section>
   <section id="tab-taste"><div id="tasteBody"></div></section>
   <section id="tab-clubs"><div id="clubsBody"></div></section>
@@ -1239,10 +1268,10 @@ body.demo header{padding-top:34px}
 
 <nav id="nav"><div class="in"><span class="navpill" id="navPill"></span>
   <button data-tab="doors">Rooms</button>
-  <button data-tab="taste">Taste</button>
+  <button data-tab="archive">Archive</button>
   <button id="add" aria-label="Log something"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
   <button data-tab="clubs">Clubs</button>
-  <button data-tab="shelf">Library</button>
+  <button data-tab="shelf">Shelf</button>
 </div></nav>
 <div class="demobar" id="demobar" hidden>Demo &middot; invented people &middot; nothing is saved</div>
 <div class="offline" id="offline" role="status" aria-live="polite"></div>
@@ -3118,7 +3147,7 @@ function together(e, all) {
 }
 
 /* ============ shell ============ */
-const RENDER = { doors:renderDoors, shelf:renderShelf, taste:renderTaste, clubs:renderClubs };
+const RENDER = { doors:renderDoors, archive:renderCabinet, shelf:renderShelf, taste:renderTaste, clubs:renderClubs };
 /* 19 — the pill follows the tab you land on.
    It caches pixel geometry in inline styles, which means anything that moves the nav
    behind its back leaves it pointing at a layout that no longer exists. The way to see
@@ -3131,7 +3160,9 @@ const RENDER = { doors:renderDoors, shelf:renderShelf, taste:renderTaste, clubs:
    So watch the element rather than the window. The button is the one source of truth and
    it is re-read whenever its own box could have changed. */
 function movePill(instant) { const p = $("#navPill"), on = $("nav button[data-tab].on");
-  if (!p || !on || !on.offsetWidth) return;
+  /* Taste lives behind your name, not in the bar — on it, no tab is lit */
+  if (p && !on) { p.classList.remove("set"); return; }
+  if (!p || !on.offsetWidth) return;
   if (instant) p.style.transition = "none";
   p.style.left = on.offsetLeft + "px"; p.style.width = on.offsetWidth + "px";
   p.classList.add("set");
@@ -3145,14 +3176,18 @@ if (window.ResizeObserver) { const nb = $("nav .in");
   if (nb) new ResizeObserver(() => requestAnimationFrame(() => movePill(true))).observe(nb); }
 document.fonts?.ready.then(() => movePill(true)).catch(() => {});
 
-const TAB_ORDER = ["doors", "shelf", "taste", "clubs"];
+const TAB_ORDER = ["doors", "archive", "clubs", "shelf", "taste"];
+/* each tab keeps where you were in it; tapping the tab you're already on goes to the top */
+const tabScroll = {};
 function switchTab(n) { shelfEdit = false;
   if (n !== "doors") leaveRoomChannel();
+  const cur = currentTab(); if (cur) tabScroll[cur] = scrollY;
   /* the new tab enters from the side you came from, so the row of tabs reads as a row */
-  const was = TAB_ORDER.indexOf(currentTab()), now = TAB_ORDER.indexOf(n);
+  const was = TAB_ORDER.indexOf(cur), now = TAB_ORDER.indexOf(n);
   document.documentElement.style.setProperty("--slide", was < 0 || now < 0 || was === now ? "0px" : (now > was ? "22px" : "-22px"));
   $$("nav button[data-tab]").forEach(b => { const on = b.dataset.tab === n;
     b.classList.toggle("on", on); if (on) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current"); });
+  $("#meBtn")?.classList.toggle("on", n === "taste");
   /* the outgoing screen used to just disappear while the incoming one eased in; now it
      leaves in the direction you came from instead, so the two read as one handoff */
   const outgoing = was !== now && !REDUCED ? $$("main section").find(s => s.classList.contains("on")) : null;
@@ -3161,6 +3196,14 @@ function switchTab(n) { shelfEdit = false;
       setTimeout(() => s.classList.remove("leaving"), 230); }
     else s.classList.toggle("on", on); });
   movePill(); scrollTo(0,0); RENDER[n]?.();
+  /* some tabs draw after a fetch, so the old position may not exist yet on the first try:
+     keep reaching for it briefly, and stop the moment the finger takes over */
+  const target = n === cur ? 0 : (tabScroll[n] || 0);
+  if (target) { let k = 0, mine = true; const off = () => { mine = false; };
+    addEventListener("touchstart", off, { once:true, passive:true }); addEventListener("wheel", off, { once:true, passive:true });
+    const back = () => { if (!mine) return; scrollTo(0, target);
+      if (Math.abs(scrollY - target) > 4 && ++k < 12) setTimeout(back, 90); };
+    requestAnimationFrame(back); }
   if (n === "doors") setTimeout(markSeen, 1200); else paintDot(); }
 $$("nav button[data-tab]").forEach(b => b.onclick = () => switchTab(b.dataset.tab));
 markLive();
@@ -3239,7 +3282,7 @@ function closeAsk(v) { const a = $("#ask"); if (!a.classList.contains("on")) ret
 function openAsk(html, wire) {
   return new Promise(res => {
     closeAsk(null);                       /* one at a time, and the old one answers null */
-    askGo = res;
+    askGo = res; markBack();
     const a = $("#ask"); $("#askBox").innerHTML = html;
     a.classList.add("on"); a.setAttribute("aria-hidden", "false");
     wire(v => closeAsk(v));
@@ -3274,7 +3317,15 @@ function askYesNoRaw({ title, sub = "", ok = "Yes", no = "Not now", bad = false 
   });
 }
 
-function openSheet(html) { clearTimeout(sheetGoing); sheetGoing = null;
+/* the phone's back button (or the browser's back swipe) closes whatever is open on top —
+   the question first, then the sheet — instead of leaving the app from under it. One
+   marker in history at most: a sheet closed by its own button leaves the marker behind,
+   and the next sheet reuses it rather than stacking another on top. */
+function markBack() { try { if (!history.state?.roomsSheet) history.pushState({ roomsSheet:1 }, ""); } catch {} }
+addEventListener("popstate", () => {
+  if ($("#ask").classList.contains("on")) { closeAsk(null); if ($("#sheet").classList.contains("on")) markBack(); return; }
+  if ($("#sheet").classList.contains("on")) closeSheet(); });
+function openSheet(html) { clearTimeout(sheetGoing); sheetGoing = null; markBack();
   $("#sheet").setAttribute("aria-hidden", "false");
   $("#sheetBody").innerHTML = `<div class="grab"></div>` + html;
   $("#sheet").classList.remove("out"); $("#sheet").classList.add("on"); $(".panel").scrollTop = 0; }
@@ -3464,7 +3515,7 @@ async function enter() {
   if (!P.onboarded && !myEntries.length) setTimeout(openOnboarding, 400);
 }
 function paintMeAv() { const el = $("#meAv"); if (el) el.innerHTML = avSVG(avFor(me)); }
-$("#meBtn").onclick = () => me && openProfile(me.id);
+$("#meBtn").onclick = () => me && switchTab("taste");
 $("#cogBtn").onclick = () => me && openYou();
 $("#bellBtn").onclick = () => me && openNotes();
 $("#findBtn").onclick = () => me && openFind();
@@ -3968,6 +4019,11 @@ async function renderRoomFeed(fb, R) {
   const seenMoments = new Set(P.roomMomentSeen || []), freshMoments = new Set(momentKeys.filter(k => !seenMoments.has(k)));
   if (freshMoments.size) { P.roomMomentSeen = [...new Set([...seenMoments, ...momentKeys])].slice(-80); saveP(); }
   const pick = P.picked && !logged(P.picked) && works[P.picked];
+  /* one long scroll used to hold the conversation, the charts and the year end to end;
+     now they're three places you switch between, and the room remembers which you were in */
+  const pal = roomPalmares(es), hasYear = !!pal && pal.n >= 6;
+  const sec = P.roomSec === "charts" || (P.roomSec === "year" && hasYear) ? P.roomSec : "talk";
+  const secs = [["talk", "Talk"], ["charts", "Charts"], ...(hasYear ? [["year", "Year"]] : [])];
   fb.innerHTML = `<div class="card"><div class="roomhead"><div class="h"><span>${esc(R.name)}</span><span class="tag dim">${R.members.length} in here</span></div><button class="btn ghost roomcode" id="roomCode" title="Copy room code">${esc(R.code)} · Copy</button></div>
       ${rooms.length>1 ? `<div class="roomswitch" aria-label="Your rooms">${rooms.map(r => `<button class="chip ${r.id===R.id?"on":""}" data-rc="${esc(r.id)}">${esc(r.name)}</button>`).join("")}</div>` : ""}
       ${/* who's active comes first — that's the question a room answers at a glance.
@@ -3977,7 +4033,8 @@ async function renderRoomFeed(fb, R) {
       <div class="here" id="hereRow" aria-live="polite"><small>Nobody else in here right now</small></div>
       <div class="nowrow" id="roomNow"></div>
       ${roomStreak(es)}
-      <div class="seg roomfilters" aria-label="Room activity filter">${[["all","Everything"],["reviews","Reviews"],["activity","Activity"]].map(([k,l]) => `<button data-rfilter="${k}" class="${roomFilter===k?"on":""}">${l}</button>`).join("")}</div>
+      <div class="seg roomsecs" aria-label="Room sections">${secs.map(([k,l]) => `<button data-rsecbtn="${k}" class="${sec===k?"on":""}">${l}</button>`).join("")}</div>
+      <div class="seg roomfilters" aria-label="Room activity filter"${sec === "talk" ? "" : " hidden"}>${[["all","Everything"],["reviews","Reviews"],["activity","Activity"]].map(([k,l]) => `<button data-rfilter="${k}" class="${roomFilter===k?"on":""}">${l}</button>`).join("")}</div>
       ${R.members.length < 2 ? `<div class="alone"><b>It's just you in here.</b>
         <span>Rooms only does anything with other people in it — agreement, the year, the arguments.
         Send one person the link and the whole thing switches on.</span>
@@ -3990,6 +4047,7 @@ async function renderRoomFeed(fb, R) {
          of filtering "what the room said" — showing them only under the Activity filter
          meant the freshness bookkeeping above (which runs on every render, filter or no)
          marked a moment seen before it was ever shown. */""}
+    <div data-rsec="talk"${sec === "talk" ? "" : " hidden"}>
     ${roomMomentsHTML(moments, freshMoments)}
     <div class="tagrow" id="talkTop" style="margin:18px 0 8px"><span class="lbl" style="margin:0">What the room said</span><span class="tag dim">newest first</span></div>${(() => { if (!roomEntries.length && !(roomFilter === "activity" && moments.length)) return blank("var(--pink)","“",roomFilter === "reviews" ? "No reviews yet" : roomFilter === "activity" ? "No activity yet" : "Nothing said yet",roomFilter === "reviews" ? "Reviews with a note or reaction will appear here." : roomFilter === "activity" ? "Room activity without a written review will appear here." : "Log something and it lands here for the room to see.",[["talkAdd","Log something"]]);
       const since = lastSeen(); let shown = false;
@@ -3998,17 +4056,24 @@ async function renderRoomFeed(fb, R) {
         return head + slipHTML(e, { talk:true }); }).join(""); })()}
     ${roomPrompt()}
     ${pick ? `<div class="result"><small>Tonight's pick</small><b>${esc(pick.title)}</b><div class="stack" style="margin-top:10px"><button class="btn" id="pickLog">${K(pick.kind).verb} it</button></div></div>` : ""}
+    </div>
+    <div data-rsec="charts"${sec === "charts" ? "" : " hidden"}>
     ${split ? `<div class="card"><div class="h"><span>A friendly argument</span></div>${compRows([split])}</div>` : ""}
     <div class="card"><div class="h"><span>In competition</span><span class="tag dim">weighted</span></div>${comp.length ? compRows(comp) : blank("var(--butter)","%","No scores yet","Once two of you have rated the same thing, the agreement number appears here.",[["compAdd","Log something"]])}</div>
     <div id="rankMeet"></div>
-    ${(() => { const pal = roomPalmares(es); if (!pal || pal.n < 6) return "";
-      const t = id => esc(works[id]?.title || "");
-      return `<div class="card"><div class="h"><span>The room's year</span><span class="tag dim">${pal.n} entries</span></div>
+    </div>
+    ${hasYear ? (() => { const t = id => esc(works[id]?.title || "");
+      return `<div data-rsec="year"${sec === "year" ? "" : " hidden"}><div class="card"><div class="h"><span>The room's year</span><span class="tag dim">${pal.n} entries</span></div>
         <div class="row" data-cw="${esc(pal.best.id)}"><span class="rk">★</span><div class="t"><b>${t(pal.best.id)}</b><small>The room's best · ${(pal.best.avg/2).toFixed(1)} from ${pal.best.n}</small></div></div>
         <div class="stack"><button class="btn quiet" id="roomYearMore">See the rest · best by medium, the agreement, the fight</button></div>
-      </div>`; })()}
+      </div></div>`; })() : ""}
     `;
-  endLine(fb, es, 60);
+  endLine($('[data-rsec="talk"]', fb), es, 60);
+  $$("[data-rsecbtn]", fb).forEach(b => b.onclick = () => { const k = b.dataset.rsecbtn;
+    P.roomSec = k; saveP();
+    $$("[data-rsecbtn]", fb).forEach(x => x.classList.toggle("on", x === b));
+    $$("[data-rsec]", fb).forEach(s => s.hidden = s.dataset.rsec !== k);
+    const rf = $(".roomfilters", fb); if (rf) rf.hidden = k !== "talk"; });
   compFlip(fb);
   paintRankMeet(R);
   /* who is in here, arriving. Only when the room has actually grown since you last
@@ -4257,26 +4322,33 @@ function cabinetRows() {
 }
 /* every medium you've logged, regardless of the kind toggle, the search box or the
    sort — so the toggle itself never loses an option you could switch back to. */
-function cabinetKinds() {
-  const set = new Set();
-  for (const e of myEntries) { const w = works[e.work_id]; if (w) set.add(w.kind); }
-  for (const [sid] of showsFromParts()) { const w = works[sid]; if (w) set.add(w.kind); }
-  return CAB_ORDER.filter(k => set.has(k));
-}
+function cabinetCounts() { const seen = new Set(), n = {};
+  const add = w => { if (!w || seen.has(w.id)) return; seen.add(w.id); n[w.kind] = (n[w.kind] || 0) + 1; };
+  for (const e of myEntries) add(works[e.work_id]);
+  for (const [sid] of showsFromParts()) add(works[sid]);
+  return n; }
+function cabinetKinds() { const n = cabinetCounts(); return CAB_ORDER.filter(k => n[k]); }
+/* one row of controls rather than four: which medium as chips, the sort as a single pill
+   that opens its choices, and search folded behind an icon until it's wanted — so the
+   first card sits right under the heading instead of below a stack of toggles */
+const CHEV = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>`;
+const LENS = `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>`;
 function renderCabinet() {
-  const body = $("#shelfBody"); if (!body) return;
-  const all = cabinetRows();
+  const body = $("#archiveBody"); if (!body) return;
+  const counts = cabinetCounts(), kinds = CAB_ORDER.filter(k => counts[k]);
   body.innerHTML = `<div style="display:flex;align-items:center;gap:10px">
       <h2 style="margin:0">Your <span class="hl" style="background:var(--mint)">archive</span></h2>
       ${me ? `<span class="av cabmark">${avSVG(avFor(me))}</span>` : ""}
     </div>
-    <p class="sub" id="cabSub"></p>
-    ${viewSeg()}
-    ${logCount() && cabinetKinds().length > 1 ? `<div class="seg" style="margin-top:12px">${[["", "All"], ...cabinetKinds().map(k => [k, K(k).plural])].map(([k, l]) =>
-      `<button data-ck="${k}" class="${(P.cabKind||"") === k ? "on" : ""}">${l}</button>`).join("")}</div>` : ""}
-    ${logCount() ? `<div class="seg" style="margin-top:8px">${Object.entries(CAB_SORTS).map(([k, l]) =>
-      `<button data-cs="${k}" class="${cabSort() === k ? "on" : ""}">${l}</button>`).join("")}</div>
-      <input id="cabQ" class="searchlog" type="search" placeholder="Find something in here" autocomplete="off" value="${esc(cabQ)}">` : ""}
+    ${logCount() ? `<div class="cabbar">
+        <p class="sub" id="cabSub"></p>
+        <button class="cabsort" id="cabSortBtn" aria-label="Sort the archive">${CAB_SORTS[cabSort()]}${CHEV}</button>
+        <button class="cabfind ${cabQ ? "on" : ""}" id="cabFindBtn" aria-label="Search the archive" aria-expanded="${cabQ ? "true" : "false"}">${LENS}</button>
+      </div>
+      ${kinds.length > 1 ? `<div class="cabkinds">${[["", "All", Object.values(counts).reduce((a, b) => a + b, 0)], ...kinds.map(k => [k, K(k).plural, counts[k]])].map(([k, l, c]) =>
+          `<button class="chip ${(P.cabKind||"") === k ? "on" : ""}" data-ck="${k}">${l} <u>${c}</u></button>`).join("")}</div>` : ""}
+      <input id="cabQ" class="searchlog" type="search" placeholder="Find something in here" autocomplete="off" value="${esc(cabQ)}"${cabQ ? "" : " hidden"}>`
+    : `<p class="sub" id="cabSub"></p>`}
     <div id="cabTrays"></div>
     ${logCount() ? `<div class="shelfbar"><button class="btn quiet" id="cabList">See it as a list \u00b7 ${logCount()} logged</button></div>` : ""}`;
   paintTrays(); wireCabinet();
@@ -4381,8 +4453,8 @@ function paintTrays() {
   const needLogos = rows.filter(r => (r.w.kind === "film" || r.w.kind === "tv") && !(r.w.id in logoCache) && !logoLoading.has(r.w.id));
   if (needLogos.length) Promise.all(needLogos.map(r => ensureLogo(r.w))).then(() => paintTrays());
   const sub = $("#cabSub");
-  if (sub) sub.innerHTML = rows.length ? `${rows.length} ${cabQ ? "match" : "finished"}${
-      kinds.length > 1 ? ` \u00b7 ${kinds.map(k => `${by[k].length} ${inWords(k, by[k].length)}`).join(" \u00b7 ")}` : ""}`
+  /* the per-medium counts live on the chips now, so this line only says how many */
+  if (sub) sub.innerHTML = rows.length ? `${rows.length} ${cabQ ? "match" : "finished"}`
     : logCount() ? "Nothing in here matches that." : "Everything you finish stands here.";
   el.innerHTML = rows.length ? kinds.map(k => `<div class="tray"><div class="lbl">
         <span>${esc(K(k).plural)}</span><em>${by[k].length}</em></div>
@@ -4404,23 +4476,29 @@ function paintTrays() {
   wireTokens();
 }
 function wireCabinet() {
-  $$("[data-view]").forEach(b => b.onclick = () => { P.view = b.dataset.view; saveP(); renderShelf(); });
+  const kc = $(".cabkinds"); if (kc) { const edge = () => kc.classList.toggle("more", kc.scrollLeft + kc.clientWidth < kc.scrollWidth - 2);
+    kc.onscroll = edge; requestAnimationFrame(edge); }
   $$("[data-ck]").forEach(b => b.onclick = () => { P.cabKind = b.dataset.ck; saveP();
     $$("[data-ck]").forEach(x => x.classList.toggle("on", x === b)); paintTrays(); });
-  $$("[data-cs]").forEach(b => b.onclick = () => { P.cabSort = b.dataset.cs; saveP();
-    $$("[data-cs]").forEach(x => x.classList.toggle("on", x === b)); paintTrays(); });
-  const q2 = $("#cabQ"); if (q2) { let t; q2.oninput = ev => { clearTimeout(t); cabQ = ev.target.value;
+  const sb2 = $("#cabSortBtn"); if (sb2) sb2.onclick = async () => {
+    const v = await openAsk(`<h3>Sort the archive</h3><div class="stack">${Object.entries(CAB_SORTS).map(([k, l]) =>
+      `<button class="btn ${cabSort() === k ? "" : "quiet"}" data-sortpick="${k}">${l}</button>`).join("")}</div>`,
+      done => $$("[data-sortpick]").forEach(b => b.onclick = () => done(b.dataset.sortpick)));
+    if (!v || !CAB_SORTS[v]) return;
+    P.cabSort = v; saveP(); sb2.innerHTML = CAB_SORTS[v] + CHEV; paintTrays(); };
+  const q2 = $("#cabQ"), fb2 = $("#cabFindBtn");
+  if (fb2 && q2) fb2.onclick = () => { const open = q2.hidden;
+    q2.hidden = !open; fb2.classList.toggle("on", open); fb2.setAttribute("aria-expanded", String(open));
+    if (open) q2.focus(); else if (cabQ) { cabQ = ""; q2.value = ""; paintTrays(); } };
+  if (q2) { let t; q2.oninput = ev => { clearTimeout(t); cabQ = ev.target.value;
     t = setTimeout(paintTrays, 180); }; }
   /* the trays are the thing you look at; the list is the thing you search through and
      the only place a rewatch shows as more than one word, so it stays one tap away */
   const ls = $("#cabList"); if (ls) ls.onclick = () => openWholeLog();
 }
 function wireTokens() {
-  const bk = $("#cabShelf"); if (bk) bk.onclick = () => { P.view = "shelf"; saveP(); renderShelf(); };
+  const bk = $("#cabShelf"); if (bk) bk.onclick = () => switchTab("shelf");
 }
-const viewSeg = () => `<div class="seg" style="margin-top:12px">${
-  [["shelf", "The shelf"], ["cabinet", "The archive"]].map(([k, l]) =>
-    `<button data-view="${k}" class="${cabView() === k ? "on" : ""}">${l}</button>`).join("")}</div>`;
 /* medium and "when" used to sit as two more chip rows on the shelf, on top of the view
    toggle, the search box and its own kind chips — four rows of controls before any
    content. They're the same shape of choice (narrow what's showing, not change what
@@ -4436,12 +4514,7 @@ function shelfFilterSheet(counts, soonCount, nowCount) {
     ${soonCount || nowCount ? `<div class="lbl" style="margin-top:14px">When</div>
     <div class="chips">${whenOpts.map(([k, l]) => `<button class="chip ${(P.when||"")===k?"on":""}" data-wf="${k}">${l}</button>`).join("")}</div>` : ""}`;
 }
-/* the archive is only worth offering once there is something in it — and a show you
-   only ever rated in seasons is something in it, which counting whole entries missed:
-   the one person whose log is all seasons had an archive and no way to reach it. */
-const cabView = () => P.view === "cabinet" && logCount() ? "cabinet" : "shelf";
-
-function renderShelf() { if (cabView() === "cabinet") return renderCabinet();
+function renderShelf() {
   const L = activeList();
   /* The shelf holds what you mean to get to; what you're in the middle of belongs with it
      and need never have been put there, so it joins the grid rather than sitting under it
@@ -4465,8 +4538,7 @@ function renderShelf() { if (cabView() === "cabinet") return renderCabinet();
       : `<button class="btn soft" id="spinOpen">${left.length >= 2
           ? `Can't decide? ${left.length} to pick from` : "Can't decide? Spin the best of something"}</button>`}</div>
     <div id="resultArea"></div>`;
-  $("#shelfBody").innerHTML = `<h2>Your <span class="hl" style="background:var(--mint)">library</span></h2><p class="sub">${all.length ? `${left.length} to go${done ? ` · ${done} done` : ""}${soonCount ? ` · ${soonCount} coming` : ""}` : "Everything you meant to get to."}</p>
-    ${logCount() ? viewSeg() : ""}
+  $("#shelfBody").innerHTML = `<h2>Your <span class="hl" style="background:var(--mint)">shelf</span></h2><p class="sub">${all.length ? `${left.length} to go${done ? ` · ${done} done` : ""}${soonCount ? ` · ${soonCount} coming` : ""}` : "Everything you meant to get to."}</p>
     <input id="search" type="search" placeholder="Search film, TV, books, games" autocomplete="off" style="margin-top:12px">
     <div class="chips">${Object.keys(KINDS).map(k => `<button class="chip k ${P.kinds.includes(k)?"on":""}" data-sk="${k}">${K(k).label}</button>`).join("")}</div>
     <div class="msg" id="msg"></div><div id="results"></div>
@@ -4532,7 +4604,6 @@ function renderShelf() { if (cabView() === "cabinet") return renderCabinet();
   justDealt = justSwept = null;
   wireShelf(); if (shelfEdit) paintEdit();
   wireSearch();
-  $$("[data-view]").forEach(b => b.onclick = () => { P.view = b.dataset.view; saveP(); renderShelf(); });
   if (P.picked && !logged(P.picked) && works[P.picked]) showResult(works[P.picked]); renderWaiting(); renderShelfRecs(); }
 /* openLibraryFilters is gone: it moved both filter rows behind a "Filters" button and
    a sheet, which hid the counts and cost an extra tap to see what you were part-way
@@ -5579,14 +5650,30 @@ const unrankIfGone = id => { if (!inArchive(id)) rankRemove(kindOf(id), id); };
 /* which do you like more, shown as two covers rather than two titles — true picks a,
    false picks b, null means "just put it last" (or, placing it again, "leave it where it
    was") and ends the bisection on the spot */
+/* the two side by side, covers big enough to answer from at a glance — tap the one */
+const vsHTML = (a, b, again) => `<h3>Which do you like more?</h3>
+  <p class="sub">Placing <b>${esc(a.title)}</b> among your ${inWords(a.kind)}.</p>
+  <div class="vs">${[a, b].map((w, i) => `<button class="vsit" data-vs="${i}">${cover(w)}<b>${esc(w.title)}</b><small>${tag(w.kind)} ${esc(w.year||"")}</small></button>`).join("")}</div>
+  <div class="stack"><button class="btn quiet" id="vsSkip">${again ? "Leave it where it was" : "Just put it last"}</button></div>`;
 function askRank(a, b, again = false) {
-  return openAsk(`<h3>Which do you like more?</h3>
-    <p class="sub">Placing <b>${esc(a.title)}</b> among your ${inWords(a.kind)}.</p>
-    <div id="rkRow"></div>
-    <div class="stack"><button class="btn quiet" id="askNo">${again ? "Leave it where it was" : "Just put it last"}</button></div>`, done => {
-    $("#rkRow").innerHTML = [a, b].map((w, i) => `<div class="row" data-rk="${i}">${cover(w)}<div class="t"><b>${esc(w.title)}</b><small>${tag(w.kind)} ${esc(w.year||"")}</small></div></div>`).join("");
-    $$("[data-rk]", $("#rkRow")).forEach(r => r.onclick = () => done(r.dataset.rk === "0"));
-    $("#askNo").onclick = () => done(null);
+  return openAsk(vsHTML(a, b, again), done => {
+    $$("#askBox [data-vs]").forEach(r => r.onclick = () => done(r.dataset.vs === "0"));
+    $("#vsSkip").onclick = () => done(null);
+  }); }
+/* the same question asked in the sheet you're already in, so logging something is one
+   flow — rate it, place it, done — rather than a sheet, a dialog over it, then another
+   sheet. Pushing the sheet away mid-way resolves undefined: stop, place nothing, and
+   leave it to "Place it" in the archive rather than guess where it went. */
+function askInSheet(a, b, again = false) {
+  return new Promise(res => {
+    const sh = $("#sheet"); let done = false;
+    const finish = v => { if (done) return; done = true; mo.disconnect(); res(v); };
+    const mo = new MutationObserver(() => { if (!sh.classList.contains("on") || sh.classList.contains("out")) finish(undefined); });
+    mo.observe(sh, { attributes:true, attributeFilter:["class"] });
+    $("#sheetBody").innerHTML = `<div class="grab"></div>` + vsHTML(a, b, again);
+    $(".panel").scrollTop = 0;
+    $$("#sheetBody [data-vs]").forEach(r => r.onclick = () => finish(r.dataset.vs === "0"));
+    $("#vsSkip").onclick = () => finish(null);
   }); }
 let rankCache = {}, rankListId = {};
 async function ensureRankCache(kinds) {
@@ -5601,12 +5688,12 @@ const scoreOf = id => { const e = myEntries.find(x => x.work_id === id);
 /* a handful of "which beats which" taps place it exactly, in about log2(n) questions
    instead of one per existing thing. `again` is placing something already in the list:
    backing out then leaves it where it was rather than dropping it to the bottom. */
-async function rankInsert(kind, workId, again = false) {
+async function rankInsert(kind, workId, again = false, ask = askRank) {
   const t = await ensureMyRank(kind);
   rankListId[kind] = t.id;
   const was = t.items.indexOf(workId);
   const items = t.items.filter(id => id !== workId);
-  if (!items.length) { const out = [workId]; await persistRank(t.id, out); if (rankCache[kind]) rankCache[kind] = out; return; }
+  if (!items.length) { const out = [workId]; await persistRank(t.id, out); if (rankCache[kind]) rankCache[kind] = out; return { pos:1, of:1 }; }
   const myScore = scoreOf(workId);
   let lo = 0, hi = items.length;
   let suggested = myScore == null ? null : items.findIndex(id => { const s = scoreOf(id); return s != null && s <= myScore; });
@@ -5616,14 +5703,16 @@ async function rankInsert(kind, workId, again = false) {
     suggested = null;
     const w = works[workId], other = works[items[mid]];
     if (!w || !other) break;
-    const preferNew = await askRank(w, other, again && was >= 0);
-    if (preferNew === null) { if (again && was >= 0) return; lo = hi = items.length; break; }
+    const preferNew = await ask(w, other, again && was >= 0);
+    if (preferNew === undefined) return null;
+    if (preferNew === null) { if (again && was >= 0) return null; lo = hi = items.length; break; }
     if (preferNew) hi = mid; else lo = mid + 1;
   }
   /* taken back (Undo, delete) while the questions were still on screen */
-  if (!inArchive(workId)) return;
+  if (!inArchive(workId)) return null;
   const out = items.slice(); out.splice(lo, 0, workId);
-  await persistRank(t.id, out); if (rankCache[kind]) rankCache[kind] = out; }
+  await persistRank(t.id, out); if (rankCache[kind]) rankCache[kind] = out;
+  return { pos:lo + 1, of:out.length }; }
 /* the comparisons get it close; this is for when you still want to hand-correct it.
    Swaps with a neighbour rather than reopening the whole bisection on one nudge. */
 function moveRank(kind, workId, dir) {
@@ -5689,7 +5778,7 @@ async function loadRecs() { if (recs) return recs; const onShelf = new Set(lists
   return out; }
 async function renderTaste() { const body = $("#tasteBody"); const t = tasteOf(myEntries);
   const tasteLead = myEntries.length ? (t.craft[0]?.[0] ? `You keep coming back for ${t.craft[0][0].toLowerCase()}. Here is something that might meet you there.` : "Your taste gets clearer every time you log something.") : "Log a few things and this becomes a living map of what pulls you in.";
-  body.innerHTML = `<div style="display:flex;align-items:center;gap:12px;margin-top:10px">${avatar(me)}<div><h2 style="margin:0">${esc(me.handle)}</h2>${me.bio?`<p class="sub" style="margin-top:2px">${esc(me.bio)}</p>`:""}</div></div>
+  body.innerHTML = `<button class="tasteme" id="tasteMe" aria-label="Open your profile">${avatar(me)}<div><h2 style="margin:0">${esc(me.handle)}</h2>${me.bio?`<p class="sub" style="margin-top:2px">${esc(me.bio)}</p>`:""}</div></button>
     <p class="sub" style="margin-top:10px">${esc(tasteLead)}</p>
     <div class="tally">${Object.keys(KINDS).filter(k=>t.kinds[k]).map(k => `<span><b>${t.kinds[k]}</b>${K(k).label.toLowerCase()}</span>`).join("")}<span><b>${follows.length}</b>following</span><span id="followerCount"></span></div>
     <div class="card">${tasteHTML(t)}${t.tagged >= 3 ? `<div class="stack"><button class="btn ghost" id="myTasteCard">Save the card</button></div>` : ""}</div>
@@ -5723,6 +5812,9 @@ async function renderTaste() { const body = $("#tasteBody"); const t = tasteOf(m
     ${(() => { const year = String(new Date().getFullYear()); const d = reviewData(yearOf(myEntries, year)); return d.n >= 5 ? reviewHTML(d, year) : ""; })()}
     ${myEntries.length ? "" : blank("var(--butter)","1","Nothing logged yet","Start with the last thing you finished. Thirty seconds, and your taste starts building.",[["tasteAdd","Log something"]])}`;
   ["tasteAdd","tasteBlankAdd"].forEach(id => { const el = $("#"+id); if (el) el.onclick = openAdd; });
+  /* your name in the header now opens this page, so the page's own name opens the profile
+     card the header used to — nothing that was one tap away got further */
+  $("#tasteMe").onclick = () => openProfile(me.id);
   const sw = $("#shareWeek"); if (sw) sw.onclick = () => openCuts("span", spanData(7, "this week"), "Share your week");
   const sm = $("#shareMonth"); if (sm) sm.onclick = () => openCuts("span", spanData(30, "this month"), "Share your month");
   const mtc = $("#myTasteCard"); if (mtc) mtc.onclick = () => openCuts("taste", { p:me, t }, "Share your taste");
@@ -5769,7 +5861,7 @@ async function renderTaste() { const body = $("#tasteBody"); const t = tasteOf(m
     $$("[data-ten]", body).forEach(x => x.classList.toggle("on", x === b)); paintTen(); });
   paintTen();
   const rs = await loadRecs().catch(() => []); const rb = $("#recBody"); if (!rb) return;
-  if (!rs.length) { rb.innerHTML = `<div class="rec-empty"><p class="empty">Nothing fresh to put here yet. Log something you loved, or go looking for the next one.</p><div class="stack"><button class="btn soft" id="tasteFind">Find something to log</button>${myEntries.length ? `<button class="btn quiet" id="tasteShelf">Browse your library</button>` : ""}</div></div>`; $("#tasteFind").onclick = openAdd; const ts=$("#tasteShelf"); if(ts) ts.onclick=()=>switchTab("shelf"); return; }
+  if (!rs.length) { rb.innerHTML = `<div class="rec-empty"><p class="empty">Nothing fresh to put here yet. Log something you loved, or go looking for the next one.</p><div class="stack"><button class="btn soft" id="tasteFind">Find something to log</button>${myEntries.length ? `<button class="btn quiet" id="tasteShelf">Browse your archive</button>` : ""}</div></div>`; $("#tasteFind").onclick = openAdd; const ts=$("#tasteShelf"); if(ts) ts.onclick=()=>switchTab("archive"); return; }
   window.__hits = Object.assign(window.__hits||{}, Object.fromEntries(rs.map(x => [x.r.id, x.r])));
   rb.innerHTML = rs.map(({ r, why }) => `<div class="row" data-rec="${esc(r.id)}">${cover(r)}<div class="t"><b>${esc(r.title)}</b><small>${tag(r.kind)} ${esc(r.year||"")} · because of ${esc(why)}</small></div><span class="chip">Add</span></div>`).join("");
   $$("[data-rec]", rb).forEach(x => x.onclick = async () => { await addToShelf(x.dataset.rec); recs = recs.filter(e => e.r.id !== x.dataset.rec); renderTaste(); }); }
@@ -7273,15 +7365,23 @@ function openLog(w, edit = null) { const cfg = K(w.kind); const loved = edit?.lo
       if (!edit?.id && nowOf(w.id)) stopNow(w.id);
       /* a rewatch doesn't ask again — only the first time this work stands in the archive */
       const firstTime = !edit?.id && myEntries.filter(x => x.work_id === w.id).length === 1;
-      justSwept = w.id; inkWash(w.kind); recs = null; delete tagCache[w.id]; if (P.picked === w.id) { P.picked = null; saveP(); } closeSheet(); refresh();
-      if (offShelf) say("Off the shelf");
+      justSwept = w.id; inkWash(w.kind); recs = null; delete tagCache[w.id]; if (P.picked === w.id) { P.picked = null; saveP(); }
       const saved = (edit ? myEntries.find(x => x.id === edit.id) : myEntries.find(x => x.work_id === w.id)) || e;
+      /* rate it, place it, done: the placing happens in this sheet, and the end is a toast
+         saying where it landed rather than a second sheet to close */
+      let placed = null;
+      if (firstTime) { try { placed = await rankInsert(w.kind, w.id, false, askInSheet); } catch {} }
+      closeSheet(); refresh();
+      if (offShelf) say("Off the shelf");
+      /* an edit came from the entry, so it goes back to the entry */
+      if (edit?.id) { openEntry(saved, true); return; }
+      const where = !placed ? "Logged" : placed.of === 1 ? `Logged · your first ${inWords(w.kind, 1)}`
+        : `Logged · #${placed.pos} of your ${placed.of} ${inWords(w.kind)}`;
       /* a new entry is the one change worth offering back, and the ring says how long for */
-      if (!edit?.id && saved.id) sayUndo("Logged", async () => {
+      if (saved.id) sayUndo(where, async () => {
         try { await q(sb.from("entries").delete().eq("id", saved.id)); await loadMine(); unrankIfGone(w.id); refresh();
-          say("Taken back"); } catch (err) { oops(err, "Couldn't take that back"); } });
-      if (firstTime) { try { await rankInsert(w.kind, w.id); } catch {} }
-      openEntry(saved, true); } catch (err) { $("#wMsg").textContent = err.message; $("#wSave").disabled = false; } }; }
+          say("Taken back"); } catch (err) { oops(err, "Couldn't take that back"); } }, 6);
+    } catch (err) { $("#wMsg").textContent = err.message; $("#wSave").disabled = false; } }; }
 
 /* ============ ENTRY PAGE ============ */
 /* ---------- reporting and blocking ----------
@@ -7827,7 +7927,7 @@ window.__rooms = { pullRefresh, openFind, setFollow, isFollowing, get follows(){
   bestOf, bestGenres, dealBest, loadBest, pickFrom, seenMode, keepSeen, get bestPool(){return bestPool}, get bestHand(){return bestHand},
   askText, askYesNo, openAsk, closeAsk, feedNow, openInvite, inviteText,
   known, showcase, weekPast, weekCard, WEEK_KEY, handleTaken, peekRoom, SHOWCASE,
-  tokenHTML, tokFace, tokEdge, cabinetRows, renderCabinet, cabView, TOK_DEPTH,
+  tokenHTML, tokFace, tokEdge, cabinetRows, renderCabinet, TOK_DEPTH,
   willNotPost, willNotName, addPatterns, setReasons, get FOUL(){return FOUL}, get FOUL_NAME(){return FOUL_NAME}, get NAKED(){return NAKED}, loadSettings, get NOPE(){return NOPE}, get REPORT_WHY(){return REPORT_WHY},
   saveEntry, readBackup, bringOver, openBringOver, loadLists, loadSeen, blockThem, unblockThem, isApart, notApart, loadBlocks, openReport, openBlock, sendReport, REPORT_WHY,
   get blocked(){return blocked},
