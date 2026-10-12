@@ -752,6 +752,16 @@ nav .in:has(.navpill.set) button.on{background:none}
 @media (prefers-reduced-motion:reduce){.donut{animation:none}}
 .donut circle{stroke-linecap:round}
 .donutLegend{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column;gap:7px;width:100%;max-width:280px}
+/* the glance version on Taste: a small pie and one sentence, the whole card a button */
+.tastemini{display:block;width:100%;margin-top:14px;border:0;font:inherit;color:inherit;text-align:left;cursor:pointer}
+.tastemini:active{transform:scale(.985)}
+.tm{display:flex;align-items:center;gap:16px}
+.tm .donut{width:76px;height:76px;flex:none}
+.tm-t{min-width:0}
+.tm-say{font-family:var(--head);font-weight:800;font-size:16px;line-height:1.35;letter-spacing:-.01em}
+.tm-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin:0 5px 1px 2px;vertical-align:middle}
+.tm-t small{display:block;margin-top:6px;color:var(--mute);font-size:12px;font-weight:700}
+.tm-forming{margin:0;color:var(--mute);font-size:13.5px;line-height:1.5}
 .donutLegend li{display:flex;align-items:center;gap:9px;font-size:13.5px;font-weight:600}
 .donutLegend .dot{width:10px;height:10px;border-radius:50%;flex:none}
 .say{font-family:var(--head);font-weight:900;font-size:24px;letter-spacing:-.03em;line-height:1.1;margin:10px 0 6px}
@@ -5776,17 +5786,46 @@ async function loadRecs() { if (recs) return recs; const onShelf = new Set(lists
      lookup threw is not, and caching it would keep this blank until the next save. */
   if (!seeds.length || reached) recs = out;
   return out; }
+/* Taste, kept to what you'd glance at: who you are, the gist of what pulls you in, and
+   three things to try. Everything else it used to stack up — the full breakdown, the
+   charts, your ten, second thoughts, whose word is good, your year — is one tap away in
+   its own sheet, so the page answers a glance and the sheet answers a dig. */
+const MINI_COLS = ["var(--apricot)", "var(--mint)", "var(--sky)"];
+function tasteMiniHTML(t) {
+  if (t.tagged < 3) return `<p class="tm-forming">Say what you loved on a few entries and the shape of your taste shows up here. <b>${t.tagged} of 3</b> so far.</p>`;
+  const top = t.craft.slice(0, 3), rest = t.craft.slice(3).reduce((s, [, v]) => s + v.total, 0);
+  const slices = top.map(([k, v], i) => ({ name:k, v:v.total, col:MINI_COLS[i] }))
+    .concat(rest ? [{ name:"everything else", v:rest, col:"var(--line)" }] : []);
+  const parts = top.map(([k], i) => `<span class="tm-dot" style="background:${MINI_COLS[i]}"></span>${esc(k)}`);
+  return `<div class="tm">${donutSVG(slices)}<div class="tm-t">
+      <div class="tm-say">You go for ${parts.length > 1 ? parts.slice(0, -1).join(", ") + " and " + parts[parts.length - 1] : parts[0]}.</div>
+      <small>See the whole picture ›</small></div></div>`; }
 async function renderTaste() { const body = $("#tasteBody"); const t = tasteOf(myEntries);
-  const tasteLead = myEntries.length ? (t.craft[0]?.[0] ? `You keep coming back for ${t.craft[0][0].toLowerCase()}. Here is something that might meet you there.` : "Your taste gets clearer every time you log something.") : "Log a few things and this becomes a living map of what pulls you in.";
   body.innerHTML = `<button class="tasteme" id="tasteMe" aria-label="Open your profile">${avatar(me)}<div><h2 style="margin:0">${esc(me.handle)}</h2>${me.bio?`<p class="sub" style="margin-top:2px">${esc(me.bio)}</p>`:""}</div></button>
-    <p class="sub" style="margin-top:10px">${esc(tasteLead)}</p>
+    ${myEntries.length ? `<button class="card tastemini" id="tasteMore" aria-label="See your whole taste">${tasteMiniHTML(t)}</button>
+    <div class="card"><div class="h"><span>For tonight</span><span class="tag dim">from what you loved</span></div><div id="recBody">${skeleton(1)}</div></div>
+    <div class="stack"><button class="btn quiet" id="tasteAll">Your ten, the charts, your year and more</button></div>`
+    : blank("var(--butter)","1","Nothing logged yet","Start with the last thing you finished. Thirty seconds, and your taste starts building.",[["tasteAdd","Log something"]])}`;
+  const ta = $("#tasteAdd"); if (ta) ta.onclick = openAdd;
+  /* your name in the header now opens this page, so the page's own name opens the profile
+     card the header used to — nothing that was one tap away got further */
+  $("#tasteMe").onclick = () => openProfile(me.id);
+  [$("#tasteMore"), $("#tasteAll")].forEach(b => { if (b) b.onclick = openTasteDetail; });
+  const rb = $("#recBody"); if (!rb) return;
+  const rs = (await loadRecs().catch(() => [])).slice(0, 3);
+  if ($("#recBody") !== rb) return;
+  if (!rs.length) { rb.innerHTML = `<div class="rec-empty"><p class="empty">Nothing fresh to put here yet. Log something you loved, or go looking for the next one.</p><div class="stack"><button class="btn soft" id="tasteFind">Find something to log</button><button class="btn quiet" id="tasteShelf">Browse your archive</button></div></div>`; $("#tasteFind").onclick = openAdd; $("#tasteShelf").onclick = () => switchTab("archive"); return; }
+  window.__hits = Object.assign(window.__hits||{}, Object.fromEntries(rs.map(x => [x.r.id, x.r])));
+  rb.innerHTML = rs.map(({ r, why }) => `<div class="row" data-rec="${esc(r.id)}">${cover(r)}<div class="t"><b>${esc(r.title)}</b><small>${tag(r.kind)} ${esc(r.year||"")} · because of ${esc(why)}</small></div><span class="chip">Add</span></div>`).join("");
+  $$("[data-rec]", rb).forEach(x => x.onclick = async () => { await addToShelf(x.dataset.rec); recs = recs.filter(e => e.r.id !== x.dataset.rec); renderTaste(); }); }
+async function openTasteDetail() { const t = tasteOf(myEntries);
+  openSheet(`<h3>Your taste</h3>
     <div class="tally">${Object.keys(KINDS).filter(k=>t.kinds[k]).map(k => `<span><b>${t.kinds[k]}</b>${K(k).label.toLowerCase()}</span>`).join("")}<span><b>${follows.length}</b>following</span><span id="followerCount"></span></div>
     <div class="card">${tasteHTML(t)}${t.tagged >= 3 ? `<div class="stack"><button class="btn ghost" id="myTasteCard">Save the card</button></div>` : ""}</div>
     <div class="card"><div class="h"><span>What's rated best</span></div>
       <div class="seg" style="margin-top:4px" id="chartWinSeg">${Object.entries(CHART_WINDOWS).map(([k,l]) =>
         `<button data-cwin="${k}" class="${chartWin()===k?"on":""}">${l[0]}</button>`).join("")}</div>
       <div id="chartBody">${skeleton(2)}</div></div>
-    <div class="card"><div class="h"><span>For tonight</span><span class="tag dim">from what you loved</span></div><div id="recBody">${skeleton(2)}</div></div>
     <div class="card"><div class="h"><span>Your ten</span><button class="chip" id="editTop">Edit</button></div>
       <div class="chips" id="tenPick">${TENS.map(([k,l]) => `<button class="chip ${(P.ten||"all time")===k?"on":""}" data-ten="${k}">${l}</button>`).join("")}</div>
       <div id="tenBody">${skeleton(1)}</div></div>
@@ -5810,17 +5849,17 @@ async function renderTaste() { const body = $("#tasteBody"); const t = tasteOf(m
     ${myEntries.length ? `<div class="card"><div class="h"><span>Share a stretch</span><span class="tag dim">three cuts each</span></div>
       <div class="chips" style="margin-top:10px"><button class="chip" id="shareWeek">This week</button><button class="chip" id="shareMonth">This month</button></div></div>` : ""}
     ${(() => { const year = String(new Date().getFullYear()); const d = reviewData(yearOf(myEntries, year)); return d.n >= 5 ? reviewHTML(d, year) : ""; })()}
-    ${myEntries.length ? "" : blank("var(--butter)","1","Nothing logged yet","Start with the last thing you finished. Thirty seconds, and your taste starts building.",[["tasteAdd","Log something"]])}`;
-  ["tasteAdd","tasteBlankAdd"].forEach(id => { const el = $("#"+id); if (el) el.onclick = openAdd; });
-  /* your name in the header now opens this page, so the page's own name opens the profile
-     card the header used to — nothing that was one tap away got further */
-  $("#tasteMe").onclick = () => openProfile(me.id);
+    <div class="stack"><button class="btn quiet" id="tdClose">Close</button></div>`);
+  const body = $("#sheetBody");
+  $("#tdClose").onclick = closeSheet;
+  const tb = $("#tasteBlankAdd"); if (tb) tb.onclick = () => { closeSheet(); openAdd(); };
   const sw = $("#shareWeek"); if (sw) sw.onclick = () => openCuts("span", spanData(7, "this week"), "Share your week");
   const sm = $("#shareMonth"); if (sm) sm.onclick = () => openCuts("span", spanData(30, "this month"), "Share your month");
   const mtc = $("#myTasteCard"); if (mtc) mtc.onclick = () => openCuts("taste", { p:me, t }, "Share your taste");
   const sy = $("#shareYear"); if (sy) sy.onclick = () => { const year = String(new Date().getFullYear());
     openCuts("year", Object.assign(reviewData(yearOf(myEntries, year)), { year }), "Share your year"); };
-  try { const fc = await q(sb.from("follows").select("follower").eq("followee", me.id)); $("#followerCount").innerHTML = `<b>${fc.length}</b>followers`; } catch {}
+  $$(".row[data-work]", body).forEach(x => x.onclick = () => openWork(x.dataset.work));
+  $$(".row[data-prof]", body).forEach(x => x.onclick = () => openProfile(x.dataset.prof));
   /* this used to live in the everyone feed, bolted on top of what people were saying.
      it's its own thing — what's rated best, by window — so it gets its own card here
      instead of sharing one with the hall's actual conversation. */
@@ -5856,15 +5895,10 @@ async function renderTaste() { const body = $("#tasteBody"); const t = tasteOf(m
     $$("#tenBody [data-work]").forEach(x => x.onclick = () => openWork(x.dataset.work));
     $("#editTop").onclick = () => openTopEditor(top);
   };
-  $$("#tasteBody .row[data-work]").forEach(x => x.onclick = () => openWork(x.dataset.work));
   $$("[data-ten]", body).forEach(b => b.onclick = () => { P.ten = b.dataset.ten; saveP();
     $$("[data-ten]", body).forEach(x => x.classList.toggle("on", x === b)); paintTen(); });
   paintTen();
-  const rs = await loadRecs().catch(() => []); const rb = $("#recBody"); if (!rb) return;
-  if (!rs.length) { rb.innerHTML = `<div class="rec-empty"><p class="empty">Nothing fresh to put here yet. Log something you loved, or go looking for the next one.</p><div class="stack"><button class="btn soft" id="tasteFind">Find something to log</button>${myEntries.length ? `<button class="btn quiet" id="tasteShelf">Browse your archive</button>` : ""}</div></div>`; $("#tasteFind").onclick = openAdd; const ts=$("#tasteShelf"); if(ts) ts.onclick=()=>switchTab("archive"); return; }
-  window.__hits = Object.assign(window.__hits||{}, Object.fromEntries(rs.map(x => [x.r.id, x.r])));
-  rb.innerHTML = rs.map(({ r, why }) => `<div class="row" data-rec="${esc(r.id)}">${cover(r)}<div class="t"><b>${esc(r.title)}</b><small>${tag(r.kind)} ${esc(r.year||"")} · because of ${esc(why)}</small></div><span class="chip">Add</span></div>`).join("");
-  $$("[data-rec]", rb).forEach(x => x.onclick = async () => { await addToShelf(x.dataset.rec); recs = recs.filter(e => e.r.id !== x.dataset.rec); renderTaste(); }); }
+  try { const fc = await q(sb.from("follows").select("follower").eq("followee", me.id)); const el = $("#followerCount"); if (el) el.innerHTML = `<b>${fc.length}</b>followers`; } catch {} }
 function openTopEditor(top) { const draw = () => { $("#topEdit").innerHTML = top.items.map((id,i) => `<div class="row" style="cursor:default"><span class="rk">${i+1}</span><div class="t"><b>${esc(works[id]?.title||"")}</b></div><button class="chip" data-up="${i}" ${i===0?"disabled":""}>↑</button><button class="chip" data-rm="${i}">×</button></div>`).join("") || `<p class="empty">Ten slots, any medium. Search below.</p>`;
     $$("[data-up]").forEach(b => b.onclick = () => { const i = +b.dataset.up; [top.items[i-1],top.items[i]] = [top.items[i],top.items[i-1]]; draw(); }); $$("[data-rm]").forEach(b => b.onclick = () => { top.items.splice(+b.dataset.rm,1); draw(); }); };
   const which = top.name || "all time";
