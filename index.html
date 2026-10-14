@@ -1379,7 +1379,7 @@ body.demomode .secbar{top:78px}
 
 <nav id="nav"><div class="in"><span class="navpill" id="navPill"></span>
   <button data-tab="doors">Rooms</button>
-  <button data-tab="clubs">Clubs</button>
+  <button data-tab="clubs">Seasons</button>
   <button id="add" aria-label="Log something"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
   <button data-tab="shelf">Shelf</button>
   <button data-tab="archive">Archive</button>
@@ -7261,8 +7261,8 @@ async function renderClubs() {
   const body = $("#clubsBody");
   if (!["season", "clubs"].includes(P.clubTab)) P.clubTab = "season";
   const season = HALLOWEEN_2026, phase = seasonPhase(season);
-  body.innerHTML = `<h2><span class="hl" style="background:var(--lilac)">Clubs</span></h2>
-    <p class="sub">The current public season sits alongside the small clubs you make with friends.</p>
+  body.innerHTML = `<h2><span class="hl" style="background:var(--lilac)">Seasons</span></h2>
+    <p class="sub">This season's challenges, alongside the small clubs you make with friends.</p>
     <div class="seg"><button data-season-tab="season" class="${P.clubTab === "season" ? "on" : ""}">Halloween</button><button data-season-tab="clubs" class="${P.clubTab === "clubs" ? "on" : ""}">Friend clubs${clubs.length + openClubs.length ? " · " + (clubs.length + openClubs.length) : ""}</button></div>
     <div id="seasonContent"></div>`;
   $$('[data-season-tab]', body).forEach(b => b.onclick = () => { P.clubTab = b.dataset.seasonTab; saveP(); renderClubs(); });
