@@ -1,0 +1,20 @@
+# Runs the demo walk-through on every push, so a change that breaks the app shows up as
+# a red cross on the commit rather than on somebody's phone.
+name: smoke
+on:
+  push:
+  pull_request:
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --no-save playwright@1.48.2 && npx playwright install --with-deps chromium
+      - run: |
+          python3 -m http.server 8934 >/dev/null 2>&1 &
+          sleep 1
+          node tests/smoke.js

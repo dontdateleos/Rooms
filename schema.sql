@@ -1278,7 +1278,7 @@ create table if not exists room_votes (
   room_id uuid not null references rooms(id) on delete cascade,
   game text not null,                                   -- prompt:2026-10-12 · bracket:2026-10:2:0
   voter uuid not null references profiles(id) on delete cascade,
-  choice text not null,                                 -- whose answer, or which work
+  choice text not null,                                 -- which answer (its id), or which work
   created_at timestamptz not null default now(),
   primary key (room_id, game, voter)
 );
@@ -1288,9 +1288,16 @@ alter table room_answers enable row level security;
 alter table room_brackets enable row level security;
 alter table room_votes enable row level security;
 
+-- Answers are anonymous until the reveal, and that has to hold for anyone reading the
+-- network traffic, not just the screen. So nobody can select anyone else's answer rows
+-- directly; the room sees them through room_prompt() below, which leaves out whose
+-- each one is until the week's votes are in (or it's Sunday, or the week is over).
+-- Votes point at an answer's own id rather than at its author for the same reason.
+alter table room_answers add column if not exists id uuid not null default gen_random_uuid();
+create unique index if not exists room_answers_id_idx on room_answers (id);
 drop policy if exists room_answers_read on room_answers;
 create policy room_answers_read on room_answers for select to authenticated
-  using (room_id in (select my_room_ids()));
+  using (user_id = auth.uid());
 drop policy if exists room_answers_mine on room_answers;
 create policy room_answers_mine on room_answers for all to authenticated
   using (user_id = auth.uid()) with check (user_id = auth.uid() and room_id in (select my_room_ids()));
@@ -1308,3 +1315,34 @@ create policy room_votes_read on room_votes for select to authenticated
 drop policy if exists room_votes_mine on room_votes;
 create policy room_votes_mine on room_votes for all to authenticated
   using (voter = auth.uid()) with check (voter = auth.uid() and room_id in (select my_room_ids()));
+
+-- Every answer in the room since p_since, with user_id filled in only for your own and
+-- for weeks that have been revealed. "Revealed" is decided here, on the server's clock
+-- (UTC): a past week, a Sunday, or two or more answers with every answerer having voted.
+-- `answered` lists who is in for that week — that much is never a secret, only which
+-- answer is whose. It's sorted by id, so it says nothing about the order people answered.
+create or replace function room_prompt(p_room uuid, p_since text)
+returns table (id uuid, week text, user_id uuid, work_id text, pitch text, mine boolean,
+               revealed boolean, answered uuid[])
+language sql stable security definer set search_path = public as $$
+  with a as (
+    select ra.*, exists (select 1 from room_votes v where v.room_id = ra.room_id
+                           and v.game = 'prompt:' || ra.week and v.voter = ra.user_id) as voted
+    from room_answers ra
+    where ra.room_id = p_room and ra.week >= p_since
+      and p_room in (select my_room_ids())),
+  w as (
+    select a.week,
+      a.week < to_char(current_date - (extract(isodow from current_date)::int - 1), 'YYYY-MM-DD')
+        or extract(isodow from current_date) = 7
+        or (count(*) >= 2 and bool_and(a.voted)) as open,
+      array_agg(a.user_id order by a.user_id) as who
+    from a group by a.week)
+  select a.id, a.week,
+         case when w.open or a.user_id = auth.uid() then a.user_id end,
+         a.work_id, a.pitch, a.user_id = auth.uid(), w.open, w.who
+  from a join w on w.week = a.week
+  order by a.week, a.id;
+$$;
+revoke all on function room_prompt(uuid, text) from public, anon;
+grant execute on function room_prompt(uuid, text) to authenticated;
