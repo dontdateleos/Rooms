@@ -1249,3 +1249,62 @@ begin
 end $$;
 revoke all on function room_transfer_owner(uuid, uuid) from public, anon;
 grant execute on function room_transfer_owner(uuid, uuid) to authenticated;
+
+-- ---------- the room's games: a weekly prompt, a monthly bracket ----------
+-- The prompt itself isn't stored: it's picked from a fixed list by the room and the
+-- week, so everyone in a room gets the same one without anyone writing it down.
+-- What is stored is each person's answer (something from their archive and a line
+-- pitching it), the bracket's eight (or four) seeds once the first person opens it that
+-- month, and votes — one row per person per question, whatever the question is.
+create table if not exists room_answers (
+  room_id uuid not null references rooms(id) on delete cascade,
+  week text not null,                                   -- the Monday, 2026-10-12
+  user_id uuid not null references profiles(id) on delete cascade,
+  work_id text not null references works(id) on delete cascade,
+  pitch text check (char_length(pitch) <= 140),
+  created_at timestamptz not null default now(),
+  primary key (room_id, week, user_id)
+);
+create table if not exists room_brackets (
+  room_id uuid not null references rooms(id) on delete cascade,
+  month text not null,                                  -- 2026-10
+  kind text not null check (kind in ('film','tv','book','game')),
+  seeds text[] not null check (array_length(seeds, 1) in (4, 8)),
+  created_by uuid references profiles(id) on delete set null,
+  created_at timestamptz not null default now(),
+  primary key (room_id, month)
+);
+create table if not exists room_votes (
+  room_id uuid not null references rooms(id) on delete cascade,
+  game text not null,                                   -- prompt:2026-10-12 · bracket:2026-10:2:0
+  voter uuid not null references profiles(id) on delete cascade,
+  choice text not null,                                 -- whose answer, or which work
+  created_at timestamptz not null default now(),
+  primary key (room_id, game, voter)
+);
+create index if not exists room_votes_room_idx on room_votes (room_id, created_at desc);
+
+alter table room_answers enable row level security;
+alter table room_brackets enable row level security;
+alter table room_votes enable row level security;
+
+drop policy if exists room_answers_read on room_answers;
+create policy room_answers_read on room_answers for select to authenticated
+  using (room_id in (select my_room_ids()));
+drop policy if exists room_answers_mine on room_answers;
+create policy room_answers_mine on room_answers for all to authenticated
+  using (user_id = auth.uid()) with check (user_id = auth.uid() and room_id in (select my_room_ids()));
+
+drop policy if exists room_brackets_read on room_brackets;
+create policy room_brackets_read on room_brackets for select to authenticated
+  using (room_id in (select my_room_ids()));
+drop policy if exists room_brackets_start on room_brackets;
+create policy room_brackets_start on room_brackets for insert to authenticated
+  with check (created_by = auth.uid() and room_id in (select my_room_ids()));
+
+drop policy if exists room_votes_read on room_votes;
+create policy room_votes_read on room_votes for select to authenticated
+  using (room_id in (select my_room_ids()));
+drop policy if exists room_votes_mine on room_votes;
+create policy room_votes_mine on room_votes for all to authenticated
+  using (voter = auth.uid()) with check (voter = auth.uid() and room_id in (select my_room_ids()));

@@ -332,6 +332,33 @@ button:focus-visible,.linky:focus-visible{outline:3px solid var(--blue);outline-
 .seg{display:flex;background:var(--cream2);padding:4px;border-radius:999px;gap:2px;margin:6px 0 10px}
 .seg[hidden],[data-rsec][hidden]{display:none}
 .roomsecs{margin-top:12px}
+.roomsecs button{position:relative}
+.roomsecs button.dot::after{content:"";position:absolute;top:7px;right:12px;width:7px;height:7px;border-radius:50%;background:var(--bad)}
+/* the games: a prompt to answer and vote on, and a bracket */
+.card.game .gprompt{font-family:var(--head);font-weight:900;font-size:21px;line-height:1.2;letter-spacing:-.02em;margin:10px 0 12px;text-wrap:balance}
+.gline{margin:10px 0 0;font-size:12.5px}
+.anslist{display:flex;flex-direction:column;gap:8px}
+.ans{display:flex;gap:12px;align-items:flex-start;width:100%;text-align:left;background:var(--cream2);border:2px solid transparent;border-radius:16px;padding:10px;
+  color:var(--ink);font:inherit;cursor:pointer;transition:transform .12s,border-color .15s}
+.ans:active{transform:scale(.98)}
+.ans[disabled]{cursor:default;opacity:.75}
+.ans.on{border-color:var(--ink)}
+.ans.win{border-color:var(--butter);background:color-mix(in srgb, var(--butter) 18%, var(--cream2))}
+.ans .co{width:44px;height:64px;border-radius:9px;object-fit:cover;background:var(--line);flex:none}
+.ans-t{display:flex;flex-direction:column;gap:3px;min-width:0}
+.ans-t b{font-family:var(--head);font-weight:800;font-size:15px}
+.ans-t i{font-size:13px;line-height:1.4;color:var(--ink);opacity:.85}
+.ans-t small{font-size:11.5px;font-weight:700;color:var(--mute)}
+.galist{max-height:300px;overflow:auto;margin-top:6px}
+.bmatch{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center;margin-top:12px}
+.bmatch .vsit .co{max-height:150px}
+.bmatch .vsit.on{border-color:var(--ink)}
+.bvs{font-family:var(--head);font-weight:900;font-size:13px;color:var(--mute)}
+.champ{display:flex;gap:14px;align-items:center;margin-top:10px;padding:12px;border-radius:16px;background:var(--butter);color:var(--onAccent);cursor:pointer}
+.champ .co{width:64px;height:92px;border-radius:10px;object-fit:cover;flex:none}
+.champ small{display:block;font-weight:800;font-size:11px;letter-spacing:.05em;text-transform:uppercase;opacity:.75}
+.champ b{display:block;font-family:var(--head);font-weight:900;font-size:22px;letter-spacing:-.02em;margin-top:2px}
+.champ span{display:block;font-size:12.5px;font-weight:600;opacity:.8;margin-top:2px}
 .seg button{flex:1;background:none;border:0;font-family:var(--head);font-weight:800;font-size:13px;padding:9px 6px;border-radius:999px;color:var(--mute);cursor:pointer}
 .seg button.on{background:var(--ink);color:var(--cream)}
 .chips{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 4px}
@@ -1698,9 +1725,10 @@ function peopleOf(w) { const c = w.credits || {}, out = [];
    refresh puts it back exactly as it was. */
 const DEMO = /(^|[#?&])demo\b/.test(location.hash + location.search);
 const LOCAL = !window.__mockSb && (DEMO || SUPABASE_URL.includes("YOUR-"));
+const GAME_KEYS = { room_answers:["room_id","week","user_id"], room_brackets:["room_id","month"], room_votes:["room_id","game","voter"] };
 function makeLocalSb(seed) {
   const KEY = "rooms.db";
-  const blank = { profile:null, signedOut:false, works:{}, profiles:[], entries:[], lists:[], list_items:[], rooms:[], room_members:[], clubs:[], club_members:[], club_votes:[], reactions:[], replies:[], top_lists:[], top_list_items:[], follows:[], nows:[], handovers:[], seen:[], blocks:[], reports:[], settings:[], handles:[] };
+  const blank = { profile:null, signedOut:false, works:{}, profiles:[], entries:[], lists:[], list_items:[], rooms:[], room_members:[], clubs:[], club_members:[], club_votes:[], reactions:[], replies:[], top_lists:[], top_list_items:[], follows:[], nows:[], handovers:[], seen:[], blocks:[], reports:[], settings:[], handles:[], room_answers:[], room_brackets:[], room_votes:[] };
   const db = Object.assign({}, blank, seed || JSON.parse(localStorage.getItem(KEY) || "{}"));
   if (!db.nows) db.nows = [];                 /* a log written before v15 has no such key */
   if (!db.handovers) db.handovers = [];       /* nor one written before v16 */
@@ -1708,6 +1736,7 @@ function makeLocalSb(seed) {
   if (!db.blocks) db.blocks = []; if (!db.reports) db.reports = [];   /* nor before v21 */
   if (!db.settings) db.settings = [];                                 /* nor before v22 */
   if (!db.handles) db.handles = [];                                   /* nor before v23 */
+  for (const t of ["room_answers", "room_brackets", "room_votes"]) if (!db[t]) db[t] = [];   /* nor before the games */
   /* v20 gave entries a part column with a default of false. A row written before that
      has no such key, and the feeds now ask for part = false by name — so without this
      every entry anybody already had would quietly stop appearing anywhere. */
@@ -1768,6 +1797,11 @@ function makeLocalSb(seed) {
           const full = Object.assign({ id:uid(), created_at:now(), acted_at:null, accepted:null },
             i >= 0 ? db.handovers[i] : {}, h);
           if (i >= 0) db.handovers[i] = full; else db.handovers.push(full); });
+        /* the games' tables are keyed by more than one column, the way the real ones are */
+        else if (GAME_KEYS[t]) rows.forEach(r => { const ks = GAME_KEYS[t];
+          const i = db[t].findIndex(x => ks.every(k => x[k] === r[k]));
+          const full = Object.assign({ created_at:now() }, i >= 0 ? db[t][i] : {}, r);
+          if (i >= 0) db[t][i] = full; else db[t].push(full); });
         out = rows; save(); }
       else if (st.ins) { const rows = (Array.isArray(st.ins) ? st.ins : [st.ins]).map(r => Object.assign({ id:uid(), created_at:now() }, r));
         /* what entries_part_trg does in the real database: the flag comes from the work,
@@ -4050,8 +4084,8 @@ async function renderRoomFeed(fb, R) {
   /* one long scroll used to hold the conversation, the charts and the year end to end;
      now they're three places you switch between, and the room remembers which you were in */
   const pal = roomPalmares(es), hasYear = !!pal && pal.n >= 6;
-  const sec = P.roomSec === "charts" || (P.roomSec === "year" && hasYear) ? P.roomSec : "talk";
-  const secs = [["talk", "Talk"], ["charts", "Charts"], ...(hasYear ? [["year", "Year"]] : [])];
+  const sec = P.roomSec === "charts" || P.roomSec === "play" || (P.roomSec === "year" && hasYear) ? P.roomSec : "talk";
+  const secs = [["talk", "Talk"], ["play", "Play"], ["charts", "Charts"], ...(hasYear ? [["year", "Year"]] : [])];
   fb.innerHTML = `<div class="card"><div class="roomhead"><div class="h"><span>${esc(R.name)}</span><span class="tag dim">${R.members.length} in here</span></div><button class="btn ghost roomcode" id="roomCode" title="Copy room code">${esc(R.code)} · Copy</button></div>
       ${rooms.length>1 ? `<div class="roomswitch" aria-label="Your rooms">${rooms.map(r => `<button class="chip ${r.id===R.id?"on":""}" data-rc="${esc(r.id)}">${esc(r.name)}</button>`).join("")}</div>` : ""}
       ${/* who's active comes first — that's the question a room answers at a glance.
@@ -4085,6 +4119,7 @@ async function renderRoomFeed(fb, R) {
     ${roomPrompt()}
     ${pick ? `<div class="result"><small>Tonight's pick</small><b>${esc(pick.title)}</b><div class="stack" style="margin-top:10px"><button class="btn" id="pickLog">${K(pick.kind).verb} it</button></div></div>` : ""}
     </div>
+    <div data-rsec="play"${sec === "play" ? "" : " hidden"}><div id="roomGames">${skeleton(2)}</div></div>
     <div data-rsec="charts"${sec === "charts" ? "" : " hidden"}>
     ${split ? `<div class="card"><div class="h"><span>A friendly argument</span></div>${compRows([split])}</div>` : ""}
     <div class="card"><div class="h"><span>In competition</span><span class="tag dim">weighted</span></div>${comp.length ? compRows(comp) : blank("var(--butter)","%","No scores yet","Once two of you have rated the same thing, the agreement number appears here.",[["compAdd","Log something"]])}</div>
@@ -4104,6 +4139,7 @@ async function renderRoomFeed(fb, R) {
     const rf = $(".roomfilters", fb); if (rf) rf.hidden = k !== "talk"; });
   compFlip(fb);
   paintRankMeet(R);
+  paintGames(R, es);
   /* who is in here, arriving. Only when the room has actually grown since you last
      looked — a room that refills itself on every redraw is a room that never settles. */
   (() => { const seats = $("#roomSeats"); if (!seats || REDUCED) return;
@@ -5848,6 +5884,11 @@ async function rankListsOf(ids) {
 /* scores say whether you liked something; an order says what you'd give up for it. So the
    room gets what only the orders can tell it: the same thing at the top of two lists,
    and the one thing two of you are furthest apart on, by where it sits in each list */
+function roomOrderOf(lists, members, k) { const sc = {}, n = {};
+  for (const m of members) { const L = lists[m.id]?.[k]; if (!L || L.length < 3) continue;
+    L.forEach((id, i) => { sc[id] = (sc[id] || 0) + (1 - i / (L.length - 1)); n[id] = (n[id] || 0) + 1; }); }
+  return Object.keys(sc).filter(id => n[id] >= 2).map(id => ({ id, v:sc[id] / n[id], n:n[id] }))
+    .sort((a, b) => b.v - a.v || b.n - a.n); }
 async function paintRankMeet(R) {
   const el = $("#rankMeet"); if (!el || R.members.length < 2) return;
   let lists; try { lists = await rankListsOf(R.members.map(m => m.id)); } catch { return; }
@@ -5873,11 +5914,7 @@ async function paintRankMeet(R) {
      length (top of a list of 40 and top of a list of 6 are both "the top"), and only
      what at least two of you have ranked */
   const all = Object.assign({}, lists, { [me.id]:Object.fromEntries(theirKinds.map(k => [k, rankCache[k] || []])) });
-  const roomOrder = k => { const sc = {}, n = {};
-    for (const m of R.members) { const L = all[m.id]?.[k]; if (!L || L.length < 3) continue;
-      L.forEach((id, i) => { sc[id] = (sc[id] || 0) + (1 - i / (L.length - 1)); n[id] = (n[id] || 0) + 1; }); }
-    return Object.keys(sc).filter(id => n[id] >= 2).map(id => ({ id, v:sc[id] / n[id], n:n[id] }))
-      .sort((a, b) => b.v - a.v || b.n - a.n); };
+  const roomOrder = k => roomOrderOf(all, R.members, k);
   const orders = theirKinds.map(k => [k, roomOrder(k)]).filter(([, o]) => o.length >= 3)
     .sort((a, b) => b[1].length - a[1].length);
   /* settle it: two things you've both ranked that the rest of the room splits on, as
@@ -5926,6 +5963,217 @@ async function paintRankMeet(R) {
     try { if (moved) { await persistRank(rankListId[k], L); rankCache[k] = L; } } catch (err) { oops(err, "Couldn't save that"); return; }
     say(moved ? `${works[pick]?.title} goes above ${works[other]?.title} on your list` : `You already had it that way round`);
     paintRankMeet(R); });
+}
+/* ============ the room's games ============
+   Two things a room plays, both slower than Quiplash because nobody's in the same room
+   at the same time: a prompt a week, answered from your own archive with one line of
+   pitch, voted on blind, then revealed; and a bracket a month, the room's own titles
+   knocked out round by round until one is the room's film (or book, or game) of the
+   month. Neither stores a prompt or a schedule — the prompt comes from the room and the
+   week, the rounds from the date — only answers, the bracket's seeds, and votes. */
+const PROMPTS = [
+  "Something you'd show someone to make them cry",
+  "The one you'd defend to the death",
+  "A perfect thing to put on when you're ill",
+  "Something with an ending that ruined your week",
+  "Better the second time",
+  "The best thing you've finished that nobody else has heard of",
+  "Something to give a stranger on a train",
+  "A guilty pleasure, minus the guilt",
+  "Something that made you want to go somewhere",
+  "The scariest thing you've finished",
+  "Safe to put on with your parents",
+  "Your comfort pick",
+  "Something that changed your mind about a whole genre",
+  "Far too long, and you'd still do it again",
+  "Something you finished in one sitting",
+  "The one that proves you have taste",
+  "Better than its reputation",
+  "The best opening ten minutes",
+  "Something that made you laugh out loud",
+  "The one you'd save from a burning house",
+  "A first-date pick",
+  "Something you'd recommend to exactly one person in this room",
+  "The most beautiful thing you've finished",
+  "Something you think about more than you'd admit",
+  "Everyone should be made to finish this once",
+];
+const ymdLocal = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+const gameWeek = (back = 0) => { const d = new Date(); d.setHours(12, 0, 0, 0);
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7) - back * 7); return ymdLocal(d); };
+const gameMonth = () => ymdLocal(new Date()).slice(0, 7);
+const promptOf = (roomId, wk) => PROMPTS[avHash(roomId + ":" + wk) % PROMPTS.length];
+const weekday = () => (new Date().getDay() + 6) % 7;                  /* Monday is 0 */
+const who = (R, id) => id === me.id ? "you" : (R.members.find(m => m.id === id)?.handle || "someone");
+
+async function loadGames(R) {
+  const since = new Date(Date.now() - 45 * 864e5).toISOString();
+  try {
+    const [answers, votes, brackets] = await Promise.all([
+      q(sb.from("room_answers").select("*").eq("room_id", R.id).gte("week", gameWeek(1))),
+      q(sb.from("room_votes").select("*").eq("room_id", R.id).gte("created_at", since)),
+      q(sb.from("room_brackets").select("*").eq("room_id", R.id).eq("month", gameMonth()))]);
+    await fillWorks([...answers.map(a => a.work_id), ...(brackets[0]?.seeds || [])]);
+    return { ok:true, answers, votes, bracket:brackets[0] || null };
+  } catch (e) { return { ok:false, err:e }; } }
+
+/* ---------- the prompt ----------
+   Answers are in Monday to Thursday — or until everyone has answered. Voting opens on
+   Friday (or the moment everyone's in), and the names come out once everybody who
+   answered has voted, or on Sunday, whichever is first. Two answers is the least that
+   can be voted on; with fewer, it just stays open. */
+function promptState(R, g, wk) {
+  const ans = g.answers.filter(a => a.week === wk), votes = g.votes.filter(v => v.game === "prompt:" + wk);
+  const current = wk === gameWeek(), d = weekday();
+  const allIn = R.members.every(m => ans.some(a => a.user_id === m.id));
+  const voting = ans.length >= 2 && (!current || d >= 4 || allIn);
+  const voters = new Set(votes.map(v => v.voter));
+  const revealed = voting && (!current || d === 6 || ans.every(a => voters.has(a.user_id)));
+  const tally = Object.fromEntries(ans.map(a => [a.user_id, votes.filter(v => v.choice === a.user_id).length]));
+  return { wk, ans, votes, voting, revealed, tally, voters, mine:ans.find(a => a.user_id === me.id) || null,
+    myVote:votes.find(v => v.voter === me.id)?.choice || null };
+}
+/* shuffled, but the same shuffle for everyone and every visit, so a card doesn't jump
+   around between looks — and not in the order people answered, which would give it away */
+const blind = (ans, wk) => ans.slice().sort((a, b) => avHash(wk + a.user_id) - avHash(wk + b.user_id));
+const answerTile = (a, opts = {}) => { const w = works[a.work_id] || {};
+  return `<button class="ans ${opts.on ? "on" : ""} ${opts.win ? "win" : ""}" ${opts.vote ? `data-vote="${esc(a.user_id)}"` : ""} ${opts.disabled ? "disabled" : ""}>
+    ${cover(w)}<span class="ans-t"><b>${esc(w.title || "")}</b>${a.pitch ? `<i>“${esc(a.pitch)}”</i>` : ""}
+    ${opts.foot ? `<small>${opts.foot}</small>` : ""}</span></button>`; };
+function promptHTML(R, g) {
+  const s = promptState(R, g, gameWeek()), last = promptState(R, g, gameWeek(1));
+  const p = promptOf(R.id, s.wk);
+  let body = "";
+  if (!s.voting) {
+    const inNames = s.ans.map(a => who(R, a.user_id));
+    body = `${s.mine ? answerTile(s.mine, { foot:"your answer · nobody sees whose until the end" }) : ""}
+      <div class="stack" style="margin-top:10px"><button class="btn ${s.mine ? "ghost" : ""}" id="gAnswer">${s.mine ? "Change your answer" : "Answer it from your archive"}</button></div>
+      <p class="sub gline">${s.ans.length ? `${s.ans.length} of ${R.members.length} in` + (inNames.length ? ` · ${esc(inNames.join(", "))}` : "") : "Nobody's answered yet"} · voting opens ${s.ans.length >= 2 ? "Friday, or when everyone's in" : "once two of you have answered"}</p>`;
+  } else if (!s.revealed) {
+    body = `<div class="anslist">${blind(s.ans, s.wk).map(a => answerTile(a, { vote:a.user_id !== me.id, disabled:a.user_id === me.id,
+        on:s.myVote === a.user_id, foot:a.user_id === me.id ? "yours" : s.myVote === a.user_id ? "your vote" : "" })).join("")}</div>
+      <p class="sub gline">${s.voters.size} of ${s.ans.length} voted · ${s.myVote ? "you can change your vote until the reveal" : "tap the best answer — not your own"}</p>`;
+  } else body = revealHTML(R, s);
+  const lastLine = last.revealed && last.ans.length ? (() => { const top = last.ans.slice().sort((a, b) => last.tally[b.user_id] - last.tally[a.user_id])[0];
+    return `<p class="sub gline" style="margin-top:14px"><b>Last week</b> · “${esc(promptOf(R.id, last.wk))}” went to ${esc(who(R, top.user_id))} with ${esc(works[top.work_id]?.title || "")}</p>`; })() : "";
+  return `<div class="card game"><div class="h"><span>This week's prompt</span><span class="tag dim">${s.revealed ? "results" : s.voting ? "voting" : "answers in"}</span></div>
+    <div class="gprompt">${esc(p)}</div>${body}${lastLine}</div>`; }
+function revealHTML(R, s) {
+  const order = s.ans.slice().sort((a, b) => s.tally[b.user_id] - s.tally[a.user_id]), best = s.tally[order[0].user_id];
+  return `<div class="anslist">${order.map(a => answerTile(a, { win:s.tally[a.user_id] === best && best > 0,
+    foot:`${esc(who(R, a.user_id))} · ${s.tally[a.user_id]} ${s.tally[a.user_id] === 1 ? "vote" : "votes"}${s.tally[a.user_id] === best && best > 0 ? " · <b>winner</b>" : ""}` })).join("")}</div>`; }
+function openAnswer(R, g, onDone) {
+  const wk = gameWeek(), mine = g.answers.find(a => a.week === wk && a.user_id === me.id);
+  const seen = new Set(), pool = [];
+  for (const e of myEntries.slice().sort(newestFirst)) if (!seen.has(e.work_id) && works[e.work_id]) { seen.add(e.work_id); pool.push(works[e.work_id]); }
+  for (const [sid] of showsFromParts()) if (!seen.has(sid) && works[sid]) { seen.add(sid); pool.push(works[sid]); }
+  let pick = mine ? works[mine.work_id] : null;
+  openSheet(`<h3>${esc(promptOf(R.id, wk))}</h3>
+    <p class="sub">Pick from your archive and pitch it in a line. Nobody sees whose is whose until the votes are in.</p>
+    <div id="gaPicked"></div>
+    <input id="gaFind" type="search" placeholder="Find it in your archive" autocomplete="off" style="margin-top:12px">
+    <div id="gaList" class="galist"></div>
+    <div class="lbl" style="margin-top:14px">Your pitch</div>
+    <textarea id="gaPitch" maxlength="140" placeholder="One line. Make the room want it.">${esc(mine?.pitch || "")}</textarea>
+    <div class="stack"><button class="btn" id="gaSave" ${pick ? "" : "disabled"}>${mine ? "Change it" : "Put it in"}</button><button class="btn quiet" id="gaClose">Not yet</button></div>
+    <p class="msg" id="gaMsg"></p>`);
+  const paintPicked = () => { $("#gaPicked").innerHTML = pick ? `<div class="row" style="cursor:default">${cover(pick)}<div class="t"><b>${esc(pick.title)}</b><small>${tag(pick.kind)} ${esc(pick.year || "")}</small></div><span class="tag" style="background:var(--mint)">picked</span></div>` : "";
+    $("#gaSave").disabled = !pick; };
+  const paintList = () => { const t = lc($("#gaFind").value).trim();
+    const hits = pool.filter(w => !t || lc([w.title, w.creator, w.year].filter(Boolean).join(" ")).includes(t)).slice(0, 30);
+    $("#gaList").innerHTML = hits.map(w => `<div class="row" data-ga="${esc(w.id)}">${cover(w)}<div class="t"><b>${esc(w.title)}</b><small>${tag(w.kind)} ${esc(w.year || "")}</small></div></div>`).join("")
+      || `<p class="empty">Nothing in your archive matches that.</p>`;
+    $$("[data-ga]").forEach(r => r.onclick = () => { pick = works[r.dataset.ga]; paintPicked(); $("#gaPitch").focus(); }); };
+  paintPicked(); paintList();
+  $("#gaFind").oninput = paintList;
+  $("#gaClose").onclick = closeSheet;
+  $("#gaSave").onclick = async () => { if (!pick) return; const b = $("#gaSave"); b.disabled = true;
+    const pitch = $("#gaPitch").value.trim().slice(0, 140) || null;
+    if (pitch && typeof willNotPost === "function" && willNotPost(pitch)) { $("#gaMsg").textContent = "That pitch can't go up as written."; b.disabled = false; return; }
+    try { await q(sb.from("room_answers").upsert({ room_id:R.id, week:wk, user_id:me.id, work_id:pick.id, pitch }));
+      closeSheet(); say("You're in · nobody knows it's yours"); onDone(); }
+    catch (e) { $("#gaMsg").textContent = e.message; b.disabled = false; } }; }
+
+/* ---------- the bracket ----------
+   Seeded the first time someone opens it in a month: the room's order (everyone's
+   ranked lists folded together), then anything two of you have logged lately, in the
+   medium with the most of those. Eight if it can, four if not. A round a week — the
+   first seven days, the next seven, the next — or sooner if everyone has voted in it.
+   A tie goes to the higher seed. */
+const BR_DAYS = 7;
+const BR_ORDER = { 8:[0, 7, 3, 4, 1, 6, 2, 5], 4:[0, 3, 1, 2] };
+const BR_ROUND = { 8:["Quarter-finals", "Semi-finals", "The final"], 4:["Semi-finals", "The final"] };
+async function ensureBracket(R, g, es) {
+  if (g.bracket) return g.bracket;
+  let lists = {}; try { lists = await rankListsOf(R.members.map(m => m.id)); } catch {}
+  const cands = {};
+  for (const k of Object.keys(KINDS)) {
+    const ids = roomOrderOf(lists, R.members, k).map(x => x.id);
+    const logged = {}; for (const e of es) if (kindOf(e.work_id) === k) (logged[e.work_id] ||= new Set()).add(e.user_id);
+    for (const [id, people] of Object.entries(logged).sort((a, b) => b[1].size - a[1].size)) if (people.size >= 2 && !ids.includes(id)) ids.push(id);
+    cands[k] = ids; }
+  const [kind, ids] = Object.entries(cands).sort((a, b) => b[1].length - a[1].length)[0] || [];
+  const size = ids?.length >= 8 ? 8 : ids?.length >= 4 ? 4 : 0; if (!size) return null;
+  try { await q(sb.from("room_brackets").insert({ room_id:R.id, month:gameMonth(), kind, seeds:ids.slice(0, size), created_by:me.id })); } catch {}
+  try { const rows = await q(sb.from("room_brackets").select("*").eq("room_id", R.id).eq("month", gameMonth()));
+    await fillWorks(rows[0]?.seeds || []); return rows[0] || null; } catch { return null; } }
+function bracketState(R, br, votes) {
+  const size = br.seeds.length, rounds = Math.log2(size), day = new Date().getDate();
+  let alive = BR_ORDER[size].map(i => br.seeds[i]); const out = [];
+  for (let r = 1; r <= rounds; r++) {
+    const matches = [];
+    for (let m = 0; m < alive.length / 2; m++) { const a = alive[2 * m], b = alive[2 * m + 1], game = `bracket:${br.month}:${r}:${m}`;
+      const vs = votes.filter(v => v.game === game), na = vs.filter(v => v.choice === a).length, nb = vs.filter(v => v.choice === b).length;
+      const winner = na > nb ? a : nb > na ? b : (br.seeds.indexOf(a) < br.seeds.indexOf(b) ? a : b);
+      matches.push({ a, b, game, na, nb, winner, mine:vs.find(v => v.voter === me.id)?.choice || null, voters:new Set(vs.map(v => v.voter)) }); }
+    const closed = day > r * BR_DAYS || matches.every(mt => R.members.every(p => mt.voters.has(p.id)));
+    out.push({ r, name:BR_ROUND[size][r - 1], matches, closed, ends:r * BR_DAYS });
+    if (!closed) return { size, rounds:out, current:out[out.length - 1], champion:null };
+    alive = matches.map(mt => mt.winner); }
+  return { size, rounds:out, current:null, champion:alive[0], final:out[out.length - 1].matches[0] }; }
+const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+function bracketHTML(R, br, g) {
+  if (!br) return `<div class="card game"><div class="h"><span>The bracket</span></div>
+    <p class="sub gline">Starts once the room has four things in common — rank a few in your archive, or log some of the same things.</p></div>`;
+  const st = bracketState(R, br, g.votes), mon = MONTHS[+br.month.slice(5) - 1];
+  const head = `<div class="h"><span>The bracket</span><span class="tag dim">${esc(K(br.kind).plural)} · ${mon}</span></div>`;
+  const past = st.rounds.filter(r => r.closed && r !== st.current);
+  const pastHTML = past.length ? `<p class="sub gline">${past.map(r => `<b>${esc(r.name)}</b>: ${r.matches.map(mt => esc(works[mt.winner]?.title || "")).join(", ")}`).join(" · ")}</p>` : "";
+  if (st.champion) { const w = works[st.champion] || {}, f = st.final, lost = f.winner === f.a ? f.b : f.a;
+    return `<div class="card game">${head}<div class="champ" data-gw="${esc(st.champion)}">${cover(w)}<div><small>The room's ${esc(inWords(br.kind, 1))} of ${mon}</small>
+      <b>${esc(w.title || "")}</b><span>beat ${esc(works[lost]?.title || "")} in the final, ${Math.max(f.na, f.nb)}–${Math.min(f.na, f.nb)}</span></div></div>${pastHTML}</div>`; }
+  const cur = st.current, left = Math.max(0, cur.ends - new Date().getDate());
+  return `<div class="card game">${head}
+    <div class="gprompt" style="font-size:17px">${esc(cur.name)}</div>
+    <p class="sub gline" style="margin-top:2px">${left ? `${left} ${left === 1 ? "day" : "days"} left` : "last day"} · or sooner, once everyone's voted</p>
+    ${cur.matches.map((mt, i) => `<div class="bmatch">${[mt.a, mt.b].map(id => { const w = works[id] || {}, on = mt.mine === id;
+        const n = id === mt.a ? mt.na : mt.nb;
+        return `<button class="vsit ${on ? "on" : ""}" data-bv="${cur.r}:${i}:${esc(id)}">${cover(w)}<b>${esc(w.title || "")}</b><small>${mt.mine ? `${n} ${n === 1 ? "vote" : "votes"}` : `seed ${br.seeds.indexOf(id) + 1}`}</small></button>`; }).join(`<span class="bvs">v</span>`)}</div>`).join("")}
+    ${pastHTML}</div>`; }
+
+async function paintGames(R, es) {
+  const el = $("#roomGames"); if (!el) return;
+  const g = await loadGames(R);
+  if ($("#roomGames") !== el) return;
+  if (!g.ok) { el.innerHTML = `<div class="card game"><div class="h"><span>Play</span></div><p class="sub gline">The games need the latest database update — run schema.sql in Supabase once and they switch on for every room.</p></div>`; return; }
+  const br = await ensureBracket(R, g, es).catch(() => null);
+  if ($("#roomGames") !== el) return;
+  el.innerHTML = promptHTML(R, g) + bracketHTML(R, br, g);
+  /* the Play tab gets a dot while there's something waiting on you */
+  const s = promptState(R, g, gameWeek()), bst = br ? bracketState(R, br, g.votes) : null;
+  const todo = (!s.voting && !s.mine) || (s.voting && !s.revealed && !s.myVote) || !!bst?.current?.matches.some(mt => !mt.mine);
+  const pb = $('[data-rsecbtn="play"]'); if (pb) pb.classList.toggle("dot", !!todo);
+  const again = () => paintGames(R, es);
+  const ga = $("#gAnswer", el); if (ga) ga.onclick = () => openAnswer(R, g, again);
+  $$("[data-vote]", el).forEach(b => b.onclick = async () => { b.disabled = true;
+    try { await q(sb.from("room_votes").upsert({ room_id:R.id, game:"prompt:" + gameWeek(), voter:me.id, choice:b.dataset.vote })); say("Voted · you can change it until the reveal"); }
+    catch (e) { oops(e, "Couldn't vote"); } again(); });
+  /* work ids carry their own colon (film:12), so everything after round and match is the id */
+  $$("[data-bv]", el).forEach(b => b.onclick = async () => { const [r, m, ...rest] = b.dataset.bv.split(":"), id = rest.join(":");
+    b.disabled = true;
+    try { await q(sb.from("room_votes").upsert({ room_id:R.id, game:`bracket:${br.month}:${r}:${m}`, voter:me.id, choice:id })); }
+    catch (e) { oops(e, "Couldn't vote"); } again(); });
+  $$("[data-gw]", el).forEach(x => x.onclick = () => openWork(x.dataset.gw));
 }
 const fourHTML = items => `<div class="four">${[0,1,2,3].map(i => { const w = works[items[i]]; return w ? `<div class="po" data-work="${esc(w.id)}">${cover(w,"")}<b>${esc(w.title)}</b></div>` : `<div class="po" style="opacity:.4"></div>`; }).join("")}</div>`;
 let recs = null;
@@ -8091,7 +8339,7 @@ async function exportEverything() {
   /* it said "everything" and fetched four tables out of seventeen. Clubs, votes, your
      ten, what you are in the middle of and anything anybody handed you were all missing,
      and the two lists that were there came out with their dates blanked. */
-  const [entries, myReplies, myReactions, myFollows, myNows, myHands, myTops, myVotes, myClubIn, mySeenRows, myBlocks, myHandles] =
+  const [entries, myReplies, myReactions, myFollows, myNows, myHands, myTops, myVotes, myClubIn, mySeenRows, myBlocks, myHandles, myAnswers, myRoomVotes] =
     await Promise.all([
       grab("entries", "*", "user_id"),
       grab("replies", "*", "user_id"),
@@ -8106,6 +8354,8 @@ async function exportEverything() {
       grab("seen", "*", "user_id"),
       grab("blocks", "*", "blocker"),
       grab("handles", "*", "owner"),
+      grab("room_answers", "*", "user_id"),
+      grab("room_votes", "*", "voter"),
     ]);
   const myClubs = [...clubs, ...openClubs].filter(c => myClubIn.some(m => m.club_id === c.id));
   const usedWorks = {};
@@ -8132,6 +8382,7 @@ async function exportEverything() {
     top_list_items: myTops.flatMap(t => t.top_list_items || []),
     nows: myNows, handovers: myHands, seen: mySeenRows, blocks: myBlocks, handles: myHandles,
     follows: myFollows,
+    room_answers: myAnswers, room_votes: myRoomVotes,
   };
 }
 function downloadJSON(obj, name) {

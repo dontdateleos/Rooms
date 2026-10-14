@@ -137,6 +137,36 @@ const entries = LOG.map(([u,w,score,d,note,loved], i) => ({
 
 const eid = (u,w) => entries.find(e => e.user_id === u && e.work_id === w)?.id;
 
+/* the games run on the calendar, so the demo's are pinned to whenever it's opened:
+   this week's prompt is half answered (you haven't), last week's is decided, and the
+   month's bracket is one round in */
+const ymd = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+const monday = back => { const d = new Date(); d.setHours(12, 0, 0, 0);
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7) - back * 7); return ymd(d); };
+const WK = monday(0), LASTWK = monday(1), MONTH = ymd(new Date()).slice(0, 7);
+const SEEDS = ["film:1","film:7","film:6","film:3","film:5","film:8","film:2","film:9"];
+const answers = [
+  ["u-mo",   WK, "film:8", "Watch it, then call your dad."],
+  ["u-cass", WK, "film:7", "Twenty-four years in two hours and nobody raises their voice."],
+  ["u-ali",  WK, "book:2", null],
+  ["me",     LASTWK, "film:1", "The diner scene alone is worth the three hours."],
+  ["u-mo",   LASTWK, "film:6", "You won't sleep, but you'll understand why."],
+  ["u-rue",  LASTWK, "film:5", "Ben Kingsley as a weather system."],
+  ["u-cass", LASTWK, "film:3", "Tom Cruise, grey hair, a taxi. Done."],
+].map(([user_id, week, work_id, pitch]) => ({ room_id:"r1", week, user_id, work_id, pitch, created_at:ago(3) }));
+const vote = (game, voter, choice, d = 2) => ({ room_id:"r1", game, voter, choice, created_at:ago(d) });
+const roomVotes = [
+  ...[["me","u-rue"],["u-mo","me"],["u-rue","me"],["u-cass","u-mo"]].map(([v, c]) => vote("prompt:" + LASTWK, v, c, 4)),
+  /* the quarter-finals; the pairs are seeds 1v8, 4v5, 2v7, 3v6 */
+  ...[["me","film:1"],["u-mo","film:1"],["u-ali","film:9"],["u-cass","film:1"],["u-rue","film:1"]].map(([v, c]) => vote(`bracket:${MONTH}:1:0`, v, c, 6)),
+  ...[["me","film:5"],["u-mo","film:3"],["u-ali","film:5"],["u-cass","film:3"],["u-rue","film:5"]].map(([v, c]) => vote(`bracket:${MONTH}:1:1`, v, c, 6)),
+  ...[["me","film:7"],["u-mo","film:7"],["u-ali","film:2"],["u-cass","film:7"],["u-rue","film:2"]].map(([v, c]) => vote(`bracket:${MONTH}:1:2`, v, c, 6)),
+  ...[["me","film:6"],["u-mo","film:6"],["u-ali","film:8"],["u-cass","film:8"],["u-rue","film:6"]].map(([v, c]) => vote(`bracket:${MONTH}:1:3`, v, c, 6)),
+  /* the semis have started without you */
+  vote(`bracket:${MONTH}:2:0`, "u-mo", "film:1", 1), vote(`bracket:${MONTH}:2:0`, "u-cass", "film:5", 1),
+  vote(`bracket:${MONTH}:2:1`, "u-mo", "film:6", 1),
+];
+
 export function demoSeed() {
   return {
     profile:{ id:"me", handle:"jord", bio:"Four mediums, one shelf.", avatar:null,
@@ -188,6 +218,10 @@ export function demoSeed() {
       ...["film:1","film:6","film:7","film:8","film:5","film:2","film:3"].map((work_id, i) => ({ top_list_id:"t2", work_id, rank:i + 1 })),
       ...["film:3","film:7","film:1","film:5","film:6"].map((work_id, i) => ({ top_list_id:"t3", work_id, rank:i + 1 })),
     ],
+
+    room_answers:answers,
+    room_votes:roomVotes,
+    room_brackets:[{ room_id:"r1", month:MONTH, kind:"film", seeds:SEEDS, created_by:"u-mo", created_at:ago(20) }],
 
     follows:[{ follower:"me", followee:"u-rue" }, { follower:"me", followee:"u-ali" },
       { follower:"u-mo", followee:"me" }, { follower:"u-cass", followee:"me" }],
