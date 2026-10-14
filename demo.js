@@ -127,6 +127,11 @@ const LOG = [
   ["u-mo","film:2",8,50,"",["the look"]],
   ["u-mo","film:3",7,33,"",["the look"]],
   ["u-cass","film:3",9,31,"LA has never looked like that before or since.",["the look"]],
+  /* logged and nothing said: these fold into one line in the room */
+  ["u-mo","tv:2",8,1,"",[]],
+  ["u-mo","book:3",7,1,"",[]],
+  ["u-mo","game:2",9,1,"",[]],
+  ["u-ali","film:9",7,1.5,"",[]],
 ];
 
 const entries = LOG.map(([u,w,score,d,note,loved], i) => ({

@@ -17,14 +17,23 @@
 <meta name="apple-mobile-web-app-title" content="Rooms">
 <title>Rooms</title>
 <link rel="apple-touch-icon" href="./icons/rooms-180.png">
+<!-- what an iPhone shows while the app opens from the home screen: the mark on the night ground, one per screen size -->
+<link rel="apple-touch-startup-image" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="./icons/splash-1170x2532.png">
+<link rel="apple-touch-startup-image" media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="./icons/splash-1179x2556.png">
+<link rel="apple-touch-startup-image" media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="./icons/splash-1290x2796.png">
+<link rel="apple-touch-startup-image" media="(device-width: 402px) and (device-height: 874px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="./icons/splash-1206x2622.png">
+<link rel="apple-touch-startup-image" media="(device-width: 440px) and (device-height: 956px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="./icons/splash-1320x2868.png">
+<link rel="apple-touch-startup-image" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="./icons/splash-1125x2436.png">
+<link rel="apple-touch-startup-image" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="./icons/splash-828x1792.png">
+<link rel="apple-touch-startup-image" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="./icons/splash-750x1334.png">
 <link rel="manifest" href="./manifest.webmanifest">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23FFF7EC'/%3E%3Crect x='20' y='30.4' width='37.2' height='37.2' rx='8.9' fill='%23FFB36B'/%3E%3Crect x='36.8' y='30.4' width='37.2' height='37.2' rx='8.9' fill='%238FD3FF' opacity='.85'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='112' fill='%2316131C'/%3E%3Crect x='62' y='138' width='260' height='236' rx='64' fill='%23FFB36B'/%3E%3Crect x='183' y='138' width='260' height='236' rx='64' fill='%238FD3FF' opacity='.92'/%3E%3Crect x='282' y='206' width='28' height='80' rx='14' fill='%23151320'/%3E%3Crect x='336' y='198' width='28' height='88' rx='14' fill='%23151320'/%3E%3C/svg%3E">
 <!-- the type is served from here. Fetching it from Google handed fonts.gstatic.com an
      IP address every time somebody opened the app, which bought us nothing and cost a
      paragraph of the privacy policy. Same files, same subsets. -->
 <link href="vendor/type.css" rel="stylesheet">
 <style>
-:root{--blue:#1F4FE0;--ink:#151320;--cream:#FFF7EC;--cream2:#FDEFDD;--card:#FFFFFF;--line:#EFE6D8;--mute:#7A7590;
+:root{--blue:#1F4FE0;--ink:#151320;--cream:#FFF7EC;--cream2:#FDEFDD;--card:#FFFFFF;--line:#EFE6D8;--mute:#666079;
   /* --onAccent is the one colour that never flips: it is the ink that sits ON a pastel,
      and a pastel is a pastel at midnight. --cream doubles as the light that reads on
      --ink, which is why a dark theme gets both right by swapping two values.
@@ -332,6 +341,53 @@ button:focus-visible,.linky:focus-visible{outline:3px solid var(--blue);outline-
 .seg{display:flex;background:var(--cream2);padding:4px;border-radius:999px;gap:2px;margin:6px 0 10px}
 .seg[hidden],[data-rsec][hidden]{display:none}
 .roomsecs{margin:0}
+/* the room's colour, picked in its menu */
+.swatches{display:flex;gap:10px;margin-top:8px}
+.swatches button{width:34px;height:34px;border-radius:50%;border:0;cursor:pointer;box-shadow:inset 0 0 0 2px rgba(21,19,32,.12);transition:transform .15s}
+.swatches button.on{box-shadow:0 0 0 3px var(--cream),0 0 0 5px var(--ink);transform:scale(1.05)}
+/* the prompt is a card from a party game: the room's colour, a big quote mark, answers dealt as cards */
+.card.game.promptcard{background:var(--room,var(--butter));color:var(--onAccent);position:relative;overflow:hidden;box-shadow:none}
+.promptcard::before{content:"\201C";position:absolute;right:12px;top:-30px;font-family:var(--head);font-weight:900;font-size:170px;line-height:1;opacity:.12;pointer-events:none}
+.promptcard .h{border-bottom-color:rgba(21,19,32,.14);color:var(--onAccent)}
+.promptcard .tag.dim{background:rgba(21,19,32,.1);color:var(--onAccent)}
+.promptcard .gprompt{font-size:26px;position:relative}
+.promptcard .sub,.promptcard .gline{color:var(--onAccent);opacity:.75}
+.promptcard .ans{background:var(--card);color:var(--ink);box-shadow:0 8px 18px rgba(21,19,32,.16)}
+.promptcard .anslist .ans:nth-child(odd){rotate:-.7deg}
+.promptcard .anslist .ans:nth-child(even){rotate:.6deg}
+.promptcard .ans.on{border-color:var(--onAccent)}
+.promptcard .ans .ans-t small{color:var(--mute)}
+.promptcard .btn{background:var(--onAccent);color:#FFF7EC}
+.promptcard .btn.ghost{background:transparent;color:var(--onAccent);box-shadow:inset 0 0 0 2px var(--onAccent)}
+/* a log with nothing said, as one line */
+.logline{padding:12px 4px 14px;border-bottom:1px solid var(--line)}
+.ll-who{display:flex;gap:10px;align-items:flex-start}
+.ll-who .av svg{width:26px;height:26px}
+.ll-who p{font-size:14px;line-height:1.4;margin:2px 0 0}
+.ll-who p b[data-prof]{cursor:pointer}
+.ll-who small{color:var(--mute);font-weight:600}
+.ll-row{display:flex;gap:8px;margin:10px 0 0 36px;overflow-x:auto;scrollbar-width:none}
+.ll-w{display:flex;flex-direction:column;gap:5px;align-items:center;width:56px;border:0;background:none;padding:0;cursor:pointer;flex:none;overflow:visible}
+.ll-w .co{width:56px;height:82px;border-radius:8px;object-fit:cover}
+.ll-w .stars{zoom:.62;white-space:nowrap}
+/* the room's year: its six best, as posters */
+.ywall{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
+.yw{position:relative;display:flex;flex-direction:column;gap:3px;border:0;background:none;padding:0;color:var(--ink);text-align:left;cursor:pointer;min-width:0}
+.yw .co{width:100%;aspect-ratio:2/3;height:auto;border-radius:10px;object-fit:cover}
+.yw.first .co{box-shadow:0 0 0 3px var(--butter)}
+.yw .yrk{position:absolute;top:6px;left:6px;width:22px;height:22px;border-radius:50%;background:var(--ink);color:var(--cream);font-family:var(--head);font-weight:900;font-size:12px;display:grid;place-items:center}
+.yw.first .yrk{background:var(--butter);color:var(--onAccent)}
+.yw b{font-family:var(--head);font-weight:800;font-size:13px;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.yw small{font-size:11px;color:var(--mute);font-weight:700}
+.comprow .co{width:34px;height:50px;border-radius:7px;object-fit:cover;flex:none}
+/* your podium */
+.pd-row{display:flex;align-items:center;gap:12px;margin-top:10px}
+.pd-k{width:58px;flex:none;text-align:center;font-family:var(--head);font-weight:900;font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--onAccent);padding:5px 0;border-radius:8px}
+.pd-ps{display:flex;gap:8px;flex:1}
+.pd-p{position:relative;border:0;padding:0;background:none;cursor:pointer;flex:none}
+.pd-p .co{width:58px;height:86px;border-radius:8px;object-fit:cover;display:block}
+.pd-p i{position:absolute;left:-5px;top:-5px;width:20px;height:20px;border-radius:50%;background:var(--cream);color:var(--ink);font-style:normal;font-family:var(--head);font-weight:900;font-size:12px;display:grid;place-items:center}
+.pd-p:first-child i{background:var(--butter);color:var(--onAccent)}
 .seg.glide{position:relative}
 .seg.glide button{position:relative;z-index:1;transition:color .25s}
 .seg.glide button.on{background:none}
@@ -2306,8 +2362,11 @@ function strikeRing(col = "var(--bad)") {
       `<svg class="strike" viewBox="0 0 46 46" style="--c:${c}" aria-hidden="true"><circle cx="23" cy="23" r="${r}" stroke="${esc(col)}"/></svg>`);
     setTimeout(() => { host.classList.remove("struck"); $(".strike", host)?.remove(); }, 1600);
   }, 900); }
-async function loadRooms() { const rs = await q(sb.from("rooms").select("id,name,code,room_members(user_id,profiles(id,handle,bio,avatar))").order("created_at"));
-  rooms = rs.map(r => ({ id:r.id, name:r.name, code:r.code, members:(r.room_members||[]).map(m => m.profiles).filter(Boolean).sort((a,b)=>a.handle.localeCompare(b.handle)) }));
+async function loadRooms() {
+  /* colour arrived later than the rest; a database without it still loads its rooms */
+  const sel = cols => sb.from("rooms").select(`id,name,code,${cols}room_members(user_id,profiles(id,handle,bio,avatar))`).order("created_at");
+  let rs; try { rs = await q(sel("colour,")); } catch { rs = await q(sel("")); }
+  rooms = rs.map(r => ({ id:r.id, name:r.name, code:r.code, colour:r.colour || null, members:(r.room_members||[]).map(m => m.profiles).filter(Boolean).sort((a,b)=>a.handle.localeCompare(b.handle)) }));
   if (!rooms.find(r => r.id === P.activeRoom)) { P.activeRoom = rooms[0]?.id || null; saveP(); } }
 let founderIds = new Set();
 async function loadFounders() {
@@ -2477,6 +2536,11 @@ let shelfEdit = false, shelfOff = null, shelfStale = false;
 /* set by the thing that just happened, read once by the next render, then cleared */
 let justDealt = null, justSwept = null;
 const activeRoom = () => rooms.find(r => r.id === P.activeRoom) || rooms[0];
+/* each room wears one of the six pastels. Until somebody picks, it's dealt one from its
+   id, so two rooms are unlikely to start out the same colour */
+const ROOM_COLOURS = ["pink", "butter", "mint", "sky", "lilac", "apricot"];
+const roomColour = R => !R ? "pink" : ROOM_COLOURS.includes(R.colour) ? R.colour
+  : ROOM_COLOURS.includes(P.roomColour?.[R.id]) ? P.roomColour[R.id] : ROOM_COLOURS[avHash(R.id) % ROOM_COLOURS.length];
 const isFollowing = id => follows.some(f => f.followee === id);
 async function setFollow(id, on) {
   try { if (on) await q(sb.from("follows").insert({ follower:me.id, followee:id }));
@@ -3871,7 +3935,8 @@ async function renderDoors() {
   /* the three feeds used to be a row of pills over the room's own rows of pills. Now the
      page's title says where you are, and tapping it is how you go somewhere else. */
   const fn = feedNow(), title = fn === "following" ? "Following" : fn === "everyone" ? "Everyone" : R ? R.name : "Your room";
-  body.innerHTML = `<div class="pagehead"><h2><button class="feedpick" id="feedPick" aria-haspopup="dialog"><span class="hl" style="background:${fn === "room" ? "var(--pink)" : fn === "following" ? "var(--lilac)" : "var(--sky)"}">${esc(title)}</span>${CHEV}</button></h2>
+  body.style.setProperty("--room", `var(--${roomColour(R)})`);
+  body.innerHTML = `<div class="pagehead"><h2><button class="feedpick" id="feedPick" aria-haspopup="dialog"><span class="hl" style="background:${fn === "room" ? `var(--${roomColour(R)})` : fn === "following" ? "var(--lilac)" : "var(--sky)"}">${esc(title)}</span>${CHEV}</button></h2>
       ${fn === "room" && R ? `<button class="iconbtn" id="roomMenu" aria-label="Room options"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button>` : ""}</div>
     <div id="feedBody">${skeleton(3)}</div>
     ${weekCard()}${rev ? `<div class="card look" id="revCard"><div class="h"><span>${esc(rev.head)}</span><span class="tag dim">${rev.kind === "year" ? "the year" : "last month"}</span></div>
@@ -3940,7 +4005,7 @@ function openFeedPick() {
   const fn = feedNow(), R = activeRoom();
   const row = (attr, name, sub, on, col) => `<button class="row feedrow ${on ? "on" : ""}" ${attr}><span class="fdot" style="background:${col}"></span><div class="t"><b>${esc(name)}</b><small>${sub}</small></div>${on ? `<span class="tag dim">here</span>` : ""}</button>`;
   openSheet(`<h3>Go to</h3>
-    ${rooms.map(r => row(`data-fp="room:${esc(r.id)}"`, r.name, `${r.members?.length || ""} ${r.members?.length === 1 ? "person" : "people"} · a room`.trim(), fn === "room" && R?.id === r.id, "var(--pink)")).join("")}
+    ${rooms.map(r => row(`data-fp="room:${esc(r.id)}"`, r.name, `${r.members?.length || ""} ${r.members?.length === 1 ? "person" : "people"} · a room`.trim(), fn === "room" && R?.id === r.id, `var(--${roomColour(r)})`)).join("")}
     ${row(`data-fp="following"`, "Following", "the people whose taste you follow", fn === "following", "var(--lilac)")}
     ${row(`data-fp="everyone"`, "Everyone", "what the whole app is finishing", fn === "everyone", "var(--sky)")}
     ${rooms.length < ROOM_LIMIT ? `<div class="stack" style="margin-top:12px;flex-direction:row"><button class="btn soft" id="newRoom">Open a room</button><button class="btn ghost" id="joinRoom">Join with a code</button></div>` : ""}
@@ -3959,6 +4024,8 @@ function openFeedPick() {
 function openRoomMenu(R) {
   openSheet(`<h3>${esc(R.name)}</h3>
     <p class="sub">${R.members.length} in here · code <b>${esc(R.code)}</b></p>
+    <div class="lbl" style="margin-top:14px">The room's colour</div>
+    <div class="swatches">${ROOM_COLOURS.map(c => `<button class="${roomColour(R) === c ? "on" : ""}" data-rcol="${c}" style="background:var(--${c})" aria-label="${c}"></button>`).join("")}</div>
     <div class="chips" id="roomSeats" style="margin-top:12px">${R.members.map(m => `<span class="chip ${m.id===me.id?"on":""}" data-prof="${esc(m.id)}">${esc(m.handle)}</span>`).join("")}<button class="chip" id="invite">+ bring someone in</button></div>
     <div class="stack">
       <button class="btn soft" id="roomCode">Copy the code · ${esc(R.code)}</button>
@@ -3968,6 +4035,14 @@ function openRoomMenu(R) {
   wireRoomButtons();
   $$("#roomSeats [data-prof]").forEach(x => x.onclick = () => { closeSheet(); openProfile(x.dataset.prof); });
   $("#invite").onclick = () => openInvite(R);
+  $$("[data-rcol]").forEach(b => b.onclick = async () => { const c = b.dataset.rcol;
+    $$("[data-rcol]").forEach(x => x.classList.toggle("on", x === b));
+    /* the whole room sees it once it's saved; a database without the column (and the
+       demo) keeps it on this phone instead, which beats not letting you choose */
+    let shared = false;
+    if (!DEMO) { try { await q(sb.rpc("set_room_colour", { p_room:R.id, p_colour:c })); shared = true; } catch {} }
+    if (shared) R.colour = c; else { P.roomColour = Object.assign({}, P.roomColour, { [R.id]:c }); saveP(); }
+    renderDoors(); });
   $("#roomCode").onclick = async () => {
     try { await navigator.clipboard.writeText(R.code); say("Room code copied", "good"); }
     catch { say(`Room code: ${R.code}`); } };
@@ -4104,7 +4179,15 @@ function slipHTML(e, opts = {}) { const w = remember(e.works) || works[e.work_id
     <div class="foot"><div class="acts">${mine ? `<button class="chip" data-edit-review="${e.id}">Edit</button><button class="chip" data-delete-review="${e.id}">Delete</button>` : `<button data-like="${e.id}" class="lk ${same?"on":""}" aria-pressed="${same}" aria-label="${same ? "Liked — tap to take it back" : "Like this"}">${heartSVG(same)}</button>`
       }${mine && e.room_only ? `<span class="tag dim">room only</span>` : ""}</div>${stars(e.score,"sm")}</div>
     <div class="likes" data-likes="${e.id}">${(() => { const l = likeLine(e); return l ? `<span>${l}</span>` : ""; })()}</div></div>`; }
+function logLineHTML(es) { const e = es[0], mine = e.user_id === me.id;
+  const ws = es.map(x => remember(x.works) || works[x.work_id] || {});
+  const verbs = [...new Set(ws.map(w => K(w.kind || "film").verb))];
+  const names = ws.map(w => `<b>${esc(w.title || "")}</b>`);
+  const list = names.length < 3 ? names.join(" and ") : names.slice(0, -1).join(", ") + " and " + names[names.length - 1];
+  return `<div class="logline"><div class="ll-who">${avatar(e.profiles)}<p><b data-prof="${esc(e.user_id)}">${esc(mine ? "you" : e.profiles?.handle || "someone")}</b> ${verbs.length === 1 ? verbs[0] : "logged"} ${list}<small> · ${when(e.rated_on)}</small></p></div>
+    <div class="ll-row">${es.map((x, i) => `<button class="ll-w" data-entry="${esc(x.id)}">${cover(ws[i])}${stars(x.score, "sm")}</button>`).join("")}</div></div>`; }
 function wireSlips(el, es) { const by = Object.fromEntries(es.map(e => [e.id, e]));
+  $$("[data-entry]", el).forEach(b => b.onclick = () => { const e = by[b.dataset.entry]; if (e) openEntry(e); });
   $$("[data-edit-review]", el).forEach(b => b.onclick = () => { const e = by[b.dataset.editReview];
     if (e?.user_id === me.id) openLog(works[e.work_id] || e.works, e); });
   $$("[data-delete-review]", el).forEach(b => b.onclick = () => deleteReview(by[b.dataset.deleteReview]));
@@ -4166,7 +4249,7 @@ const showcase = () => `<div class="demo" aria-hidden="true">
   <p class="demofoot">Not real — this is what yours looks like once somebody joins.</p></div>`;
 
 function compRows(rows, onOpen) { return rows.map((f,i) => { const w = works[f.id] || {};
-  return `<div class="row comprow" data-cw="${esc(f.id)}"><span class="rk">${i+1}</span><div class="t"><b>${esc(w.title||f.id)}</b>
+  return `<div class="row comprow" data-cw="${esc(f.id)}"><span class="rk">${i+1}</span>${cover(w)}<div class="t"><b>${esc(w.title||f.id)}</b>
     <small>${tag(kindOf(f.id))} ${f.agree === null ? (f.hi.user_id === me.id ? "only you" : "just " + esc(f.hi.profiles?.handle||"one")) : `<span class="${f.agree>=70?"good":"bad"}">${f.agree}% agree</span> · ${f.n} of you${f.split?` · ${esc(f.hi.profiles?.handle||"")} ${f.hi.score/2}, ${esc(f.lo.profiles?.handle||"")} ${f.lo.score/2}`:""}`}</small></div>
     <span class="n ${f.split?"bad":""}">${(f.avg/2).toFixed(1)}<small>of five</small></span></div>`; }).join(""); }
 /* ---------- bringing somebody in ----------
@@ -4251,9 +4334,16 @@ async function renderRoomFeed(fb, R) {
     ${roomMomentsHTML(moments, freshMoments)}
     <div class="tagrow" id="talkTop" style="margin:18px 0 8px"><span class="lbl" style="margin:0">What the room said</span><span class="tfilters" aria-label="Room activity filter">${[["all","All"],["reviews","Reviews"],["activity","Activity"]].map(([k,l]) => `<button data-rfilter="${k}" class="${roomFilter===k?"on":""}">${l}</button>`).join("")}</span></div>${(() => { if (!roomEntries.length && !(roomFilter === "activity" && moments.length)) return blank("var(--pink)","“",roomFilter === "reviews" ? "No reviews yet" : roomFilter === "activity" ? "No activity yet" : "Nothing said yet",roomFilter === "reviews" ? "Reviews with a note or reaction will appear here." : roomFilter === "activity" ? "Room activity without a written review will appear here." : "Log something and it lands here for the room to see.",[["talkAdd","Log something"]]);
       const since = lastSeen(); let shown = false;
-      return roomEntries.map(e => { const isNew = e.user_id !== me.id && String(e.created_at) > since; let head = "";
+      /* A log with nothing said about it is a fact, not a conversation, and a card each
+         made the room scroll like a ledger. Back-to-back ones from the same person fold
+         into one line; anything with a note or a "loved" stays a full card. */
+      const plain = e => !e.note && !(e.loved || []).length, runs = [];
+      for (const e of roomEntries) { const last = runs[runs.length - 1];
+        if (plain(e) && last?.plain && last.es[0].user_id === e.user_id) last.es.push(e);
+        else runs.push({ plain:plain(e), es:[e] }); }
+      return runs.map(run => { const e = run.es[0], isNew = e.user_id !== me.id && String(e.created_at) > since; let head = "";
         if (isNew && !shown) { shown = true; head = `<div class="newline">New since you were here</div>`; }
-        return head + slipHTML(e, { talk:true }); }).join(""); })()}
+        return head + (run.plain ? logLineHTML(run.es) : slipHTML(e, { talk:true })); }).join(""); })()}
     ${roomPrompt()}
     ${pick ? `<div class="result"><small>Tonight's pick</small><b>${esc(pick.title)}</b><div class="stack" style="margin-top:10px"><button class="btn" id="pickLog">${K(pick.kind).verb} it</button></div></div>` : ""}
     </div>
@@ -4265,7 +4355,8 @@ async function renderRoomFeed(fb, R) {
     </div>
     ${hasYear ? (() => { const t = id => esc(works[id]?.title || "");
       return `<div data-rsec="year"${sec === "year" ? "" : " hidden"}><div class="card"><div class="h"><span>The room's year</span><span class="tag dim">${pal.n} entries</span></div>
-        <div class="row" data-cw="${esc(pal.best.id)}"><span class="rk">★</span><div class="t"><b>${t(pal.best.id)}</b><small>The room's best · ${(pal.best.avg/2).toFixed(1)} from ${pal.best.n}</small></div></div>
+        <div class="ywall">${competition(es, 200).slice(0, 6).map((f, i) => { const w = works[f.id] || {};
+          return `<button class="yw ${i ? "" : "first"}" data-cw="${esc(f.id)}">${cover(w)}<span class="yrk">${i + 1}</span><b>${esc(w.title || "")}</b><small>${(f.avg/2).toFixed(1)} · ${f.n} of you</small></button>`; }).join("")}</div>
         <button class="linkrow" id="roomYearMore"><span>The rest · best by medium, the agreement, the fight</span><b>›</b></button>
       </div></div>`; })() : ""}
     `;
@@ -6217,7 +6308,7 @@ function promptHTML(R, g) {
   } else body = revealHTML(R, s);
   const lastLine = last.revealed && last.ans.length ? (() => { const top = last.ans.slice().sort((a, b) => last.tally[akey(b)] - last.tally[akey(a)])[0];
     return `<p class="sub gline" style="margin-top:14px"><b>Last week</b> · “${esc(promptOf(R.id, last.wk))}” went to ${esc(who(R, top.user_id))} with ${esc(works[top.work_id]?.title || "")}</p>`; })() : "";
-  return `<div class="card game"><div class="h"><span>This week's prompt</span><span class="tag dim">${s.revealed ? "results" : s.voting ? "voting" : "answers in"}</span></div>
+  return `<div class="card game promptcard"><div class="h"><span>This week's prompt</span><span class="tag dim">${s.revealed ? "results" : s.voting ? "voting" : "answers in"}</span></div>
     <div class="gprompt">${esc(p)}</div>${body}${lastLine}</div>`; }
 function revealHTML(R, s) {
   const n = a => s.tally[akey(a)];
@@ -6423,6 +6514,7 @@ async function renderTaste() { const body = $("#tasteBody"); const t = tasteOf(m
   body.innerHTML = `<div class="pagehead"><button class="tasteme" id="tasteMe" aria-label="Open your profile">${avatar(me)}<div><h2 style="margin:0">${esc(me.handle)}</h2>${me.bio?`<p class="sub" style="margin-top:2px">${esc(me.bio)}</p>`:""}</div></button>
     <button class="iconbtn cog" id="tasteCog" aria-label="Settings">${COG}</button></div>
     ${myEntries.length ? `<button class="card tastemini" id="tasteMore" aria-label="See your whole taste">${tasteMiniHTML(t)}</button>
+    <div id="podium"></div>
     <div class="card" id="recCard"><div class="h"><span>For tonight</span><span class="tag dim">from what you loved</span></div><div id="recBody">${skeleton(1)}</div></div>
     <button class="linkrow" id="tasteAll"><span>Your ten, the charts, your year and more</span><b>›</b></button>`
     : blank("var(--butter)","1","Nothing logged yet","Start with the last thing you finished. Thirty seconds, and your taste starts building.",[["tasteAdd","Log something"]])}`;
@@ -6431,6 +6523,7 @@ async function renderTaste() { const body = $("#tasteBody"); const t = tasteOf(m
      card the header used to — nothing that was one tap away got further */
   $("#tasteMe").onclick = () => openProfile(me.id);
   $("#tasteCog").onclick = () => openYou();
+  paintPodium();
   [$("#tasteMore"), $("#tasteAll")].forEach(b => { if (b) b.onclick = openTasteDetail; });
   const rb = $("#recBody"); if (!rb) return;
   /* a card that loads forever is worse than no card: if nothing comes back in a few
@@ -6441,6 +6534,19 @@ async function renderTaste() { const body = $("#tasteBody"); const t = tasteOf(m
   window.__hits = Object.assign(window.__hits||{}, Object.fromEntries(rs.map(x => [x.r.id, x.r])));
   rb.innerHTML = rs.map(({ r, why }) => `<div class="row" data-rec="${esc(r.id)}">${cover(r)}<div class="t"><b>${esc(r.title)}</b><small>${tag(r.kind)} ${esc(r.year||"")} · because of ${esc(why)}</small></div><span class="chip">Add</span></div>`).join("");
   $$("[data-rec]", rb).forEach(x => x.onclick = async () => { await addToShelf(x.dataset.rec); recs = recs.filter(e => e.r.id !== x.dataset.rec); renderTaste(); }); }
+/* the top three of each medium you've ranked, as posters: your taste at a glance,
+   before any of the numbers */
+async function paintPodium() {
+  const el = $("#podium"); if (!el) return;
+  const kinds = Object.keys(KINDS).filter(k => myEntries.some(e => kindOf(e.work_id) === k));
+  try { await ensureRankCache(kinds); } catch { return; }
+  if ($("#podium") !== el) return;
+  const rows = kinds.map(k => [k, (rankCache[k] || []).filter(id => works[id]).slice(0, 3)]).filter(([, ids]) => ids.length);
+  if (!rows.length) return;
+  el.innerHTML = `<div class="card podium"><div class="h"><span>Your podium</span><span class="tag dim">top of each list</span></div>
+    ${rows.map(([k, ids]) => `<div class="pd-row"><span class="pd-k" style="background:${K(k).colour}">${esc(K(k).plural)}</span>
+      <div class="pd-ps">${ids.map((id, i) => `<button class="pd-p" data-work="${esc(id)}">${cover(works[id])}<i>${i + 1}</i></button>`).join("")}</div></div>`).join("")}</div>`;
+  $$("[data-work]", el).forEach(b => b.onclick = () => openWork(b.dataset.work)); }
 async function openTasteDetail() { const t = tasteOf(myEntries);
   openSheet(`<h3>Your taste</h3>
     <div class="tally">${Object.keys(KINDS).filter(k=>t.kinds[k]).map(k => `<span><b>${t.kinds[k]}</b>${K(k).label.toLowerCase()}</span>`).join("")}<span><b>${follows.length}</b>following</span><span id="followerCount"></span></div>

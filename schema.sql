@@ -1250,6 +1250,21 @@ end $$;
 revoke all on function room_transfer_owner(uuid, uuid) from public, anon;
 grant execute on function room_transfer_owner(uuid, uuid) to authenticated;
 
+-- ---------- a room's colour ----------
+-- One of the app's six pastels, worn by the room's title and its games so each room
+-- feels like its own place. Anyone in the room can change it; the function is the only
+-- way to, so the value is always one of the six.
+alter table rooms add column if not exists colour text
+  check (colour in ('pink','butter','mint','sky','lilac','apricot'));
+create or replace function set_room_colour(p_room uuid, p_colour text)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  if p_room not in (select my_room_ids()) then raise exception 'not in this room'; end if;
+  update rooms set colour = p_colour where id = p_room;
+end $$;
+revoke all on function set_room_colour(uuid, text) from public, anon;
+grant execute on function set_room_colour(uuid, text) to authenticated;
+
 -- ---------- the room's games: a weekly prompt, a monthly bracket ----------
 -- The prompt itself isn't stored: it's picked from a fixed list by the room and the
 -- week, so everyone in a room gets the same one without anyone writing it down.
