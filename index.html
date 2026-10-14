@@ -496,6 +496,10 @@ button:focus-visible,.linky:focus-visible{outline:3px solid var(--blue);outline-
    and it gives the motion a job. */
 .tray{margin-top:18px}
 .tray>.lbl{margin:0 0 8px;display:flex;justify-content:space-between;align-items:baseline}
+.trayacts{display:flex;gap:6px}
+.trayact{background:none;border:1.5px solid var(--line);color:var(--ink);border-radius:999px;padding:4px 10px;
+  font-family:var(--head);font-weight:800;font-size:11px;letter-spacing:0;text-transform:none;cursor:pointer}
+.trayact:disabled{opacity:.5}
 .tray>.lbl em{font-family:var(--body);font-style:normal;font-weight:600;font-size:11px;
   letter-spacing:0;text-transform:none;color:var(--mute)}
 .run{display:flex;align-items:flex-end;gap:10px;overflow-x:auto;padding:2px 2px 6px;
@@ -4480,8 +4484,13 @@ function paintTrays() {
   /* the per-medium counts live on the chips now, so this line only says how many */
   if (sub) sub.innerHTML = rows.length ? `${rows.length} ${cabQ ? "match" : "finished"}`
     : logCount() ? "Nothing in here matches that." : "Everything you finish stands here.";
+  /* on Ranked each medium's heading carries the two things you do with an order:
+     tighten it, and show it off */
+  const trayActs = k => !ranked || (rankCache[k] || []).length < 2 ? "" : `<span class="trayacts">
+      <button class="trayact" data-sharpen="${k}">Sharpen</button>
+      ${(rankCache[k] || []).filter(id => works[id]).length >= 3 ? `<button class="trayact" data-sharetop="${k}">Share top 5</button>` : ""}</span>`;
   el.innerHTML = rows.length ? kinds.map(k => `<div class="tray"><div class="lbl">
-        <span>${esc(K(k).plural)}</span><em>${by[k].length}</em></div>
+        <span>${esc(K(k).plural)} <em>${by[k].length}</em></span>${trayActs(k)}</div>
       <div class="archlist">${by[k].map((r, i) => rankRowHTML(r, i, ranked)).join("")}</div></div>`).join("")
     : cabQ ? `<p class="empty">Nothing in here matches \u201c${esc(cabQ)}\u201d.</p>`
     : blank("var(--mint)", "\u25af", "Nothing in here yet",
@@ -4496,6 +4505,16 @@ function paintTrays() {
       try { await rankInsert(b.dataset.rkkind, b.dataset.rkagain || b.dataset.rkplace, again); }
       catch (err) { oops(err, "Couldn't place that"); }
       paintTrays(); });
+    $$("[data-sharpen]", el).forEach(b => b.onclick = async () => { const k = b.dataset.sharpen; b.disabled = true;
+      let r = null; try { r = await sharpenRank(k); } catch (err) { oops(err, "Couldn't sharpen that"); }
+      paintTrays();
+      if (!r) return;
+      say(!r.asked ? `Nothing left to ask about your ${inWords(k)}`
+        : r.swaps ? `Moved ${r.swaps} ${r.swaps === 1 ? "thing" : "things"}${r.done ? " \u00b7 that's all of them" : ""}`
+        : `Your order held up${r.done ? " \u00b7 that's all of them" : ""}`); });
+    $$("[data-sharetop]", el).forEach(b => b.onclick = () => { const k = b.dataset.sharetop;
+      const items = (rankCache[k] || []).filter(id => works[id] && inArchive(id)).slice(0, 5);
+      openCuts("top", { kind:k, items, handle:me.handle }, `Your top five ${inWords(k)}`); });
   }
   wireTokens();
 }
@@ -4901,8 +4920,9 @@ function drawDeck() {
       top.creator ? " · " + esc(top.creator) : ""}${(() => { const d = shelfAge(top.id);
       return d ? ` · <span class="waited">waiting ${waited(d)}</span>` : ""; })()}</small></div>
     ${aboutSlot("dkabout")}
-    <div class="stack dkbar"><button class="btn" id="dkTake">${PICK_VERB[top.kind] || "Take"} it</button>
-      <button class="btn ghost" id="dkSkip">Not tonight</button></div>
+    <div class="stack dkbar"><button class="btn" id="dkTake">${nowVerb(top.kind)} it tonight</button>
+      <button class="btn ghost" id="dkSkip">Not tonight</button>
+      <button class="btn quiet" id="dkLog">Already ${K(top.kind).verb} it</button></div>
     ${deckSeen >= deckItems.length && deckItems.length > 1
       ? `<p class="sub" style="margin-top:10px">That's all of them. Going round again.</p>` : ""}`;
   $("#dkTake").onclick = () => { const w = deckItems[0];
@@ -4910,7 +4930,9 @@ function drawDeck() {
     const card = $(".dk[style*='--o:0']") || $(".deck .dk:last-child");
     if (card && !REDUCED) card.animate([{transform:"none"},{transform:"translateY(-64px) scale(1.05)",opacity:0}],
       { duration:280, easing:"cubic-bezier(.3,1.2,.5,1)" });
-    setTimeout(() => openLog(w), REDUCED ? 0 : 240); };
+    setTimeout(() => startPick(w), REDUCED ? 0 : 240); };
+  $("#dkLog").onclick = async () => { const w = deckItems[0]; P.picked = w.id; saveP();
+    try { openLog(works[w.id] || await ensureWork(w)); } catch (e) { oops(e, "Couldn't open that"); } };
   $("#dkSkip").onclick = () => {
     const card = $(".dk[style*='--o:0']") || $(".deck .dk:last-child");
     const go = () => { deckItems.push(deckItems.shift()); deckSeen++; drawDeck(); };
@@ -5058,13 +5080,24 @@ function paintAbout(w, root) {
     const long = t.length > 220;
     slot.innerHTML = `<p class="${long ? "clip" : ""}">${esc(t)}</p>${long ? `<button class="more" type="button">More</button>` : ""}`;
     const m = $(".more", slot); if (m) m.onclick = () => { const p = $("p", slot); p.classList.toggle("clip"); m.textContent = p.classList.contains("clip") ? "More" : "Less"; }; }); }
+/* a pick is for tonight, so taking it means starting it, not logging it as done: it
+   becomes what you're on, which the room already shows along the top ("jord · Thief ·
+   started today"), and logging it later from there takes it back off */
+async function startPick(w) {
+  P.picked = w.id; saveP();
+  let full; try { full = works[w.id] || await ensureWork(w); } catch (e) { oops(e, "Couldn't start that"); return false; }
+  if (!await startNow(full.id)) return false;
+  closeSheet(); refresh();
+  say(rooms.length ? `${nowVerb(full.kind)} it \u00b7 your room can see` : `${nowVerb(full.kind)} it`);
+  return true; }
 function showResult(w) { const el = resultEl(); if (!el) return;
   el.innerHTML = `<div class="result"><small>Tonight's pick</small><b>${esc(w.title)}</b><div style="margin-top:6px">${tag(w.kind)} <span style="font-size:12px;font-weight:700;opacity:.7">${esc(w.year||"")}${w.creator?" · "+esc(w.creator):""}</span></div>
     ${aboutSlot()}
     <div id="pickWatch"></div>
-    <div class="stack"><button class="btn" id="pickedBtn">${K(w.kind).verb} it</button>${
+    <div class="stack"><button class="btn" id="pickNow">${nowVerb(w.kind)} it tonight</button>${
       activeList()?.items.includes(w.id) ? "" : `<button class="btn ghost" id="pickShelf">Put it on the shelf</button>`
-    }<button class="btn quiet" id="againBtn">Again</button></div></div>`;
+    }<button class="btn quiet" id="pickedBtn">Already ${K(w.kind).verb} it</button><button class="btn quiet" id="againBtn">Again</button></div></div>`;
+  $("#pickNow").onclick = async () => { const b = $("#pickNow"); b.disabled = true; await startPick(w); b.disabled = false; };
   $("#pickedBtn").onclick = async () => { const b = $("#pickedBtn"); b.disabled = true;
     try { const full = works[w.id] || await ensureWork(w); openLog(full); }
     catch (e) { oops(e, "Couldn't open that"); } finally { b.disabled = false; } };
@@ -5705,12 +5738,12 @@ const unrankIfGone = id => { if (!inArchive(id)) rankRemove(kindOf(id), id); };
    false picks b, null means "just put it last" (or, placing it again, "leave it where it
    was") and ends the bisection on the spot */
 /* the two side by side, covers big enough to answer from at a glance — tap the one */
-const vsHTML = (a, b, again) => `<h3>Which do you like more?</h3>
-  <p class="sub">Placing <b>${esc(a.title)}</b> among your ${inWords(a.kind)}.</p>
+const vsHTML = (a, b, again, o = {}) => `<h3>Which do you like more?</h3>
+  <p class="sub">${o.sub ? esc(o.sub) : `Placing <b>${esc(a.title)}</b> among your ${inWords(a.kind)}.`}</p>
   <div class="vs">${[a, b].map((w, i) => `<button class="vsit" data-vs="${i}">${cover(w)}<b>${esc(w.title)}</b><small>${tag(w.kind)} ${esc(w.year||"")}</small></button>`).join("")}</div>
-  <div class="stack"><button class="btn quiet" id="vsSkip">${again ? "Leave it where it was" : "Just put it last"}</button></div>`;
-function askRank(a, b, again = false) {
-  return openAsk(vsHTML(a, b, again), done => {
+  <div class="stack"><button class="btn quiet" id="vsSkip">${o.skip || (again ? "Leave it where it was" : "Just put it last")}</button></div>`;
+function askRank(a, b, again = false, o = {}) {
+  return openAsk(vsHTML(a, b, again, o), done => {
     $$("#askBox [data-vs]").forEach(r => r.onclick = () => done(r.dataset.vs === "0"));
     $("#vsSkip").onclick = () => done(null);
   }); }
@@ -5777,6 +5810,33 @@ function moveRank(kind, workId, dir) {
   paintTrays();
   persistRank(rankListId[kind], items).catch(() => {});
 }
+/* a list seeded from scores is only as fine as the scores: everything at 4.5 starts in
+   whatever order it was logged. Sharpening asks up to ten quick questions about
+   neighbours, the ones scored the same first and then the closest, and swaps any you'd
+   put the other way round. A swap makes two new neighbours, which become fair questions
+   too; a pair you've already answered is never asked again. */
+const SHARPEN_N = 10;
+async function sharpenRank(kind) {
+  const t = await ensureMyRank(kind); rankListId[kind] = t.id;
+  const items = t.items.filter(id => works[id]);
+  const key = (a, b) => [a, b].sort().join("|");
+  const asked = new Set(P.sharpened?.[kind] || []);
+  const gap = i => Math.abs((scoreOf(items[i]) ?? 0) - (scoreOf(items[i + 1]) ?? 0));
+  const next = () => { let best = -1, bg = Infinity;
+    for (let i = 0; i < items.length - 1; i++) { if (asked.has(key(items[i], items[i + 1]))) continue;
+      const g = gap(i); if (g < bg) { bg = g; best = i; } }
+    return best; };
+  let n = 0, swaps = 0;
+  while (n < SHARPEN_N) { const i = next(); if (i < 0) break;
+    const pick = await askRank(works[items[i]], works[items[i + 1]], false,
+      { sub:`Sharpening your ${inWords(kind)} · ${n + 1} of ${SHARPEN_N}`, skip:"That's enough for now" });
+    if (pick == null) break;
+    asked.add(key(items[i], items[i + 1])); n++;
+    if (pick === false) { [items[i], items[i + 1]] = [items[i + 1], items[i]]; swaps++; } }
+  P.sharpened = Object.assign(P.sharpened || {}, { [kind]:[...asked].slice(-250) }); saveP();
+  if (swaps) { const full = items.concat(t.items.filter(id => !works[id]));
+    await persistRank(t.id, full); if (rankCache[kind]) rankCache[kind] = full; }
+  return { asked:n, swaps, done:next() < 0 }; }
 /* everyone's own order, read the same way the ten already is: top_lists is readable by
    anyone you share a room with, so this needs nothing new from the server */
 async function rankListsOf(ids) {
@@ -5807,15 +5867,65 @@ async function paintRankMeet(R) {
           const gap = Math.abs(i / (a.length - 1) - j / (b.length - 1)); if (!far || gap > far.gap) far = { id, i, j, gap }; });
         if (far && far.gap >= .5) lines.push({ w:far.id, weight:5 + far.gap,
           text:`Furthest apart — your #${far.i + 1} of ${a.length}, ${name}'s #${far.j + 1} of ${b.length}` }); } } }
-  if (!lines.length) { el.innerHTML = ""; return; }
   lines.sort((x, y) => y.weight - x.weight);
   const seen = new Set(), top = lines.filter(l => !seen.has(l.w) && seen.add(l.w)).slice(0, 4);
-  await fillWorks(top.map(l => l.w));
+  /* the room's order: everyone's lists folded together, each one counting for its own
+     length (top of a list of 40 and top of a list of 6 are both "the top"), and only
+     what at least two of you have ranked */
+  const all = Object.assign({}, lists, { [me.id]:Object.fromEntries(theirKinds.map(k => [k, rankCache[k] || []])) });
+  const roomOrder = k => { const sc = {}, n = {};
+    for (const m of R.members) { const L = all[m.id]?.[k]; if (!L || L.length < 3) continue;
+      L.forEach((id, i) => { sc[id] = (sc[id] || 0) + (1 - i / (L.length - 1)); n[id] = (n[id] || 0) + 1; }); }
+    return Object.keys(sc).filter(id => n[id] >= 2).map(id => ({ id, v:sc[id] / n[id], n:n[id] }))
+      .sort((a, b) => b.v - a.v || b.n - a.n); };
+  const orders = theirKinds.map(k => [k, roomOrder(k)]).filter(([, o]) => o.length >= 3)
+    .sort((a, b) => b[1].length - a[1].length);
+  /* settle it: two things you've both ranked that the rest of the room splits on, as
+     evenly as it can. Your answer is your own list — the choice moves one above the other
+     on it — so the room's order is only ever everybody's real orders, nothing extra kept. */
+  const settled = new Set(P.settled?.[R.id] || []), key = (a, b) => [a, b].sort().join("|");
+  const idx = {}; for (const m of R.members) if (m.id !== me.id) for (const [k, L] of Object.entries(lists[m.id] || {}))
+    (idx[m.id] ||= {})[k] = new Map(L.map((id, i) => [id, i]));
+  let duel = null;
+  for (const k of theirKinds) {
+    const mine = (rankCache[k] || []).filter(id => R.members.filter(m => idx[m.id]?.[k]?.has(id)).length >= 2);
+    for (let i = 0; i < mine.length; i++) for (let j = i + 1; j < mine.length; j++) {
+      const a = mine[i], b = mine[j]; if (settled.has(key(a, b))) continue;
+      const forA = [], forB = [];
+      for (const m of R.members) { const M = idx[m.id]?.[k]; if (!M?.has(a) || !M.has(b)) continue;
+        (M.get(a) < M.get(b) ? forA : forB).push(m.handle || "someone"); }
+      if (!forA.length || !forB.length) continue;
+      const score = Math.abs(forA.length - forB.length) * 10 - (forA.length + forB.length);
+      if (!duel || score < duel.score) duel = { k, a, b, forA, forB, score }; } }
+  await fillWorks([...top.map(l => l.w), ...orders.flatMap(([, o]) => o.slice(0, 5).map(x => x.id)), ...(duel ? [duel.a, duel.b] : [])]);
   if ($("#rankMeet") !== el) return;
-  el.innerHTML = `<div class="card"><div class="h"><span>Where your orders meet</span><span class="tag dim">from everyone's ranked lists</span></div>
+  const who = ns => ns.length === 1 ? esc(ns[0]) : ns.slice(0, -1).map(esc).join(", ") + " and " + esc(ns[ns.length - 1]);
+  const orderCard = k => { const o = (orders.find(([kk]) => kk === k) || [, []])[1];
+    return `<div class="card" id="roomOrder"><div class="h"><span>The room's order</span><span class="tag dim">everyone's lists</span></div>
+      ${orders.length > 1 ? `<div class="chips" style="margin-top:8px">${orders.map(([kk]) => `<button class="chip ${kk === k ? "on" : ""}" data-rok="${kk}">${K(kk).plural}</button>`).join("")}</div>` : ""}
+      ${o.slice(0, 5).map((x, i) => { const w = works[x.id] || {};
+        return `<div class="row" data-rmw="${esc(x.id)}"><span class="rk">${i + 1}</span>${cover(w)}<div class="t"><b>${esc(w.title || "")}</b><small>${x.n} of you ranked it</small></div></div>`; }).join("")}</div>`; };
+  el.innerHTML = (top.length ? `<div class="card"><div class="h"><span>Where your orders meet</span><span class="tag dim">from everyone's ranked lists</span></div>
     ${top.map(l => { const w = works[l.w] || {};
-      return `<div class="row" data-rmw="${esc(l.w)}">${cover(w)}<div class="t"><b>${esc(w.title || "")}</b><small>${esc(l.text)}</small></div></div>`; }).join("")}</div>`;
-  $$("[data-rmw]", el).forEach(x => x.onclick = () => openWork(x.dataset.rmw));
+      return `<div class="row" data-rmw="${esc(l.w)}">${cover(w)}<div class="t"><b>${esc(w.title || "")}</b><small>${esc(l.text)}</small></div></div>`; }).join("")}</div>` : "")
+    + (duel ? `<div class="card settle"><div class="h"><span>Settle it</span><span class="tag dim">${esc(K(duel.k).plural)}</span></div>
+      <p class="sub" style="margin-top:6px">${who(duel.forA)} put <b>${esc(works[duel.a]?.title || "")}</b> higher. ${who(duel.forB)} put <b>${esc(works[duel.b]?.title || "")}</b> higher. You decide.</p>
+      <div class="vs">${[duel.a, duel.b].map(id => { const w = works[id] || {};
+        return `<button class="vsit" data-settle="${esc(id)}">${cover(w)}<b>${esc(w.title || "")}</b><small>${tag(w.kind)} ${esc(w.year || "")}</small></button>`; }).join("")}</div></div>` : "")
+    + (orders.length ? orderCard(orders[0][0]) : "");
+  const wireRows = root => $$("[data-rmw]", root).forEach(x => x.onclick = () => openWork(x.dataset.rmw));
+  const wireOrder = () => { wireRows($("#roomOrder"));
+    $$("[data-rok]", el).forEach(b => b.onclick = () => { $("#roomOrder").outerHTML = orderCard(b.dataset.rok); wireOrder(); }); };
+  wireRows(el); wireOrder();
+  $$("[data-settle]", el).forEach(b => b.onclick = async () => {
+    const pick = b.dataset.settle, other = pick === duel.a ? duel.b : duel.a, k = duel.k;
+    const L = (rankCache[k] || []).slice(), pi = L.indexOf(pick), oi = L.indexOf(other);
+    const moved = pi > oi && oi > -1;
+    if (moved) { L.splice(pi, 1); L.splice(L.indexOf(other), 0, pick); }
+    P.settled = Object.assign(P.settled || {}, { [R.id]:[...settled, key(duel.a, duel.b)].slice(-120) }); saveP();
+    try { if (moved) { await persistRank(rankListId[k], L); rankCache[k] = L; } } catch (err) { oops(err, "Couldn't save that"); return; }
+    say(moved ? `${works[pick]?.title} goes above ${works[other]?.title} on your list` : `You already had it that way round`);
+    paintRankMeet(R); });
 }
 const fourHTML = items => `<div class="four">${[0,1,2,3].map(i => { const w = works[items[i]]; return w ? `<div class="po" data-work="${esc(w.id)}">${cover(w,"")}<b>${esc(w.title)}</b></div>` : `<div class="po" style="opacity:.4"></div>`; }).join("")}</div>`;
 let recs = null;
@@ -6075,6 +6185,11 @@ const stampDate = d => { const [y,m,dd] = String(d).split("-"); return `${+dd} $
 /* ---------- the cuts ----------
    every shareable thing has three: a different way of saying the same numbers. */
 function cardBase(kind, label, tint) { const { c, x } = cardCtx(tint || null); cardHead(x, label); return { c, x }; }
+/* trims to the width it has with the font already set, rather than guessing at a
+   character count that's wrong for every wide or narrow title */
+function fitText(x, s, maxW) { s = String(s || ""); if (x.measureText(s).width <= maxW) return s;
+  while (s.length > 1 && x.measureText(s + "\u2026").width > maxW) s = s.slice(0, -1);
+  return s.trimEnd() + "\u2026"; }
 const big = (x, text, y, size = 190) => { x.fillStyle = x.__on; x.font = `900 ${size}px Outfit, sans-serif`; x.fillText(text, CARD.M, y); };
 const kicker = (x, text, y) => { x.fillStyle = x.__pale; x.font = "700 26px Inter, sans-serif"; x.fillText(text.toUpperCase(), CARD.M, y); };
 function listRows(x, rows, y, opts = {}) {
@@ -6129,6 +6244,42 @@ const CUTS = {
             const wpx = x.measureText(t).width + 44; if (px + wpx > CARD.W - CARD.M) { px = CARD.M; py += 68; }
             px += cardPill(x, t, CARD.cols[w.kind] || x.__accent, px, py) + 14; } }
         cardFoot(x, lc(e.profiles?.handle || me.handle), `${cfg.verb} ${stampDate(e.rated_on)}`); return c; }]
+    ]
+  },
+
+  /* ---------- a top five, from the ranked archive ----------
+     an order, not scores: the card says "ranked, not rated" so nobody reads 1 to 5 as
+     five-star to one-star */
+  top: {
+    label: "A top five",
+    cuts: [
+      ["The five", async (d) => { const { c, x } = cardBase("top", `top five ${inWords(d.kind)}`, d.kind);
+        let y = 330;
+        d.items.forEach((id, i) => { const w = works[id] || {};
+          x.fillStyle = CARD.cols[d.kind]; x.font = "900 76px Outfit, sans-serif"; x.fillText(String(i + 1), CARD.M, y);
+          x.fillStyle = x.__on; x.font = "900 56px Outfit, sans-serif";
+          x.fillText(fitText(x, w.title, CARD.W - CARD.M * 2 - 100), CARD.M + 100, y);
+          x.fillStyle = x.__pale; x.font = "600 28px Inter, sans-serif";
+          x.fillText(fitText(x, [w.year, w.creator].filter(Boolean).join(" · "), CARD.W - CARD.M * 2 - 100), CARD.M + 100, y + 46);
+          y += 160; });
+        cardFoot(x, lc(d.handle), "ranked, not rated"); return c; }],
+      ["Number one", async (d) => { const { c, x } = cardBase("top", `top five ${inWords(d.kind)}`, d.kind);
+        const w = works[d.items[0]] || {};
+        kicker(x, "number one", 300);
+        let y = cardWrap(x, w.title, CARD.M, 420, CARD.W - CARD.M * 2, 118, "900 108px Outfit, sans-serif", x.__on);
+        x.fillStyle = x.__pale; x.font = "600 32px Inter, sans-serif"; x.fillText([w.year, w.creator].filter(Boolean).join(" · "), CARD.M, y - 40);
+        y = Math.max(y + 60, 760); kicker(x, "then", y); y += 76;
+        listRows(x, d.items.slice(1).map((id, i) => [`${i + 2}  ${works[id]?.title || ""}`]), y, { gap:70 });
+        cardFoot(x, lc(d.handle), "ranked, not rated"); return c; }],
+      ["Podium", async (d) => { const { c, x } = cardBase("top", `top five ${inWords(d.kind)}`, d.kind);
+        const col = CARD.cols[d.kind], widths = [1, .86, .74, .64, .56];
+        let y = 300;
+        d.items.forEach((id, i) => { const w = works[id] || {}, bw = (CARD.W - CARD.M * 2) * widths[i], h = 150;
+          x.fillStyle = col; x.globalAlpha = 1 - i * .14; x.beginPath(); x.roundRect(CARD.M, y, bw, h, 26); x.fill(); x.globalAlpha = 1;
+          x.fillStyle = CARD.ink; x.font = "900 64px Outfit, sans-serif"; x.fillText(String(i + 1), CARD.M + 30, y + 98);
+          x.font = "900 44px Outfit, sans-serif"; x.fillText(fitText(x, w.title, bw - 140), CARD.M + 110, y + 92);
+          y += h + 22; });
+        cardFoot(x, lc(d.handle), "ranked, not rated"); return c; }],
     ]
   },
 
