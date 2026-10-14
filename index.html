@@ -8,7 +8,7 @@
 <script>/* before anything paints: a dark app that flashes cream first is worse than no
   dark app. Classic, inline and synchronous on purpose — the app's own script is a
   deferred module and runs far too late for this. */
-(function(){try{var p=JSON.parse(localStorage.getItem("rooms.prefs")||"{}"),t=p.theme;
+(function(){try{var p=JSON.parse(localStorage.getItem("rooms.prefs")||"{}"),t="theme" in p?p.theme:"dark";  /* the app's own default, P.theme */
   if(t!=="light"&&t!=="dark")t=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";
   document.documentElement.dataset.theme=t;
   if(t==="dark")document.querySelector('meta[name="theme-color"]').content="#16131C";}catch(e){}})();</script>
