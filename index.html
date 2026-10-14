@@ -908,9 +908,21 @@ nav .in:has(.navpill.set) button.on{background:none}
 .reelnow b{display:block;font-family:var(--head);font-weight:900;font-size:20px;letter-spacing:-.02em;
   line-height:1.15}
 .reelnow small{color:var(--mute);font-size:12.5px;font-weight:600}
-.result{margin-top:14px;background:var(--butter);border-radius:20px;padding:16px}
+/* butter is a pastel in both themes, so what sits on it is the ink that never flips —
+   inheriting the page's ink put cream text on yellow in dark mode */
+.result{margin-top:14px;background:var(--butter);border-radius:20px;padding:16px;color:var(--onAccent)}
+.result .btn{background:var(--onAccent);color:#FFF7EC}
+.result .btn.ghost{background:transparent;color:var(--onAccent);border-color:rgba(21,19,32,.22)}
+.result .btn.quiet{background:transparent;color:var(--onAccent);opacity:.65}
 .result small{font-weight:800;font-size:11px;letter-spacing:.06em;text-transform:uppercase}
 .result b{font-family:var(--head);font-weight:900;font-size:24px;letter-spacing:-.03em;display:block;margin-top:4px}
+.pickabout{margin-top:10px}
+.pickabout p{margin:0;font-size:13.5px;line-height:1.5;font-weight:500;opacity:.85}
+.pickabout p.clip{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+.pickabout .more{color:inherit;opacity:.7;padding-top:4px}
+.pickabout .sk{display:block;height:10px;border-radius:5px;background:currentColor;opacity:.12;margin-top:7px}
+.pickabout.dkabout{text-align:center;max-width:46ch;margin:10px auto 2px;color:var(--mute)}
+.pickabout.dkabout .sk{margin-left:auto;margin-right:auto}
 
 /* nav */
 nav{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--veil);backdrop-filter:blur(12px);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom);display:none}
@@ -1647,25 +1659,27 @@ const faceMap = c => { const out = {};
 const FACE_IMG = p => p ? "https://image.tmdb.org/t/p/w185" + p : "";
 const DETAIL = {
   async film(raw) { const d = await tmdb("movie/"+raw, { append_to_response:"credits" });
-    return { creator:crewName(d.credits,"Director"), length:d.runtime||0, meta:{ genres:(d.genres||[]).map(g=>g.name), faces:faceMap(d.credits) },
+    return { creator:crewName(d.credits,"Director"), length:d.runtime||0, meta:{ genres:(d.genres||[]).map(g=>g.name), faces:faceMap(d.credits), overview:d.overview || "" },
       credits:{ director:crewName(d.credits,"Director"), writer:crewName(d.credits,"Screenplay","Writer","Story"), dp:crewName(d.credits,"Director of Photography"),
         editor:crewName(d.credits,"Editor"), composer:crewName(d.credits,"Original Music Composer"), design:crewName(d.credits,"Production Design"),
         cast:(d.credits?.cast||[]).slice(0,4).map(p=>p.name).join(", ") } }; },
   async tv(raw) { const d = await tmdb("tv/"+raw, { append_to_response:"credits" }); const cr = (d.created_by||[]).map(p=>p.name).join(", ");
     const faces = Object.assign(faceMap(d.credits),
       Object.fromEntries((d.created_by||[]).filter(p=>p.profile_path).map(p=>[p.name,p.profile_path])));
-    return { creator:cr, length:d.number_of_episodes||0, meta:{ genres:(d.genres||[]).map(g=>g.name), faces },
+    return { creator:cr, length:d.number_of_episodes||0, meta:{ genres:(d.genres||[]).map(g=>g.name), faces, overview:d.overview || "" },
       credits:{ creator:cr, writer:cr, director:crewName(d.credits,"Director"), dp:crewName(d.credits,"Director of Photography"), composer:crewName(d.credits,"Original Music Composer"),
         cast:(d.credits?.cast||[]).slice(0,4).map(p=>p.name).join(", ") } }; },
-  async book(raw) { try { const d = await ol(`/works/${raw}.json`); return { meta:{ genres:(d.subjects||[]).slice(0,4) } }; } catch { return {}; } },
-  async game(raw) { try { const [g] = await igdb("games", `where id = ${+raw}; fields name,genres.name,themes.name,involved_companies.company.name,involved_companies.developer;`);
+  async book(raw) { try { const d = await ol(`/works/${raw}.json`);
+    const about = typeof d.description === "string" ? d.description : d.description?.value || "";
+    return { meta:{ genres:(d.subjects||[]).slice(0,4), overview:about } }; } catch { return {}; } },
+  async game(raw) { try { const [g] = await igdb("games", `where id = ${+raw}; fields name,summary,genres.name,themes.name,involved_companies.company.name,involved_companies.developer;`);
     const dev = (g?.involved_companies||[]).find(c=>c.developer)?.company?.name || g?.involved_companies?.[0]?.company?.name || "";
     /* IGDB has no "Horror" genre — it's a theme there, alongside Survival, Fantasy,
        Sci-fi and the like — so a genre-only fetch could never have found a horror game.
        Themes are merged in with genres rather than kept apart: they answer the same
        question ("what kind of game is this") everywhere the app shows them. */
     const genres = [...new Set([...(g?.genres||[]).map(x=>x.name), ...(g?.themes||[]).map(x=>x.name)])];
-    return { creator:dev, meta:{ genres }, credits:{ studio:dev } }; } catch { return {}; } }
+    return { creator:dev, meta:{ genres, overview:g?.summary || "" }, credits:{ studio:dev } }; } catch { return {}; } }
 };
 function peopleOf(w) { const c = w.credits || {}, out = [];
   for (const [key,label] of [["director","director"],["creator","made by"],["author","author"],["writer","writer"],["studio","studio"],["dp","cinematographer"],["editor","editor"],["composer","composer"]])
@@ -4886,6 +4900,7 @@ function drawDeck() {
     <div class="dkname"><b>${esc(top.title)}</b><small>${tag(top.kind)} ${esc(top.year||"")}${
       top.creator ? " · " + esc(top.creator) : ""}${(() => { const d = shelfAge(top.id);
       return d ? ` · <span class="waited">waiting ${waited(d)}</span>` : ""; })()}</small></div>
+    ${aboutSlot("dkabout")}
     <div class="stack dkbar"><button class="btn" id="dkTake">${PICK_VERB[top.kind] || "Take"} it</button>
       <button class="btn ghost" id="dkSkip">Not tonight</button></div>
     ${deckSeen >= deckItems.length && deckItems.length > 1
@@ -4903,6 +4918,7 @@ function drawDeck() {
       {transform:"translateX(160px) rotate(10deg)",opacity:0}],
       { duration:260, easing:"cubic-bezier(.4,0,.9,.4)" }).onfinish = go; }
     else go(); };
+  paintAbout(top, area);
 }
 function drawWheel() { const c = pickPool(); wheelItems = c; const area = $("#wheelArea"); if (!area) return;
   if (!c.length) { const narrow = P.shelfFilter || P.pickTag, best = pickFrom() === "best";
@@ -5016,8 +5032,35 @@ function spin() { const n = wheelItems.length; if (!n || spinning) return;
   g.addEventListener("transitionend", done);
   live = requestAnimationFrame(tick);
   requestAnimationFrame(() => reelTo(land, false)); }
+/* what it's about, under the pick — the one thing a spun title needs before you commit
+   an evening to it. Kept from the lookup when a work is first saved; for anything saved
+   before that, asked for once and remembered for the session. Open Library's text comes
+   with markdown links and a "----" section of source notes, which are dropped. */
+const aboutCache = {};
+const cleanAbout = t => String(t || "").split(/\n\s*-{3,}/)[0]
+  .replace(/\(\[source\]\[\d+\]\)/gi, "").replace(/\[([^\]]+)\]\[\d+\]/g, "$1")
+  .replace(/^\s*\[\d+\]:.*$/gm, "").replace(/\s+/g, " ").trim();
+async function aboutOf(w) {
+  if (w.id in aboutCache) return aboutCache[w.id];
+  const have = works[w.id]?.meta?.overview ?? w.meta?.overview;
+  if (have) return (aboutCache[w.id] = cleanAbout(have));
+  try { const extra = await DETAIL[w.kind](w.id.split(":")[1]); aboutCache[w.id] = cleanAbout(extra?.meta?.overview); }
+  catch { return ""; }
+  return aboutCache[w.id]; }
+/* the same slot under the dealt card and under the spun one: two placeholder lines until
+   the text lands, then four lines and More; nothing at all if there's nothing to say */
+const aboutSlot = (cls = "") => `<div class="pickabout ${cls}" data-about><span class="sk"></span><span class="sk" style="width:72%"></span></div>`;
+function paintAbout(w, root) {
+  const slot = $("[data-about]", root); if (!slot) return;
+  slot.dataset.about = w.id;
+  aboutOf(w).then(t => { if (!slot.isConnected || slot.dataset.about !== w.id) return;
+    if (!t) { slot.remove(); return; }
+    const long = t.length > 220;
+    slot.innerHTML = `<p class="${long ? "clip" : ""}">${esc(t)}</p>${long ? `<button class="more" type="button">More</button>` : ""}`;
+    const m = $(".more", slot); if (m) m.onclick = () => { const p = $("p", slot); p.classList.toggle("clip"); m.textContent = p.classList.contains("clip") ? "More" : "Less"; }; }); }
 function showResult(w) { const el = resultEl(); if (!el) return;
   el.innerHTML = `<div class="result"><small>Tonight's pick</small><b>${esc(w.title)}</b><div style="margin-top:6px">${tag(w.kind)} <span style="font-size:12px;font-weight:700;opacity:.7">${esc(w.year||"")}${w.creator?" · "+esc(w.creator):""}</span></div>
+    ${aboutSlot()}
     <div id="pickWatch"></div>
     <div class="stack"><button class="btn" id="pickedBtn">${K(w.kind).verb} it</button>${
       activeList()?.items.includes(w.id) ? "" : `<button class="btn ghost" id="pickShelf">Put it on the shelf</button>`
@@ -5028,7 +5071,8 @@ function showResult(w) { const el = resultEl(); if (!el) return;
   const sh = $("#pickShelf"); if (sh) sh.onclick = async () => { sh.disabled = true; sh.textContent = "Adding";
     try { await addToShelf(w.id); sh.textContent = "On the shelf"; } catch { sh.disabled = false; sh.textContent = "Put it on the shelf"; } };
   paintWatch(w, "pickWatch", true);
-  $("#againBtn").onclick = () => { P.picked = null; saveP(); if (wheelItems.length >= 3) spin(); else drawWheel(); }; }
+  $("#againBtn").onclick = () => { P.picked = null; saveP(); if (wheelItems.length >= 3) spin(); else drawWheel(); };
+  paintAbout(w, el); }
 /* the pick follows you back to the shelf and into the room */
 let searchT; function wireSearch() { const el = $("#search"); if (!el) return; el.oninput = e => { clearTimeout(searchT); const v = e.target.value.trim(); if (!v) { $("#results").innerHTML = ""; $("#msg").textContent = "";
       if (shelfStale) { shelfStale = false; if (currentTab() === "shelf") renderShelf(); } return; } searchT = setTimeout(() => doSearch(v, r => addToShelf(r.dataset.add), $("#results"), $("#msg"), el), 400); }; }

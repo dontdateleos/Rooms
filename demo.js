@@ -60,10 +60,22 @@ const GENRES = {
   "game:1":["Adventure","Mystery"], "game:2":["Role-playing","Mystery"],
   "film:20":["Horror","Romance"], "game:20":["Adventure","Action"],
 };
+/* what the pick wheel shows under a spun title — the shelf's things, since those are
+   what the wheel lands on. Written for the demo, not lifted from anywhere. */
+const ABOUT = {
+  "film:2":"A professional safecracker who works alone and plans everything wants one last score so he can buy a normal life — and takes a job from the one man he shouldn't.",
+  "film:4":"A tobacco company scientist is pushed out and decides to talk on television about what his old employer knew. A news producer tries to get the interview on air before the lawyers bury it.",
+  "tv:2":"Three years after two percent of the world's population vanished without a trace, a police chief in a small New York town tries to hold his family and his town together as both come apart.",
+  "book:3":"A Gilded Age financier's fortune, told four times over — a novel, a memoir, a draft, a diary — each version of the story undercutting the one before it.",
+  "game:2":"You wake up in a wrecked hostel room with no memory and a dead man hanging in the yard. You're a detective, apparently. Your own head argues with you about everything.",
+  "film:20":"A lonely Frankenstein asks a pioneering scientist to build him a companion in 1930s Chicago, and what she brings back to life has plans of her own.",
+  "game:20":"An open-world samurai story set in the far north of Japan around 1603, following a lone warrior hunting the gang that destroyed her family.",
+};
 const works = {};
 for (const [id,kind,title,year,creator,length,a,b,release] of [...WORKS, ...COMING]) {
   works[id] = { id, kind, title, year, creator, length, cover:poster(title, a, b),
-    meta:{ genres:GENRES[id] || [] }, credits:{ director:creator }, ...(release ? { release } : {}) };
+    meta:{ genres:GENRES[id] || [], ...(ABOUT[id] ? { overview:ABOUT[id] } : {}) },
+    credits:{ director:creator }, ...(release ? { release } : {}) };
 }
 
 const PEOPLE = [
