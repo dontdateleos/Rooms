@@ -308,6 +308,8 @@ section.incoming .reveal{opacity:1;transform:none;transition:none}
 section.incoming > div > :first-child{margin-top:0}
 html.tabdrag section.on{will-change:transform,opacity}
 html.tabdrag,html.tabdrag body{overscroll-behavior-x:none}
+/* the browser owns vertical scrolling; sideways belongs to the tab swipe, so it never starts a pan of its own that the swipe then has to fight */
+main{touch-action:pan-y pinch-zoom}
 section.arrived > div > *{animation:none!important}
 section.arrived .reveal{opacity:1;transform:none;transition:none}
 /* the outgoing screen used to just vanish the instant you tapped the next tab, while
@@ -3445,6 +3447,7 @@ if (window.ResizeObserver) { const nb = $("nav .in");
 document.fonts?.ready.then(() => movePill(true)).catch(() => {});
 
 const TAB_ORDER = ["doors", "clubs", "shelf", "archive", "taste"];
+const drawnAt = {}; let swipeDrawT = 0;
 /* each tab keeps where you were in it; tapping the tab you're already on goes to the top */
 const tabScroll = {};
 /* Shelf and Archive are one tab, Library: the same things on either side of being
@@ -3480,7 +3483,16 @@ function switchTab(n, how = {}) { shelfEdit = false;
       setTimeout(() => s.classList.remove("leaving"), 230); }
     else s.classList.toggle("on", on); });
   paintLib(n, !(LIB.includes(cur) && LIB.includes(n)));
-  movePill(); scrollTo(0,0); RENDER[n]?.();
+  movePill(); scrollTo(0,0);
+  /* A swiped-in page is already on screen, drawn as you left it, and its blocks are still
+     jiggling into place: redrawing it now would swap them out mid-jiggle, and the room
+     feed would flash its loading shapes while it fetched. So the redraw waits until the
+     page has settled, and the room feed skips it altogether when it was drawn in the last
+     minute (it only needs its live connection back). */
+  if (how.swiped) { clearTimeout(swipeDrawT); swipeDrawT = setTimeout(() => { if (currentTab() !== n) return;
+      if (n === "doors" && Date.now() - (drawnAt.doors || 0) < 60000) { if (feedNow() === "room" && activeRoom()) joinRoomChannel(activeRoom()); return; }
+      RENDER[n]?.(); drawnAt[n] = Date.now(); }, 720); }
+  else { RENDER[n]?.(); drawnAt[n] = Date.now(); }
   /* some tabs draw after a fetch, so the old position may not exist yet on the first try:
      keep reaching for it briefly, and stop the moment the finger takes over */
   const target = n === cur ? 0 : (tabScroll[n] || 0);
@@ -3526,8 +3538,11 @@ let tabDrag = false;
       there.style.top = (here.offsetTop + scrollY - (tabScroll[to] || 0)) + "px"; }
     if (there && !there.firstElementChild?.children.length) there.firstElementChild.innerHTML = skeleton(3);
     /* the blocks you can see on each page, which trail behind your finger like jelly */
-    const kids = sec => [...(sec?.firstElementChild?.children || [])].filter(k => { const r = k.getBoundingClientRect();
-      return r.height && r.bottom > 0 && r.top < innerHeight; }).slice(0, 5);
+    /* blocks, not whole sections: a wrapper taller than half the screen is opened up and its
+       own children used instead, so the cards jiggle rather than the page wobbling as one */
+    const kids = sec => { let list = [...(sec?.firstElementChild?.children || [])];
+      for (let pass = 0; pass < 2; pass++) list = list.flatMap(k => k.getBoundingClientRect().height > innerHeight * .5 && k.children.length > 1 ? [...k.children] : [k]);
+      return list.filter(k => { const r = k.getBoundingClientRect(); return r.height && r.bottom > 0 && r.top < innerHeight; }).slice(0, 6); };
     s.kids = [kids(here), kids(there)];
     s.pillFrom = $("nav button[data-tab].on"); s.pillTo = to && $(`nav button[data-tab="${navOf(to)}"]`);
     $("#navPill")?.classList.add("tracking");
@@ -3553,7 +3568,8 @@ let tabDrag = false;
       pill.style.transform = `scaleY(${1 - Math.sin(p * Math.PI) * .22})`; } }
   function tidy() { [s.here, s.there, s.lib].forEach(el => { if (!el) return;
       el.style.transition = el.style.transform = el.style.opacity = el.style.transformOrigin = ""; });
-    (s.kids || []).flat().forEach(k => { k.style.transition = k.style.translate = ""; });
+    /* the blocks may still be jiggling: let them finish, then tidy them */
+    const kids = (s.kids || []).flat(); setTimeout(() => kids.forEach(k => { k.style.transition = k.style.translate = ""; }), 760);
     if (s.there) { s.there.classList.remove("incoming"); s.there.style.top = ""; }
     const pill = $("#navPill"); if (pill) { pill.classList.remove("tracking"); pill.style.transform = ""; }
     document.documentElement.classList.remove("tabdrag"); tabDrag = false; }
@@ -3577,13 +3593,13 @@ let tabDrag = false;
       movePill(); if (s.pillTo !== s.pillFrom) wobblePill();
       const d = s; setTimeout(() => { s = d; tidy();
         /* the page has already arrived, so the tab change is told not to animate it again */
-        switchTab(d.to, { swiped:true }); s = null; }, Math.max(ms + 360, 700)); }
+        switchTab(d.to, { swiped:true }); s = null; }, ms + 150); }
     else { [s.here, s.lib, s.there].forEach(el => el && (el.style.transition = inn));
       s.here.style.transform = ""; s.here.style.opacity = "";
       if (s.lib) s.lib.style.transform = ""; if (s.there) s.there.style.transform = `translateX(${s.dir * w}px)`;
       settleKids(s.kids[0]);
       movePill(); $("#navPill") && ($("#navPill").style.transform = "");
-      const d = s; setTimeout(() => { s = d; tidy(); s = null; }, Math.max(ms + 360, 700)); } }
+      const d = s; setTimeout(() => { s = d; tidy(); s = null; }, ms + 150); } }
   main.addEventListener("touchstart", e => { if (s) return;
     if (e.touches.length !== 1 || !me || shelfEdit || $("#sheet")?.classList.contains("on")) return;
     if (!TAB_ORDER.includes(currentTab()) || owns(e.target)) return;
@@ -3617,7 +3633,7 @@ $$("nav button[data-tab]").forEach(b => { const act = HOLDS[b.dataset.tab]; if (
   b.addEventListener("contextmenu", e => e.preventDefault()); });
 markLive();
 const currentTab = () => $$("main section").find(s => s.classList.contains("on"))?.id.replace("tab-","");
-const refresh = () => RENDER[currentTab()]?.();
+const refresh = () => { const t = currentTab(); RENDER[t]?.(); drawnAt[t] = Date.now(); };
 /* ---------- pulling the page down ----------
    refresh() only redraws what is already in memory, which is the wrong thing to do when
    somebody asks for new. This fetches first. It is deliberately the shared things rather
