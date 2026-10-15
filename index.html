@@ -3608,12 +3608,18 @@ let tabDrag = false;
       settleKids(s.kids[0]);
       movePill(); $("#navPill") && ($("#navPill").style.transform = ""); }
     anims = anims.filter(Boolean);
-    const d = s;
-    Promise.all(anims.map(a => a.finished)).catch(() => {}).then(() => { s = d; tidy();
+    const d = s; let done = false;
+    /* landing is one step, run once — when the animations finish, or straight away if
+       you put your finger down again before they have. A swipe started during the bounce
+       used to be ignored until it ended, which on a quick second swipe felt stuck. */
+    const land = () => { if (done) return; done = true; landing = null; s = d; tidy();
       /* the page has already arrived, so the tab change is told not to animate it again */
       if (go) switchTab(d.to, { swiped:true });
-      anims.forEach(a => a.cancel()); s = null; }); }
-  main.addEventListener("touchstart", e => { if (s) return;
+      anims.forEach(a => a.cancel()); s = null; };
+    landing = land;
+    Promise.all(anims.map(a => a.finished)).catch(() => {}).then(land); }
+  let landing = null;
+  main.addEventListener("touchstart", e => { if (landing) landing(); if (s) return;
     if (e.touches.length !== 1 || !me || shelfEdit || $("#sheet")?.classList.contains("on")) return;
     if (!TAB_ORDER.includes(currentTab()) || owns(e.target)) return;
     const t = e.touches[0]; s = { x0:t.clientX, y0:t.clientY, lock:null, x:0, hist:[[t.clientX, performance.now()]] }; }, { passive:true });
