@@ -4241,28 +4241,45 @@ function wirePager(pg, places, curKey, go) {
   pg.addEventListener("touchstart", e => { if (e.touches.length === 1) { x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; } }, { passive:true });
   pg.addEventListener("touchend", e => { if (x0 == null) return; const t = e.changedTouches[0], dx = t.clientX - x0, dy = t.clientY - y0; x0 = null;
     if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) step(dx < 0 ? 1 : -1); }, { passive:true }); }
-/* After a move. The mark hops from the place you left to the one you're on, turning into
-   the new place's mark at the top of its arc and squashing a little as it lands; the
-   title flips over like a card; whatever the page swapped in slides in from the side
-   you moved towards. */
+/* After a move. The mark looks before it goes: its eyes slide towards where it's headed
+   and it settles for a beat, then it stretches out that way like taffy, snaps across,
+   turns into the new place's mark as it lands and wobbles to a stop. The places either
+   side of where it lands get nudged aside. The title flips over like a card; whatever
+   the page swapped in slides in from the side you moved towards. */
 let pagerFrom = null;
 function pagerArrive(dir, pg, ...els) {
   const from = pagerFrom; pagerFrom = null;
   if (!dir || REDUCED) return;
   const hl = pg && $(".hl", pg);
   if (hl) hl.animate([{ transform:"perspective(500px) rotateX(-90deg)", opacity:.2 }, { transform:"none", opacity:1 }],
-    { duration:420, delay:120, easing:"cubic-bezier(.2,1.3,.4,1)", fill:"backwards" });
+    { duration:420, delay:240, easing:"cubic-bezier(.2,1.3,.4,1)", fill:"backwards" });
   const cur = pg && $(".pgcur", pg), old = from && from.id === pg?.id && $(`.pgdot[data-place="${CSS.escape(from.key)}"]`, pg);
   if (cur && old) {
     const a = old.getBoundingClientRect(), b = cur.getBoundingClientRect(), dx = (a.left + a.width / 2) - (b.left + b.width / 2);
-    const T = 560;
-    cur.animate([{ transform:`translate(${dx}px,0)` }, { transform:`translate(${dx / 2}px,-24px) rotate(${dir * 10}deg)`, offset:.48 },
-      { transform:"translate(0,0) scale(1.18,.8)", offset:.84 }, { transform:"none" }], { duration:T, easing:"cubic-bezier(.35,0,.25,1)" });
-    /* the old mark rides along on top until the top of the arc, then it's the new one */
+    /* which way it travels on screen, which isn't always the way you moved: going past
+       the last place wraps round to the first */
+    const way = dx > 0 ? -1 : 1, w = b.width || 30, s = 1 + Math.max(.6, Math.min(3, Math.abs(dx) / w));
+    const T = 720, SWAP = .46;
+    cur.animate([{ transform:`translate(${dx}px,0)` }, { transform:`translate(${dx}px,0)`, offset:.14 },
+      { transform:`translate(${dx - way * 2}px,2px) scale(1.12,.8)`, offset:.22 },
+      { transform:`translate(${dx + way * (s - 1) * w / 2}px,3px) scale(${s},.62)`, offset:.42 },
+      { transform:`translate(${way * 4}px,0) scale(.82,1.16)`, offset:.58 },
+      { transform:"scale(1.1,.92)", offset:.72 }, { transform:"scale(.97,1.03)", offset:.86 }, { transform:"none" }],
+      { duration:T, easing:"cubic-bezier(.45,0,.2,1)" });
+    /* the glance: eyes are drawn in the mark's own 100-unit box, so 7 is a good third of an eye */
+    const look = g => g?.animate([{ transform:"none" }, { transform:`translateX(${way * 7}px)`, offset:.12 },
+      { transform:`translateX(${way * 7}px)`, offset:.5 }, { transform:"none", offset:.7 }, { transform:"none" }], { duration:T, easing:"ease-out" });
+    /* the old mark is the one that looks and reaches; the new one takes over mid-snap */
     if (from.mark) { const g = document.createElement("span"); g.className = "pgghost"; g.innerHTML = from.mark; cur.appendChild(g);
-      g.animate([{ opacity:1 }, { opacity:1, offset:.4 }, { opacity:0, offset:.56 }, { opacity:0 }], { duration:T }).onfinish = () => g.remove(); }
-    $(".pgmark", cur)?.animate([{ opacity:0 }, { opacity:0, offset:.4 }, { opacity:1, offset:.56 }, { opacity:1 }], { duration:T });
-    old.animate([{ opacity:0, transform:"scale(0)" }, { opacity:0, transform:"scale(0)", offset:.25 }, { opacity:.4, transform:"none" }], { duration:T }); }
+      look($(".eyes", g));
+      g.animate([{ opacity:1 }, { opacity:1, offset:SWAP - .04 }, { opacity:0, offset:SWAP + .06 }, { opacity:0 }], { duration:T }).onfinish = () => g.remove(); }
+    look($(".pgmark .eyes", cur));
+    $(".pgmark", cur)?.animate([{ opacity:0 }, { opacity:0, offset:SWAP - .04 }, { opacity:1, offset:SWAP + .06 }, { opacity:1 }], { duration:T });
+    old.animate([{ opacity:0, transform:"scale(0)" }, { opacity:0, transform:"scale(0)", offset:.5 }, { opacity:.4, transform:"none" }], { duration:T });
+    /* the neighbours it lands beside shuffle out of the way and back */
+    setTimeout(() => { [cur.previousElementSibling, cur.nextElementSibling].forEach((n, i) => {
+      if (!n?.classList.contains("pgdot")) return;
+      n.animate([{ transform:"none" }, { transform:`translateX(${i ? 5 : -5}px) scale(1.25)` }, { transform:"none" }], { duration:320, easing:"ease-out" }); }); }, T * .6); }
   for (const el of els) { if (!el) continue; el.style.setProperty("--fx", (dir > 0 ? -26 : 26) + "px");
     el.classList.remove("feedIn"); void el.offsetWidth; el.classList.add("feedIn");
     setTimeout(() => el.classList.remove("feedIn"), 420); } }
