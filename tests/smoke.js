@@ -40,6 +40,15 @@ const BASE = (process.env.BASE || "http://127.0.0.1:8934").replace(/\/$/, "");
       await expect("#feedPick", "the room title"); await expect(".roomsecs", "the room sections");
       for (const sec of ["Play", "Charts", "Year", "Talk"]) { await tap("[data-rsecbtn]", sec); await wait(900); }
       await expect("#roomGames .card", "the games"); });
+    await step("moving between places", async () => {
+      const title = () => page.locator("#feedPick").innerText();
+      const was = await title(); await tap('[data-go="1"]'); await wait(900);
+      if ((await title()) === was) throw new Error("the next arrow didn't move");
+      await tap('[data-go="-1"]'); await wait(900);
+      if ((await title()) !== was) throw new Error("the back arrow didn't come back");
+      await tap(".pgdot:not(.on)"); await wait(900);
+      if ((await title()) === was) throw new Error("a dot didn't move"); 
+      await tap(".pgdot"); await wait(900); });
     await step("room picker", async () => { await tap("#feedPick"); await wait(500); await expect("[data-fp]", "rooms to pick"); await closeSheet(); });
     await step("room menu", async () => { await tap("#roomMenu"); await wait(500); await expect("#roomSeats", "the members"); await closeSheet(); });
     await step("bell", async () => { await tap("#bellBtn"); await wait(500); await expect("#noteBody", "the bell's list"); await closeSheet(); });

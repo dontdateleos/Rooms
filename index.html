@@ -414,7 +414,22 @@ button:focus-visible,.linky:focus-visible{outline:3px solid var(--blue);outline-
 .feedrow{width:100%;border:0;background:none;text-align:left;font:inherit;color:inherit;border-radius:14px;padding:10px 8px}
 .feedrow.on{background:var(--cream2)}
 .feedrow .fdot{width:12px;height:12px;border-radius:50%;flex:none}
-.roomline{display:flex;flex-wrap:wrap;align-items:center;gap:2px 12px;margin-top:2px}
+.roomline{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:8px}
+.rl-l{display:flex;flex-wrap:wrap;align-items:center;gap:2px 12px;min-width:0}
+.iconbtn.sm{width:36px;height:36px;margin:0}
+.iconbtn.sm svg{width:18px;height:18px}
+/* the title as a pager */
+.pager{display:flex;align-items:center;gap:10px;margin-top:14px}
+.pgmid{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:9px}
+.pgmid h2{margin:0;max-width:100%;display:flex;justify-content:center}
+.pgarrow{width:38px;height:38px;flex:none;border:0;border-radius:50%;background:var(--cream2);color:var(--ink);display:grid;place-items:center;cursor:pointer}
+.pgarrow:active{transform:scale(.92)}
+.pgarrow svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+.pgdots{display:flex;gap:6px;align-items:center}
+.pgdot{position:relative;height:10px;width:10px;border:0;padding:0;border-radius:999px;background:var(--c);opacity:.4;cursor:pointer;
+  transition:width .32s cubic-bezier(.3,1.3,.5,1),opacity .25s}
+.pgdot::after{content:"";position:absolute;inset:-14px -3px}
+.pgdot.on{width:28px;opacity:1}
 .roomline .here{margin-top:0}
 .roomline .room-streak{font-size:11.5px;font-weight:700;color:var(--mute);background:none;padding:0;margin:0;border-radius:0}
 /* the sections stay in reach however far down the talk you are */
@@ -2536,9 +2551,10 @@ let shelfEdit = false, shelfOff = null, shelfStale = false;
 /* set by the thing that just happened, read once by the next render, then cleared */
 let justDealt = null, justSwept = null;
 const activeRoom = () => rooms.find(r => r.id === P.activeRoom) || rooms[0];
-/* each room wears one of the six pastels. Until somebody picks, it's dealt one from its
-   id, so two rooms are unlikely to start out the same colour */
-const ROOM_COLOURS = ["pink", "butter", "mint", "sky", "lilac", "apricot"];
+/* each room wears one of four pastels — lilac and blue belong to Following and Everyone,
+   so a room never looks like either in the row of dots. Until somebody picks, it's
+   dealt one from its id, so two rooms are unlikely to start out the same colour. */
+const ROOM_COLOURS = ["pink", "butter", "mint", "apricot"];
 const roomColour = R => !R ? "pink" : ROOM_COLOURS.includes(R.colour) ? R.colour
   : ROOM_COLOURS.includes(P.roomColour?.[R.id]) ? P.roomColour[R.id] : ROOM_COLOURS[avHash(R.id) % ROOM_COLOURS.length];
 const isFollowing = id => follows.some(f => f.followee === id);
@@ -3932,12 +3948,18 @@ function weekCard() {
 async function renderDoors() {
   const body = $("#doorsBody"); const R = activeRoom();
   const mem = memories()[0], rev = dueReview();
-  /* the three feeds used to be a row of pills over the room's own rows of pills. Now the
-     page's title says where you are, and tapping it is how you go somewhere else. */
-  const fn = feedNow(), title = fn === "following" ? "Following" : fn === "everyone" ? "Everyone" : R ? R.name : "Your room";
+  /* Your rooms, then Following, then Everyone, as pages you move along: the title says
+     where you are, the arrows (or a swipe across it) move one along, and a dot per place
+     shows how many there are and which you're on. Tapping the title lists them all. */
+  const places = feedPlaces(), at = Math.max(0, places.findIndex(p => p.key === placeNow())), cur = places[at];
+  const nb = d => places[(at + d + places.length) % places.length];
   body.style.setProperty("--room", `var(--${roomColour(R)})`);
-  body.innerHTML = `<div class="pagehead"><h2><button class="feedpick" id="feedPick" aria-haspopup="dialog"><span class="hl" style="background:${fn === "room" ? `var(--${roomColour(R)})` : fn === "following" ? "var(--lilac)" : "var(--sky)"}">${esc(title)}</span>${CHEV}</button></h2>
-      ${fn === "room" && R ? `<button class="iconbtn" id="roomMenu" aria-label="Room options"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button>` : ""}</div>
+  const ARROW = d => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${d}"/></svg>`;
+  body.innerHTML = `<div class="pager" id="pager">
+      ${places.length > 1 ? `<button class="pgarrow" data-go="-1" aria-label="Back to ${esc(nb(-1).name)}">${ARROW("M15 6l-6 6 6 6")}</button>` : ""}
+      <div class="pgmid"><h2><button class="feedpick" id="feedPick" aria-haspopup="dialog" aria-label="${esc(cur.name)} · see everywhere you can go"><span class="hl" style="background:${cur.col}">${esc(cur.name)}</span></button></h2>
+        ${places.length > 1 ? `<div class="pgdots">${places.map(p => `<button class="pgdot ${p === cur ? "on" : ""}" data-place="${esc(p.key)}" aria-label="${esc(p.name)}" aria-current="${p === cur}" style="--c:${p.col}"></button>`).join("")}</div>` : ""}</div>
+      ${places.length > 1 ? `<button class="pgarrow" data-go="1" aria-label="On to ${esc(nb(1).name)}">${ARROW("M9 6l6 6-6 6")}</button>` : ""}</div>
     <div id="feedBody">${skeleton(3)}</div>
     ${weekCard()}${rev ? `<div class="card look" id="revCard"><div class="h"><span>${esc(rev.head)}</span><span class="tag dim">${rev.kind === "year" ? "the year" : "last month"}</span></div>
       <div class="stack"><button class="btn soft" id="revGo">Have a look</button></div></div>` : ""}
@@ -3977,7 +3999,14 @@ async function renderDoors() {
   if (feedTurn && !REDUCED) { const t = $(".feedpick .hl", body);
     if (t) { t.style.setProperty("--fx", feedTurn + "px"); t.classList.add("feedIn"); } }
   $("#feedPick").onclick = () => openFeedPick();
-  const rmb = $("#roomMenu"); if (rmb) rmb.onclick = () => openRoomMenu(R);
+  $$("[data-go]", body).forEach(b => b.onclick = () => { const d = +b.dataset.go; goPlace(nb(d).key, d); });
+  $$("[data-place]", body).forEach(b => b.onclick = () => goPlace(b.dataset.place));
+  /* a swipe across the title does what the arrows do; it has to be clearly sideways, so
+     scrolling the page never flips you into another room by accident */
+  (() => { const pg = $("#pager", body); if (!pg || places.length < 2) return; let x0 = null, y0 = 0;
+    pg.addEventListener("touchstart", e => { if (e.touches.length === 1) { x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; } }, { passive:true });
+    pg.addEventListener("touchend", e => { if (x0 == null) return; const t = e.changedTouches[0], dx = t.clientX - x0, dy = t.clientY - y0; x0 = null;
+      if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) { const d = dx < 0 ? 1 : -1; goPlace(nb(d).key, d); } }, { passive:true }); })();
   /* once a session, on the way in: the room's name, then who is in it, then what they said.
      Never on a redraw — a screen that reassembles every time you come back is a screen that
      never settles. */
@@ -4001,6 +4030,23 @@ async function renderDoors() {
   return renderEveryoneFeed(fb);
 }
 /* where to: each of your rooms, then the two feeds that aren't a room */
+function feedPlaces() {
+  const out = rooms.map(r => ({ key:"room:" + r.id, name:r.name, col:`var(--${roomColour(r)})` }));
+  if (!out.length) out.push({ key:"room:", name:"Your room", col:"var(--pink)" });
+  out.push({ key:"following", name:"Following", col:"var(--lilac)" }, { key:"everyone", name:"Everyone", col:"var(--sky)" });
+  return out; }
+const placeNow = () => { const fn = feedNow(); return fn === "room" ? "room:" + (activeRoom()?.id || "") : fn; };
+/* dir is which way the arrows went, so wrapping from the last place to the first still
+   slides forward rather than jumping back across everything */
+async function goPlace(key, dir) {
+  const places = feedPlaces(), was = places.findIndex(p => p.key === placeNow()), now = places.findIndex(p => p.key === key);
+  if (now < 0 || was === now) return;
+  const [k, id] = key.split(":");
+  if (k === "room" && id) P.activeRoom = id;
+  P.feed = k; P.feedPicked = true; saveP();
+  feedTurn = (dir || (now > was ? 1 : -1)) > 0 ? -26 : 26;
+  if (k === "room") await loadClubs();
+  renderDoors(); }
 function openFeedPick() {
   const fn = feedNow(), R = activeRoom();
   const row = (attr, name, sub, on, col) => `<button class="row feedrow ${on ? "on" : ""}" ${attr}><span class="fdot" style="background:${col}"></span><div class="t"><b>${esc(name)}</b><small>${sub}</small></div>${on ? `<span class="tag dim">here</span>` : ""}</button>`;
@@ -4011,15 +4057,7 @@ function openFeedPick() {
     ${rooms.length < ROOM_LIMIT ? `<div class="stack" style="margin-top:12px;flex-direction:row"><button class="btn soft" id="newRoom">Open a room</button><button class="btn ghost" id="joinRoom">Join with a code</button></div>` : ""}
     <p class="msg" id="roomMsg"></p>`);
   wireRoomButtons();
-  const ORDER = [...rooms.map(r => "room:" + r.id), "following", "everyone"];
-  const here = fn === "room" ? "room:" + R?.id : fn;
-  $$("[data-fp]").forEach(b => b.onclick = async () => { const [k, id] = b.dataset.fp.split(":");
-    const was = ORDER.indexOf(here), now = ORDER.indexOf(b.dataset.fp);
-    if (k === "room" && id) P.activeRoom = id;
-    P.feed = k; P.feedPicked = true; saveP(); closeSheet();
-    feedTurn = now > was ? -26 : now < was ? 26 : 0;
-    if (k === "room") await loadClubs();
-    renderDoors(); }); }
+  $$("[data-fp]").forEach(b => b.onclick = () => { closeSheet(); goPlace(b.dataset.fp); }); }
 /* everything about the room that isn't the room itself: who's in it, the code, the way out */
 function openRoomMenu(R) {
   openSheet(`<h3>${esc(R.name)}</h3>
@@ -4318,7 +4356,8 @@ async function renderRoomFeed(fb, R) {
   const pal = roomPalmares(es), hasYear = !!pal && pal.n >= 6;
   const sec = P.roomSec === "charts" || P.roomSec === "play" || (P.roomSec === "year" && hasYear) ? P.roomSec : "talk";
   const secs = [["talk", "Talk"], ["play", "Play"], ["charts", "Charts"], ...(hasYear ? [["year", "Year"]] : [])];
-  fb.innerHTML = `<div class="roomline"><div class="here" id="hereRow" aria-live="polite"><small>Nobody else in here right now</small></div>${roomStreak(es)}</div>
+  fb.innerHTML = `<div class="roomline"><div class="rl-l"><div class="here" id="hereRow" aria-live="polite"><small>Nobody else in here right now</small></div>${roomStreak(es)}</div>
+      <button class="iconbtn sm" id="roomMenu" aria-label="Room options"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button></div>
       <div class="nowrow" id="roomNow"></div>
       ${R.members.length < 2 ? `<div class="card"><div class="alone"><b>It's just you in here.</b>
         <span>Rooms only does anything with other people in it — agreement, the year, the arguments.
@@ -4361,6 +4400,7 @@ async function renderRoomFeed(fb, R) {
       </div></div>`; })() : ""}
     `;
   endLine($('[data-rsec="talk"]', fb), es, 60);
+  $("#roomMenu", fb).onclick = () => openRoomMenu(R);
   const segEl = $(".roomsecs", fb); glideSeg(segEl, true);
   if (window.ResizeObserver && segEl) new ResizeObserver(() => glideSeg(segEl, true)).observe(segEl);
   $$("[data-rsecbtn]", fb).forEach(b => b.onclick = () => { const k = b.dataset.rsecbtn;

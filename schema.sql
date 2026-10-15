@@ -1251,8 +1251,9 @@ revoke all on function room_transfer_owner(uuid, uuid) from public, anon;
 grant execute on function room_transfer_owner(uuid, uuid) to authenticated;
 
 -- ---------- a room's colour ----------
--- One of the app's six pastels, worn by the room's title and its games so each room
--- feels like its own place. Anyone in the room can change it; the function is the only
+-- One of the app's pastels, worn by the room's title and its games so each room feels
+-- like its own place. (The app offers four; lilac and sky stay allowed here so an older
+-- choice never fails the check.) Anyone in the room can change it; the function is the only
 -- way to, so the value is always one of the six.
 alter table rooms add column if not exists colour text
   check (colour in ('pink','butter','mint','sky','lilac','apricot'));
