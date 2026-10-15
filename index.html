@@ -306,8 +306,8 @@ section.incoming .reveal{opacity:1;transform:none;transition:none}
 section.incoming > div > :first-child{margin-top:0}
 html.tabdrag section.on{will-change:transform,opacity}
 html.tabdrag,html.tabdrag body{overscroll-behavior-x:none}
-html.swiped section.on > div > *,html.swiped section.leaving{animation:none!important}
-html.swiped section.leaving{display:none}
+section.arrived > div > *{animation:none!important}
+section.arrived .reveal{opacity:1;transform:none;transition:none}
 /* the outgoing screen used to just vanish the instant you tapped the next tab, while
    the incoming one eased in — appear-over-void rather than a handoff. It overlays in
    place (main is its positioning context) just long enough to leave in the direction
@@ -3455,7 +3455,7 @@ function paintLib(n, instant) { const bar = $("#libBar"); if (!bar) return;
   $$("[data-lib]", bar).forEach(b => { const on = b.dataset.lib === n;
     b.classList.toggle("on", on); b.setAttribute("aria-selected", on ? "true" : "false"); });
   glideSeg($(".seg", bar), instant); }
-function switchTab(n) { shelfEdit = false;
+function switchTab(n, how = {}) { shelfEdit = false;
   if (n === "library") n = LIB.includes(P.libSide) ? P.libSide : "shelf";
   if (LIB.includes(n) && P.libSide !== n) { P.libSide = n; saveP(); }
   if (n !== "doors") leaveRoomChannel();
@@ -3468,7 +3468,11 @@ function switchTab(n) { shelfEdit = false;
   $("#meBtn")?.classList.toggle("on", n === "taste");
   /* the outgoing screen used to just disappear while the incoming one eased in; now it
      leaves in the direction you came from instead, so the two read as one handoff */
-  const outgoing = was !== now && !REDUCED ? $$("main section").find(s => s.classList.contains("on")) : null;
+  const outgoing = was !== now && !REDUCED && !how.swiped ? $$("main section").find(s => s.classList.contains("on")) : null;
+  /* a swiped-in page has already arrived under your finger, so it doesn't make an entrance
+     as well; it stays marked until the next change of tab, since a render it does on the way
+     in (or one landing a moment later) would otherwise replay the entrance and jump */
+  $$("main section").forEach(s => s.classList.toggle("arrived", !!how.swiped && s.id === "tab-" + n));
   $$("main section").forEach(s => { const on = s.id === "tab-"+n;
     if (s === outgoing && !on) { s.classList.remove("on"); s.classList.add("leaving");
       setTimeout(() => s.classList.remove("leaving"), 230); }
@@ -3556,8 +3560,7 @@ let tabDrag = false;
       movePill();
       const d = s; setTimeout(() => { s = d; tidy();
         /* the page has already arrived, so the tab change is told not to animate it again */
-        document.documentElement.classList.add("swiped"); switchTab(d.to);
-        requestAnimationFrame(() => requestAnimationFrame(() => document.documentElement.classList.remove("swiped"))); s = null; }, ms); }
+        switchTab(d.to, { swiped:true }); s = null; }, ms); }
     else { s.here.style.transform = ""; s.here.style.opacity = "";
       if (s.lib) s.lib.style.transform = ""; if (s.there) s.there.style.transform = `translateX(${s.dir * w}px)`;
       movePill(); const d = s; setTimeout(() => { s = d; tidy(); s = null; }, ms); } }
