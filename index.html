@@ -3951,15 +3951,9 @@ async function renderDoors() {
   /* Your rooms, then Following, then Everyone, as pages you move along: the title says
      where you are, the arrows (or a swipe across it) move one along, and a dot per place
      shows how many there are and which you're on. Tapping the title lists them all. */
-  const places = feedPlaces(), at = Math.max(0, places.findIndex(p => p.key === placeNow())), cur = places[at];
-  const nb = d => places[(at + d + places.length) % places.length];
+  const places = feedPlaces(), cur = places.find(p => p.key === placeNow()) || places[0];
   body.style.setProperty("--room", `var(--${roomColour(R)})`);
-  const ARROW = d => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${d}"/></svg>`;
-  body.innerHTML = `<div class="pager" id="pager">
-      ${places.length > 1 ? `<button class="pgarrow" data-go="-1" aria-label="Back to ${esc(nb(-1).name)}">${ARROW("M15 6l-6 6 6 6")}</button>` : ""}
-      <div class="pgmid"><h2><button class="feedpick" id="feedPick" aria-haspopup="dialog" aria-label="${esc(cur.name)} · see everywhere you can go"><span class="hl" style="background:${cur.col}">${esc(cur.name)}</span></button></h2>
-        ${places.length > 1 ? `<div class="pgdots">${places.map(p => `<button class="pgdot ${p === cur ? "on" : ""}" data-place="${esc(p.key)}" aria-label="${esc(p.name)}" aria-current="${p === cur}" style="--c:${p.col}"></button>`).join("")}</div>` : ""}</div>
-      ${places.length > 1 ? `<button class="pgarrow" data-go="1" aria-label="On to ${esc(nb(1).name)}">${ARROW("M9 6l6 6-6 6")}</button>` : ""}</div>
+  body.innerHTML = `${pagerHTML(places, cur.key, { id:"pager", titleId:"feedPick", titleHint:"see everywhere you can go" })}
     <div id="feedBody">${skeleton(3)}</div>
     ${weekCard()}${rev ? `<div class="card look" id="revCard"><div class="h"><span>${esc(rev.head)}</span><span class="tag dim">${rev.kind === "year" ? "the year" : "last month"}</span></div>
       <div class="stack"><button class="btn soft" id="revGo">Have a look</button></div></div>` : ""}
@@ -3999,14 +3993,7 @@ async function renderDoors() {
   if (feedTurn && !REDUCED) { const t = $(".feedpick .hl", body);
     if (t) { t.style.setProperty("--fx", feedTurn + "px"); t.classList.add("feedIn"); } }
   $("#feedPick").onclick = () => openFeedPick();
-  $$("[data-go]", body).forEach(b => b.onclick = () => { const d = +b.dataset.go; goPlace(nb(d).key, d); });
-  $$("[data-place]", body).forEach(b => b.onclick = () => goPlace(b.dataset.place));
-  /* a swipe across the title does what the arrows do; it has to be clearly sideways, so
-     scrolling the page never flips you into another room by accident */
-  (() => { const pg = $("#pager", body); if (!pg || places.length < 2) return; let x0 = null, y0 = 0;
-    pg.addEventListener("touchstart", e => { if (e.touches.length === 1) { x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; } }, { passive:true });
-    pg.addEventListener("touchend", e => { if (x0 == null) return; const t = e.changedTouches[0], dx = t.clientX - x0, dy = t.clientY - y0; x0 = null;
-      if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) { const d = dx < 0 ? 1 : -1; goPlace(nb(d).key, d); } }, { passive:true }); })();
+  wirePager($("#pager", body), places, cur.key, goPlace);
   /* once a session, on the way in: the room's name, then who is in it, then what they said.
      Never on a redraw — a screen that reassembles every time you come back is a screen that
      never settles. */
@@ -4030,6 +4017,40 @@ async function renderDoors() {
   return renderEveryoneFeed(fb);
 }
 /* where to: each of your rooms, then the two feeds that aren't a room */
+/* ---------- the pager ----------
+   Wherever a whole page is one of a few places — a room, Following, Everyone; a medium
+   in the archive; the season or your clubs — it's the same control: the place's name as
+   the title, arrows either side, a swipe across it, and a dot per place in that place's
+   colour. One look to learn, and the dots say how many there are and where you are. */
+function pagerHTML(places, curKey, o = {}) {
+  const at = Math.max(0, places.findIndex(p => p.key === curKey)), cur = places[at];
+  const nb = d => places[(at + d + places.length) % places.length], many = places.length > 1;
+  const ARROW = d => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${d}"/></svg>`;
+  const name = `<span class="hl" style="background:${cur.col}">${esc(cur.name)}</span>`;
+  return `<div class="pager"${o.id ? ` id="${o.id}"` : ""}>
+      ${many ? `<button class="pgarrow" data-go="-1" aria-label="Back to ${esc(nb(-1).name)}">${ARROW("M15 6l-6 6 6 6")}</button>` : ""}
+      <div class="pgmid"><h2>${o.titleId ? `<button class="feedpick" id="${o.titleId}" aria-haspopup="dialog" aria-label="${esc(cur.name)} · ${esc(o.titleHint || "see them all")}">${name}</button>` : `<span class="feedpick">${name}</span>`}</h2>
+        ${many ? `<div class="pgdots">${places.map(p => `<button class="pgdot ${p === cur ? "on" : ""}" data-place="${esc(p.key)}" aria-label="${esc(p.name)}" aria-current="${p === cur}" style="--c:${p.col}"></button>`).join("")}</div>` : ""}</div>
+      ${many ? `<button class="pgarrow" data-go="1" aria-label="On to ${esc(nb(1).name)}">${ARROW("M9 6l6 6-6 6")}</button>` : ""}</div>`; }
+/* go(key, dir): dir is +1 or -1, which way you moved, so the new title can arrive from that side */
+function wirePager(pg, places, curKey, go) {
+  if (!pg || places.length < 2) return;
+  const at = Math.max(0, places.findIndex(p => p.key === curKey));
+  const step = d => go(places[(at + d + places.length) % places.length].key, d);
+  $$("[data-go]", pg).forEach(b => b.onclick = () => step(+b.dataset.go));
+  $$("[data-place]", pg).forEach(b => b.onclick = () => { const i = places.findIndex(p => p.key === b.dataset.place);
+    if (i !== at) go(b.dataset.place, i > at ? 1 : -1); });
+  /* a swipe has to be clearly sideways, so scrolling the page never flips it by accident */
+  let x0 = null, y0 = 0;
+  pg.addEventListener("touchstart", e => { if (e.touches.length === 1) { x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; } }, { passive:true });
+  pg.addEventListener("touchend", e => { if (x0 == null) return; const t = e.changedTouches[0], dx = t.clientX - x0, dy = t.clientY - y0; x0 = null;
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) step(dx < 0 ? 1 : -1); }, { passive:true }); }
+/* after a move: the new title, and whatever the page swapped in, arrive from the side you moved towards */
+function pagerArrive(dir, ...els) {
+  if (!dir || REDUCED) return;
+  for (const el of els) { if (!el) continue; el.style.setProperty("--fx", (dir > 0 ? -26 : 26) + "px");
+    el.classList.remove("feedIn"); void el.offsetWidth; el.classList.add("feedIn");
+    setTimeout(() => el.classList.remove("feedIn"), 420); } }
 function feedPlaces() {
   const out = rooms.map(r => ({ key:"room:" + r.id, name:r.name, col:`var(--${roomColour(r)})` }));
   if (!out.length) out.push({ key:"room:", name:"Your room", col:"var(--pink)" });
@@ -4666,23 +4687,24 @@ const LENS = `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11
 function renderCabinet() {
   const body = $("#archiveBody"); if (!body) return;
   const counts = cabinetCounts(), kinds = CAB_ORDER.filter(k => counts[k]);
-  body.innerHTML = `<div style="display:flex;align-items:center;gap:10px">
-      <h2 style="margin:0">Your <span class="hl" style="background:var(--mint)">archive</span></h2>
-      ${me ? `<span class="av cabmark">${avSVG(avFor(me))}</span>` : ""}
-    </div>
+  if (P.cabKind && !counts[P.cabKind]) P.cabKind = "";
+  /* everything first, then each medium you've finished something in, each in its colour */
+  const places = [{ key:"", name:"Your archive", col:"var(--sky)" }, ...(kinds.length > 1 ? kinds.map(k => ({ key:k, name:K(k).plural, col:K(k).colour })) : [])];
+  body.innerHTML = `${pagerHTML(places, P.cabKind || "", { id:"cabPager" })}
     ${logCount() ? `<div class="cabbar">
         <p class="sub" id="cabSub"></p>
         <button class="cabsort" id="cabSortBtn" aria-label="Sort the archive">${CAB_SORTS[cabSort()]}${CHEV}</button>
         <button class="cabfind ${cabQ ? "on" : ""}" id="cabFindBtn" aria-label="Search the archive" aria-expanded="${cabQ ? "true" : "false"}">${LENS}</button>
       </div>
-      ${kinds.length > 1 ? `<div class="cabkinds">${[["", "All", Object.values(counts).reduce((a, b) => a + b, 0)], ...kinds.map(k => [k, K(k).plural, counts[k]])].map(([k, l, c]) =>
-          `<button class="chip ${(P.cabKind||"") === k ? "on" : ""}" data-ck="${k}">${l} <u>${c}</u></button>`).join("")}</div>` : ""}
       <input id="cabQ" class="searchlog" type="search" placeholder="Find something in here" autocomplete="off" value="${esc(cabQ)}"${cabQ ? "" : " hidden"}>`
     : `<p class="sub" id="cabSub"></p>`}
     <div id="cabTrays"></div>
     ${logCount() ? `<div class="shelfbar"><button class="btn quiet" id="cabList">See it as a list \u00b7 ${logCount()} logged</button></div>` : ""}`;
   paintTrays(); wireCabinet();
+  wirePager($("#cabPager", body), places, P.cabKind || "", (k, d) => { P.cabKind = k; saveP(); cabTurn = d; renderCabinet(); });
+  pagerArrive(cabTurn, $("#cabPager .hl", body), $("#cabTrays", body)); cabTurn = 0;
 }
+let cabTurn = 0;
 /* only the trays are redrawn as you type, because redrawing the box you are typing in
    takes the cursor out of it */
 /* ranked is the one sort with a real, standing order \u2014 vertical, so there's a clear
@@ -4829,10 +4851,6 @@ function paintTrays() {
   wireTokens();
 }
 function wireCabinet() {
-  const kc = $(".cabkinds"); if (kc) { const edge = () => kc.classList.toggle("more", kc.scrollLeft + kc.clientWidth < kc.scrollWidth - 2);
-    kc.onscroll = edge; requestAnimationFrame(edge); }
-  $$("[data-ck]").forEach(b => b.onclick = () => { P.cabKind = b.dataset.ck; saveP();
-    $$("[data-ck]").forEach(x => x.classList.toggle("on", x === b)); paintTrays(); });
   const sb2 = $("#cabSortBtn"); if (sb2) sb2.onclick = async () => {
     const v = await openAsk(`<h3>Sort the archive</h3><div class="stack">${Object.entries(CAB_SORTS).map(([k, l]) =>
       `<button class="btn ${cabSort() === k ? "" : "quiet"}" data-sortpick="${k}">${l}</button>`).join("")}</div>
@@ -7403,15 +7421,18 @@ async function seasonRank(season = HALLOWEEN_2026) {
     return { people:scores.length, inTop:!!mine && mine.n >= 3 && mine.n >= cut, mine:mine?.n || 0, cut };
   } catch { return { people:0, inTop:false }; }
 }
+let seasonTurn = 0;
 async function renderClubs() {
   const body = $("#clubsBody");
   if (!["season", "clubs"].includes(P.clubTab)) P.clubTab = "season";
   const season = HALLOWEEN_2026, phase = seasonPhase(season);
-  body.innerHTML = `<h2><span class="hl" style="background:var(--lilac)">Seasons</span></h2>
-    <p class="sub">This season's challenges, alongside the small clubs you make with friends.</p>
-    <div class="seg"><button data-season-tab="season" class="${P.clubTab === "season" ? "on" : ""}">Halloween</button><button data-season-tab="clubs" class="${P.clubTab === "clubs" ? "on" : ""}">Friend clubs${clubs.length + openClubs.length ? " · " + (clubs.length + openClubs.length) : ""}</button></div>
+  const nClubs = clubs.length + openClubs.length;
+  const places = [{ key:"season", name:"Halloween", col:"var(--apricot)" }, { key:"clubs", name:"Friend clubs", col:"var(--lilac)" }];
+  body.innerHTML = `${pagerHTML(places, P.clubTab, { id:"seasonPager" })}
+    <p class="sub" style="text-align:center">${P.clubTab === "season" ? "This season's challenges, open to everyone." : nClubs ? `${nClubs} ${nClubs === 1 ? "club" : "clubs"} — the small ones you run with friends.` : "The small clubs you run with friends."}</p>
     <div id="seasonContent"></div>`;
-  $$('[data-season-tab]', body).forEach(b => b.onclick = () => { P.clubTab = b.dataset.seasonTab; saveP(); renderClubs(); });
+  wirePager($("#seasonPager", body), places, P.clubTab, (k, d) => { P.clubTab = k; saveP(); seasonTurn = d; renderClubs(); });
+  pagerArrive(seasonTurn, $("#seasonPager .hl", body), $("#seasonContent", body)); seasonTurn = 0;
   const out = $("#seasonContent");
   if (P.clubTab === "clubs") { await renderFriendClubs(out); return; }
   const cards = season.challenges.map(c => { const entries = seasonEntries(c), n = entries.length, medal = seasonMedal(n), pickCount = SEASON_PICKS.filter(([kind]) => kind === c.kind).length;
