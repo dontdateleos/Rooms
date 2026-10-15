@@ -3525,10 +3525,6 @@ let tabDrag = false;
       /* sit it at the height you'll land on, so it doesn't jump when it takes over */
       there.style.top = (here.offsetTop + scrollY - (tabScroll[to] || 0)) + "px"; }
     if (there && !there.firstElementChild?.children.length) there.firstElementChild.innerHTML = skeleton(3);
-    /* the pages swing like cards slid off a pile, about a point well below the screen,
-       so the lean is a few degrees at the top and almost nothing at your thumb */
-    const pivot = el => `50% ${innerHeight * 1.5 - el.getBoundingClientRect().top}px`;
-    here.style.transformOrigin = pivot(here); if (there) there.style.transformOrigin = pivot(there);
     /* the blocks you can see on each page, which trail behind your finger like jelly */
     const kids = sec => [...(sec?.firstElementChild?.children || [])].filter(k => { const r = k.getBoundingClientRect();
       return r.height && r.bottom > 0 && r.top < innerHeight; }).slice(0, 5);
@@ -3536,13 +3532,12 @@ let tabDrag = false;
     s.pillFrom = $("nav button[data-tab].on"); s.pillTo = to && $(`nav button[data-tab="${navOf(to)}"]`);
     $("#navPill")?.classList.add("tracking");
     document.documentElement.classList.add("tabdrag"); tabDrag = true; }
-  const TILT = 6;
   function paint(x) { const w = W(), p = Math.min(1, Math.abs(x) / w);
     const tx = s.there ? x : band(x, w);
-    s.here.style.transform = `translateX(${tx}px) rotate(${tx / w * TILT}deg)`;
+    s.here.style.transform = `translateX(${tx}px)`;
     s.here.style.opacity = String(1 - p * .25);
     if (s.lib) s.lib.style.transform = `translateX(${tx}px)`;
-    if (s.there) s.there.style.transform = `translateX(${tx + s.dir * w}px) rotate(${s.dir * TILT * (1 - p)}deg)`;
+    if (s.there) s.there.style.transform = `translateX(${tx + s.dir * w}px)`;
     /* each block lags a little more than the one above it; translate, not transform, so it
        never fights the entrance animation that owns their transform */
     s.kids.forEach(list => list.forEach((k, j) => { k.style.transition = "none";
@@ -3574,9 +3569,9 @@ let tabDrag = false;
     $("#navPill")?.classList.remove("tracking");
     if (go) { const end = -s.dir * w;
       s.here.style.transition = out; if (s.lib) s.lib.style.transition = out; s.there.style.transition = inn;
-      s.here.style.transform = `translateX(${end}px) rotate(${-s.dir * TILT}deg)`; s.here.style.opacity = ".6";
+      s.here.style.transform = `translateX(${end}px)`; s.here.style.opacity = ".6";
       if (s.lib) s.lib.style.transform = `translateX(${end}px)`;
-      s.there.style.transform = "translateX(0) rotate(0deg)";
+      s.there.style.transform = "translateX(0)";
       settleKids(s.kids[1]);
       if (navigator.vibrate) navigator.vibrate(6);
       movePill(); if (s.pillTo !== s.pillFrom) wobblePill();
@@ -3585,7 +3580,7 @@ let tabDrag = false;
         switchTab(d.to, { swiped:true }); s = null; }, Math.max(ms + 360, 700)); }
     else { [s.here, s.lib, s.there].forEach(el => el && (el.style.transition = inn));
       s.here.style.transform = ""; s.here.style.opacity = "";
-      if (s.lib) s.lib.style.transform = ""; if (s.there) s.there.style.transform = `translateX(${s.dir * w}px) rotate(${s.dir * TILT}deg)`;
+      if (s.lib) s.lib.style.transform = ""; if (s.there) s.there.style.transform = `translateX(${s.dir * w}px)`;
       settleKids(s.kids[0]);
       movePill(); $("#navPill") && ($("#navPill").style.transform = "");
       const d = s; setTimeout(() => { s = d; tidy(); s = null; }, Math.max(ms + 360, 700)); } }
