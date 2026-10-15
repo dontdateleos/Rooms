@@ -436,7 +436,7 @@ button:focus-visible,.linky:focus-visible{outline:3px solid var(--blue);outline-
 .iconbtn.sm{width:36px;height:36px;margin:0}
 .iconbtn.sm svg{width:18px;height:18px}
 /* the title as a pager */
-.pager{display:flex;align-items:center;gap:10px;margin-top:14px}
+.pager{display:flex;align-items:center;gap:10px;margin-top:14px;touch-action:pan-y;-webkit-user-select:none;user-select:none}
 .pgmid{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:9px}
 .pgmid h2{margin:0;max-width:100%;display:flex;justify-content:center}
 .pgarrow{width:38px;height:38px;flex:none;border:0;border-radius:50%;background:var(--cream2);color:var(--ink);display:grid;place-items:center;cursor:pointer}
@@ -3678,6 +3678,7 @@ async function pullRefresh() {
   const off = () => { const b = chip(); b.classList.remove("on","ready","going"); b.style.removeProperty("--p"); };
   addEventListener("touchstart", e => {
     if (e.touches.length !== 1 || pulling) return;
+    if (e.target.closest?.(".pager")) return;           /* that's a swipe between places, not a pull */
     if ($("#sheet")?.classList.contains("on")) return;
     if (window.scrollY > 0 || !me) return;
     y0 = e.touches[0].clientY; dist = 0; live = false;
@@ -4293,11 +4294,26 @@ function wirePager(pg, places, curKey, go) {
   $$("[data-go]", pg).forEach(b => b.onclick = () => step(+b.dataset.go));
   $$("[data-place]", pg).forEach(b => b.onclick = () => { const i = places.findIndex(p => p.key === b.dataset.place);
     if (i !== at) { leave(); go(b.dataset.place, i > at ? 1 : -1); } });
-  /* a swipe has to be clearly sideways, so scrolling the page never flips it by accident */
-  let x0 = null, y0 = 0;
-  pg.addEventListener("touchstart", e => { if (e.touches.length === 1) { x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; } }, { passive:true });
-  pg.addEventListener("touchend", e => { if (x0 == null) return; const t = e.changedTouches[0], dx = t.clientX - x0, dy = t.clientY - y0; x0 = null;
-    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) step(dx < 0 ? 1 : -1); }, { passive:true }); }
+  /* The swipe. The first few pixels decide what it is: mostly sideways and it's ours —
+     the title follows the finger, and the browser is told not to treat it as a scroll
+     (on an iPhone it otherwise cancels a not-quite-level swipe halfway through, which
+     felt like the swipe getting stuck). Mostly up or down and it's left as a scroll. */
+  let x0 = null, y0 = 0, dx = 0, side = null;
+  const hl = () => $(".hl", pg);
+  const settle = () => { const h = hl(); if (!h || !h.style.transform) return;
+    h.animate([{ transform:h.style.transform, opacity:h.style.opacity || 1 }, { transform:"none", opacity:1 }], { duration:260, easing:"cubic-bezier(.2,1.3,.4,1)" });
+    h.style.transform = ""; h.style.opacity = ""; };
+  pg.addEventListener("touchstart", e => { if (e.touches.length !== 1) { x0 = null; return; }
+    x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; dx = 0; side = null; }, { passive:true });
+  pg.addEventListener("touchmove", e => { if (x0 == null) return;
+    const t = e.touches[0]; dx = t.clientX - x0; const dy = t.clientY - y0;
+    if (side === null && Math.max(Math.abs(dx), Math.abs(dy)) > 8) side = Math.abs(dx) > Math.abs(dy);
+    if (!side) return;
+    if (e.cancelable) e.preventDefault();
+    const h = hl(); if (h && !REDUCED) { h.style.transform = `translateX(${dx * .4}px) rotate(${dx * .02}deg)`; h.style.opacity = String(1 - Math.min(.45, Math.abs(dx) / 320)); } }, { passive:false });
+  pg.addEventListener("touchend", () => { if (x0 == null) return; x0 = null;
+    if (side && Math.abs(dx) > 40) step(dx < 0 ? 1 : -1); else settle(); side = null; }, { passive:true });
+  pg.addEventListener("touchcancel", () => { x0 = null; side = null; settle(); }, { passive:true }); }
 /* After a move. The mark looks before it goes: its eyes slide towards where it's headed
    and it settles for a beat, then it stretches out that way like taffy, snaps across,
    turns into the new place's mark as it lands and wobbles to a stop. The places either
@@ -4355,8 +4371,9 @@ async function goPlace(key, dir) {
   if (k === "room" && id) P.activeRoom = id;
   P.feed = k; P.feedPicked = true; saveP();
   feedTurn = (dir || (now > was ? 1 : -1)) > 0 ? -26 : 26;
-  if (k === "room") await loadClubs();
-  renderDoors(); }
+  /* the page moves straight away; the room's clubs (which only Seasons shows) catch up behind it */
+  renderDoors();
+  if (k === "room") loadClubs().catch(() => {}); }
 function openFeedPick() {
   const fn = feedNow(), R = activeRoom();
   const row = (attr, name, sub, on, col) => `<button class="row feedrow ${on ? "on" : ""}" ${attr}><span class="fdot" style="background:${col}"></span><div class="t"><b>${esc(name)}</b><small>${sub}</small></div>${on ? `<span class="tag dim">here</span>` : ""}</button>`;
