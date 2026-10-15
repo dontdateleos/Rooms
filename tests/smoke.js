@@ -66,10 +66,21 @@ const BASE = (process.env.BASE || "http://127.0.0.1:8934").replace(/\/$/, "");
     await step("tonight", async () => { await tap("nav button", "Rooms"); await wait(1200); await expect("#tonight", "the tonight card");
       await tap("#tonightSpin"); await wait(700); if (!(await page.$("#sheet.on"))) throw new Error("Can't decide? didn't open the wheel"); await closeSheet(); });
     await step("swipe between tabs", async () => {
-      const swipe = async dx => { await page.evaluate(dx => { const m = document.querySelector("main"), y = 600;
-        const t = (x) => new Touch({ identifier:1, target:m, clientX:x, clientY:y });
-        m.dispatchEvent(new TouchEvent("touchstart", { touches:[t(200)], changedTouches:[t(200)], bubbles:true }));
-        m.dispatchEvent(new TouchEvent("touchend", { touches:[], changedTouches:[t(200 + dx)], bubbles:true })); }, dx); await wait(800); };
+      /* a real drag: down, a run of moves, up — the page follows the finger, so a
+         start and an end with nothing between would never get going */
+      const swipe = async dx => { await page.evaluate(async dx => { const m = document.querySelector("main"), y = 600;
+        const t = x => new Touch({ identifier:1, target:m, clientX:x, clientY:y });
+        const fire = (type, x) => m.dispatchEvent(new TouchEvent(type, { touches:type === "touchend" ? [] : [t(x)], changedTouches:[t(x)], bubbles:true, cancelable:true }));
+        fire("touchstart", 200);
+        for (let i = 1; i <= 8; i++) { fire("touchmove", 200 + dx * i / 8); await new Promise(r => setTimeout(r, 16)); }
+        fire("touchend", 200 + dx); }, dx); await wait(900); };
+      /* a short drag settles back where it was */
+      await page.evaluate(async () => { const m = document.querySelector("main"), y = 600;
+        const t = x => new Touch({ identifier:1, target:m, clientX:x, clientY:y });
+        const fire = (type, x) => m.dispatchEvent(new TouchEvent(type, { touches:type === "touchend" ? [] : [t(x)], changedTouches:[t(x)], bubbles:true, cancelable:true }));
+        fire("touchstart", 200); for (let i = 1; i <= 6; i++) { fire("touchmove", 200 - i * 8); await new Promise(r => setTimeout(r, 120)); } fire("touchend", 152); });
+      await wait(700); await expect("#tab-doors.on", "Rooms still, after a short drag");
+      if (await page.$("section.incoming")) throw new Error("a peeking tab was left behind");
       await swipe(-160); await expect("#tab-clubs.on", "Seasons after a swipe left");
       await swipe(160); await expect("#tab-doors.on", "Rooms after a swipe back"); });
     await step("hold library to spin", async () => { await tap("nav button", "Seasons"); await wait(600);

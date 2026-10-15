@@ -65,7 +65,7 @@ The service-role key must never go near this repo.
 
 Four tabs — **Rooms** · **Seasons** · **Library** · **You** — with a floating **+** for logging.
 Library is the shelf and the archive as two sides of one tab, with a toggle at the top; it
-opens on whichever side you left it. Swipe sideways anywhere on a page to move one tab along.
+opens on whichever side you left it. Drag sideways anywhere on a page and it comes with your finger, the next tab sliding in beside it; let go past a third of the way, or flick, and it carries on.
 Hold **Library** to spin the shelf; hold **Rooms** for the list of everywhere to go.
 The Rooms tab opens with **Tonight**: what you're on, the next thing on your shelf, the
 season if one is running, and the wheel. Tap any title for its work page — log it, shelve

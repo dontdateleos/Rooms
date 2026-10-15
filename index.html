@@ -299,6 +299,15 @@ html,body,header,nav{transition:background-color 90s linear,border-color 90s lin
   font-family:var(--body);font-weight:700;font-size:12px;color:var(--mute);cursor:pointer;padding:4px}
 main{padding:8px 0 24px;position:relative}
 section{display:none}section.on{display:block}
+/* a tab being dragged in from the side: drawn as it was left, laid over the page */
+section.incoming{display:block;position:absolute;left:0;right:0;pointer-events:none;will-change:transform}
+section.incoming .reveal{opacity:1;transform:none;transition:none}
+/* in the flow its first margin collapses away; lifted out of it, it wouldn't, and the page would land 14px lower than it peeked */
+section.incoming > div > :first-child{margin-top:0}
+html.tabdrag section.on{will-change:transform,opacity}
+html.tabdrag,html.tabdrag body{overscroll-behavior-x:none}
+html.swiped section.on > div > *,html.swiped section.leaving{animation:none!important}
+html.swiped section.leaving{display:none}
 /* the outgoing screen used to just vanish the instant you tapped the next tab, while
    the incoming one eased in — appear-over-void rather than a handoff. It overlays in
    place (main is its positioning context) just long enough to leave in the direction
@@ -3480,25 +3489,102 @@ $$("#libBar [data-lib]").forEach(b => b.onclick = () => { if (currentTab() !== b
 /* Holding a tab does the thing you'd go there to do: hold Library and the shelf is dealt
    onto the wheel, hold Rooms and you get the list of everywhere to go. A hold that fires
    eats the tap that follows it, so letting go doesn't also switch tabs. */
-/* A sideways swipe anywhere on a page moves one tab along, in the bar's order with
-   Library's two sides as two stops. It stands aside for anything that already owns a
-   sideways drag — a pager, a row that scrolls, a slider, the shelf while you arrange
-   it, anything you type in — and it has to be clearly sideways and quick, so a page
-   scroll or a slow drag never turns into a tab change. */
-(() => { const main = $("main"); if (!main) return; let x0 = null, y0 = 0, t0 = 0;
+/* ---------- swiping between tabs ----------
+   The page is held, not flicked: once a drag is clearly sideways the screen you're on
+   comes with your finger and the next one slides in from the edge beside it, showing
+   what it looked like when you left it. The bar's pill travels the same distance under
+   the tabs, so the bar and the page always agree on where you are. Let go past a third
+   of the way, or with a quick flick, and it carries on; otherwise it settles back. Past
+   either end there's nothing to reveal, so the page only gives a little and springs home.
+   It stands aside for anything that already owns a sideways drag — a pager, a row that
+   scrolls, a slider, the shelf while you arrange it, anything you type in. */
+let tabDrag = false;
+(() => { const main = $("main"); if (!main) return;
   const owns = el => { for (let n = el; n && n !== main; n = n.parentElement) {
-    if (n.matches?.("input,textarea,select,[contenteditable],.pager,[id$='Pager'],#pager,.wheelwrap,.grid.editing,.rate")) return true;
+    if (n.matches?.("input,textarea,select,[contenteditable],.pager,.wheelwrap,.grid.editing,.rate,.seg")) return true;
     if (n.scrollWidth > n.clientWidth + 2 && /auto|scroll/.test(getComputedStyle(n).overflowX)) return true; }
     return false; };
-  main.addEventListener("touchstart", e => { x0 = null;
+  const EASE = "cubic-bezier(.22,1,.36,1)";           /* fast out, long soft landing */
+  let s = null;                                        /* the drag in progress */
+  const W = () => main.clientWidth || innerWidth;
+  const band = (x, w) => { const m = w * .16; return m * (1 - 1 / (Math.abs(x) / m * .6 + 1)) * Math.sign(x); };
+  function begin(dir) {
+    const cur = currentTab(), at = TAB_ORDER.indexOf(cur), to = TAB_ORDER[at + dir] || null;
+    const here = $("#tab-" + cur), there = to && $("#tab-" + to);
+    /* the library's toggle belongs to the library: it rides with the page when you leave
+       it, and stays put when you're only crossing from one side of the library to the other */
+    const lib = $("#libBar"), libRides = !lib.hidden && !(LIB.includes(cur) && LIB.includes(to));
+    s.cur = cur; s.to = to; s.dir = dir; s.here = here; s.there = there; s.lib = libRides ? lib : null;
+    if (there) { there.classList.add("incoming");
+      /* sit it at the height you'll land on, so it doesn't jump when it takes over */
+      there.style.top = (here.offsetTop + scrollY - (tabScroll[to] || 0)) + "px"; }
+    /* shrink about the middle of the screen, not the middle of a page that may be
+       thousands of pixels tall, or the top of it drops away from your finger */
+    here.style.transformOrigin = `50% ${innerHeight / 2 - here.getBoundingClientRect().top}px`;
+    if (there) {
+      if (!there.firstElementChild?.children.length) there.firstElementChild.innerHTML = skeleton(3); }
+    s.pillFrom = $("nav button[data-tab].on"); s.pillTo = to && $(`nav button[data-tab="${navOf(to)}"]`);
+    $("#navPill")?.classList.add("tracking");
+    document.documentElement.classList.add("tabdrag"); tabDrag = true; }
+  function paint(x) { const w = W(), p = Math.min(1, Math.abs(x) / w);
+    const tx = s.there ? x : band(x, w);
+    s.here.style.transform = `translateX(${tx}px) scale(${1 - p * .04})`;
+    s.here.style.opacity = String(1 - p * .35);
+    if (s.lib) s.lib.style.transform = `translateX(${tx}px)`;
+    if (s.there) s.there.style.transform = `translateX(${tx + s.dir * w}px)`;
+    const pill = $("#navPill");
+    if (pill && s.pillFrom && s.pillTo && s.pillTo !== s.pillFrom) {
+      const a = s.pillFrom, b = s.pillTo, q = Math.min(1, Math.abs(tx) / w);
+      pill.style.left = (a.offsetLeft + (b.offsetLeft - a.offsetLeft) * q) + "px";
+      pill.style.width = (a.offsetWidth + (b.offsetWidth - a.offsetWidth) * q) + "px"; } }
+  function tidy() { [s.here, s.there, s.lib].forEach(el => { if (!el) return;
+      el.style.transition = el.style.transform = el.style.opacity = el.style.transformOrigin = ""; });
+    if (s.there) { s.there.classList.remove("incoming"); s.there.style.top = ""; }
+    $("#navPill")?.classList.remove("tracking");
+    document.documentElement.classList.remove("tabdrag"); tabDrag = false; }
+  function release(x, v) { const w = W();
+    const go = s.there && (Math.abs(x) > w * .33 || (Math.abs(v) > .45 && Math.sign(v) === Math.sign(x)));
+    const ms = Math.round(Math.max(170, Math.min(340, (go ? w - Math.abs(x) : Math.abs(x)) / Math.max(.9, Math.abs(v)))));
+    const tr = `transform ${ms}ms ${EASE}, opacity ${ms}ms ${EASE}`;
+    [s.here, s.there, s.lib].forEach(el => el && (el.style.transition = tr));
+    $("#navPill")?.classList.remove("tracking");
+    if (go) { const end = -s.dir * w;
+      s.here.style.transform = `translateX(${end}px) scale(.96)`; s.here.style.opacity = ".6";
+      if (s.lib) s.lib.style.transform = `translateX(${end}px)`;
+      s.there.style.transform = "translateX(0)";
+      if (navigator.vibrate) navigator.vibrate(6);
+      movePill();
+      const d = s; setTimeout(() => { s = d; tidy();
+        /* the page has already arrived, so the tab change is told not to animate it again */
+        document.documentElement.classList.add("swiped"); switchTab(d.to);
+        requestAnimationFrame(() => requestAnimationFrame(() => document.documentElement.classList.remove("swiped"))); s = null; }, ms); }
+    else { s.here.style.transform = ""; s.here.style.opacity = "";
+      if (s.lib) s.lib.style.transform = ""; if (s.there) s.there.style.transform = `translateX(${s.dir * w}px)`;
+      movePill(); const d = s; setTimeout(() => { s = d; tidy(); s = null; }, ms); } }
+  main.addEventListener("touchstart", e => { if (s) return;
     if (e.touches.length !== 1 || !me || shelfEdit || $("#sheet")?.classList.contains("on")) return;
     if (!TAB_ORDER.includes(currentTab()) || owns(e.target)) return;
-    x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; t0 = Date.now(); }, { passive:true });
-  main.addEventListener("touchend", e => { if (x0 == null) return;
-    const c = e.changedTouches[0], dx = c.clientX - x0, dy = c.clientY - y0, ms = Date.now() - t0; x0 = null;
-    if (Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 2 || ms > 600) return;
-    const at = TAB_ORDER.indexOf(currentTab()), to = TAB_ORDER[at + (dx < 0 ? 1 : -1)];
-    if (to) switchTab(to); }, { passive:true }); })();
+    const t = e.touches[0]; s = { x0:t.clientX, y0:t.clientY, lock:null, x:0, hist:[[t.clientX, performance.now()]] }; }, { passive:true });
+  main.addEventListener("touchmove", e => { if (!s || s.lock === "y") return;
+    const t = e.touches[0], dx = t.clientX - s.x0, dy = t.clientY - s.y0;
+    if (!s.lock) { if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
+      if (Math.abs(dy) > Math.abs(dx) * .8 || REDUCED) { s.lock = REDUCED && Math.abs(dx) > Math.abs(dy) * 2 ? "flick" : "y"; if (s.lock === "y") { s = null; return; } }
+      else { s.lock = "x"; begin(dx < 0 ? 1 : -1); } }
+    if (s.lock !== "x") return;
+    e.preventDefault();
+    s.x = t.clientX - s.x0;
+    /* dragging back past where you started turns it into a drag the other way */
+    if (Math.sign(s.x) === s.dir && Math.abs(s.x) > 4) { const keep = s; tidy(); s = keep; begin(-s.dir); }
+    s.hist.push([t.clientX, performance.now()]); if (s.hist.length > 6) s.hist.shift();
+    paint(s.x); }, { passive:false });
+  const end = e => { if (!s) return;
+    if (s.lock === "flick") { const dx = e.changedTouches[0].clientX - s.x0, to = TAB_ORDER[TAB_ORDER.indexOf(currentTab()) + (dx < 0 ? 1 : -1)];
+      s = null; if (to && Math.abs(dx) > 70) switchTab(to); return; }
+    if (s.lock !== "x") { s = null; return; }
+    const h = s.hist, a = h[0], b = h[h.length - 1], v = b[1] - a[1] > 0 ? (b[0] - a[0]) / (b[1] - a[1]) : 0;
+    release(s.x, v); };
+  main.addEventListener("touchend", end, { passive:true });
+  main.addEventListener("touchcancel", () => { if (s?.lock === "x") release(0, 0); else s = null; }, { passive:true }); })();
 const HOLDS = { library: () => openWheel(), doors: () => { if (currentTab() !== "doors") switchTab("doors"); openFeedPick(); } };
 $$("nav button[data-tab]").forEach(b => { const act = HOLDS[b.dataset.tab]; if (!act) return; let t = null;
   const stop = () => { clearTimeout(t); t = null; };
@@ -3545,6 +3631,8 @@ async function pullRefresh() {
   }, { passive:true });
   addEventListener("touchmove", e => {
     if (y0 == null) return;
+    /* a sideways drag between tabs owns the finger; it isn't a pull */
+    if (tabDrag) { y0 = null; if (live) { live = false; off(); } return; }
     if (window.scrollY > 0) { y0 = null; if (live) { live = false; off(); } return; }
     dist = e.touches[0].clientY - y0;
     if (dist <= 6) { if (live) { live = false; off(); } return; }
