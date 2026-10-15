@@ -122,7 +122,33 @@ select r.created_at, r.reason, r.note,
 
 ---
 
-## 4. Before you can submit
+## 4. The data sources — what their terms ask, and what we do
+
+Checked October 2026 against each source's published terms. **While Rooms is free and earns
+nothing, none of them needs a commercial licence.** The moment it earns anything — the paid
+tier previewed in Settings, ads, affiliate links — that changes, and the "if it ever charges"
+column is the to-do list.
+
+| Source | Free use asks for | Done in the app | If it ever charges |
+| --- | --- | --- | --- |
+| **TMDB** (film, TV, posters, logos) | Non-commercial use, credit with TMDB's approved logo plus *"This product uses the TMDB API but is not endorsed or certified by TMDB"* in an About/Credits area; their logo less prominent than ours, never recoloured or stretched | Settings → Credits: logo, sentence, link | A written commercial agreement with TMDB (they may charge). TMDB decides what counts as commercial, so email them first. |
+| **JustWatch** (where to watch, via TMDB) | Every use credited to JustWatch — TMDB revokes keys that don't | "Via JustWatch" on every where-to-watch block, and in Credits | Covered by the TMDB agreement; check JustWatch's own terms at the same time |
+| **IGDB** (games, via Twitch) | Non-commercial use under the Twitch Developer Service Agreement; 4 requests a second, 8 open at once | Credit in Settings → Credits; the worker answers repeat questions from memory and retries once on a 429 | A partnership — free, in exchange for a visible, permanent credit. Ask partner@igdb.com |
+| **Open Library** (books) | The data carries no rights claim. The live API asks every app to identify itself (name + contact) and not to be a high-traffic commercial backend | The worker sends `Rooms/1.0 (contact)`; set the contact with `wrangler secret put CONTACT` | Keep traffic cached and modest, or move to their free monthly data dumps |
+
+Things that keep this true:
+- **Redeploy the worker** (`wrangler deploy`) after any change to `worker.js` — the app's
+  pages update on push, the worker does not.
+- **Set `CONTACT`** to a real email address. Until you do, the app's address stands in.
+- The TMDB logo loads from TMDB's site. Downloading it from TMDB's logos page into `icons/`
+  and pointing Credits at that copy would remove one more outside request.
+- Cloudflare's shared cache does nothing on a `*.workers.dev` address; the worker's
+  in-memory cache does the work there. A custom domain on the worker would add the shared
+  cache on top.
+
+---
+
+## 5. Before you can submit
 
 - [ ] Fill the two blanks in `privacy.html` (company name, contact email) — `policy.test.mjs`
       is red until you do.

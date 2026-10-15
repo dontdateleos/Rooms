@@ -4,6 +4,8 @@
 #   wrangler secret put IGDB_CLIENT_ID
 #   wrangler secret put IGDB_CLIENT_SECRET
 #   wrangler secret put ORIGIN          # https://dontdateleos.github.io
+# and, so Open Library knows who to contact rather than throttling us:
+#   wrangler secret put CONTACT         # an email address for the app
 name = "rooms"
 main = "worker.js"
 compatibility_date = "2026-09-01"
