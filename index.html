@@ -27,7 +27,7 @@
 <link rel="apple-touch-startup-image" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="./icons/splash-828x1792.png">
 <link rel="apple-touch-startup-image" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="./icons/splash-750x1334.png">
 <link rel="manifest" href="./manifest.webmanifest">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='112' fill='%2316131C'/%3E%3Crect x='62' y='138' width='260' height='236' rx='64' fill='%23FFB36B'/%3E%3Crect x='183' y='138' width='260' height='236' rx='64' fill='%238FD3FF' opacity='.92'/%3E%3Crect x='282' y='206' width='28' height='80' rx='14' fill='%23151320'/%3E%3Crect x='336' y='198' width='28' height='88' rx='14' fill='%23151320'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%2316131C'/%3E%3Cg transform='translate%2850 50%29 scale%28.78%29 translate%28-54 -54%29'%3E%3Crect x='14' y='10' width='62' height='84' rx='10' fill='%2372A9CC'/%3E%3Crect x='22' y='18' width='46' height='76' rx='5' fill='%23FFF3B8'/%3E%3Cpath d='M68 94h26l-9-13-17-4z' fill='%23FFF3B8' opacity='.7'/%3E%3Cpath d='M22 18l34 7v73l-34-6z' fill='%238FD3FF'/%3E%3Cpath d='M22 18l34 7v8l-34-6z' fill='%23B1E0FF'/%3E%3Ccircle cx='50' cy='70' r='3' fill='%2372A9CC'/%3E%3Cg class='eyes' fill='%23151320'%3E%3Crect x='30' y='44' width='7' height='16' rx='3.5'/%3E%3Crect x='41' y='46' width='7' height='18' rx='3.5'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E">
 <!-- the type is served from here. Fetching it from Google handed fonts.gstatic.com an
      IP address every time somebody opened the app, which bought us nothing and cost a
      paragraph of the privacy policy. Same files, same subsets. -->
@@ -85,6 +85,8 @@ header{position:sticky;top:0;z-index:5;background:var(--veil);backdrop-filter:bl
 header .wrap{display:flex;align-items:center;justify-content:space-between;height:58px}
 .logo{display:flex;align-items:center;gap:9px;font-family:var(--head);font-weight:900;font-size:22px;letter-spacing:-.03em}
 .logo .mark{width:30px;height:30px;display:block;flex:none}
+.logo .mark .eyes{transform-box:fill-box;transform-origin:50% 50%;animation:avBlink 7.2s ease-in-out infinite;animation-delay:3s}
+@media (prefers-reduced-motion:reduce){.logo .mark .eyes{animation:none}}
 .me{font-family:var(--head);font-weight:800;font-size:13px;background:var(--card);border:0;padding:8px 12px;border-radius:999px;cursor:pointer;color:var(--ink);display:flex;align-items:center;gap:8px;transition:background .2s,color .2s}
 /* Taste is behind your name now, so your name is lit while you're on it, as a tab would be */
 .me.on{background:var(--ink);color:var(--cream)}
@@ -1445,7 +1447,7 @@ body.demomode .secbar{top:78px}
 <body>
 
 <header><div class="wrap">
-  <div class="logo"><svg class="mark" viewBox="0 0 64 64" aria-hidden="true"><rect x="8" y="14" width="34" height="34" rx="8" fill="var(--apricot)"/><rect x="22" y="14" width="34" height="34" rx="8" fill="var(--sky)" opacity=".85"/></svg><span class="logoword">Rooms</span></div>
+  <div class="logo"><svg class="mark" viewBox="9 9 90 90" aria-hidden="true"><rect x="14" y="10" width="62" height="84" rx="10" fill="#72A9CC"/><rect x="22" y="18" width="46" height="76" rx="5" fill="#FFF3B8"/><path d="M68 94h26l-9-13-17-4z" fill="#FFF3B8" opacity=".7"/><path d="M22 18l34 7v73l-34-6z" fill="#8FD3FF"/><path d="M22 18l34 7v8l-34-6z" fill="#B1E0FF"/><circle cx="50" cy="70" r="3" fill="#72A9CC"/><g class="eyes" fill="#151320"><rect x="30" y="44" width="7" height="16" rx="3.5"/><rect x="41" y="46" width="7" height="18" rx="3.5"/></g></svg><span class="logoword">Rooms</span></div>
   <div class="hr">
     <button class="me" id="meBtn" hidden><span class="av" id="meAv"></span><span id="meName"></span></button>
     <button class="find" id="findBtn" aria-label="Find someone" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></button>
@@ -3522,48 +3524,71 @@ let tabDrag = false;
     if (there) { there.classList.add("incoming");
       /* sit it at the height you'll land on, so it doesn't jump when it takes over */
       there.style.top = (here.offsetTop + scrollY - (tabScroll[to] || 0)) + "px"; }
-    /* shrink about the middle of the screen, not the middle of a page that may be
-       thousands of pixels tall, or the top of it drops away from your finger */
-    here.style.transformOrigin = `50% ${innerHeight / 2 - here.getBoundingClientRect().top}px`;
-    if (there) {
-      if (!there.firstElementChild?.children.length) there.firstElementChild.innerHTML = skeleton(3); }
+    if (there && !there.firstElementChild?.children.length) there.firstElementChild.innerHTML = skeleton(3);
+    /* the pages swing like cards slid off a pile, about a point well below the screen,
+       so the lean is a few degrees at the top and almost nothing at your thumb */
+    const pivot = el => `50% ${innerHeight * 1.5 - el.getBoundingClientRect().top}px`;
+    here.style.transformOrigin = pivot(here); if (there) there.style.transformOrigin = pivot(there);
+    /* the blocks you can see on each page, which trail behind your finger like jelly */
+    const kids = sec => [...(sec?.firstElementChild?.children || [])].filter(k => { const r = k.getBoundingClientRect();
+      return r.height && r.bottom > 0 && r.top < innerHeight; }).slice(0, 5);
+    s.kids = [kids(here), kids(there)];
     s.pillFrom = $("nav button[data-tab].on"); s.pillTo = to && $(`nav button[data-tab="${navOf(to)}"]`);
     $("#navPill")?.classList.add("tracking");
     document.documentElement.classList.add("tabdrag"); tabDrag = true; }
+  const TILT = 6;
   function paint(x) { const w = W(), p = Math.min(1, Math.abs(x) / w);
     const tx = s.there ? x : band(x, w);
-    s.here.style.transform = `translateX(${tx}px) scale(${1 - p * .04})`;
-    s.here.style.opacity = String(1 - p * .35);
+    s.here.style.transform = `translateX(${tx}px) rotate(${tx / w * TILT}deg)`;
+    s.here.style.opacity = String(1 - p * .25);
     if (s.lib) s.lib.style.transform = `translateX(${tx}px)`;
-    if (s.there) s.there.style.transform = `translateX(${tx + s.dir * w}px)`;
+    if (s.there) s.there.style.transform = `translateX(${tx + s.dir * w}px) rotate(${s.dir * TILT * (1 - p)}deg)`;
+    /* each block lags a little more than the one above it; translate, not transform, so it
+       never fights the entrance animation that owns their transform */
+    s.kids.forEach(list => list.forEach((k, j) => { k.style.transition = "none";
+      k.style.translate = `${Math.max(-26, Math.min(26, -tx * .045 * (j + 1)))}px 0`; }));
+    /* taffy: the pill's leading edge runs ahead to the next tab while its tail holds on,
+       then lets go — the same stretch the dots make when they move */
     const pill = $("#navPill");
     if (pill && s.pillFrom && s.pillTo && s.pillTo !== s.pillFrom) {
-      const a = s.pillFrom, b = s.pillTo, q = Math.min(1, Math.abs(tx) / w);
-      pill.style.left = (a.offsetLeft + (b.offsetLeft - a.offsetLeft) * q) + "px";
-      pill.style.width = (a.offsetWidth + (b.offsetWidth - a.offsetWidth) * q) + "px"; } }
+      const a = s.pillFrom, b = s.pillTo, al = a.offsetLeft, ar = al + a.offsetWidth, bl = b.offsetLeft, br = bl + b.offsetWidth;
+      const lead = Math.min(1, p * 1.8), trail = Math.max(0, (p - .35) / .65) ** 1.5, right = bl > al;
+      const L = al + (bl - al) * (right ? trail : lead), R = ar + (br - ar) * (right ? lead : trail);
+      pill.style.left = L + "px"; pill.style.width = Math.max(0, R - L) + "px";
+      pill.style.transform = `scaleY(${1 - Math.sin(p * Math.PI) * .22})`; } }
   function tidy() { [s.here, s.there, s.lib].forEach(el => { if (!el) return;
       el.style.transition = el.style.transform = el.style.opacity = el.style.transformOrigin = ""; });
+    (s.kids || []).flat().forEach(k => { k.style.transition = k.style.translate = ""; });
     if (s.there) { s.there.classList.remove("incoming"); s.there.style.top = ""; }
-    $("#navPill")?.classList.remove("tracking");
+    const pill = $("#navPill"); if (pill) { pill.classList.remove("tracking"); pill.style.transform = ""; }
     document.documentElement.classList.remove("tabdrag"); tabDrag = false; }
+  /* landing overshoots and springs back; the blocks catch up one after another with a jiggle */
+  const SPRING = "cubic-bezier(.34,1.45,.5,1)", JELLY = "cubic-bezier(.3,1.8,.5,1)";
+  function settleKids(list) { list.forEach((k, j) => { k.style.transition = `translate 460ms ${JELLY} ${30 + j * 45}ms`; k.style.translate = "0 0"; }); }
+  function wobblePill() { const pill = $("#navPill"); if (!pill) return; pill.style.transform = "";
+    pill.animate([{ transform:"none" }, { transform:"scale(1.16,.8)" }, { transform:"scale(.95,1.08)" }, { transform:"none" }], { duration:420, delay:90, easing:"ease-out" }); }
   function release(x, v) { const w = W();
     const go = s.there && (Math.abs(x) > w * .33 || (Math.abs(v) > .45 && Math.sign(v) === Math.sign(x)));
-    const ms = Math.round(Math.max(170, Math.min(340, (go ? w - Math.abs(x) : Math.abs(x)) / Math.max(.9, Math.abs(v)))));
-    const tr = `transform ${ms}ms ${EASE}, opacity ${ms}ms ${EASE}`;
-    [s.here, s.there, s.lib].forEach(el => el && (el.style.transition = tr));
+    const ms = Math.round(Math.max(200, Math.min(360, (go ? w - Math.abs(x) : Math.abs(x)) / Math.max(.9, Math.abs(v)))));
+    const out = `transform ${ms}ms ${EASE}, opacity ${ms}ms ${EASE}`, inn = `transform ${ms + 140}ms ${SPRING}, opacity ${ms}ms ${EASE}`;
     $("#navPill")?.classList.remove("tracking");
     if (go) { const end = -s.dir * w;
-      s.here.style.transform = `translateX(${end}px) scale(.96)`; s.here.style.opacity = ".6";
+      s.here.style.transition = out; if (s.lib) s.lib.style.transition = out; s.there.style.transition = inn;
+      s.here.style.transform = `translateX(${end}px) rotate(${-s.dir * TILT}deg)`; s.here.style.opacity = ".6";
       if (s.lib) s.lib.style.transform = `translateX(${end}px)`;
-      s.there.style.transform = "translateX(0)";
+      s.there.style.transform = "translateX(0) rotate(0deg)";
+      settleKids(s.kids[1]);
       if (navigator.vibrate) navigator.vibrate(6);
-      movePill();
+      movePill(); if (s.pillTo !== s.pillFrom) wobblePill();
       const d = s; setTimeout(() => { s = d; tidy();
         /* the page has already arrived, so the tab change is told not to animate it again */
-        switchTab(d.to, { swiped:true }); s = null; }, ms); }
-    else { s.here.style.transform = ""; s.here.style.opacity = "";
-      if (s.lib) s.lib.style.transform = ""; if (s.there) s.there.style.transform = `translateX(${s.dir * w}px)`;
-      movePill(); const d = s; setTimeout(() => { s = d; tidy(); s = null; }, ms); } }
+        switchTab(d.to, { swiped:true }); s = null; }, Math.max(ms + 360, 700)); }
+    else { [s.here, s.lib, s.there].forEach(el => el && (el.style.transition = inn));
+      s.here.style.transform = ""; s.here.style.opacity = "";
+      if (s.lib) s.lib.style.transform = ""; if (s.there) s.there.style.transform = `translateX(${s.dir * w}px) rotate(${s.dir * TILT}deg)`;
+      settleKids(s.kids[0]);
+      movePill(); $("#navPill") && ($("#navPill").style.transform = "");
+      const d = s; setTimeout(() => { s = d; tidy(); s = null; }, Math.max(ms + 360, 700)); } }
   main.addEventListener("touchstart", e => { if (s) return;
     if (e.touches.length !== 1 || !me || shelfEdit || $("#sheet")?.classList.contains("on")) return;
     if (!TAB_ORDER.includes(currentTab()) || owns(e.target)) return;
@@ -4196,6 +4221,10 @@ const PLACE_MARKS = {
   room: c => `<rect x="6" y="30" width="54" height="52" rx="14" fill="${avShade(c, -.18)}"/><rect x="36" y="22" width="58" height="60" rx="15" fill="${c}"/><path d="M51 22h28a15 15 0 0 1 15 15H36a15 15 0 0 1 15-15z" fill="${avShade(c, .3)}"/>${MK_EYES(54, 46, 70, 44)}`,
   people: c => `<rect x="8" y="30" width="38" height="56" rx="19" fill="${avShade(c, -.2)}"/><g fill="#151320" opacity=".8"><rect x="19" y="50" width="5" height="13" rx="2.5"/><rect x="29" y="49" width="5" height="14" rx="2.5"/></g>
     <rect x="40" y="16" width="48" height="72" rx="24" fill="${c}"/><path d="M64 16a24 24 0 0 1 24 24H40a24 24 0 0 1 24-24z" fill="${avShade(c, .3)}"/>${MK_EYES(55, 44, 69, 42)}`,
+  /* Everyone: a huddle, the one at the front biggest — Following is two of you, this is more */
+  crowd: c => `<rect x="4" y="40" width="30" height="46" rx="15" fill="${avShade(c, -.2)}"/><rect x="66" y="40" width="30" height="46" rx="15" fill="${avShade(c, -.2)}"/>
+    <g fill="#151320" opacity=".75"><rect x="12" y="56" width="4" height="10" rx="2"/><rect x="20" y="55" width="4" height="11" rx="2"/><rect x="76" y="56" width="4" height="10" rx="2"/><rect x="84" y="55" width="4" height="11" rx="2"/></g>
+    <rect x="26" y="20" width="48" height="68" rx="24" fill="${c}"/><path d="M50 20a24 24 0 0 1 24 24H26a24 24 0 0 1 24-24z" fill="${avShade(c, .3)}"/>${MK_EYES(40, 46, 54, 44)}`,
   globe: c => `<circle cx="50" cy="54" r="34" fill="${c}"/><path d="M16 54a34 34 0 0 1 68 0c0-13-15-21-34-21S16 41 16 54z" fill="${avShade(c, .3)}"/>
     <ellipse cx="50" cy="60" rx="46" ry="10" fill="none" stroke="${avShade(c, -.2)}" stroke-width="6" transform="rotate(-12 50 60)"/>${MK_EYES(39, 44, 54, 42)}`,
   archive: c => `${AV_SHAPES.box({ base:c, light:avShade(c, .3), dark:avShade(c, -.18) })}${MK_EYES(36, 50, 50, 54, 18)}`,
@@ -4289,7 +4318,7 @@ function pagerArrive(dir, pg, ...els) {
 function feedPlaces() {
   const out = rooms.map(r => place("room:" + r.id, r.name, roomColour(r), "room"));
   if (!out.length) out.push(place("room:", "Your room", "pink", "room"));
-  out.push(place("following", "Following", "lilac", "people"), place("everyone", "Everyone", "sky", "globe"));
+  out.push(place("following", "Following", "lilac", "people"), place("everyone", "Everyone", "sky", "crowd"));
   return out; }
 const placeNow = () => { const fn = feedNow(); return fn === "room" ? "room:" + (activeRoom()?.id || "") : fn; };
 /* dir is which way the arrows went, so wrapping from the last place to the first still
