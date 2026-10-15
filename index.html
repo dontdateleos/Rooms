@@ -429,7 +429,11 @@ button:focus-visible,.linky:focus-visible{outline:3px solid var(--blue);outline-
 .pgdot{position:relative;height:10px;width:10px;border:0;padding:0;border-radius:999px;background:var(--c);opacity:.4;cursor:pointer;
   transition:width .32s cubic-bezier(.3,1.3,.5,1),opacity .25s}
 .pgdot::after{content:"";position:absolute;inset:-14px -3px}
-.pgdot.on{width:28px;opacity:1}
+.pgdots{height:30px}
+.pgdot.pgcur{width:30px;height:30px;background:none;opacity:1;display:grid;place-items:center;transform-origin:50% 100%}
+.pgcur .pgmark,.pgghost .pgmark{width:30px;height:30px;display:block}
+.pgghost{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none}
+.pgmark .eyes{transform-box:fill-box;transform-origin:50% 50%;animation:avBlink 6.4s ease-in-out infinite;animation-delay:1.5s}
 .roomline .here{margin-top:0}
 .roomline .room-streak{font-size:11.5px;font-weight:700;color:var(--mute);background:none;padding:0;margin:0;border-radius:0}
 /* the sections stay in reach however far down the talk you are */
@@ -3990,10 +3994,9 @@ async function renderDoors() {
   /* the three feeds sit in a row, so moving between them should read as a move. The old one
      leaves the way you came from and the new one arrives from the other side — the same
      rule the tabs already follow. */
-  if (feedTurn && !REDUCED) { const t = $(".feedpick .hl", body);
-    if (t) { t.style.setProperty("--fx", feedTurn + "px"); t.classList.add("feedIn"); } }
   $("#feedPick").onclick = () => openFeedPick();
   wirePager($("#pager", body), places, cur.key, goPlace);
+  pagerArrive(feedTurn ? (feedTurn < 0 ? 1 : -1) : 0, $("#pager", body));
   /* once a session, on the way in: the room's name, then who is in it, then what they said.
      Never on a redraw — a screen that reassembles every time you come back is a screen that
      never settles. */
@@ -4017,6 +4020,34 @@ async function renderDoors() {
   return renderEveryoneFeed(fb);
 }
 /* where to: each of your rooms, then the two feeds that aren't a room */
+/* ---------- a mark for each place ----------
+   Drawn the way the avatars are — a flat colour, a lighter top, a darker side, two
+   upright eyes — so a room, a feed, a medium or a season has a face. In a pager the
+   place you're on shows as its mark instead of a dot, and moving makes it hop. */
+const TONE_HEX = { pink:"#F5A3C7", butter:"#FFE86A", mint:"#9EF0C9", sky:"#8FD3FF", lilac:"#B9A6FF", apricot:"#FFB36B" };
+const KIND_TONE = { film:"apricot", tv:"pink", book:"butter", game:"mint" };
+const MK_EYES = (x1, y1, x2, y2, h = 20) => `<g class="eyes" fill="#151320"><rect x="${x1}" y="${y1}" width="7" height="${h}" rx="3.5"/><rect x="${x2}" y="${y2}" width="7" height="${h + 2}" rx="3.5"/></g>`;
+const PLACE_MARKS = {
+  room: c => `<rect x="6" y="30" width="54" height="52" rx="14" fill="${avShade(c, -.18)}"/><rect x="36" y="22" width="58" height="60" rx="15" fill="${c}"/><path d="M51 22h28a15 15 0 0 1 15 15H36a15 15 0 0 1 15-15z" fill="${avShade(c, .3)}"/>${MK_EYES(54, 46, 70, 44)}`,
+  people: c => `<rect x="8" y="30" width="38" height="56" rx="19" fill="${avShade(c, -.2)}"/><g fill="#151320" opacity=".8"><rect x="19" y="50" width="5" height="13" rx="2.5"/><rect x="29" y="49" width="5" height="14" rx="2.5"/></g>
+    <rect x="40" y="16" width="48" height="72" rx="24" fill="${c}"/><path d="M64 16a24 24 0 0 1 24 24H40a24 24 0 0 1 24-24z" fill="${avShade(c, .3)}"/>${MK_EYES(55, 44, 69, 42)}`,
+  globe: c => `<circle cx="50" cy="54" r="34" fill="${c}"/><path d="M16 54a34 34 0 0 1 68 0c0-13-15-21-34-21S16 41 16 54z" fill="${avShade(c, .3)}"/>
+    <ellipse cx="50" cy="60" rx="46" ry="10" fill="none" stroke="${avShade(c, -.2)}" stroke-width="6" transform="rotate(-12 50 60)"/>${MK_EYES(39, 44, 54, 42)}`,
+  archive: c => `${AV_SHAPES.box({ base:c, light:avShade(c, .3), dark:avShade(c, -.18) })}${MK_EYES(36, 50, 50, 54, 18)}`,
+  film: c => `<rect x="12" y="40" width="76" height="48" rx="11" fill="${c}"/><rect x="74" y="40" width="14" height="48" rx="7" fill="${avShade(c, -.22)}"/>
+    <g transform="rotate(-14 14 38)"><rect x="12" y="24" width="76" height="16" rx="5" fill="${avShade(c, .3)}"/><path d="M26 24l-8 16h10l8-16zM46 24l-8 16h10l8-16zM66 24l-8 16h10l8-16z" fill="${avShade(c, -.22)}"/></g>${MK_EYES(38, 54, 53, 52, 18)}`,
+  tv: c => `<path d="M50 30L34 12M50 30l16-18" stroke="${avShade(c, -.2)}" stroke-width="5" stroke-linecap="round"/><circle cx="34" cy="12" r="5" fill="${avShade(c, .3)}"/><circle cx="66" cy="12" r="5" fill="${avShade(c, .3)}"/>
+    <rect x="10" y="30" width="80" height="56" rx="18" fill="${c}"/><rect x="20" y="38" width="60" height="40" rx="11" fill="${avShade(c, .3)}"/>${MK_EYES(40, 48, 54, 46)}`,
+  book: c => `<rect x="22" y="12" width="58" height="78" rx="9" fill="${c}"/><rect x="22" y="12" width="15" height="78" rx="7" fill="${avShade(c, -.2)}"/><rect x="72" y="18" width="8" height="66" rx="3" fill="${avShade(c, .35)}"/>${MK_EYES(46, 40, 60, 38)}`,
+  game: c => `<circle cx="24" cy="70" r="16" fill="${avShade(c, -.2)}"/><circle cx="76" cy="70" r="16" fill="${avShade(c, -.2)}"/><rect x="8" y="32" width="84" height="44" rx="22" fill="${c}"/>
+    <path d="M30 32h40a22 22 0 0 1 22 22H8a22 22 0 0 1 22-22z" fill="${avShade(c, .3)}"/><path d="M22 48v12M16 54h12" stroke="#151320" stroke-width="4" stroke-linecap="round"/><circle cx="78" cy="52" r="3.5" fill="#151320"/>${MK_EYES(43, 44, 55, 43, 18)}`,
+  ghost: c => `<path d="M18 46a32 32 0 0 1 64 0v30q-8 10-16 0t-16 0t-16 0t-16 0z" fill="${c}"/><path d="M50 14a32 32 0 0 1 32 32H18a32 32 0 0 1 32-32z" fill="${avShade(c, .25)}"/><path d="M82 46v30q-8 10-16 0V46a14 14 0 0 0-8-13 32 32 0 0 1 24 13z" fill="${avShade(c, -.18)}"/>${MK_EYES(40, 44, 55, 42)}`,
+  clubs: c => `<rect x="6" y="40" width="26" height="46" rx="13" fill="${avShade(c, -.2)}"/><rect x="68" y="36" width="26" height="50" rx="13" fill="${avShade(c, -.2)}"/><g fill="#151320" opacity=".75"><rect x="13" y="56" width="4" height="10" rx="2"/><rect x="21" y="55" width="4" height="11" rx="2"/><rect x="75" y="52" width="4" height="10" rx="2"/><rect x="83" y="51" width="4" height="11" rx="2"/></g>
+    <rect x="30" y="18" width="40" height="70" rx="20" fill="${c}"/><path d="M50 18a20 20 0 0 1 20 20H30a20 20 0 0 1 20-20z" fill="${avShade(c, .3)}"/>${MK_EYES(41, 44, 53, 42, 18)}`
+};
+const placeMark = p => `<svg class="pgmark" viewBox="0 0 100 100" aria-hidden="true">${(PLACE_MARKS[p.mk] || PLACE_MARKS.room)(TONE_HEX[p.tone] || TONE_HEX.pink)}</svg>`;
+/* a place: where it goes, what it's called, its tone and its mark */
+const place = (key, name, tone, mk) => ({ key, name, tone, mk, col:`var(--${tone})` });
 /* ---------- the pager ----------
    Wherever a whole page is one of a few places — a room, Following, Everyone; a medium
    in the archive; the season or your clubs — it's the same control: the place's name as
@@ -4030,31 +4061,53 @@ function pagerHTML(places, curKey, o = {}) {
   return `<div class="pager"${o.id ? ` id="${o.id}"` : ""}>
       ${many ? `<button class="pgarrow" data-go="-1" aria-label="Back to ${esc(nb(-1).name)}">${ARROW("M15 6l-6 6 6 6")}</button>` : ""}
       <div class="pgmid"><h2>${o.titleId ? `<button class="feedpick" id="${o.titleId}" aria-haspopup="dialog" aria-label="${esc(cur.name)} · ${esc(o.titleHint || "see them all")}">${name}</button>` : `<span class="feedpick">${name}</span>`}</h2>
-        ${many ? `<div class="pgdots">${places.map(p => `<button class="pgdot ${p === cur ? "on" : ""}" data-place="${esc(p.key)}" aria-label="${esc(p.name)}" aria-current="${p === cur}" style="--c:${p.col}"></button>`).join("")}</div>` : ""}</div>
+        ${many ? `<div class="pgdots">${places.map(p => p === cur
+          ? `<button class="pgdot pgcur" data-place="${esc(p.key)}" aria-label="${esc(p.name)}" aria-current="true">${placeMark(p)}</button>`
+          : `<button class="pgdot" data-place="${esc(p.key)}" aria-label="${esc(p.name)}" style="--c:${p.col}"></button>`).join("")}</div>` : ""}</div>
       ${many ? `<button class="pgarrow" data-go="1" aria-label="On to ${esc(nb(1).name)}">${ARROW("M9 6l6 6-6 6")}</button>` : ""}</div>`; }
 /* go(key, dir): dir is +1 or -1, which way you moved, so the new title can arrive from that side */
 function wirePager(pg, places, curKey, go) {
   if (!pg || places.length < 2) return;
   const at = Math.max(0, places.findIndex(p => p.key === curKey));
-  const step = d => go(places[(at + d + places.length) % places.length].key, d);
+  const leave = () => { pagerFrom = { id:pg.id, key:curKey, mark:$(".pgcur", pg)?.innerHTML || "" }; };
+  const step = d => { leave(); go(places[(at + d + places.length) % places.length].key, d); };
   $$("[data-go]", pg).forEach(b => b.onclick = () => step(+b.dataset.go));
   $$("[data-place]", pg).forEach(b => b.onclick = () => { const i = places.findIndex(p => p.key === b.dataset.place);
-    if (i !== at) go(b.dataset.place, i > at ? 1 : -1); });
+    if (i !== at) { leave(); go(b.dataset.place, i > at ? 1 : -1); } });
   /* a swipe has to be clearly sideways, so scrolling the page never flips it by accident */
   let x0 = null, y0 = 0;
   pg.addEventListener("touchstart", e => { if (e.touches.length === 1) { x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; } }, { passive:true });
   pg.addEventListener("touchend", e => { if (x0 == null) return; const t = e.changedTouches[0], dx = t.clientX - x0, dy = t.clientY - y0; x0 = null;
     if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) step(dx < 0 ? 1 : -1); }, { passive:true }); }
-/* after a move: the new title, and whatever the page swapped in, arrive from the side you moved towards */
-function pagerArrive(dir, ...els) {
+/* After a move. The mark hops from the place you left to the one you're on, turning into
+   the new place's mark at the top of its arc and squashing a little as it lands; the
+   title flips over like a card; whatever the page swapped in slides in from the side
+   you moved towards. */
+let pagerFrom = null;
+function pagerArrive(dir, pg, ...els) {
+  const from = pagerFrom; pagerFrom = null;
   if (!dir || REDUCED) return;
+  const hl = pg && $(".hl", pg);
+  if (hl) hl.animate([{ transform:"perspective(500px) rotateX(-90deg)", opacity:.2 }, { transform:"none", opacity:1 }],
+    { duration:420, delay:120, easing:"cubic-bezier(.2,1.3,.4,1)", fill:"backwards" });
+  const cur = pg && $(".pgcur", pg), old = from && from.id === pg?.id && $(`.pgdot[data-place="${CSS.escape(from.key)}"]`, pg);
+  if (cur && old) {
+    const a = old.getBoundingClientRect(), b = cur.getBoundingClientRect(), dx = (a.left + a.width / 2) - (b.left + b.width / 2);
+    const T = 560;
+    cur.animate([{ transform:`translate(${dx}px,0)` }, { transform:`translate(${dx / 2}px,-24px) rotate(${dir * 10}deg)`, offset:.48 },
+      { transform:"translate(0,0) scale(1.18,.8)", offset:.84 }, { transform:"none" }], { duration:T, easing:"cubic-bezier(.35,0,.25,1)" });
+    /* the old mark rides along on top until the top of the arc, then it's the new one */
+    if (from.mark) { const g = document.createElement("span"); g.className = "pgghost"; g.innerHTML = from.mark; cur.appendChild(g);
+      g.animate([{ opacity:1 }, { opacity:1, offset:.4 }, { opacity:0, offset:.56 }, { opacity:0 }], { duration:T }).onfinish = () => g.remove(); }
+    $(".pgmark", cur)?.animate([{ opacity:0 }, { opacity:0, offset:.4 }, { opacity:1, offset:.56 }, { opacity:1 }], { duration:T });
+    old.animate([{ opacity:0, transform:"scale(0)" }, { opacity:0, transform:"scale(0)", offset:.25 }, { opacity:.4, transform:"none" }], { duration:T }); }
   for (const el of els) { if (!el) continue; el.style.setProperty("--fx", (dir > 0 ? -26 : 26) + "px");
     el.classList.remove("feedIn"); void el.offsetWidth; el.classList.add("feedIn");
     setTimeout(() => el.classList.remove("feedIn"), 420); } }
 function feedPlaces() {
-  const out = rooms.map(r => ({ key:"room:" + r.id, name:r.name, col:`var(--${roomColour(r)})` }));
-  if (!out.length) out.push({ key:"room:", name:"Your room", col:"var(--pink)" });
-  out.push({ key:"following", name:"Following", col:"var(--lilac)" }, { key:"everyone", name:"Everyone", col:"var(--sky)" });
+  const out = rooms.map(r => place("room:" + r.id, r.name, roomColour(r), "room"));
+  if (!out.length) out.push(place("room:", "Your room", "pink", "room"));
+  out.push(place("following", "Following", "lilac", "people"), place("everyone", "Everyone", "sky", "globe"));
   return out; }
 const placeNow = () => { const fn = feedNow(); return fn === "room" ? "room:" + (activeRoom()?.id || "") : fn; };
 /* dir is which way the arrows went, so wrapping from the last place to the first still
@@ -4078,7 +4131,8 @@ function openFeedPick() {
     ${rooms.length < ROOM_LIMIT ? `<div class="stack" style="margin-top:12px;flex-direction:row"><button class="btn soft" id="newRoom">Open a room</button><button class="btn ghost" id="joinRoom">Join with a code</button></div>` : ""}
     <p class="msg" id="roomMsg"></p>`);
   wireRoomButtons();
-  $$("[data-fp]").forEach(b => b.onclick = () => { closeSheet(); goPlace(b.dataset.fp); }); }
+  $$("[data-fp]").forEach(b => b.onclick = () => { closeSheet();
+    pagerFrom = { id:"pager", key:placeNow(), mark:$("#pager .pgcur")?.innerHTML || "" }; goPlace(b.dataset.fp); }); }
 /* everything about the room that isn't the room itself: who's in it, the code, the way out */
 function openRoomMenu(R) {
   openSheet(`<h3>${esc(R.name)}</h3>
@@ -4593,7 +4647,7 @@ async function renderEveryoneFeed(fb) {
     if (f) x = x.eq("part", false);
     return x.order("created_at",{ascending:false}).limit(300); })); } catch (e) { fb.innerHTML = `<p class="empty">${esc(e.message)}</p>`; return; }
   es.forEach(e => remember(e.works));
-  if (!es.length) { fb.innerHTML = `<h2>The <span class="hl" style="background:var(--sky)">hall</span></h2>` +
+  if (!es.length) { fb.innerHTML = ``  +
     blank("var(--sky)","◎","Nothing here yet","The hall fills up as people log things — everyone's scores, how much they agree, and what they loved. Be the first.",[["hallAdd","Log something"]]);
     $("#hallAdd").onclick = openAdd; return; }
   let shown = [];
@@ -4602,7 +4656,7 @@ async function renderEveryoneFeed(fb) {
      ranking, and the rows it needs are the ones on this screen anyway */
   const divisive = competition(recent.length >= 5 ? recent : es, 40)
     .filter(f => f.n >= 2).sort((a,b) => (a.agree ?? 100) - (b.agree ?? 100)).slice(0, 5);
-  fb.innerHTML = `<h2>The <span class="hl" style="background:var(--sky)">hall</span></h2><p class="sub">What people are saying \u00b7 ${es.length} entries \u00b7 ${recent.length} this week</p>
+  fb.innerHTML = `<p class="sub" style="text-align:center;margin-top:8px">What people are saying \u00b7 ${es.length} entries \u00b7 ${recent.length} this week</p>
     ${divisive.length ? `<div class="card"><div class="h"><span>Most divisive</span><span class="tag dim">bring these into a room</span></div>${compRows(divisive)}</div>` : ""}
     <div class="lbl">What people said</div>${(() => { const f = feedSort(es);
       shown = f.rows.slice(0, 20); return f.html + shown.map(e => slipHTML(e)).join(""); })()}`;
@@ -4689,7 +4743,7 @@ function renderCabinet() {
   const counts = cabinetCounts(), kinds = CAB_ORDER.filter(k => counts[k]);
   if (P.cabKind && !counts[P.cabKind]) P.cabKind = "";
   /* everything first, then each medium you've finished something in, each in its colour */
-  const places = [{ key:"", name:"Your archive", col:"var(--sky)" }, ...(kinds.length > 1 ? kinds.map(k => ({ key:k, name:K(k).plural, col:K(k).colour })) : [])];
+  const places = [place("", "Your archive", "sky", "archive"), ...(kinds.length > 1 ? kinds.map(k => place(k, K(k).plural, KIND_TONE[k], k)) : [])];
   body.innerHTML = `${pagerHTML(places, P.cabKind || "", { id:"cabPager" })}
     ${logCount() ? `<div class="cabbar">
         <p class="sub" id="cabSub"></p>
@@ -4702,7 +4756,7 @@ function renderCabinet() {
     ${logCount() ? `<div class="shelfbar"><button class="btn quiet" id="cabList">See it as a list \u00b7 ${logCount()} logged</button></div>` : ""}`;
   paintTrays(); wireCabinet();
   wirePager($("#cabPager", body), places, P.cabKind || "", (k, d) => { P.cabKind = k; saveP(); cabTurn = d; renderCabinet(); });
-  pagerArrive(cabTurn, $("#cabPager .hl", body), $("#cabTrays", body)); cabTurn = 0;
+  pagerArrive(cabTurn, $("#cabPager", body), $("#cabTrays", body)); cabTurn = 0;
 }
 let cabTurn = 0;
 /* only the trays are redrawn as you type, because redrawing the box you are typing in
@@ -7427,12 +7481,12 @@ async function renderClubs() {
   if (!["season", "clubs"].includes(P.clubTab)) P.clubTab = "season";
   const season = HALLOWEEN_2026, phase = seasonPhase(season);
   const nClubs = clubs.length + openClubs.length;
-  const places = [{ key:"season", name:"Halloween", col:"var(--apricot)" }, { key:"clubs", name:"Friend clubs", col:"var(--lilac)" }];
+  const places = [place("season", "Halloween", "apricot", "ghost"), place("clubs", "Friend clubs", "lilac", "clubs")];
   body.innerHTML = `${pagerHTML(places, P.clubTab, { id:"seasonPager" })}
     <p class="sub" style="text-align:center">${P.clubTab === "season" ? "This season's challenges, open to everyone." : nClubs ? `${nClubs} ${nClubs === 1 ? "club" : "clubs"} — the small ones you run with friends.` : "The small clubs you run with friends."}</p>
     <div id="seasonContent"></div>`;
   wirePager($("#seasonPager", body), places, P.clubTab, (k, d) => { P.clubTab = k; saveP(); seasonTurn = d; renderClubs(); });
-  pagerArrive(seasonTurn, $("#seasonPager .hl", body), $("#seasonContent", body)); seasonTurn = 0;
+  pagerArrive(seasonTurn, $("#seasonPager", body), $("#seasonContent", body)); seasonTurn = 0;
   const out = $("#seasonContent");
   if (P.clubTab === "clubs") { await renderFriendClubs(out); return; }
   const cards = season.challenges.map(c => { const entries = seasonEntries(c), n = entries.length, medal = seasonMedal(n), pickCount = SEASON_PICKS.filter(([kind]) => kind === c.kind).length;

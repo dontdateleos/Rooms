@@ -46,7 +46,7 @@ const BASE = (process.env.BASE || "http://127.0.0.1:8934").replace(/\/$/, "");
       if ((await title()) === was) throw new Error("the next arrow didn't move");
       await tap('[data-go="-1"]'); await wait(900);
       if ((await title()) !== was) throw new Error("the back arrow didn't come back");
-      await tap(".pgdot:not(.on)"); await wait(900);
+      await tap(".pgdot:not(.pgcur)"); await wait(900);
       if ((await title()) === was) throw new Error("a dot didn't move"); 
       await tap(".pgdot"); await wait(900); });
     await step("room picker", async () => { await tap("#feedPick"); await wait(500); await expect("[data-fp]", "rooms to pick"); await closeSheet(); });
