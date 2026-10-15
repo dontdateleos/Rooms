@@ -340,6 +340,7 @@ button:focus-visible,.linky:focus-visible{outline:3px solid var(--blue);outline-
 .stack{display:flex;flex-direction:column;gap:9px;margin-top:14px}
 .seg{display:flex;background:var(--cream2);padding:4px;border-radius:999px;gap:2px;margin:6px 0 10px}
 .seg[hidden],[data-rsec][hidden]{display:none}
+.libbar{padding-top:4px}.libbar[hidden]{display:none}.libbar .seg{margin:4px 0 2px}
 .roomsecs{margin:0}
 /* the room's colour, picked in its menu */
 .swatches{display:flex;gap:10px;margin-top:8px}
@@ -1446,6 +1447,8 @@ body.demomode .secbar{top:78px}
 <main class="wrap">
   <section id="tab-auth" class="on"><div class="auth" id="authBody"></div></section>
   <section id="tab-doors"><div id="doorsBody"></div></section>
+  <div class="libbar" id="libBar" hidden><div class="seg glide" role="tablist" aria-label="Your library"><span class="segglide"></span>
+    <button data-lib="shelf" role="tab">Shelf</button><button data-lib="archive" role="tab">Archive</button></div></div>
   <section id="tab-archive"><div id="archiveBody"></div></section>
   <section id="tab-shelf"><div id="shelfBody"></div></section>
   <section id="tab-taste"><div id="tasteBody"></div></section>
@@ -1456,8 +1459,8 @@ body.demomode .secbar{top:78px}
   <button data-tab="doors">Rooms</button>
   <button data-tab="clubs">Seasons</button>
   <button id="add" aria-label="Log something"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
-  <button data-tab="shelf">Shelf</button>
-  <button data-tab="archive">Archive</button>
+  <button data-tab="library">Library</button>
+  <button data-tab="taste">You</button>
 </div></nav>
 <div class="demobar" id="demobar" hidden>Demo &middot; invented people &middot; nothing is saved</div>
 <div class="offline" id="offline" role="status" aria-live="polite"></div>
@@ -2394,6 +2397,8 @@ async function loadFounders() {
   catch { founderIds = new Set(); }        /* no column yet, or no permission: no rings */
 }
 let openClubs = [], myClubIds = new Set();
+/* clubs you can put things in: your own, still running */
+const myOpenClubs = () => clubs.filter(c => !c.closed_at && (sb?.__local || !c.created_by || c.created_by === me?.id));
 async function loadClubs() {
   clubs = [];
   if (P.activeRoom) { try { clubs = await q(sb.from("clubs").select("*").eq("room_id", P.activeRoom).order("created_at",{ascending:false})); } catch {} }
@@ -3364,7 +3369,7 @@ function wireNotes(ns) {
     if (await answerHand(h, yes)) { say(yes ? "On the shelf" : "Gone");
       /* taken means it went somewhere, so show it going: onto the Library tab, which is
          where it now is. Declined just folds away. */
-      if (yes) flyTo(face, $('nav button[data-tab="shelf"]'), works[h.work_id]?.cover);
+      if (yes) flyTo(face, $('nav button[data-tab="library"]'), works[h.work_id]?.cover);
       if (row) { row.classList.remove("fresh");
         const a = $(".acts", row); if (a) a.outerHTML = `<span class="tag dim">${yes ? "taken" : "gone"}</span>`; }
       paintDot(); if (currentTab() === "shelf") renderShelf(); } });
@@ -3412,14 +3417,14 @@ function glideSeg(seg, instant) {
   pill.style.left = on.offsetLeft + "px"; pill.style.width = on.offsetWidth + "px"; pill.style.opacity = 1;
   if (instant || REDUCED) { void pill.offsetWidth; pill.style.transition = ""; } }
 function movePill(instant) { const p = $("#navPill"), on = $("nav button[data-tab].on");
-  /* Taste lives behind your name, not in the bar — on it, no tab is lit */
+  /* nothing lit (signing in, say): the pill tucks away rather than sitting on a stale tab */
   if (p && !on) { p.classList.remove("set"); return; }
   if (!p || !on.offsetWidth) return;
   if (instant) p.style.transition = "none";
   p.style.left = on.offsetLeft + "px"; p.style.width = on.offsetWidth + "px";
   p.classList.add("set");
   if (instant) { void p.offsetWidth; p.style.transition = ""; } }
-addEventListener("resize", () => movePill(true));
+addEventListener("resize", () => { movePill(true); glideSeg($("#libBar:not([hidden]) .seg"), true); });
 addEventListener("orientationchange", () => movePill(true));
 addEventListener("pageshow", () => movePill(true));
 /* rAF so the re-measure lands after the layout that triggered it, and so forcing a
@@ -3431,13 +3436,25 @@ document.fonts?.ready.then(() => movePill(true)).catch(() => {});
 const TAB_ORDER = ["doors", "clubs", "shelf", "archive", "taste"];
 /* each tab keeps where you were in it; tapping the tab you're already on goes to the top */
 const tabScroll = {};
+/* Shelf and Archive are one tab, Library: the same things on either side of being
+   finished, so logging is a move from one side to the other rather than a trip across
+   the bar. The tab opens on whichever side you were last on. */
+const LIB = ["shelf", "archive"];
+const navOf = n => LIB.includes(n) ? "library" : n;
+function paintLib(n, instant) { const bar = $("#libBar"); if (!bar) return;
+  bar.hidden = !LIB.includes(n); if (bar.hidden) return;
+  $$("[data-lib]", bar).forEach(b => { const on = b.dataset.lib === n;
+    b.classList.toggle("on", on); b.setAttribute("aria-selected", on ? "true" : "false"); });
+  glideSeg($(".seg", bar), instant); }
 function switchTab(n) { shelfEdit = false;
+  if (n === "library") n = LIB.includes(P.libSide) ? P.libSide : "shelf";
+  if (LIB.includes(n) && P.libSide !== n) { P.libSide = n; saveP(); }
   if (n !== "doors") leaveRoomChannel();
   const cur = currentTab(); if (cur) tabScroll[cur] = scrollY;
   /* the new tab enters from the side you came from, so the row of tabs reads as a row */
   const was = TAB_ORDER.indexOf(cur), now = TAB_ORDER.indexOf(n);
   document.documentElement.style.setProperty("--slide", was < 0 || now < 0 || was === now ? "0px" : (now > was ? "22px" : "-22px"));
-  $$("nav button[data-tab]").forEach(b => { const on = b.dataset.tab === n;
+  $$("nav button[data-tab]").forEach(b => { const on = b.dataset.tab === navOf(n);
     b.classList.toggle("on", on); if (on) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current"); });
   $("#meBtn")?.classList.toggle("on", n === "taste");
   /* the outgoing screen used to just disappear while the incoming one eased in; now it
@@ -3447,6 +3464,7 @@ function switchTab(n) { shelfEdit = false;
     if (s === outgoing && !on) { s.classList.remove("on"); s.classList.add("leaving");
       setTimeout(() => s.classList.remove("leaving"), 230); }
     else s.classList.toggle("on", on); });
+  paintLib(n, !(LIB.includes(cur) && LIB.includes(n)));
   movePill(); scrollTo(0,0); RENDER[n]?.();
   /* some tabs draw after a fetch, so the old position may not exist yet on the first try:
      keep reaching for it briefly, and stop the moment the finger takes over */
@@ -3457,7 +3475,37 @@ function switchTab(n) { shelfEdit = false;
       if (Math.abs(scrollY - target) > 4 && ++k < 12) setTimeout(back, 90); };
     requestAnimationFrame(back); }
   if (n === "doors") setTimeout(markSeen, 1200); else paintDot(); }
-$$("nav button[data-tab]").forEach(b => b.onclick = () => switchTab(b.dataset.tab));
+$$("nav button[data-tab]").forEach(b => b.onclick = () => { if (b.dataset.held) { delete b.dataset.held; return; } switchTab(b.dataset.tab); });
+$$("#libBar [data-lib]").forEach(b => b.onclick = () => { if (currentTab() !== b.dataset.lib) switchTab(b.dataset.lib); });
+/* Holding a tab does the thing you'd go there to do: hold Library and the shelf is dealt
+   onto the wheel, hold Rooms and you get the list of everywhere to go. A hold that fires
+   eats the tap that follows it, so letting go doesn't also switch tabs. */
+/* A sideways swipe anywhere on a page moves one tab along, in the bar's order with
+   Library's two sides as two stops. It stands aside for anything that already owns a
+   sideways drag — a pager, a row that scrolls, a slider, the shelf while you arrange
+   it, anything you type in — and it has to be clearly sideways and quick, so a page
+   scroll or a slow drag never turns into a tab change. */
+(() => { const main = $("main"); if (!main) return; let x0 = null, y0 = 0, t0 = 0;
+  const owns = el => { for (let n = el; n && n !== main; n = n.parentElement) {
+    if (n.matches?.("input,textarea,select,[contenteditable],.pager,[id$='Pager'],#pager,.wheelwrap,.grid.editing,.rate")) return true;
+    if (n.scrollWidth > n.clientWidth + 2 && /auto|scroll/.test(getComputedStyle(n).overflowX)) return true; }
+    return false; };
+  main.addEventListener("touchstart", e => { x0 = null;
+    if (e.touches.length !== 1 || !me || shelfEdit || $("#sheet")?.classList.contains("on")) return;
+    if (!TAB_ORDER.includes(currentTab()) || owns(e.target)) return;
+    x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; t0 = Date.now(); }, { passive:true });
+  main.addEventListener("touchend", e => { if (x0 == null) return;
+    const c = e.changedTouches[0], dx = c.clientX - x0, dy = c.clientY - y0, ms = Date.now() - t0; x0 = null;
+    if (Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 2 || ms > 600) return;
+    const at = TAB_ORDER.indexOf(currentTab()), to = TAB_ORDER[at + (dx < 0 ? 1 : -1)];
+    if (to) switchTab(to); }, { passive:true }); })();
+const HOLDS = { library: () => openWheel(), doors: () => { if (currentTab() !== "doors") switchTab("doors"); openFeedPick(); } };
+$$("nav button[data-tab]").forEach(b => { const act = HOLDS[b.dataset.tab]; if (!act) return; let t = null;
+  const stop = () => { clearTimeout(t); t = null; };
+  b.addEventListener("pointerdown", e => { delete b.dataset.held; if (e.button || !me) return; stop();
+    t = setTimeout(() => { t = null; b.dataset.held = "1"; if (navigator.vibrate) navigator.vibrate(12); act(); }, 480); });
+  ["pointerup", "pointercancel", "pointerleave"].forEach(ev => b.addEventListener(ev, stop));
+  b.addEventListener("contextmenu", e => e.preventDefault()); });
 markLive();
 const currentTab = () => $$("main section").find(s => s.classList.contains("on"))?.id.replace("tab-","");
 const refresh = () => RENDER[currentTab()]?.();
@@ -3949,6 +3997,30 @@ function weekCard() {
 }
 
 /* ============ HOME: your room · following · everyone ============ */
+/* Tonight: the "what next?" answer on the first screen, so deciding doesn't mean a trip
+   to the shelf. What you're in the middle of, the next thing on your shelf, the season if
+   one is running, and the wheel. Nothing on the shelf and nothing on the go, and the card
+   doesn't appear — an empty prompt on the home screen is just the app wanting something. */
+function tonightCard() {
+  const L = activeList(), n = myNow.find(x => x.works || works[x.work_id]);
+  const nw = n && (n.works || works[n.work_id]);
+  const next = (L ? L.items : []).map(id => works[id])
+    .find(w => w && !logged(w.id) && !isSoon(w) && !nowOf(w.id));
+  if (!nw && !next) return "";
+  let season = "";
+  try { const S = HALLOWEEN_2026, ph = seasonPhase(S);
+    if (ph.key === "live") { const got = S.challenges.reduce((t, c) => t + seasonEntries(c).length, 0);
+      season = `<button class="chip" id="tonightSeason">${esc(S.name)} · ${got ? `${got} logged` : "log one to start"}</button>`; } } catch {}
+  const row = (w, sub) => `<div class="row" data-w="${esc(w.id)}">${cover(w)}<div class="t"><b>${esc(w.title)}</b><small>${tag(w.kind)} ${sub}</small></div></div>`;
+  return `<div class="card look" id="tonight"><div class="h"><span>Tonight</span>${season}</div>
+    ${nw ? row(nw, nowLine(n)) : ""}${next ? row(next, nw ? "next on your shelf" : "up next on your shelf") : ""}
+    <div class="stack" style="flex-direction:row"><button class="btn soft" id="tonightSpin">Can't decide?</button>${
+      next ? `<button class="btn ghost" id="tonightLog" data-log="${esc(next.id)}">${K(next.kind).verb.replace(/^./, c => c.toUpperCase())} it</button>` : ""}</div></div>`; }
+function wireTonight() { const c = $("#tonight"); if (!c) return;
+  $$("[data-w]", c).forEach(x => x.onclick = () => openWork(x.dataset.w));
+  const sp = $("#tonightSpin"); if (sp) sp.onclick = () => openWheel();
+  const lg = $("#tonightLog"); if (lg) lg.onclick = () => { const w = works[lg.dataset.log]; if (w) openLog(w); };
+  const ss = $("#tonightSeason"); if (ss) ss.onclick = () => { P.clubTab = "season"; saveP(); switchTab("clubs"); }; }
 async function renderDoors() {
   const body = $("#doorsBody"); const R = activeRoom();
   const mem = memories()[0], rev = dueReview();
@@ -3958,6 +4030,7 @@ async function renderDoors() {
   const places = feedPlaces(), cur = places.find(p => p.key === placeNow()) || places[0];
   body.style.setProperty("--room", `var(--${roomColour(R)})`);
   body.innerHTML = `${pagerHTML(places, cur.key, { id:"pager", titleId:"feedPick", titleHint:"see everywhere you can go" })}
+    ${tonightCard()}
     <div id="feedBody">${skeleton(3)}</div>
     ${weekCard()}${rev ? `<div class="card look" id="revCard"><div class="h"><span>${esc(rev.head)}</span><span class="tag dim">${rev.kind === "year" ? "the year" : "last month"}</span></div>
       <div class="stack"><button class="btn soft" id="revGo">Have a look</button></div></div>` : ""}
@@ -3995,6 +4068,7 @@ async function renderDoors() {
      leaves the way you came from and the new one arrives from the other side — the same
      rule the tabs already follow. */
   $("#feedPick").onclick = () => openFeedPick();
+  wireTonight();
   wirePager($("#pager", body), places, cur.key, goPlace);
   pagerArrive(feedTurn ? (feedTurn < 0 ? 1 : -1) : 0, $("#pager", body));
   /* once a session, on the way in: the room's name, then who is in it, then what they said.
@@ -5018,7 +5092,7 @@ function renderShelf() {
     if (!h) return; b.textContent = "…";
     const row = b.closest(".row") || b.parentElement;
     if (await answerHand(h, yes)) { say(yes ? "On the shelf" : "Gone");
-      if (yes) flyTo(row, $('nav button[data-tab="shelf"]'), works[h.work_id]?.cover);
+      if (yes) flyTo(row, $('nav button[data-tab="library"]'), works[h.work_id]?.cover);
       if (row && !REDUCED) { row.classList.add("folding");
         setTimeout(renderShelf, yes ? 600 : 460); } else renderShelf(); } });
   const dn = $("#shelfDone"); if (dn) dn.onclick = () => { shelfEdit = false; renderShelf(); };
@@ -7719,7 +7793,10 @@ async function openWork(id) { let w = works[id]; if (!w) { try { const rows = aw
     ${isSoon(w) ? `<p class="sub" style="margin-top:12px">Out ${when(w.release)}. It's on your shelf until then.</p>` : ""}
     <div id="wNow"></div>
     <div class="stack"><button class="btn ${isSoon(w)?"ghost":""}" id="wLog">${logged(w.id)?"Log it again":isSoon(w)?"Log it anyway":cfg.verb.replace(/^./,c=>c.toUpperCase())+" it"}</button><button class="btn ghost" id="wShelf">${activeList()?.items.includes(w.id)?"Take it off the shelf":"Put it on the shelf"}</button>${
-      reachable().length ? `<button class="btn quiet" id="wHand">Tell someone to ${cfg.verb === "read" ? "read" : cfg.verb === "played" ? "play" : "watch"} it</button>` : ""}</div>
+      reachable().length ? `<button class="btn quiet" id="wHand">Tell someone to ${cfg.verb === "read" ? "read" : cfg.verb === "played" ? "play" : "watch"} it</button>` : ""}${
+      myOpenClubs().length ? `<button class="btn quiet" id="wClub">Add it to a club</button>` : ""}</div>
+    <div class="chips" id="wClubs" hidden style="margin-top:8px"><p class="sub" style="width:100%;margin:0 0 2px">Lit means it's in there. Tap to add or take out.</p>${myOpenClubs().map(c =>
+      `<button class="chip ${(c.items || []).includes(w.id) ? "on" : ""}" data-addclub="${esc(c.id)}">${esc(c.name)}</button>`).join("")}</div>
     <div class="card"><div class="h"><span>Details</span></div>${Object.entries(w.credits||{}).filter(([k,v]) => v).map(([r,n]) => `<div class="kv"><span>${r === "dp" ? "camerawork" : r}</span>${esc(n)}</div>`).join("")}${w.meta?.genres?.length?`<div class="kv"><span>genres</span>${esc(w.meta.genres.join(", "))}</div>`:""}</div>
     ${w.kind === "tv" && !isPart(w.id) ? `<details class="fold" id="wParts"><summary>Seasons and episodes</summary>
       <div id="wSeasons"><p class="empty" style="padding:12px 0">Looking</p></div></details>` : ""}
@@ -7799,6 +7876,16 @@ async function openWork(id) { let w = works[id]; if (!w) { try { const rows = aw
       at.oninput = () => { clearTimeout(t); t = setTimeout(() => startNow(w.id, at.value.trim() || null), 600); }; } };
   paintNow();
   const hb = $("#wHand"); if (hb) hb.onclick = () => openHand(w);
+  /* a club is a list with a deadline, so putting something in one belongs on the title
+     itself rather than behind the club's editor and a search for the same title again */
+  const wcb = $("#wClub"); if (wcb) wcb.onclick = () => { const row = $("#wClubs"); row.hidden = !row.hidden; };
+  $$("[data-addclub]").forEach(b => b.onclick = async () => { const c = clubs.find(x => x.id === b.dataset.addclub); if (!c) return;
+    const had = (c.items || []).includes(w.id), items = had ? c.items.filter(id => id !== w.id) : [...(c.items || []), w.id];
+    b.disabled = true;
+    try { await q(sb.from("clubs").update({ items }).eq("id", c.id)); c.items = items; b.classList.toggle("on", !had);
+      say(had ? `Out of ${c.name}` : `Added to ${c.name}`); if (currentTab() === "clubs") renderClubs(); }
+    catch (e) { oops(e, "Couldn't change the club"); }
+    b.disabled = false; });
   paintWatch(w);
   const st = await tagStats(w.id); const top = Object.entries(st.counts).sort((a,b)=>b[1]-a[1]).slice(0,5);
   /* one score per person, latest wins — the same rule the averages use */
@@ -8293,7 +8380,7 @@ function openLog(w, edit = null) { const cfg = K(w.kind); const loved = edit?.lo
       const coverAt = $("#sheetBody .head .co")?.getBoundingClientRect();
       let placed = null;
       if (firstTime) { try { placed = await rankInsert(w.kind, w.id, false, askInSheet); } catch {} }
-      if (!edit?.id) { if (coverAt) flyTo({ getBoundingClientRect:() => coverAt }, $('nav button[data-tab="archive"]'), w.cover);
+      if (!edit?.id) { if (coverAt) flyTo({ getBoundingClientRect:() => coverAt }, $('nav button[data-tab="library"]'), w.cover);
         if (offShelf) tickAway(w.id); }
       closeSheet(); refresh();
       if (offShelf) say("Off the shelf");

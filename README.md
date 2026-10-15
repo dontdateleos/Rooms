@@ -63,8 +63,13 @@ The service-role key must never go near this repo.
 
 ## Layout
 
-Four tabs — **Doors** (your room · following · everyone) · **Shelf** · **Taste** · **Clubs** —
-with a floating **+** for logging. Tap any title for its work page; tap any handle for a profile.
+Four tabs — **Rooms** · **Seasons** · **Library** · **You** — with a floating **+** for logging.
+Library is the shelf and the archive as two sides of one tab, with a toggle at the top; it
+opens on whichever side you left it. Swipe sideways anywhere on a page to move one tab along.
+Hold **Library** to spin the shelf; hold **Rooms** for the list of everywhere to go.
+The Rooms tab opens with **Tonight**: what you're on, the next thing on your shelf, the
+season if one is running, and the wheel. Tap any title for its work page — log it, shelve
+it, hand it to someone or put it in one of your clubs from there; tap any handle for a profile.
 
 Hold a tile on the shelf to arrange it: the grid starts jiggling, drag to reorder, **×** takes
 something off, **Done** finishes. Arranging once makes the order yours — until then what's out

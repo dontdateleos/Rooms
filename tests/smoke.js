@@ -52,15 +52,33 @@ const BASE = (process.env.BASE || "http://127.0.0.1:8934").replace(/\/$/, "");
     await step("room picker", async () => { await tap("#feedPick"); await wait(500); await expect("[data-fp]", "rooms to pick"); await closeSheet(); });
     await step("room menu", async () => { await tap("#roomMenu"); await wait(500); await expect("#roomSeats", "the members"); await closeSheet(); });
     await step("bell", async () => { await tap("#bellBtn"); await wait(500); await expect("#noteBody", "the bell's list"); await closeSheet(); });
-    await step("archive", async () => { await tap("nav button", "Archive"); await wait(900); await expect(".archcard", "archive cards");
+    await step("archive", async () => { await tap("nav button", "Library"); await wait(700); await tap("#libBar [data-lib='archive']"); await wait(900); await expect(".archcard", "archive cards");
       await tap('#cabPager [data-go="1"]'); await wait(900); await expect(".archcard", "cards for one medium");
       await tap('#cabPager .pgdot'); await wait(700); });
     await step("seasons", async () => { await tap("nav button", "Seasons"); await wait(900); await expect("#seasonPager", "the seasons page");
       await tap('#seasonPager [data-go="1"]'); await wait(900);
       if (!(await page.locator("#seasonPager .hl").innerText()).includes("clubs")) throw new Error("couldn't move to friend clubs");
       await tap('#seasonPager [data-go="1"]'); await wait(700); });
-    await step("shelf", async () => { await tap("nav button", "Shelf"); await wait(900); await expect("#shelfGrid .cell", "shelf posters"); });
-    await step("your page", async () => { await tap("#meBtn"); await wait(1200); await expect("#tasteCog", "settings"); });
+    await step("shelf", async () => { await tap("nav button", "Seasons"); await wait(700);
+      /* Library comes back to the side you left it on */
+      await tap("nav button", "Library"); await wait(900); await expect("#tab-archive.on", "the archive, where Library was left");
+      await tap("#libBar [data-lib='shelf']"); await wait(900); await expect("#shelfGrid .cell", "shelf posters"); });
+    await step("tonight", async () => { await tap("nav button", "Rooms"); await wait(1200); await expect("#tonight", "the tonight card");
+      await tap("#tonightSpin"); await wait(700); if (!(await page.$("#sheet.on"))) throw new Error("Can't decide? didn't open the wheel"); await closeSheet(); });
+    await step("swipe between tabs", async () => {
+      const swipe = async dx => { await page.evaluate(dx => { const m = document.querySelector("main"), y = 600;
+        const t = (x) => new Touch({ identifier:1, target:m, clientX:x, clientY:y });
+        m.dispatchEvent(new TouchEvent("touchstart", { touches:[t(200)], changedTouches:[t(200)], bubbles:true }));
+        m.dispatchEvent(new TouchEvent("touchend", { touches:[], changedTouches:[t(200 + dx)], bubbles:true })); }, dx); await wait(800); };
+      await swipe(-160); await expect("#tab-clubs.on", "Seasons after a swipe left");
+      await swipe(160); await expect("#tab-doors.on", "Rooms after a swipe back"); });
+    await step("hold library to spin", async () => { await tap("nav button", "Seasons"); await wait(600);
+      const b = page.locator('nav button[data-tab="library"]'); const box = await b.boundingBox();
+      await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2); await page.mouse.down(); await wait(650); await page.mouse.up(); await wait(700);
+      if (!(await page.$("#sheet.on"))) throw new Error("holding Library didn't open the wheel");
+      if (await page.$("#tab-shelf.on, #tab-archive.on")) throw new Error("the hold also switched tabs");
+      await closeSheet(); });
+    await step("your page", async () => { await tap("nav button", "You"); await wait(1200); await expect("#tasteCog", "settings"); });
     await step("log something", async () => { await tap("#add"); await wait(700);
       if (!(await page.$("#sheet.on"))) throw new Error("the + button didn't open anything"); await closeSheet(); });
 
