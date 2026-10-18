@@ -772,6 +772,13 @@ header:has(#meBtn:not([hidden])) .logoword{display:none}
 .er.seen .t{color:var(--mute)}
 .er .es{background:none;border:0;font-family:var(--head);font-weight:900;font-size:13px;color:var(--mute);cursor:pointer;padding:2px 4px;flex:none}
 .er .es.has{color:var(--ink)}
+.eptalk{display:flex;align-items:center;gap:3px;border:0;background:var(--cream2);color:var(--ink);border-radius:999px;padding:5px 9px 5px 7px;font:inherit;font-size:12px;font-weight:800;cursor:pointer;flex:none;min-height:30px}
+.eptalk .hrt{width:15px;height:15px}
+.eptalk.locked{color:var(--mute)}
+.eplock{display:flex;flex-direction:column;align-items:center;gap:8px;padding:26px 0;color:var(--mute)}
+.eplock .hrt{width:34px;height:34px}
+.eplock b{font-family:var(--head);font-weight:800;font-size:16px;color:var(--ink)}
+.epnote{font-size:13.5px;line-height:1.45;color:var(--ink);white-space:normal;margin-top:2px}
 .tick{width:22px;height:22px;border-radius:999px;border:2px solid var(--line);background:none;flex:none;
   cursor:pointer;display:grid;place-items:center;padding:0;transition:background .18s,border-color .18s}
 .tick.on{background:var(--mint);border-color:var(--mint)}
@@ -9047,7 +9054,7 @@ async function paintParts(show) {
       box2.dataset.done = "1";
       box2.innerHTML = eps.length ? eps.map(ep => epRow(ep)).join("")
         : `<p class="empty" style="padding:8px 0">No episodes listed.</p>`;
-      wireEps(box2, show); }
+      wireEps(box2, show); paintEpTalk(box2, eps); }
   });
   const rs = $("#rateSeason");
   if (rs) rs.onclick = async () => {
@@ -9057,6 +9064,43 @@ async function paintParts(show) {
     await ensurePart(w); openLog(w);
   };
 }
+/* ---------- what your people said about an episode, kept shut until you've seen it ----------
+   A note on an episode is the most spoilery thing in the app, so on a show's page each
+   episode says how many of your people said something — and only opens once you've ticked
+   it off or rated it. Ticking it from here opens it in the same move. */
+const epSeen = id => mySeen.has(id) || myPartScore(id) != null;
+async function paintEpTalk(box, eps) {
+  const ids = eps.map(e => e.id); if (!ids.length) return;
+  const people = new Set([...rooms.flatMap(r => r.members.map(m => m.id)), ...follows.map(f => f.followee)]); people.delete(me.id);
+  if (!people.size) return;
+  let es = []; try { es = await q(sb.from("entries").select(ENTRY_SEL).in("work_id", ids).in("user_id", [...people]).limit(500)); } catch { return; }
+  const by = {}; for (const e of es) if (e.note) (by[e.work_id] ||= []).push(e);
+  for (const id of ids) { const list = by[id]; const row = $(`.er[data-ep="${CSS.escape(id)}"]`, box); if (!list || !row || $(".eptalk", row)) continue;
+    const b = document.createElement("button");
+    b.className = "eptalk" + (epSeen(id) ? "" : " locked"); b.dataset.eptalk = id;
+    b.setAttribute("aria-label", `${list.length} ${list.length === 1 ? "note" : "notes"} from your people${epSeen(id) ? "" : " — opens once you've seen it"}`);
+    b.innerHTML = `${epSeen(id) ? BUBBLE : LOCK_SVG}<span>${list.length}</span>`;
+    b.onclick = () => openEpTalk(works[id], list, () => { b.classList.toggle("locked", !epSeen(id)); b.innerHTML = `${epSeen(id) ? BUBBLE : LOCK_SVG}<span>${list.length}</span>`;
+      const t = $("[data-tick]", row); if (t && mySeen.has(id)) { t.classList.add("on"); t.setAttribute("aria-pressed", "true"); row.classList.add("seen"); } });
+    row.insertBefore(b, $(".es", row)); } }
+const LOCK_SVG = `<svg viewBox="0 0 24 24" aria-hidden="true" class="hrt"><rect x="5" y="10.5" width="14" height="10" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" fill="none" stroke="currentColor" stroke-width="2"/></svg>`;
+function openEpTalk(ep, list, after) { if (!ep) return;
+  const head = `<h3>${esc(partName(ep.id))} · ${esc(ep.title || "")}</h3>`;
+  const n = list.length, names = [...new Set(list.map(e => e.profiles?.handle).filter(Boolean))];
+  if (!epSeen(ep.id)) {
+    openSheet(`${head}<p class="sub">${esc(names.slice(0, 3).join(", "))}${names.length > 3 ? " and others" : ""} said something about this one. It stays shut until you've seen it, so nothing gets spoiled.</p>
+      <div class="eplock">${LOCK_SVG}<b>${n} ${n === 1 ? "note" : "notes"} waiting</b></div>
+      <div class="stack"><button class="btn" id="epOpen">I've seen it — open them</button><button class="btn quiet" id="epNot">Not yet</button></div>`);
+    $("#epNot").onclick = closeSheet;
+    $("#epOpen").onclick = async () => { $("#epOpen").disabled = true;
+      try { await tickEpisode(ep, true); } catch { say("Couldn't tick it off"); $("#epOpen").disabled = false; return; }
+      after?.(); openEpTalk(ep, list, after); };
+    return; }
+  openSheet(`${head}<p class="sub">What your people said.</p>
+    <div class="card fr">${list.sort(newestFirst).map(e => `<div class="frrow" style="cursor:default;align-items:flex-start">${avatar(e.profiles)}<span class="t"><b>${esc(e.profiles?.handle || "someone")}</b><span class="epnote">${noteHTML(e.note)}</span></span>${stars(e.score, "sm")}</div>`).join("")}</div>
+    <div class="stack"><button class="btn soft" id="epMine">${myPartScore(ep.id) != null ? "Change yours" : "Add yours"}</button><button class="btn quiet" id="epClose">Close</button></div>`);
+  $("#epClose").onclick = closeSheet;
+  $("#epMine").onclick = async () => { await ensurePart(ep); openLog(ep); }; }
 const epRow = ep => { const sc = myPartScore(ep.id), on = mySeen.has(ep.id);
   return `<div class="er ${on ? "seen" : ""}" data-ep="${esc(ep.id)}">
     <button class="tick ${on ? "on" : ""}" data-tick="${esc(ep.id)}" aria-pressed="${on}"

@@ -140,6 +140,16 @@ const entries = LOG.map(([u,w,score,d,note,loved], i) => ({
   breakdown:null, context:null, room_only:false, created_at:ago(d),
 }));
 
+/* The Wire, season one, so a show's page has episodes to open — and two of them have
+   something said about them: one you've seen, one you haven't, which stays shut */
+works["tv:1:s1"] = { id:"tv:1:s1", parent_id:"tv:1", kind:"tv", title:"Season 1", year:"2002", length:4, cover:works["tv:1"].cover, meta:{} };
+[["The Target"],["The Detail"],["The Buys"],["Old Cases"]].forEach(([title], i) => {
+  works[`tv:1:s1e${i + 1}`] = { id:`tv:1:s1e${i + 1}`, parent_id:"tv:1:s1", kind:"tv", title, year:"2002", length:59, meta:{} }; });
+entries.push(
+  { id:"ep1", user_id:"u-mo", work_id:"tv:1:s1e2", score:9, rated_on:day(9), note:"The chess scene. ||D'Angelo explaining the board to Bodie is the whole show in five minutes.||", loved:null, breakdown:null, context:null, room_only:false, part:true, created_at:ago(9) },
+  { id:"ep2", user_id:"u-cass", work_id:"tv:1:s1e3", score:8, rated_on:day(6), note:"Did not see that ending coming. ||Wallace.||", loved:null, breakdown:null, context:null, room_only:false, part:true, created_at:ago(6) },
+  { id:"ep3", user_id:"u-rue", work_id:"tv:1:s1e3", score:10, rated_on:day(5), note:"Best episode so far and it isn't close.", loved:null, breakdown:null, context:null, room_only:false, part:true, created_at:ago(5) });
+
 const eid = (u,w) => entries.find(e => e.user_id === u && e.work_id === w)?.id;
 
 /* the games run on the calendar, so the demo's are pinned to whenever it's opened:
@@ -184,6 +194,7 @@ export function demoSeed() {
     profiles:PEOPLE.map(p => ({ ...p, avatar:null, created_at:ago(900) })),
     works,
     entries,
+    seen:[{ user_id:"me", work_id:"tv:1:s1e1" }, { user_id:"me", work_id:"tv:1:s1e2" }],
 
     lists:[{ id:"L1", owner:"me", name:"the shelf", created_at:ago(400) }],
     list_items:["film:2","film:4","tv:2","book:3","game:2","film:20","game:20"]
