@@ -1471,6 +1471,11 @@ html.storying{overflow:hidden}
 .pushask small{font-size:13px;color:var(--mute);line-height:1.4}
 .pushask .row2{display:flex;gap:8px;margin-top:6px}
 .pushask .row2 .btn{flex:1;margin:0}
+/* hold a poster */
+.co{-webkit-touch-callout:none}
+.holdrate{margin:4px 0 6px}
+.holdacts{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.holdacts .chip{min-height:40px}
 /* ask the room */
 .askcard{padding:14px}
 .askq{display:flex;gap:10px;align-items:flex-start}
@@ -5178,6 +5183,7 @@ async function renderRoomFeed(fb, R) {
       </div></div>`; })() : ""}
     `;
   endLine($('[data-rsec="talk"]', fb), es, 60);
+  if (!P.holdTip && myEntries.length >= 3) { P.holdTip = 1; saveP(); setTimeout(() => say("Tip: hold any poster to rate, shelve or pass it on"), 1600); }
   $("#roomMenu", fb).onclick = () => openRoomMenu(R); wireTonight(); if (R.members.length > 1) paintAsks(R);
   const segEl = $(".roomsecs", fb); glideSeg(segEl, true);
   if (window.ResizeObserver && segEl) new ResizeObserver(() => glideSeg(segEl, true)).observe(segEl);
@@ -7239,6 +7245,50 @@ function bracketHTML(R, br, g) {
         return `<button class="vsit ${on ? "on" : ""}" data-bv="${cur.r}:${i}:${esc(id)}">${cover(w)}<span><b>${esc(w.title || "")}</b><small>${mt.mine ? `<span class="vn" data-n="${n}">${n}</span> ${n === 1 ? "vote" : "votes"}` : `seed ${br.seeds.indexOf(id) + 1}`}</small></span></button>`; }).join(`<span class="bvs">v</span>`)}</div>`).join("")}
     ${pastHTML}</div>`; }
 
+/* ---------- hold a poster ----------
+   Anywhere a cover shows — the feed, the shelf, search, a friend's answer — holding it
+   brings up what you'd do with it: rate it there and then (a star opens the log with
+   that score already in), shelve it, start it, hand it to someone. A plain tap does
+   what it always did. Whatever it's a cover of is found from the ids already on the page. */
+function workAt(el) {
+  for (let n = el, depth = 0; n && n !== document.body && depth < 5; n = n.parentElement, depth++) {
+    if (n.closest && n.closest(".swdeck,.vs,.story")) return null;
+    for (const v of Object.values(n.dataset || {})) {
+      if (works[v]?.title && !works[v].parent_id) return { w:works[v] };
+      if (window.__hits?.[v]) return { hit:window.__hits[v] }; } }
+  return null; }
+async function openHold(found) {
+  let w = found.w; if (!w && found.hit) { try { w = await ensureWork(found.hit); } catch (e) { oops(e, "Couldn't open that"); return; } }
+  if (!w) return;
+  const shelved = () => !!activeList()?.items.includes(w.id), mine = myEntries.filter(e => e.work_id === w.id).sort(newestFirst)[0];
+  const cfg = K(w.kind), V = cfg.verb.replace(/^./, c => c.toUpperCase());
+  openSheet(`<div class="head">${cover(w)}<div class="hh"><h3>${esc(w.title)}</h3><p class="sub">${tag(w.kind)} ${esc(w.year || "")}${mine ? ` · you gave it ${(mine.score / 2).toFixed(1)}` : ""}</p></div></div>
+    <div class="lbl">${mine ? `${V} it again` : `${V} it`} — tap a star</div>
+    <div class="rate holdrate">${[1, 2, 3, 4, 5].map(i => `<button data-hs="${i * 2}" aria-label="${i} stars"><svg viewBox="0 0 24 24">${starPath(0)}</svg></button>`).join("")}</div>
+    <div class="holdacts">
+      ${isSoon(w) || !logged(w.id) ? `<button class="chip" id="hShelf">${shelved() ? "Take it off the shelf" : "Put it on the shelf"}</button>` : ""}
+      ${!logged(w.id) && !isSoon(w) && !nowOf(w.id) ? `<button class="chip" id="hNow">I'm on it now</button>` : ""}
+      ${reachable().length ? `<button class="chip" id="hHand">Tell someone</button>` : ""}
+      <button class="chip" id="hPage">Open its page</button></div>
+    <div class="stack"><button class="btn quiet" id="hClose">Close</button></div>`);
+  $$("[data-hs]").forEach(b => b.onclick = () => { const sc = +b.dataset.hs; closeSheet(); setTimeout(() => openLog(w, null, sc), 360); });
+  $("#hClose").onclick = closeSheet; $("#hPage").onclick = () => openWork(w.id);
+  const hs = $("#hShelf"); if (hs) hs.onclick = async () => { hs.disabled = true;
+    try { if (shelved()) { await removeFromShelf(w.id); say("Off the shelf"); } else { await addToShelf(w.id); say("On the shelf", "good"); } } finally { closeSheet(); } };
+  const hn = $("#hNow"); if (hn) hn.onclick = async () => { try { await startNow(w.id); say(`On it: ${w.title}`, "good"); } catch (e) { oops(e, "Couldn't start it"); } closeSheet(); };
+  const hh = $("#hHand"); if (hh) hh.onclick = () => openHand(w); }
+(() => { let timer = null, start = null, fired = false;
+  const cancel = () => { clearTimeout(timer); timer = null; };
+  document.addEventListener("pointerdown", e => { fired = false;
+    const t = e.target.closest?.(".co, .tn-main, .aska, .swm, .ll-w, .nopt"); if (!t || !me) return;
+    const found = workAt(t); if (!found) return;
+    start = [e.clientX, e.clientY];
+    timer = setTimeout(() => { timer = null; fired = true; navigator.vibrate?.(12); openHold(found); }, 480); }, { passive:true });
+  document.addEventListener("pointermove", e => { if (timer && start && Math.hypot(e.clientX - start[0], e.clientY - start[1]) > 10) cancel(); }, { passive:true });
+  for (const ev of ["pointerup", "pointercancel", "scroll"]) document.addEventListener(ev, cancel, { passive:true, capture:true });
+  /* the tap that ends a hold isn't also a tap */
+  document.addEventListener("click", e => { if (fired) { fired = false; e.preventDefault(); e.stopPropagation(); } }, true);
+  document.addEventListener("contextmenu", e => { if (e.target.closest?.(".co")) e.preventDefault(); }); })();
 /* ---------- ask the room ----------
    The other way round from handing somebody a title: you say what you're after and the
    room answers with titles. Lives at the top of Talk for a fortnight, or until whoever
@@ -9295,7 +9345,7 @@ function faceEl(name, path) {
               : `<span class="face noface" aria-hidden="true">${esc(ini)}</span>`; }
 
 /* ============ THE LOG SHEET ============ */
-function openLog(w, edit = null) { const cfg = K(w.kind); const loved = edit?.loved ? edit.loved.slice() : []; const ctx = Object.assign({}, edit?.context); let score = edit ? edit.score : 0;
+function openLog(w, edit = null, preset = 0) { const cfg = K(w.kind); const loved = edit?.loved ? edit.loved.slice() : []; const ctx = Object.assign({}, edit?.context); let score = edit ? edit.score : preset;
   const starRow = () => `<div class="rate">${[0,1,2,3,4].map(i => `<button data-i="${i}" aria-label="${i+1} stars"><svg viewBox="0 0 24 24">${starPath(Math.max(0,Math.min(1,score/2-i)))}</svg></button>`).join("")}</div><div class="hint">Press and drag across the stars</div>`;
   openSheet(`<div class="head">${cover(w)}<div class="hh"><h3>${esc(w.title)}</h3><p class="sub">${tag(w.kind)} ${esc(w.year||"")}${w.creator?" · "+esc(w.creator):""}</p></div></div>
     <div class="lbl">Date ${cfg.verb}</div><input type="date" id="wDate" value="${edit?esc(edit.rated_on):today()}">
@@ -9316,7 +9366,7 @@ function openLog(w, edit = null) { const cfg = K(w.kind); const loved = edit?.lo
         `<button data-who="${k}" class="${(edit ? (edit.room_only ? "room" : "all") : (P.postTo === "all" ? "all" : "room")) === k ? "on" : ""}">${l}</button>`).join("")}</div>
       <p class="sub" id="whoNote"></p>
       <p class="sub" style="margin-top:4px">Everyone means anybody with an account, not just people you know. Just the room means ${rooms.length === 1 ? esc(rooms[0].name) : "members of your rooms"} and nobody else.</p>` : ""}
-    <div class="stack"><button class="btn" id="wSave" ${edit?"":"disabled"}>${edit?"Save changes":"Rate it to save"}</button><button class="btn quiet" id="wCancel">Not now</button></div><p class="msg" id="wMsg"></p>`);
+    <div class="stack"><button class="btn" id="wSave" ${edit||preset?"":"disabled"}>${edit?"Save changes":preset?"Save the entry":"Rate it to save"}</button><button class="btn quiet" id="wCancel">Not now</button></div><p class="msg" id="wMsg"></p>`);
   /* a note half-written when the phone rang is still there next time — kept a fortnight */
   if (!edit) { let dt; $("#wNote").addEventListener("input", e => { clearTimeout(dt); dt = setTimeout(() => {
       const d = P.drafts = Object.fromEntries(Object.entries(P.drafts || {}).filter(([, v]) => Date.now() - v.at < 14 * 864e5));
