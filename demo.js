@@ -241,6 +241,8 @@ export function demoSeed() {
 
     room_answers:answers,
     room_votes:roomVotes,
+    room_asks:[{ id:"a1", room_id:"r1", user_id:"u-cass", body:"Something short and tense for Friday? Under two hours.", closed:false, created_at:ago(1) }],
+    room_ask_answers:[{ ask_id:"a1", user_id:"u-mo", work_id:"film:5", note:"89 minutes and Ben Kingsley never blinks.", created_at:ago(0.8) }],
     room_nights:[{ id:"n1", room_id:"r1", at:soon(2), options:["film:2","film:4","film:9"], created_by:"u-mo", created_at:ago(1) }],
     room_brackets:[{ room_id:"r1", month:MONTH, kind:"film", seeds:SEEDS, created_by:"u-mo", created_at:ago(20) }],
 

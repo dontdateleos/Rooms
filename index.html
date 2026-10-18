@@ -1471,6 +1471,22 @@ html.storying{overflow:hidden}
 .pushask small{font-size:13px;color:var(--mute);line-height:1.4}
 .pushask .row2{display:flex;gap:8px;margin-top:6px}
 .pushask .row2 .btn{flex:1;margin:0}
+/* ask the room */
+.askcard{padding:14px}
+.askq{display:flex;gap:10px;align-items:flex-start}
+.askq .av svg{width:30px;height:30px}
+.askq p{margin:0;font-size:13px;color:var(--mute);font-weight:600}
+.askq p b{color:var(--ink);font-family:var(--head);font-weight:800}
+.askq p span{display:block;margin-top:3px;font-family:var(--head);font-weight:800;font-size:18px;line-height:1.25;color:var(--ink)}
+.askans{display:flex;gap:8px;overflow-x:auto;margin:12px -14px 0;padding:0 14px 2px;scrollbar-width:none}
+.aska{flex:none;width:96px;display:flex;flex-direction:column;gap:4px;border:0;background:none;color:var(--ink);text-align:left;padding:0;cursor:pointer}
+.aska .co{width:96px;height:140px;border-radius:10px;object-fit:cover}
+.aska b{font-family:var(--head);font-weight:800;font-size:12.5px;line-height:1.2}
+.aska small{font-size:11px;color:var(--mute);font-weight:600;line-height:1.3;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.askacts{display:flex;justify-content:flex-start;margin-top:12px}
+.askacts .btn{margin:0;flex:1}
+.askopen{display:flex;align-items:center;gap:10px;width:100%;border:1.5px dashed var(--line);background:none;color:var(--mute);border-radius:16px;padding:12px 14px;margin:12px 0 4px;font:inherit;font-size:13px;font-weight:700;text-align:left;cursor:pointer;min-height:48px}
+.askopen .hrt{width:20px;height:20px;flex:none}
 /* swipe for tonight */
 .swmatch{display:flex;gap:8px;margin-top:6px}
 .swm{flex:1 1 0;max-width:calc((100% - 16px) / 3);display:flex;flex-direction:column;gap:4px;border:0;background:var(--cream2);border-radius:14px;padding:7px;color:var(--ink);text-align:left;cursor:pointer;box-shadow:0 0 0 3px var(--butter)}
@@ -2072,10 +2088,10 @@ function peopleOf(w) { const c = w.credits || {}, out = [];
    refresh puts it back exactly as it was. */
 const DEMO = /(^|[#?&])demo\b/.test(location.hash + location.search);
 const LOCAL = !window.__mockSb && (DEMO || SUPABASE_URL.includes("YOUR-"));
-const GAME_KEYS = { room_answers:["room_id","week","user_id"], room_brackets:["room_id","month"], room_votes:["room_id","game","voter"] };
+const GAME_KEYS = { room_answers:["room_id","week","user_id"], room_brackets:["room_id","month"], room_votes:["room_id","game","voter"], room_ask_answers:["ask_id","user_id","work_id"] };
 function makeLocalSb(seed) {
   const KEY = "rooms.db";
-  const blank = { profile:null, signedOut:false, works:{}, profiles:[], entries:[], lists:[], list_items:[], rooms:[], room_members:[], clubs:[], club_members:[], club_votes:[], reactions:[], replies:[], top_lists:[], top_list_items:[], follows:[], nows:[], handovers:[], seen:[], blocks:[], reports:[], settings:[], handles:[], room_answers:[], room_brackets:[], room_votes:[], room_nights:[] };
+  const blank = { profile:null, signedOut:false, works:{}, profiles:[], entries:[], lists:[], list_items:[], rooms:[], room_members:[], clubs:[], club_members:[], club_votes:[], reactions:[], replies:[], top_lists:[], top_list_items:[], follows:[], nows:[], handovers:[], seen:[], blocks:[], reports:[], settings:[], handles:[], room_answers:[], room_brackets:[], room_votes:[], room_nights:[], room_asks:[], room_ask_answers:[] };
   const db = Object.assign({}, blank, seed || JSON.parse(localStorage.getItem(KEY) || "{}"));
   if (!db.nows) db.nows = [];                 /* a log written before v15 has no such key */
   if (!db.handovers) db.handovers = [];       /* nor one written before v16 */
@@ -2083,7 +2099,7 @@ function makeLocalSb(seed) {
   if (!db.blocks) db.blocks = []; if (!db.reports) db.reports = [];   /* nor before v21 */
   if (!db.settings) db.settings = [];                                 /* nor before v22 */
   if (!db.handles) db.handles = [];                                   /* nor before v23 */
-  for (const t of ["room_answers", "room_brackets", "room_votes", "room_nights"]) if (!db[t]) db[t] = [];   /* nor before the games */
+  for (const t of ["room_answers", "room_brackets", "room_votes", "room_nights", "room_asks", "room_ask_answers"]) if (!db[t]) db[t] = [];   /* nor before the games */
   /* v20 gave entries a part column with a default of false. A row written before that
      has no such key, and the feeds now ask for part = false by name — so without this
      every entry anybody already had would quietly stop appearing anywhere. */
@@ -5131,6 +5147,7 @@ async function renderRoomFeed(fb, R) {
          marked a moment seen before it was ever shown. */""}
     <div data-rsec="talk"${sec === "talk" ? "" : " hidden"}>
     ${tonightCard()}
+    <div id="roomAsks"></div>
     ${roomMomentsHTML(moments, freshMoments)}
     <div class="tagrow" id="talkTop" style="margin:18px 0 8px"><span class="lbl" style="margin:0">What the room said</span><span class="tfilters" aria-label="Room activity filter">${[["all","All"],["reviews","Reviews"],["activity","Activity"]].map(([k,l]) => `<button data-rfilter="${k}" class="${roomFilter===k?"on":""}">${l}</button>`).join("")}</span></div>${(() => { if (!roomEntries.length && !(roomFilter === "activity" && moments.length)) return blank("var(--pink)","“",roomFilter === "reviews" ? "No reviews yet" : roomFilter === "activity" ? "No activity yet" : "Nothing said yet",roomFilter === "reviews" ? "Reviews with a note or reaction will appear here." : roomFilter === "activity" ? "Room activity without a written review will appear here." : "Log something and it lands here for the room to see.",[["talkAdd","Log something"]]);
       const since = lastSeen(); let shown = false;
@@ -5161,7 +5178,7 @@ async function renderRoomFeed(fb, R) {
       </div></div>`; })() : ""}
     `;
   endLine($('[data-rsec="talk"]', fb), es, 60);
-  $("#roomMenu", fb).onclick = () => openRoomMenu(R); wireTonight();
+  $("#roomMenu", fb).onclick = () => openRoomMenu(R); wireTonight(); if (R.members.length > 1) paintAsks(R);
   const segEl = $(".roomsecs", fb); glideSeg(segEl, true);
   if (window.ResizeObserver && segEl) new ResizeObserver(() => glideSeg(segEl, true)).observe(segEl);
   $$("[data-rsecbtn]", fb).forEach(b => b.onclick = () => { const k = b.dataset.rsecbtn;
@@ -7222,6 +7239,62 @@ function bracketHTML(R, br, g) {
         return `<button class="vsit ${on ? "on" : ""}" data-bv="${cur.r}:${i}:${esc(id)}">${cover(w)}<span><b>${esc(w.title || "")}</b><small>${mt.mine ? `<span class="vn" data-n="${n}">${n}</span> ${n === 1 ? "vote" : "votes"}` : `seed ${br.seeds.indexOf(id) + 1}`}</small></span></button>`; }).join(`<span class="bvs">v</span>`)}</div>`).join("")}
     ${pastHTML}</div>`; }
 
+/* ---------- ask the room ----------
+   The other way round from handing somebody a title: you say what you're after and the
+   room answers with titles. Lives at the top of Talk for a fortnight, or until whoever
+   asked says it's answered. */
+async function loadAsks(R) {
+  const since = new Date(Date.now() - 14 * 864e5).toISOString();
+  try { const asks = await q(sb.from("room_asks").select("*").eq("room_id", R.id).gte("created_at", since).order("created_at", { ascending:false }).limit(4));
+    const open = asks.filter(a => !a.closed || a.user_id === me.id).slice(0, 2); if (!open.length) return [];
+    const ans = await q(sb.from("room_ask_answers").select("*").in("ask_id", open.map(a => a.id)));
+    await fillWorks(ans.map(x => x.work_id)).catch(() => {});
+    return open.map(a => ({ ...a, answers:ans.filter(x => x.ask_id === a.id).sort((x, y) => String(x.created_at).localeCompare(String(y.created_at))) })); }
+  catch { return null; } }
+function asksHTML(R, asks) {
+  if (asks == null) return "";
+  return asks.map(a => { const mine = a.user_id === me.id;
+    return `<div class="card askcard" data-ask="${esc(a.id)}"><div class="askq">${avatar(R.members.find(m => m.id === a.user_id) || { id:a.user_id })}<p><b>${esc(who(R, a.user_id))}</b> ${mine ? "asked" : "asks"}<span>${esc(a.body)}</span></p></div>
+      ${a.answers.length ? `<div class="askans">${a.answers.map(x => { const w = works[x.work_id] || {};
+        return `<button class="aska" data-gw="${esc(x.work_id)}" ${x.user_id === me.id ? `data-unask="${esc(a.id)}|${esc(x.work_id)}"` : ""}>${cover(w)}<b>${esc(w.title || "")}</b><small>${esc(who(R, x.user_id))}${x.note ? ` · “${esc(x.note)}”` : ""}</small></button>`; }).join("")}</div>` : `<p class="sub gline" style="margin:8px 0 0">No answers yet.</p>`}
+      <div class="askacts">${a.closed ? `<span class="tag dim">answered</span>` : mine ? `<button class="chip" data-askdone="${esc(a.id)}">That's answered</button>` : `<button class="btn soft" data-askans="${esc(a.id)}">Suggest something</button>`}</div></div>`; }).join("")
+    + `<button class="askopen" id="askRoom">${BUBBLE}<span>Ask the room for something to watch, read or play</span></button>`; }
+async function paintAsks(R) { const box = $("#roomAsks"); if (!box) return;
+  const asks = await loadAsks(R); if ($("#roomAsks") !== box) return;
+  box.innerHTML = asksHTML(R, asks); const again = () => paintAsks(R);
+  const ar = $("#askRoom", box); if (ar) ar.onclick = async () => {
+    const body = (await askText({ title:`Ask ${R.name}`, sub:"What are you after? The room answers with titles.", placeholder:"Something short and scary for Friday?", ok:"Ask", max:200 }) || "").trim();
+    if (!body) return; if (willNotPost(body)) { say("That word doesn't go up here. Say it another way."); return; }
+    try { await q(sb.from("room_asks").insert({ room_id:R.id, user_id:me.id, body }));
+      notify({ room:R.id, title:`${me.handle} is asking ${R.name}`, body, tag:"ask-" + R.id }); say("Asked", "good"); }
+    catch (e) { oops(e, /room_asks/.test(e.message) ? "Asking needs the latest database update" : "Couldn't ask"); } again(); };
+  $$("[data-gw]", box).forEach(b => b.onclick = () => openWork(b.dataset.gw));
+  $$("[data-askdone]", box).forEach(b => b.onclick = async () => {
+    try { await q(sb.from("room_asks").update({ closed:true }).eq("id", b.dataset.askdone)); } catch (e) { oops(e, "Couldn't close it"); } again(); });
+  $$("[data-askans]", box).forEach(b => b.onclick = () => { const a = asks.find(x => x.id === b.dataset.askans); if (a) openAnswerAsk(R, a, again); }); }
+function openAnswerAsk(R, a, onDone) {
+  const seen = new Set(), pool = [];
+  for (const e of myEntries.slice().sort((x, y) => y.score - x.score || newestFirst(x, y))) if (!seen.has(e.work_id) && works[e.work_id] && !works[e.work_id].parent_id) { seen.add(e.work_id); pool.push(works[e.work_id]); }
+  let pick = null;
+  openSheet(`<h3>${esc(who(R, a.user_id))} asks</h3><p class="sub">“${esc(a.body)}”</p>
+    <div id="aaPicked"></div>
+    <input id="aaFind" type="search" placeholder="Search anything" autocomplete="off" style="margin-top:10px">
+    <div class="msg" id="aaMsg"></div><div id="aaRes"></div>
+    <div class="lbl">From what you've loved</div><div id="aaPool">${pool.slice(0, 10).map(w => `<div class="row" data-aa="${esc(w.id)}">${cover(w)}<div class="t"><b>${esc(w.title)}</b><small>${tag(w.kind)} ${esc(w.year || "")}</small></div></div>`).join("") || `<p class="empty">Nothing logged yet — search for it.</p>`}</div>
+    <div class="lbl">Why, in a line</div><input id="aaNote" maxlength="140" placeholder="Optional">
+    <div class="stack"><button class="btn" id="aaGo" disabled>Suggest it</button><button class="btn quiet" id="aaClose">Not now</button></div>`);
+  const paint = () => { $("#aaPicked").innerHTML = pick ? `<div class="row" style="cursor:default">${cover(pick)}<div class="t"><b>${esc(pick.title)}</b><small>${tag(pick.kind)} ${esc(pick.year || "")}</small></div><span class="tag">picked</span></div>` : ""; $("#aaGo").disabled = !pick; };
+  $$("[data-aa]").forEach(r => r.onclick = () => { pick = works[r.dataset.aa]; paint(); $(".panel").scrollTop = 0; });
+  let t; $("#aaFind").oninput = e => { clearTimeout(t); const v = e.target.value.trim(); if (!v) { $("#aaRes").innerHTML = ""; return; }
+    t = setTimeout(() => doSearch(v, async r => { try { pick = await ensureWork(window.__hits[r.dataset.add]); paint(); $("#aaRes").innerHTML = ""; $("#aaFind").value = ""; } catch (err) { $("#aaMsg").textContent = err.message; } }, $("#aaRes"), $("#aaMsg")), 400); };
+  $("#aaClose").onclick = closeSheet;
+  $("#aaGo").onclick = async () => { const b = $("#aaGo"); b.disabled = true; const note = $("#aaNote").value.trim();
+    if (note && willNotPost(note)) { say("That word doesn't go up here. Say it another way."); b.disabled = false; return; }
+    try { await q(sb.from("works").upsert({ id:pick.id, kind:pick.kind, title:pick.title, year:pick.year, cover:pick.cover, creator:pick.creator || "", length:pick.length || 0 }));
+      await q(sb.from("room_ask_answers").upsert({ ask_id:a.id, user_id:me.id, work_id:pick.id, note:note || null }));
+      if (a.user_id !== me.id) notify({ to:a.user_id, title:`${me.handle} answered: ${pick.title}`, body:note || `For “${a.body.slice(0, 80)}”`, tag:"ask-" + a.id });
+      closeSheet(); say("Suggested", "good"); onDone(); }
+    catch (e) { oops(e, "Couldn't suggest it"); b.disabled = false; } }; }
 /* ---------- swipe for tonight ----------
    Can't agree what to watch? Everyone swipes through the same deck and the moment two of
    you say yes to the same thing, that's a match. Shelves stay private: the deck is only

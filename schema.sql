@@ -1446,3 +1446,43 @@ alter table client_errors enable row level security;
 drop policy if exists client_errors_write on client_errors;
 create policy client_errors_write on client_errors for insert to anon, authenticated
   with check (user_id is null or user_id = auth.uid());
+
+-- ---------------------------------------------------------------------------
+-- ask the room. "Something short and scary for Friday?" — and the room answers with
+-- titles. Seen only by the room; you can take back your own ask or answer, and the one
+-- who asked can call it answered.
+create table if not exists room_asks (
+  id uuid primary key default gen_random_uuid(),
+  room_id uuid not null references rooms(id) on delete cascade,
+  user_id uuid not null references profiles(id) on delete cascade default auth.uid(),
+  body text not null check (length(body) between 1 and 200),
+  closed boolean not null default false,
+  created_at timestamptz not null default now()
+);
+create index if not exists room_asks_room_idx on room_asks (room_id, created_at desc);
+create table if not exists room_ask_answers (
+  ask_id uuid not null references room_asks(id) on delete cascade,
+  user_id uuid not null references profiles(id) on delete cascade default auth.uid(),
+  work_id text not null references works(id),
+  note text check (length(note) <= 140),
+  created_at timestamptz not null default now(),
+  primary key (ask_id, user_id, work_id)
+);
+alter table room_asks enable row level security;
+alter table room_ask_answers enable row level security;
+drop policy if exists room_asks_read on room_asks;
+create policy room_asks_read on room_asks for select to authenticated using (room_id in (select my_room_ids()));
+drop policy if exists room_asks_post on room_asks;
+create policy room_asks_post on room_asks for insert to authenticated with check (user_id = auth.uid() and room_id in (select my_room_ids()));
+drop policy if exists room_asks_own on room_asks;
+create policy room_asks_own on room_asks for update to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
+drop policy if exists room_asks_drop on room_asks;
+create policy room_asks_drop on room_asks for delete to authenticated using (user_id = auth.uid());
+drop policy if exists room_ask_answers_read on room_ask_answers;
+create policy room_ask_answers_read on room_ask_answers for select to authenticated
+  using (ask_id in (select id from room_asks where room_id in (select my_room_ids())));
+drop policy if exists room_ask_answers_post on room_ask_answers;
+create policy room_ask_answers_post on room_ask_answers for insert to authenticated
+  with check (user_id = auth.uid() and ask_id in (select id from room_asks where room_id in (select my_room_ids()) and not closed));
+drop policy if exists room_ask_answers_drop on room_ask_answers;
+create policy room_ask_answers_drop on room_ask_answers for delete to authenticated using (user_id = auth.uid());
