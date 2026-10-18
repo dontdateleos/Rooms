@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#FFF7EC">
 <meta name="color-scheme" content="light dark">
 <script>/* before anything paints: a dark app that flashes cream first is worse than no
@@ -369,6 +369,8 @@ textarea{min-height:76px;resize:none;line-height:1.45}
 .btn.blue{background:var(--blue)}
 .btn:disabled{opacity:.35}
 button:focus-visible,.linky:focus-visible{outline:3px solid var(--blue);outline-offset:3px}
+a:focus-visible,[tabindex]:focus-visible,.chip:focus-visible,[data-work]:focus-visible{outline:3px solid var(--blue);outline-offset:2px;border-radius:10px}
+.sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
 .stack{display:flex;flex-direction:column;gap:9px;margin-top:14px}
 .seg{display:flex;background:var(--cream2);padding:4px;border-radius:999px;gap:2px;margin:6px 0 10px}
 .seg[hidden],[data-rsec][hidden]{display:none}
@@ -1403,7 +1405,7 @@ nav button .dot{position:absolute;top:-2px;right:0;min-width:16px;height:16px;bo
 .offline{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(96px + env(safe-area-inset-bottom));z-index:9;display:none;
   background:var(--ink);color:var(--cream);font-weight:700;font-size:13px;padding:10px 16px;border-radius:999px}
 .offline.on{display:block}
-.demobar{position:fixed;left:0;right:0;top:0;z-index:14;background:var(--bad);color:#fff;
+.demobar{position:fixed;left:0;right:0;top:0;z-index:14;background:#B8245E;color:#fff;
   font-family:var(--head);font-weight:800;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;
   text-align:center;padding:5px 12px;padding-top:calc(5px + env(safe-area-inset-top))}
 .demobar[hidden]{display:none}
@@ -1675,7 +1677,7 @@ body.demomode .secbar{top:78px}
 </head>
 <body>
 
-<header><div class="wrap">
+<header><h1 class="sr-only">Rooms</h1><div class="wrap">
   <div class="logo"><svg class="mark" viewBox="9 9 90 90" aria-hidden="true"><rect x="14" y="10" width="62" height="84" rx="10" fill="#72A9CC"/><rect x="22" y="18" width="46" height="76" rx="5" fill="#FFF3B8"/><path d="M68 94h26l-9-13-17-4z" fill="#FFF3B8" opacity=".7"/><path d="M22 18l34 7v73l-34-6z" fill="#8FD3FF"/><path d="M22 18l34 7v8l-34-6z" fill="#B1E0FF"/><circle cx="50" cy="70" r="3" fill="#72A9CC"/><g class="eyes" fill="#151320"><rect x="30" y="44" width="7" height="16" rx="3.5"/><rect x="41" y="46" width="7" height="18" rx="3.5"/></g></svg><span class="logoword">Rooms</span></div>
   <div class="hr">
     <button class="me" id="meBtn" hidden><span class="av" id="meAv"></span><span id="meName"></span></button>
@@ -1702,7 +1704,7 @@ body.demomode .secbar{top:78px}
   <button data-tab="library">Library</button>
   <button data-tab="taste">You</button>
 </div></nav>
-<div class="demobar" id="demobar" hidden>Demo &middot; invented people &middot; nothing is saved</div>
+<div class="demobar" id="demobar" role="region" aria-label="Demo" hidden>Demo &middot; invented people &middot; nothing is saved</div>
 <div class="offline" id="offline" role="status" aria-live="polite"></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
@@ -4105,6 +4107,7 @@ addEventListener("popstate", () => {
 function openSheet(html) { clearTimeout(sheetGoing); sheetGoing = null; markBack();
   $("#sheet").setAttribute("aria-hidden", "false");
   $("#sheetBody").innerHTML = `<div class="grab"></div>` + html;
+  { const h = $("#sheetBody h3, #sheetBody h2"); $("#sheet").setAttribute("aria-label", (h?.textContent || "Rooms").trim().slice(0, 80)); }
   $("#sheet").classList.remove("out"); $("#sheet").classList.add("on"); $(".panel").scrollTop = 0; }
 function closeSheet() { const sh = $("#sheet"); if (!sh.classList.contains("on")) return;
   sh.setAttribute("aria-hidden", "true");
@@ -5019,7 +5022,7 @@ function logLineHTML(es) { const e = es[0], mine = e.user_id === me.id;
   const names = ws.map(w => `<b>${esc(w.title || "")}</b>`);
   const list = names.length < 3 ? names.join(" and ") : names.slice(0, -1).join(", ") + " and " + names[names.length - 1];
   return `<div class="logline"><div class="ll-who">${avatar(e.profiles)}<p><b data-prof="${esc(e.user_id)}">${esc(mine ? "you" : e.profiles?.handle || "someone")}</b> ${verbs.length === 1 ? verbs[0] : "logged"} ${list}<small> · ${when(e.rated_on)}</small></p></div>
-    <div class="ll-row">${es.map((x, i) => `<button class="ll-w" data-entry="${esc(x.id)}">${cover(ws[i])}${stars(x.score, "sm")}</button>`).join("")}</div></div>`; }
+    <div class="ll-row">${es.map((x, i) => `<button class="ll-w" data-entry="${esc(x.id)}" aria-label="${esc(`${ws[i].title || "Untitled"}, ${(x.score / 2).toFixed(1)} stars`)}">${cover(ws[i])}${stars(x.score, "sm")}</button>`).join("")}</div></div>`; }
 function wireThreads(el, by) {
   const paint = (e, all) => { const t = $(`[data-thread="${CSS.escape(e.id)}"]`, el); if (!t) return; t.innerHTML = threadHTML(e, all); wireOne(t, all); };
   const wireOne = (root, all) => {
@@ -7295,6 +7298,17 @@ function bracketHTML(R, br, g) {
         return `<button class="vsit ${on ? "on" : ""}" data-bv="${cur.r}:${i}:${esc(id)}">${cover(w)}<span><b>${esc(w.title || "")}</b><small>${mt.mine ? `<span class="vn" data-n="${n}">${n}</span> ${n === 1 ? "vote" : "votes"}` : `seed ${br.seeds.indexOf(id) + 1}`}</small></span></button>`; }).join(`<span class="bvs">v</span>`)}</div>`).join("")}
     ${pastHTML}</div>`; }
 
+/* ---------- reachable without a finger ----------
+   Plenty of what you tap is a row or a title rather than a button. For a screen reader or
+   a keyboard those were invisible; each one now says it's a button, takes focus, and
+   answers Enter and Space the way a tap would. Done once, as they arrive. */
+(() => { const SEL = 'div[data-work],div[data-w],div[data-prof],div[data-fw],div[data-np],div[data-aa],div[data-ga],div[data-cw],div[data-rmw],div[data-entry],div[data-add],div[data-note],div[data-fe],b[data-prof],span[data-prof]';
+  const mark = el => { if (el.hasAttribute("role") || el.querySelector("button,a,input,textarea,[role=button]")) return; el.setAttribute("role", "button"); el.tabIndex = 0;
+    if (!el.hasAttribute("aria-label")) { const t = (el.querySelector("b")?.textContent || el.textContent || "").trim().replace(/\s+/g, " ").slice(0, 80); if (t) el.setAttribute("aria-label", t); } };
+  const sweep = root => { if (root.matches?.(SEL)) mark(root); root.querySelectorAll?.(SEL).forEach(mark); };
+  new MutationObserver(ms => { for (const m of ms) for (const n of m.addedNodes) if (n.nodeType === 1) sweep(n); }).observe(document.body, { childList:true, subtree:true });
+  sweep(document.body);
+  document.addEventListener("keydown", e => { if ((e.key === "Enter" || e.key === " ") && e.target.getAttribute?.("role") === "button" && e.target.tagName !== "BUTTON") { e.preventDefault(); e.target.click(); } }); })();
 /* ---------- hold a poster ----------
    Anywhere a cover shows — the feed, the shelf, search, a friend's answer — holding it
    brings up what you'd do with it: rate it there and then (a star opens the log with
