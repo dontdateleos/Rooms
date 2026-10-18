@@ -1492,6 +1492,21 @@ html.storying{overflow:hidden}
 .askacts .btn{margin:0;flex:1}
 .askopen{display:flex;align-items:center;gap:10px;width:100%;border:1.5px dashed var(--line);background:none;color:var(--mute);border-radius:16px;padding:12px 14px;margin:12px 0 4px;font:inherit;font-size:13px;font-weight:700;text-align:left;cursor:pointer;min-height:48px}
 .askopen .hrt{width:20px;height:20px;flex:none}
+/* the match */
+.matchfx{position:fixed;inset:0;z-index:200;display:grid;place-items:center;background:rgba(14,12,20,.86);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);cursor:pointer}
+.mf-in{display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;color:#F4EDE2;padding:24px}
+.mf-h{font-family:var(--head);font-weight:900;font-size:40px;letter-spacing:-.02em;background:var(--butter);color:#151320;padding:2px 14px;border-radius:14px;transform-origin:50% 60%}
+.mf-p{position:relative;width:170px;height:250px}
+.mf-p .co{width:170px;height:250px;border-radius:16px;object-fit:cover;box-shadow:0 20px 50px rgba(0,0,0,.5)}
+.mf-p .spark{left:50%;top:50%}
+.mf-t{font-family:var(--head);font-weight:900;font-size:24px;max-width:300px}
+.mf-in small{font-size:14px;font-weight:700;opacity:.8}
+/* the lock on an episode's notes */
+.lock .shackle{transform-origin:16px 10.5px;transition:transform .45s cubic-bezier(.3,1.6,.5,1)}
+.eplock.opening .lock .shackle{transform:translate(0,-2.5px) rotate(28deg)}
+.eplock.opening .lock{animation:lockPop .5s ease}
+@keyframes lockPop{40%{transform:scale(1.18)}100%{transform:none}}
+.eplock.opening{color:var(--good)}
 /* swipe for tonight */
 .swmatch{display:flex;gap:8px;margin-top:6px}
 .swm{flex:1 1 0;max-width:calc((100% - 16px) / 3);display:flex;flex-direction:column;gap:4px;border:0;background:var(--cream2);border-radius:14px;padding:7px;color:var(--ink);text-align:left;cursor:pointer;box-shadow:0 0 0 3px var(--butter)}
@@ -4995,6 +5010,9 @@ function wireThreads(el, by) {
       if (willNotPost(body)) { say("That word doesn't go up here. Say it another way."); return; }
       try { const r = await q(sb.from("replies").insert({ entry_id:e.id, user_id:me.id, body }).select().single());
         e.replies = [...(e.replies || []), { ...r, profiles:{ id:me.id, handle:me.handle, avatar:me.avatar } }]; paint(e, all);
+        const fresh = $$(`[data-thread="${CSS.escape(e.id)}"] .rep`, el).pop();
+        if (fresh && !REDUCED) { fresh.animate([{ transform:"translateY(10px) scale(.96)", opacity:0 }, { transform:"none", opacity:1 }], { duration:360, easing:"cubic-bezier(.2,1.2,.4,1)" });
+          fresh.scrollIntoView({ block:"nearest", behavior:"smooth" }); }
         if (e.user_id !== me.id) notify({ to:e.user_id, title:`${me.handle} replied`, body:noteText(body).slice(0, 140), tag:"reply-" + e.id }); }
       catch (err) { oops(err, "Couldn't send that"); } });
     $$("[data-unreply]", root).forEach(b => b.onclick = async ev => { ev.stopPropagation(); const e = by[b.dataset.of]; if (!e) return;
@@ -7312,6 +7330,12 @@ function asksHTML(R, asks) {
 async function paintAsks(R) { const box = $("#roomAsks"); if (!box) return;
   const asks = await loadAsks(R); if ($("#roomAsks") !== box) return;
   box.innerHTML = asksHTML(R, asks); const again = () => paintAsks(R);
+  const seenA = P.askSeen || {}; let changed = false;
+  for (const a of asks || []) { const was = seenA[a.id] ?? (a.user_id === me.id ? 0 : a.answers.length);
+    if (a.answers.length > was && !REDUCED) $$(`[data-ask="${CSS.escape(a.id)}"] .aska`, box).slice(was).forEach((t, i) =>
+      t.animate([{ transform:"translateY(-28px) rotate(-6deg)", opacity:0 }, { transform:"translateY(3px) rotate(1deg)", opacity:1, offset:.7 }, { transform:"none", opacity:1 }], { duration:520, delay:200 + i * 160, easing:"cubic-bezier(.2,1.1,.4,1)", fill:"backwards" }));
+    if (seenA[a.id] !== a.answers.length) { seenA[a.id] = a.answers.length; changed = true; } }
+  if (changed) { P.askSeen = Object.fromEntries(Object.entries(seenA).slice(-40)); saveP(); }
   const ar = $("#askRoom", box); if (ar) ar.onclick = async () => {
     const body = (await askText({ title:`Ask ${R.name}`, sub:"What are you after? The room answers with titles.", placeholder:"Something short and scary for Friday?", ok:"Ask", max:200 }) || "").trim();
     if (!body) return; if (willNotPost(body)) { say("That word doesn't go up here. Say it another way."); return; }
@@ -7408,7 +7432,8 @@ async function openSwipe(R, g, again) {
     if (card) { card.classList.add(yes ? "goy" : "gon"); }
     i++; setTimeout(paint, REDUCED ? 0 : 220);
     try { await vote(w.id, yes ? "y" : "n");
-      if (yes && st.yes(w.id) >= 1) { matched.push(w); say(`It's a match: ${w.title}`, "good");
+      if (yes && st.yes(w.id) >= 1) { matched.push(w); gameSeen(`m:${R.id}:${day}:${w.id}`, 1);
+        playMatch(w, `${st.yes(w.id) + 1} of you said yes`);
         notify({ room:R.id, title:`It's a match in ${R.name}: ${w.title}`, body:`${st.yes(w.id) + 1} of you said yes for tonight.`, tag:"swipe-" + R.id, sec:"play" }); } }
     catch (e) { oops(e, "Couldn't save that swipe"); } };
   function drag(c) { if (!c) return; let x0 = null, dx = 0;
@@ -7534,16 +7559,36 @@ function playRound(el) {
     a?.animate([{ transform:"translateX(-40px)", opacity:0 }, { transform:"none", opacity:1 }], { duration:420, delay:i * 140, easing:"cubic-bezier(.2,1.3,.4,1)", fill:"backwards" });
     b?.animate([{ transform:"translateX(40px)", opacity:0 }, { transform:"none", opacity:1 }], { duration:420, delay:i * 140, easing:"cubic-bezier(.2,1.3,.4,1)", fill:"backwards" });
     $(".bvs", m)?.animate([{ transform:"scale(0)" }, { transform:"scale(1.5)" }, { transform:"none" }], { duration:380, delay:i * 140 + 260, fill:"backwards" }); }); }
+function sparkBurst(host, n = 26, reach = [70, 160], delay = 240) {
+  const cols = ["#FFB36B", "#F5A3C7", "#FFE86A", "#9EF0C9", "#8FD3FF"];
+  for (let i = 0; i < n; i++) { const d = document.createElement("i"); d.className = "spark";
+    d.style.background = cols[i % cols.length]; host.appendChild(d);
+    const ang = (i / n) * Math.PI * 2 + Math.random() * .4, r = reach[0] + Math.random() * (reach[1] - reach[0]);
+    d.animate([{ transform:"translate(-50%,-50%) scale(1)", opacity:1 },
+      { transform:`translate(calc(-50% + ${Math.cos(ang) * r}px), calc(-50% + ${Math.sin(ang) * r}px)) scale(.4) rotate(${Math.random() * 360}deg)`, opacity:0 }],
+      { duration:900 + Math.random() * 500, delay, easing:"cubic-bezier(.1,.7,.3,1)", fill:"both" }).onfinish = () => d.remove(); } }
+/* a swipe match is the one moment in the room that's about everybody at once, so it gets
+   the whole screen for two seconds: the poster lands, the room's colour bursts out of
+   it, and who said yes is underneath. Tap anywhere and it's gone. */
+function playMatch(w, line = "") {
+  if (!w) return;
+  if (REDUCED) { say(`It's a match: ${w.title}`, "good"); return; }
+  $(".matchfx")?.remove();
+  const fx = document.createElement("div"); fx.className = "matchfx"; fx.setAttribute("role", "status");
+  fx.innerHTML = `<div class="mf-in"><b class="mf-h">It's a match</b><div class="mf-p">${cover(w)}</div><b class="mf-t">${esc(w.title)}</b>${line ? `<small>${esc(line)}</small>` : ""}</div>`;
+  document.body.appendChild(fx);
+  const p = $(".mf-p", fx), h = $(".mf-h", fx);
+  fx.animate([{ opacity:0 }, { opacity:1 }], { duration:200, fill:"both" });
+  h.animate([{ transform:"scale(.4) rotate(-8deg)", opacity:0 }, { transform:"scale(1.12) rotate(2deg)", opacity:1, offset:.6 }, { transform:"none", opacity:1 }], { duration:560, delay:120, easing:"cubic-bezier(.2,1.2,.4,1)", fill:"both" });
+  p.animate([{ transform:"translateY(60px) rotate(-14deg) scale(.7)", opacity:0 }, { transform:"translateY(-6px) rotate(3deg) scale(1.04)", opacity:1, offset:.65 }, { transform:"none", opacity:1 }], { duration:700, delay:220, easing:"cubic-bezier(.2,1.1,.4,1)", fill:"both" });
+  sparkBurst(p, 34, [90, 200], 620);
+  navigator.vibrate?.([12, 60, 18]);
+  const go = () => { fx.animate([{ opacity:1 }, { opacity:0 }], { duration:220, fill:"both" }).onfinish = () => fx.remove(); };
+  fx.onclick = go; setTimeout(() => fx.isConnected && go(), 2600); }
 function playChampion(el) {
   const c = $(".champ", el); if (!c) return;
   c.animate([{ transform:"scale(.85)", opacity:0 }, { transform:"scale(1.04)", opacity:1, offset:.6 }, { transform:"none" }], { duration:620, easing:"cubic-bezier(.2,1,.4,1)" });
-  const cols = ["#FFB36B", "#F5A3C7", "#FFE86A", "#9EF0C9", "#8FD3FF"];
-  for (let i = 0; i < 26; i++) { const d = document.createElement("i"); d.className = "spark";
-    d.style.background = cols[i % cols.length]; c.appendChild(d);
-    const ang = (i / 26) * Math.PI * 2 + Math.random() * .4, r = 70 + Math.random() * 90;
-    d.animate([{ transform:"translate(-50%,-50%) scale(1)", opacity:1 },
-      { transform:`translate(calc(-50% + ${Math.cos(ang) * r}px), calc(-50% + ${Math.sin(ang) * r}px)) scale(.4) rotate(${Math.random() * 360}deg)`, opacity:0 }],
-      { duration:900 + Math.random() * 500, delay:240, easing:"cubic-bezier(.1,.7,.3,1)", fill:"both" }).onfinish = () => d.remove(); } }
+  sparkBurst(c); }
 function playVote(el) {
   if (!lastVote || REDUCED) { lastVote = null; return; }
   const t = lastVote.sel && $(lastVote.sel, el); lastVote = null; if (!t) return;
@@ -7578,7 +7623,9 @@ async function paintGames(R, es) {
     if (bst?.champion && !gameSeen(`c:${R.id}:${br.month}`)) { gameSeen(`c:${R.id}:${br.month}`, 1); playChampion(el); }
     else if (bst?.current) { const k = `b:${R.id}:${br.month}`;
       if ((gameSeen(k) || 0) < bst.current.r) { gameSeen(k, bst.current.r); playRound(el); } }
-    playVote(el); }
+    playVote(el);
+    const newMatch = swNow.matches.find(id => !gameSeen(`m:${R.id}:${swipeDay()}:${id}`));
+    if (newMatch) { swNow.matches.forEach(id => gameSeen(`m:${R.id}:${swipeDay()}:${id}`, 1)); setTimeout(() => playMatch(works[newMatch], `${swNow.yes(newMatch)} of you said yes for tonight`), 500); } }
   const again = () => paintGames(R, es);
   const ga = $("#gAnswer", el); if (ga) ga.onclick = () => openAnswer(R, g, again);
   $$("[data-vote]", el).forEach(b => b.onclick = async () => { b.disabled = true;
@@ -9206,8 +9253,8 @@ async function paintEpTalk(box, eps) {
     b.onclick = () => openEpTalk(works[id], list, () => { b.classList.toggle("locked", !epSeen(id)); b.innerHTML = `${epSeen(id) ? BUBBLE : LOCK_SVG}<span>${list.length}</span>`;
       const t = $("[data-tick]", row); if (t && mySeen.has(id)) { t.classList.add("on"); t.setAttribute("aria-pressed", "true"); row.classList.add("seen"); } });
     row.insertBefore(b, $(".es", row)); } }
-const LOCK_SVG = `<svg viewBox="0 0 24 24" aria-hidden="true" class="hrt"><rect x="5" y="10.5" width="14" height="10" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" fill="none" stroke="currentColor" stroke-width="2"/></svg>`;
-function openEpTalk(ep, list, after) { if (!ep) return;
+const LOCK_SVG = `<svg viewBox="0 0 24 24" aria-hidden="true" class="hrt lock"><rect x="5" y="10.5" width="14" height="10" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path class="shackle" d="M8 10.5V8a4 4 0 0 1 8 0v2.5" fill="none" stroke="currentColor" stroke-width="2"/></svg>`;
+function openEpTalk(ep, list, after, justOpened = false) { if (!ep) return;
   const head = `<h3>${esc(partName(ep.id))} · ${esc(ep.title || "")}</h3>`;
   const n = list.length, names = [...new Set(list.map(e => e.profiles?.handle).filter(Boolean))];
   if (!epSeen(ep.id)) {
@@ -9217,12 +9264,16 @@ function openEpTalk(ep, list, after) { if (!ep) return;
     $("#epNot").onclick = closeSheet;
     $("#epOpen").onclick = async () => { $("#epOpen").disabled = true;
       try { await tickEpisode(ep, true); } catch { say("Couldn't tick it off"); $("#epOpen").disabled = false; return; }
-      after?.(); openEpTalk(ep, list, after); };
+      after?.();
+      const lk = $(".eplock");
+      if (lk && !REDUCED) { lk.classList.add("opening"); navigator.vibrate?.(10); await new Promise(r => setTimeout(r, 520)); }
+      openEpTalk(ep, list, after, true); };
     return; }
   openSheet(`${head}<p class="sub">What your people said.</p>
     <div class="card fr">${list.sort(newestFirst).map(e => `<div class="frrow" style="cursor:default;align-items:flex-start">${avatar(e.profiles)}<span class="t"><b>${esc(e.profiles?.handle || "someone")}</b><span class="epnote">${noteHTML(e.note)}</span></span>${stars(e.score, "sm")}</div>`).join("")}</div>
     <div class="stack"><button class="btn soft" id="epMine">${myPartScore(ep.id) != null ? "Change yours" : "Add yours"}</button><button class="btn quiet" id="epClose">Close</button></div>`);
   $("#epClose").onclick = closeSheet;
+  if (justOpened && !REDUCED) $$("#sheetBody .frrow").forEach((r, i) => r.animate([{ transform:"translateY(14px)", opacity:0, filter:"blur(6px)" }, { transform:"none", opacity:1, filter:"blur(0)" }], { duration:420, delay:120 + i * 140, easing:"cubic-bezier(.2,1,.4,1)", fill:"backwards" }));
   $("#epMine").onclick = async () => { await ensurePart(ep); openLog(ep); }; }
 const epRow = ep => { const sc = myPartScore(ep.id), on = mySeen.has(ep.id);
   return `<div class="er ${on ? "seen" : ""}" data-ep="${esc(ep.id)}">
