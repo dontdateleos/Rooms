@@ -448,7 +448,12 @@ button:focus-visible,.linky:focus-visible{outline:3px solid var(--blue);outline-
 .feedrow.on{background:var(--cream2)}
 .feedrow .fdot{width:12px;height:12px;border-radius:50%;flex:none}
 .roomline{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:8px}
-.rl-l{display:flex;flex-wrap:wrap;align-items:center;gap:2px 12px;min-width:0}
+.rl-l{display:flex;flex-wrap:nowrap;align-items:center;gap:0 10px;min-width:0;overflow:hidden;white-space:nowrap}
+.rl-l .room-streak{overflow:hidden;text-overflow:ellipsis;min-width:0}
+.rl-l .room-streak::before{content:"·";margin-right:8px}
+.roomline .here{min-height:28px;flex:none}
+.roomline .here .face .av svg{width:24px;height:24px}
+[data-rsec="talk"]>.tonight{margin:4px 0 6px}
 .iconbtn.sm{width:36px;height:36px;margin:0}
 .iconbtn.sm svg{width:18px;height:18px}
 /* the title as a pager */
@@ -1399,7 +1404,7 @@ nav button .dot{position:absolute;top:-2px;right:0;min-width:16px;height:16px;bo
   border:0;border-radius:999px;padding:11px 18px;background:var(--ink);color:var(--cream);font:inherit;font-size:13px;box-shadow:0 10px 30px rgba(0,0,0,.25);
   cursor:pointer;white-space:nowrap;animation:updIn .5s cubic-bezier(.2,1.3,.4,1) both}
 .updbar b{font-family:var(--head);font-weight:800}
-.pick-posters{display:flex;gap:6px;margin:8px 0 2px;min-height:0}
+.pick-posters{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 2px;min-height:0}
 .spoiler{filter:blur(6px);background:color-mix(in srgb,var(--ink) 14%,transparent);border-radius:6px;padding:0 3px;cursor:pointer;transition:filter .3s,background .3s;-webkit-user-select:none;user-select:none}
 .spoiler.shown{filter:none;background:none;cursor:auto;-webkit-user-select:text;user-select:text}
 .spoilrow{display:flex;align-items:center;gap:10px;margin-top:8px}
@@ -1459,6 +1464,30 @@ html.storying{overflow:hidden}
 .pushask small{font-size:13px;color:var(--mute);line-height:1.4}
 .pushask .row2{display:flex;gap:8px;margin-top:6px}
 .pushask .row2 .btn{flex:1;margin:0}
+/* swipe for tonight */
+.swmatch{display:flex;gap:8px;margin-top:6px}
+.swm{flex:1 1 0;max-width:calc((100% - 16px) / 3);display:flex;flex-direction:column;gap:4px;border:0;background:var(--cream2);border-radius:14px;padding:7px;color:var(--ink);text-align:left;cursor:pointer;box-shadow:0 0 0 3px var(--butter)}
+.swm .co{width:100%;aspect-ratio:2/3;height:auto;border-radius:9px;object-fit:cover}
+.swm b{font-family:var(--head);font-weight:800;font-size:13px;line-height:1.2}
+.swm small{font-size:11px;font-weight:700;color:var(--mute)}
+.swdeck{position:relative;height:min(62vh,470px);margin:14px auto 6px;max-width:320px}
+.swc{position:absolute;inset:0;border-radius:22px;overflow:hidden;background:var(--cream2);box-shadow:0 10px 30px rgba(0,0,0,.25);touch-action:none;user-select:none;-webkit-user-select:none;transition:transform .22s ease,opacity .22s ease;--y:0;--n:0;cursor:grab}
+.swc:not(.top){transform:scale(.95) translateY(10px);opacity:.7}
+.swc .co{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:0;pointer-events:none}
+.swmeta{position:absolute;left:0;right:0;bottom:0;padding:40px 16px 14px;background:linear-gradient(transparent,rgba(10,8,16,.85));color:#fff;display:flex;flex-direction:column;gap:3px}
+.swmeta b{font-family:var(--head);font-weight:900;font-size:22px;line-height:1.1}
+.swmeta small{font-size:12px;font-weight:700;opacity:.9}
+.swstamp{position:absolute;top:18px;padding:4px 10px;border:3px solid;border-radius:10px;font:900 22px var(--head);letter-spacing:.06em;pointer-events:none}
+.swstamp.y{left:16px;color:#7CE0A3;opacity:var(--y);transform:rotate(-12deg)}
+.swstamp.n{right:16px;color:#FF7B7B;opacity:var(--n);transform:rotate(12deg)}
+.swc.goy{transform:translateX(130%) rotate(18deg)!important;opacity:0}
+.swc.gon{transform:translateX(-130%) rotate(-18deg)!important;opacity:0}
+.swbtns{display:flex;justify-content:center;gap:28px;margin:8px 0 4px}
+.swbtns button{width:64px;height:64px;border-radius:50%;border:0;font-size:26px;cursor:pointer;background:var(--cream2);color:var(--ink);box-shadow:0 4px 14px rgba(0,0,0,.15)}
+.swbtns .swyes{background:var(--butter);color:#151320}
+.swend{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:8px;padding:20px;border-radius:22px;background:var(--cream2)}
+.swend b{font-family:var(--head);font-weight:900;font-size:20px}
+.swend small{color:var(--mute);font-size:13px}
 /* watch nights */
 .nopts{display:flex;justify-content:center;gap:8px;margin-top:4px}
 .nopt{flex:1 1 0;max-width:calc((100% - 16px) / 3);display:flex;flex-direction:column;gap:5px;border:2px solid transparent;background:var(--cream2);border-radius:14px;padding:7px;color:var(--ink);text-align:left;cursor:pointer;min-width:0}
@@ -1508,7 +1537,7 @@ html.storying{overflow:hidden}
 .libbar .seg{width:max-content;margin:4px auto 2px;padding:3px;gap:0}
 .libbar .seg button{flex:none;padding:6px 16px;font-size:12px}
 .pick-posters img{width:34px;height:50px;border-radius:6px;object-fit:cover;background:var(--line)}
-.pick-posters span{font-size:11px;font-weight:700;color:var(--mute);background:var(--cream2);border-radius:999px;padding:3px 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:110px}
+.pick-posters span{font-size:11px;font-weight:700;color:var(--mute);background:var(--cream2);border-radius:999px;padding:3px 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .season-recap .recap-rows{display:flex;flex-direction:column;gap:6px}
 .season-recap .gprompt{font-family:var(--head);font-weight:900;letter-spacing:-.02em;line-height:1.15}
 .recap-row{display:flex;align-items:center;gap:10px;font-size:13px}
@@ -3253,7 +3282,7 @@ function paintHere() {
     ? `<span class="dot"></span><span class="faces">${others.map(p =>
         `<span class="face${seen.size && !seen.has(p.id) ? " came" : ""}" data-who="${esc(p.id)}"
           data-prof="${esc(p.id)}" style="cursor:pointer" title="${esc(p.handle)}">${avatar(p)}</span>`).join("")}</span>
-       <small>${others.length === 1 ? esc(others[0].handle) + " is in here now" : others.length + " in here now"}</small>`
+       <small>${others.length === 1 ? esc(others[0].handle) + " is here" : others.length + " here"}</small>`
     : `<small>${hereQuiet || "Nobody else in here right now"}</small>`;
   $$("[data-prof]", el).forEach(x => x.onclick = () => openProfile(x.dataset.prof));
 }
@@ -4405,7 +4434,7 @@ function roomStreak(entries) {
     const set = byDay.get(day) || new Set(); set.add(e.user_id); byDay.set(day, set); }
   const sharedDays = [...byDay.values()].filter(set => set.size >= 2).length;
   if (people.size < 2) return "";
-  return `<small class="room-streak">${people.size} of you logged this week${sharedDays ? ` · ${sharedDays} shared ${sharedDays===1?"day":"days"}` : ""}</small>`;
+  return `<small class="room-streak" title="${sharedDays ? `${sharedDays} ${sharedDays===1?"day":"days"} more than one of you logged` : ""}">${people.size} logged this week</small>`;
 }
 function roomMomentsHTML(moments, fresh = new Set()) { if (!moments.length) return "";
   return `<div class="lbl">Room moments</div><div class="card" style="margin-top:0">${moments.map(m => { const w = works[m.workId] || {}, key = `${m.kind}:${m.workId}:${m.at}`;
@@ -4504,8 +4533,9 @@ async function renderDoors() {
      shows how many there are and which you're on. Tapping the title lists them all. */
   const places = feedPlaces(), cur = places.find(p => p.key === placeNow()) || places[0];
   body.style.setProperty("--room", `var(--${roomColour(R)})`);
+  const inRoom = cur.key.startsWith("room:");
   body.innerHTML = `${pagerHTML(places, cur.key, { id:"pager", titleId:"feedPick", titleHint:"see everywhere you can go" })}
-    ${tonightCard()}
+    ${inRoom ? "" : tonightCard()}
     <div id="feedBody">${skeleton(3)}</div>
     ${weekCard()}${rev ? `<div class="card look" id="revCard"><div class="h"><span>${esc(rev.head)}</span><span class="tag dim">${rev.kind === "year" ? "the year" : "last month"}</span></div>
       <div class="stack"><button class="btn soft" id="revGo">Have a look</button></div></div>` : ""}
@@ -5093,6 +5123,7 @@ async function renderRoomFeed(fb, R) {
          meant the freshness bookkeeping above (which runs on every render, filter or no)
          marked a moment seen before it was ever shown. */""}
     <div data-rsec="talk"${sec === "talk" ? "" : " hidden"}>
+    ${tonightCard()}
     ${roomMomentsHTML(moments, freshMoments)}
     <div class="tagrow" id="talkTop" style="margin:18px 0 8px"><span class="lbl" style="margin:0">What the room said</span><span class="tfilters" aria-label="Room activity filter">${[["all","All"],["reviews","Reviews"],["activity","Activity"]].map(([k,l]) => `<button data-rfilter="${k}" class="${roomFilter===k?"on":""}">${l}</button>`).join("")}</span></div>${(() => { if (!roomEntries.length && !(roomFilter === "activity" && moments.length)) return blank("var(--pink)","“",roomFilter === "reviews" ? "No reviews yet" : roomFilter === "activity" ? "No activity yet" : "Nothing said yet",roomFilter === "reviews" ? "Reviews with a note or reaction will appear here." : roomFilter === "activity" ? "Room activity without a written review will appear here." : "Log something and it lands here for the room to see.",[["talkAdd","Log something"]]);
       const since = lastSeen(); let shown = false;
@@ -5123,7 +5154,7 @@ async function renderRoomFeed(fb, R) {
       </div></div>`; })() : ""}
     `;
   endLine($('[data-rsec="talk"]', fb), es, 60);
-  $("#roomMenu", fb).onclick = () => openRoomMenu(R);
+  $("#roomMenu", fb).onclick = () => openRoomMenu(R); wireTonight();
   const segEl = $(".roomsecs", fb); glideSeg(segEl, true);
   if (window.ResizeObserver && segEl) new ResizeObserver(() => glideSeg(segEl, true)).observe(segEl);
   $$("[data-rsecbtn]", fb).forEach(b => b.onclick = () => { const k = b.dataset.rsecbtn;
@@ -7087,8 +7118,13 @@ function promptHTML(R, g) {
 function revealHTML(R, s) {
   const n = a => s.tally[akey(a)];
   const order = s.ans.slice().sort((a, b) => n(b) - n(a)), best = n(order[0]);
-  return `<div class="anslist results">${order.map(a => answerTile(a, { win:n(a) === best && best > 0,
-    foot:`${esc(who(R, a.user_id))} · <span class="vn" data-n="${n(a)}">${n(a)}</span> ${n(a) === 1 ? "vote" : "votes"}${n(a) === best && best > 0 ? " · <b>winner</b>" : ""}` })).join("")}</div>`; }
+  /* Sunday reveals whatever happened — but a reveal of nothing, with nothing to do, was a
+     dead end. Until the week's out, anyone who didn't vote still can, and it counts. */
+  const late = s.wk === gameWeek() && !s.myVote;
+  return `<div class="anslist results">${order.map(a => { const k = akey(a), mine = a.mine || a.user_id === me.id;
+    return answerTile(a, { win:n(a) === best && best > 0, vote:late && !mine ? k : "", on:s.myVote === k,
+      foot:`${esc(who(R, a.user_id))} · <span class="vn" data-n="${n(a)}">${n(a)}</span> ${n(a) === 1 ? "vote" : "votes"}${n(a) === best && best > 0 ? " · <b>winner</b>" : ""}${s.myVote === k ? " · yours" : ""}` }); }).join("")}</div>
+    <p class="sub gline">${late ? (best ? "<b>You didn't vote</b> — you still can, until tonight." : "<b>Nobody voted in time.</b> Tap the best one and it takes the week.") : best ? "A new prompt opens tomorrow." : "No votes this week. A new prompt opens tomorrow."}</p>`; }
 function openAnswer(R, g, onDone) {
   const wk = gameWeek(), mine = g.answers.find(a => a.week === wk && a.mine);
   const seen = new Set(), pool = [];
@@ -7179,6 +7215,81 @@ function bracketHTML(R, br, g) {
         return `<button class="vsit ${on ? "on" : ""}" data-bv="${cur.r}:${i}:${esc(id)}">${cover(w)}<span><b>${esc(w.title || "")}</b><small>${mt.mine ? `<span class="vn" data-n="${n}">${n}</span> ${n === 1 ? "vote" : "votes"}` : `seed ${br.seeds.indexOf(id) + 1}`}</small></span></button>`; }).join(`<span class="bvs">v</span>`)}</div>`).join("")}
     ${pastHTML}</div>`; }
 
+/* ---------- swipe for tonight ----------
+   Can't agree what to watch? Everyone swipes through the same deck and the moment two of
+   you say yes to the same thing, that's a match. Shelves stay private: the deck is only
+   what people put in themselves — starting puts in your own unwatched films and shows,
+   and putting something in counts as your yes. A deck lasts the day. Votes ride in
+   room_votes as swipe:<day>:<work>, y or n, one per person per title. */
+const swipeDay = () => today();
+const swipeVotes = (g, day = swipeDay()) => g.votes.filter(v => v.game.startsWith(`swipe:${day}:`)).map(v => ({ ...v, work:v.game.slice(`swipe:${day}:`.length) }));
+function swipeState(R, g) {
+  const vs = swipeVotes(g), deck = [...new Set(vs.map(v => v.work))];
+  const yes = id => vs.filter(v => v.work === id && v.choice === "y").length;
+  const people = [...new Set(vs.map(v => v.voter))];
+  const left = deck.filter(id => !vs.some(v => v.work === id && v.voter === me.id));
+  const matches = deck.filter(id => yes(id) >= 2).sort((a, b) => yes(b) - yes(a));
+  return { vs, deck, yes, people, left, matches, in:people.includes(me.id) }; }
+const myDeckOffer = () => [...new Set(lists.flatMap(l => l.items))].map(id => works[id])
+  .filter(w => w && (w.kind === "film" || w.kind === "tv") && !logged(w.id) && !isSoon(w)).slice(0, 12);
+function swipeHTML(R, g) {
+  const st = swipeState(R, g), names = st.people.filter(id => id !== me.id).map(id => who(R, id));
+  const top = st.matches.slice(0, 3).map(id => works[id]).filter(Boolean);
+  if (!st.deck.length) return `<div class="card game swipecard"><div class="h"><span>Tonight's pick</span></div>
+    <p class="sub gline" style="margin-top:4px">Can't agree on what to watch? Put your shelf in and swipe through everyone's. Two yeses on the same thing is a match.</p>
+    <div class="stack" style="margin-top:10px"><button class="btn soft" id="swGo">Start swiping</button></div></div>`;
+  return `<div class="card game swipecard"><div class="h"><span>Tonight's pick</span><span class="tag dim">${st.deck.length} in the deck</span></div>
+    ${top.length ? `<div class="swmatch">${top.map(w => `<button class="swm" data-gw="${esc(w.id)}">${cover(w)}<b>${esc(w.title)}</b><small>${st.yes(w.id)} said yes</small></button>`).join("")}</div>
+      <p class="sub gline">${st.matches.length === 1 ? "<b>It's a match.</b>" : `<b>${st.matches.length} matches.</b>`} ${names.length ? `${esc(names.join(", "))} ${names.length === 1 ? "is" : "are"} swiping too.` : ""}</p>`
+      : `<p class="sub gline" style="margin-top:4px">${names.length ? `${esc(names.join(", "))} ${names.length === 1 ? "is" : "are"} swiping. ` : ""}No match yet.</p>`}
+    <div class="stack" style="margin-top:10px">${st.left.length || !st.in ? `<button class="btn ${top.length ? "ghost" : "soft"}" id="swGo">${st.in ? `Swipe the ${st.left.length} you haven't seen` : "Join in"}</button>` : `<p class="sub" style="margin:0">You've swiped them all${top.length ? "" : " — waiting on the others"}.</p>`}
+      ${st.matches.length >= 2 ? `<button class="btn quiet" id="swNight">Put the top ${Math.min(3, st.matches.length)} to a vote</button>` : ""}</div></div>`; }
+function wireSwipe(R, el, g, again) {
+  $$(".swipecard [data-gw]", el).forEach(b => b.onclick = () => openWork(b.dataset.gw));
+  const go = $("#swGo", el); if (go) go.onclick = () => openSwipe(R, g, again);
+  const nt = $("#swNight", el); if (nt) nt.onclick = async () => { nt.disabled = true; const st = swipeState(R, g);
+    try { await q(sb.from("room_nights").insert({ room_id:R.id, at:today(), options:st.matches.slice(0, 3), created_by:me.id }));
+      say("Put to the room"); notify({ room:R.id, title:`Tonight in ${R.name}: ${st.matches.slice(0, 3).map(id => works[id]?.title).filter(Boolean).join(", ")}`, body:"The swipes are in — vote on which.", tag:"night-" + R.id, sec:"play" }); }
+    catch (e) { oops(e, "Couldn't put it to a vote"); } again(); }; }
+async function openSwipe(R, g, again) {
+  const day = swipeDay(), vote = (id, c) => q(sb.from("room_votes").upsert({ room_id:R.id, game:`swipe:${day}:${id}`, voter:me.id, choice:c }));
+  let st = swipeState(R, g);
+  /* joining: your own shelf goes in, each one already a yes from you */
+  if (!st.in) { const mine = myDeckOffer().filter(w => !st.deck.includes(w.id));
+    try { await Promise.all(mine.map(w => vote(w.id, "y")));
+      if (!st.deck.length) notify({ room:R.id, title:`${me.handle} wants to pick tonight's watch`, body:"Swipe through the room's shelves — two yeses is a match.", tag:"swipe-" + R.id, sec:"play" }); }
+    catch (e) { oops(e, "Couldn't start"); return; }
+    const fresh = await loadGames(R); if (fresh.ok) g = fresh; st = swipeState(R, g);
+    if (!st.left.length) { say(mine.length ? `Your ${mine.length} are in the deck — the others swipe them now` : "Your shelf has no films or shows to put in", mine.length ? "good" : ""); again(); return; } }
+  await fillWorks(st.left).catch(() => {});
+  const deck = st.left.map(id => works[id]).filter(Boolean).sort((a, b) => st.yes(b.id) - st.yes(a.id)); let i = 0, matched = [];
+  openSheet(`<h3>Tonight's pick</h3><p class="sub">Right for yes, left for no. Two yeses on anything is a match.</p>
+    <div class="swdeck" id="swDeck"></div>
+    <div class="swbtns"><button class="swno" id="swNo" aria-label="No">✕</button><button class="swyes" id="swYes" aria-label="Yes">♥</button></div>
+    <div class="stack"><button class="btn quiet" id="swDone">Done for now</button></div>`);
+  const paint = () => { const box = $("#swDeck"); if (!box) return;
+    if (i >= deck.length) { box.innerHTML = `<div class="swend"><b>${matched.length ? `${matched.length === 1 ? "A match" : `${matched.length} matches`}: ${esc(matched.map(w => w.title).join(", "))}` : "That's the deck."}</b><small>${matched.length ? "It's on the Play page for everyone." : "Matches show up on the Play page as the others swipe."}</small></div>`;
+      $(".swbtns").hidden = true; return; }
+    box.innerHTML = deck.slice(i, i + 2).reverse().map((w, j, a) => `<div class="swc ${j === a.length - 1 ? "top" : ""}" data-sw="${esc(w.id)}">${cover(w)}
+      <div class="swmeta"><b>${esc(w.title)}</b><small>${tag(w.kind)} ${esc(w.year || "")}${w.length ? ` · ${w.length}${K(w.kind).unit}` : ""}${st.yes(w.id) ? ` · ${st.yes(w.id)} yes so far` : ""}</small></div>
+      <span class="swstamp y">YES</span><span class="swstamp n">NOPE</span></div>`).join("");
+    drag($(".swc.top", box)); };
+  const decide = async yes => { const w = deck[i]; if (!w) return; const card = $(".swc.top");
+    if (card) { card.classList.add(yes ? "goy" : "gon"); }
+    i++; setTimeout(paint, REDUCED ? 0 : 220);
+    try { await vote(w.id, yes ? "y" : "n");
+      if (yes && st.yes(w.id) >= 1) { matched.push(w); say(`It's a match: ${w.title}`, "good");
+        notify({ room:R.id, title:`It's a match in ${R.name}: ${w.title}`, body:`${st.yes(w.id) + 1} of you said yes for tonight.`, tag:"swipe-" + R.id, sec:"play" }); } }
+    catch (e) { oops(e, "Couldn't save that swipe"); } };
+  function drag(c) { if (!c) return; let x0 = null, dx = 0;
+    c.onpointerdown = e => { x0 = e.clientX; dx = 0; c.setPointerCapture(e.pointerId); c.style.transition = "none"; };
+    c.onpointermove = e => { if (x0 == null) return; dx = e.clientX - x0;
+      c.style.transform = `translateX(${dx}px) rotate(${dx / 18}deg)`; c.style.setProperty("--y", Math.max(0, Math.min(1, dx / 90))); c.style.setProperty("--n", Math.max(0, Math.min(1, -dx / 90))); };
+    c.onpointerup = c.onpointercancel = () => { if (x0 == null) return; x0 = null; c.style.transition = "";
+      if (Math.abs(dx) > 90) decide(dx > 0); else { c.style.transform = ""; c.style.setProperty("--y", 0); c.style.setProperty("--n", 0); if (Math.abs(dx) < 6) openWork(c.dataset.sw); } }; }
+  $("#swYes").onclick = () => decide(true); $("#swNo").onclick = () => decide(false);
+  $("#swDone").onclick = () => { closeSheet(); again(); };
+  paint(); }
 /* ---------- watch-together nights ----------
    Somebody picks a night and two or three things to watch; the room votes until the
    night; afterwards the card turns into the verdict — how the room rated whichever won,
@@ -7321,11 +7432,14 @@ async function paintGames(R, es) {
   if ($("#roomGames") !== el) return;
   const night = nights.find(n => n.at >= today()) || null, past = !night && nights.find(n => n.at < today() && dayNo(today()) - dayNo(n.at) <= 14) || null;
   if (past) await fillWorks(past.options).catch(() => {});
-  el.innerHTML = (night ? nightHTML(R, night, g) : "") + promptHTML(R, g) + bracketHTML(R, br, g) + (night ? "" : past ? nightAfterHTML(R, past, g) : nightPlanHTML());
+  const swNow = swipeState(R, g);
+  if (swNow.deck.length) await fillWorks(swNow.matches.slice(0, 3)).catch(() => {});
+  el.innerHTML = (night ? nightHTML(R, night, g) : "") + (night && night.at === today() ? "" : swipeHTML(R, g)) + promptHTML(R, g) + bracketHTML(R, br, g) + (night ? "" : past ? nightAfterHTML(R, past, g) : nightPlanHTML());
   /* the Play tab gets a dot while there's something waiting on you */
   const s = promptState(R, g, gameWeek()), bst = br ? bracketState(R, br, g.votes) : null;
   const todo = (!s.voting && !s.mine) || (s.voting && !s.revealed && !s.myVote) || !!bst?.current?.matches.some(mt => !mt.mine)
-    || (night && !g.votes.some(v => v.game === "night:" + night.id && v.voter === me.id));
+    || (night && !g.votes.some(v => v.game === "night:" + night.id && v.voter === me.id))
+    || (swNow.deck.length > 0 && swNow.left.length > 0);
   const pb = $('[data-rsecbtn="play"]'); if (pb) pb.classList.toggle("dot", !!todo);
   /* the theatre only plays where you can see it: a hidden Play tab saves it for later */
   const showing = !el.closest("[hidden]");
@@ -7348,7 +7462,7 @@ async function paintGames(R, es) {
       lastVote = { sel:`[data-bv="${CSS.escape(b.dataset.bv)}"]` }; }
     catch (e) { oops(e, "Couldn't vote"); } again(); });
   $$("[data-gw]", el).forEach(x => x.onclick = () => openWork(x.dataset.gw));
-  wireNights(R, el, night, past, again, g);
+  wireNights(R, el, night, past, again, g); wireSwipe(R, el, g, again);
   if (gameFocus) { const want = gameFocus; gameFocus = null;
     const card = $$(".card.game", el).find(c => ($(".h span", c)?.textContent || "").toLowerCase().includes(want.toLowerCase()));
     if (card) setTimeout(() => card.scrollIntoView({ block:"center", behavior:REDUCED ? "auto" : "smooth" }), 250); }

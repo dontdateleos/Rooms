@@ -172,6 +172,8 @@ const roomVotes = [
   vote(`bracket:${MONTH}:2:1`, "u-mo", "film:6", 1),
   /* mo has put Saturday to the room; two of you have voted */
   vote("night:n1", "u-mo", "film:4", 1), vote("night:n1", "u-cass", "film:2", 1),
+  /* and two of them are swiping for tonight: one match already, Slow Horses still open */
+  ...[["u-mo","tv:3","y"],["u-mo","film:8","y"],["u-mo","film:5","y"],["u-cass","film:8","y"],["u-cass","tv:3","n"]].map(([v, w, c]) => vote(`swipe:${day(0)}:${w}`, v, c, 0.05)),
 ];
 
 export function demoSeed() {
