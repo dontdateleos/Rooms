@@ -37,8 +37,12 @@ hand both halves to the worker in one go (after `wrangler login`), then deploy:
 
 ```
 node tools/push-keys.mjs
+wrangler secret put SUPABASE_SERVICE_KEY   # Supabase → Project Settings → API → service_role
 wrangler deploy
 ```
+
+The service key stays in Cloudflare: it's how the worker, and only the worker, looks up
+where to send a notification, after checking with Supabase who is sending it.
 
 Run that once — a new pair quietly stops every phone that already said yes until it
 opens the app again. Without it the app simply doesn't offer notifications.

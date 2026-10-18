@@ -910,7 +910,7 @@ language sql security definer stable set search_path = public as $$
          (select count(*)::int from room_members m where m.room_id = r.id),
          (select count(*) from entries e
             where e.user_id in (select m.user_id from room_members m where m.room_id = r.id)
-              and not e.part),
+              and not e.part and not e.private),
          (select coalesce(array_agg(p.handle order by p.handle), '{}')
             from room_members m join profiles p on p.id = m.user_id where m.room_id = r.id)
   from rooms r where upper(r.code) = upper(trim(p_code)) limit 1
@@ -1391,11 +1391,10 @@ revoke all on function room_prompt(uuid, text) from public, anon;
 grant execute on function room_prompt(uuid, text) to authenticated;
 
 -- ---------------------------------------------------------------------------
--- push notifications. Each phone that says yes leaves its push address here. The
--- worker sends the notification, but it holds no database key of its own: it asks
--- push_targets() with the sender's own sign-in, so it can only ever reach people the
--- sender already shares a room with (or follows each other with). The address alone
--- can't be used to send anything — that takes the worker's private key.
+-- push notifications. Each phone that says yes leaves its push address here (through
+-- push_save). The worker sends the notification: it checks who's sending with Supabase,
+-- then asks push_targets_for() — with the service key, which only it has — for the people
+-- that sender shares a room with (or who follow them), leaving out anyone blocked.
 create table if not exists push_subs (
   endpoint text primary key,
   user_id uuid not null references profiles(id) on delete cascade default auth.uid(),
@@ -1409,27 +1408,47 @@ drop policy if exists push_subs_mine on push_subs;
 create policy push_subs_mine on push_subs for all to authenticated
   using (user_id = auth.uid()) with check (user_id = auth.uid());
 
-create or replace function push_targets(p_room uuid default null, p_user uuid default null)
+-- Only the worker can look up where to send: it signs in with the service key, which never
+-- leaves Cloudflare, and passes the sender it has already checked with Supabase. That way
+-- nobody can read a friend's push address, or quietly delete it, from the app.
+drop function if exists push_targets(uuid, uuid);
+create or replace function push_targets_for(p_sender uuid, p_room uuid default null, p_user uuid default null)
 returns table (endpoint text, p256dh text, auth text)
 language sql security definer stable set search_path = public as $$
   select s.endpoint, s.p256dh, s.auth from push_subs s
-  where s.user_id <> auth.uid()
-    and ((p_room is not null and p_room in (select my_room_ids())
+  where s.user_id <> p_sender
+    and not exists (select 1 from blocks b where (b.blocker = p_sender and b.blocked = s.user_id)
+                                            or (b.blocker = s.user_id and b.blocked = p_sender))
+    and ((p_room is not null
+          and exists (select 1 from room_members m where m.room_id = p_room and m.user_id = p_sender)
           and s.user_id in (select user_id from room_members where room_id = p_room))
       or (p_user is not null and s.user_id = p_user
-          and (shares_room(p_user)
-            or exists (select 1 from follows f where f.follower = p_user and f.followee = auth.uid()))));
+          and (exists (select 1 from room_members a join room_members b on b.room_id = a.room_id
+                        where a.user_id = p_sender and b.user_id = p_user)
+            or exists (select 1 from follows f where f.follower = p_user and f.followee = p_sender))));
 $$;
-revoke all on function push_targets(uuid, uuid) from public, anon;
-grant execute on function push_targets(uuid, uuid) to authenticated;
+revoke all on function push_targets_for(uuid, uuid, uuid) from public, anon, authenticated;
+grant execute on function push_targets_for(uuid, uuid, uuid) to service_role;
 
 -- a phone that has said no since, or been reset: the push service says "gone", so forget it
 create or replace function push_gone(p_endpoint text)
 returns void language sql security definer set search_path = public as $$
   delete from push_subs where endpoint = p_endpoint;
 $$;
-revoke all on function push_gone(text) from public, anon;
-grant execute on function push_gone(text) to authenticated;
+revoke all on function push_gone(text) from public, anon, authenticated;
+grant execute on function push_gone(text) to service_role;
+
+-- saving this phone's address: one phone, one person — whoever is signed in on it now. Only
+-- the real push services' addresses are taken, so the worker never posts anywhere else.
+alter table push_subs drop constraint if exists push_subs_endpoint_host;
+alter table push_subs add constraint push_subs_endpoint_host check (endpoint ~ '^https://(fcm\.googleapis\.com|updates\.push\.services\.mozilla\.com|web\.push\.apple\.com|[a-z0-9.-]+\.push\.apple\.com|[a-z0-9.-]+\.notify\.windows\.com)/');
+create or replace function push_save(p_endpoint text, p_p256dh text, p_auth text)
+returns void language sql security definer set search_path = public as $$
+  insert into push_subs (endpoint, user_id, p256dh, auth) values (p_endpoint, auth.uid(), p_p256dh, p_auth)
+  on conflict (endpoint) do update set user_id = auth.uid(), p256dh = excluded.p256dh, auth = excluded.auth;
+$$;
+revoke all on function push_save(text, text, text) from public, anon;
+grant execute on function push_save(text, text, text) to authenticated;
 
 -- ---------------------------------------------------------------------------
 -- crash reports. When the app breaks on someone's phone it writes a line here, so it can
@@ -1487,5 +1506,7 @@ create policy room_ask_answers_read on room_ask_answers for select to authentica
 drop policy if exists room_ask_answers_post on room_ask_answers;
 create policy room_ask_answers_post on room_ask_answers for insert to authenticated
   with check (user_id = auth.uid() and ask_id in (select id from room_asks where room_id in (select my_room_ids()) and not closed));
+drop policy if exists room_ask_answers_own on room_ask_answers;
+create policy room_ask_answers_own on room_ask_answers for update to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
 drop policy if exists room_ask_answers_drop on room_ask_answers;
 create policy room_ask_answers_drop on room_ask_answers for delete to authenticated using (user_id = auth.uid());

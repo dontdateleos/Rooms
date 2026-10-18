@@ -8,6 +8,9 @@
 #   wrangler secret put CONTACT         # an email address for the app
 # and, for notifications on people's phones, once (it makes the keys and sets both):
 #   node tools/push-keys.mjs
+# plus the service key, so only this worker can look up where to send them
+# (Supabase → Project Settings → API → service_role — never put it in the app):
+#   wrangler secret put SUPABASE_SERVICE_KEY
 name = "rooms"
 main = "worker.js"
 compatibility_date = "2026-09-01"

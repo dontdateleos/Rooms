@@ -15,9 +15,10 @@
  *   /i/<code>/<app path> → an invite page with the room's name for chat previews,
  *                     which then sends people on to the app
  *
- * notifications also need (once — tools/push-keys.mjs sets both for you):
+ * notifications also need (once — tools/push-keys.mjs sets the first two for you):
  *   wrangler secret put VAPID_PUBLIC
  *   wrangler secret put VAPID_PRIVATE
+ *   wrangler secret put SUPABASE_SERVICE_KEY   # Supabase → Settings → API → service_role
  *
  * igdb is the reason this exists: it needs a client secret and an oauth token,
  * neither of which can live on a phone.
@@ -241,22 +242,31 @@ async function encryptFor(sub, payload) {
 /* a sender who sends too much is told to wait, per copy of the worker — enough to stop a loop */
 const SENT = new Map();
 async function pushSend(request, env, ctx, cors) {
-  if (!env.VAPID_PUBLIC || !env.VAPID_PRIVATE) return json({ error:"notifications aren't set up on the worker" }, 501, cors);
+  if (!env.VAPID_PUBLIC || !env.VAPID_PRIVATE || !env.SUPABASE_SERVICE_KEY) return json({ error:"notifications aren't set up on the worker" }, 501, cors);
   const auth = request.headers.get("Authorization") || "";
   if (!/^Bearer [\w.-]+$/.test(auth)) return json({ error:"sign in first" }, 401, cors);
   const b = await request.json().catch(() => ({}));
   const clip = (s, n) => String(s || "").slice(0, n);
-  const note = { title:clip(b.title, 80) || "Rooms", body:clip(b.body, 180), url:clip(b.url, 200).replace(/[^\w#=&?.\/:-]/g, ""), tag:clip(b.tag, 60) };
+  /* the tap only ever opens the app: a path and a #room link, never another site */
+  const home = (env.ORIGIN || "").split(",")[0].trim();
+  let url = ""; try { const u = new URL(clip(b.url, 300)); if (u.origin === home) url = u.pathname + u.hash.replace(/[^\w#=&-]/g, ""); } catch {}
+  const note = { title:clip(b.title, 80) || "Rooms", body:clip(b.body, 180), url, tag:clip(b.tag, 60) };
   if (!b.room && !b.to) return json({ error:"who to?" }, 400, cors);
-  const who = auth.slice(-24), now = Date.now(), log = (SENT.get(who) || []).filter(t => now - t < 10 * 60e3);
+  const who = auth.slice(-40), now = Date.now(), log = (SENT.get(who) || []).filter(t => now - t < 10 * 60e3);
   if (log.length >= 20) return json({ error:"slow down" }, 429, cors);
   SENT.set(who, [...log, now]); if (SENT.size > 2000) SENT.delete(SENT.keys().next().value);
+  /* who's sending, from Supabase itself — not from anything the request says */
   const anon = env.SUPABASE_ANON || SUPABASE_ANON;
+  const meR = await fetch(`${SUPABASE_URL}/auth/v1/user`, { headers:{ apikey:anon, Authorization:auth } });
+  if (!meR.ok) return json({ error:"sign in again" }, 401, cors);
+  const sender = (await meR.json())?.id; if (!sender) return json({ error:"sign in again" }, 401, cors);
+  const svc = env.SUPABASE_SERVICE_KEY;
   const rpc = (fn, args) => fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, { method:"POST",
-    headers:{ "Content-Type":"application/json", apikey:anon, Authorization:auth }, body:JSON.stringify(args) });
-  const r = await rpc("push_targets", { p_room:b.room || null, p_user:b.to || null });
-  if (!r.ok) return json({ error:"couldn't check who to tell" }, r.status === 401 ? 401 : 502, cors);
-  const subs = (await r.json()).slice(0, 50);
+    headers:{ "Content-Type":"application/json", apikey:svc, Authorization:`Bearer ${svc}` }, body:JSON.stringify(args) });
+  const r = await rpc("push_targets_for", { p_sender:sender, p_room:b.room || null, p_user:b.to || null });
+  if (!r.ok) return json({ error:"couldn't check who to tell" }, 502, cors);
+  const PUSH_HOSTS = /^https:\/\/(fcm\.googleapis\.com|updates\.push\.services\.mozilla\.com|web\.push\.apple\.com|[a-z0-9.-]+\.push\.apple\.com|[a-z0-9.-]+\.notify\.windows\.com)\//;
+  const subs = (await r.json()).filter(s => PUSH_HOSTS.test(s.endpoint)).slice(0, 50);
   const payload = JSON.stringify(note);
   const results = await Promise.all(subs.map(async s => {
     try { const res = await fetch(s.endpoint, { method:"POST", body:await encryptFor(s, payload), headers:{

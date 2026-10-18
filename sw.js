@@ -12,7 +12,11 @@ const WAIT=3000;
 self.addEventListener("fetch",e=>{const u=new URL(e.request.url); if(u.origin!==location.origin||e.request.method!=="GET") return;
   const nav=e.request.mode==="navigate";
   const req=nav?new Request(e.request.url,{cache:"no-cache",credentials:"same-origin"}):e.request;
-  const net=fetch(req).then(r=>{const c=r.clone(); if(r.ok) e.waitUntil(caches.open(SHELL).then(x=>x.put(e.request,c))); return r;});
+  let put=null;
+  const net=fetch(req).then(r=>{if(r.ok){const c=r.clone(); put=caches.open(SHELL).then(x=>x.put(e.request,c));} return r;});
+  /* the fresh copy is kept even when the old one answered first — waitUntil has to be
+     called now, while the event is still live, not once the network gets round to it */
+  e.waitUntil(net.then(()=>put).catch(()=>{}));
   const old=()=>caches.match(e.request,{ignoreSearch:true});
   if(!nav){e.respondWith(net.catch(old)); return;}
   e.respondWith(new Promise(done=>{let settled=false; const give=r=>{if(!settled&&r){settled=true; done(r);}};
@@ -23,7 +27,9 @@ self.addEventListener("fetch",e=>{const u=new URL(e.request.url); if(u.origin!==
 self.addEventListener("push",e=>{let n={}; try{n=e.data?e.data.json():{};}catch{n={body:e.data&&e.data.text()};}
   e.waitUntil(self.registration.showNotification(n.title||"Rooms",{body:n.body||"",tag:n.tag||undefined,renotify:!!n.tag,
     icon:"./icons/rooms-192.png",badge:"./icons/rooms-mask-192.png",data:{url:n.url||"./"}}));});
-self.addEventListener("notificationclick",e=>{e.notification.close(); const url=e.notification.data&&e.notification.data.url||"./";
+self.addEventListener("notificationclick",e=>{e.notification.close();
+  /* only ever somewhere inside the app */
+  let url=self.registration.scope; try{const u=new URL((e.notification.data&&e.notification.data.url)||"./",self.registration.scope); if(u.href.startsWith(self.registration.scope)) url=u.href;}catch{}
   e.waitUntil(self.clients.matchAll({type:"window",includeUncontrolled:true}).then(cs=>{
     const open=cs.find(c=>c.url.startsWith(self.registration.scope));
     if(open) return open.navigate(url).then(c=>(c||open).focus()).catch(()=>open.focus());

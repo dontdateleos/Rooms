@@ -1504,6 +1504,8 @@ html.storying{overflow:hidden}
 .askq p b{color:var(--ink);font-family:var(--head);font-weight:800}
 .askq p span{display:block;margin-top:3px;font-family:var(--head);font-weight:800;font-size:18px;line-height:1.25;color:var(--ink)}
 .askans{display:flex;gap:8px;overflow-x:auto;margin:12px -14px 0;padding:0 14px 2px;scrollbar-width:none}
+.askw{flex:none;display:flex;flex-direction:column;gap:4px}
+.askx{border:0;background:none;color:var(--mute);font:inherit;font-size:11px;font-weight:700;text-decoration:underline;padding:2px 0;text-align:left;cursor:pointer}
 .aska{flex:none;width:96px;display:flex;flex-direction:column;gap:4px;border:0;background:none;color:var(--ink);text-align:left;padding:0;cursor:pointer}
 .aska .co{width:96px;height:140px;border-radius:10px;object-fit:cover}
 .aska b{font-family:var(--head);font-weight:800;font-size:12.5px;line-height:1.2}
@@ -1752,7 +1754,8 @@ const reportCrash = (() => { const seen = new Set(); let left = 5;
     if (!msg || NOISE.test(msg) || NOISE.test(stack) || seen.has(msg) || left <= 0 || /(^|[#?&])demo\b/.test(location.hash + location.search)) return;
     seen.add(msg); left--;
     let tok = SUPABASE_ANON_KEY;
-    try { for (const k of Object.keys(localStorage)) if (/^sb-.*-auth-token$/.test(k)) tok = JSON.parse(localStorage.getItem(k))?.access_token || tok; } catch {}
+    try { for (const k of Object.keys(localStorage)) if (/^sb-.*-auth-token$/.test(k)) { const t = JSON.parse(localStorage.getItem(k));
+      if (t?.access_token && (!t.expires_at || t.expires_at * 1000 > Date.now())) tok = t.access_token; } } catch {}
     fetch(`${SUPABASE_URL}/rest/v1/client_errors`, { method:"POST", keepalive:true,
       headers:{ "Content-Type":"application/json", apikey:SUPABASE_ANON_KEY, Authorization:`Bearer ${tok}`, Prefer:"return=minimal" },
       body:JSON.stringify({ msg, stack, place:String(place).slice(0, 200), ua:navigator.userAgent.slice(0, 300), ver:document.lastModified.slice(0, 40) }) }).catch(() => {});
@@ -1992,8 +1995,8 @@ const REGION = () => { const pick = [P.region, ...(navigator.language || "").spl
    since "Disney Plus" and "Disney+" are the same thing to anyone holding a remote) */
 const SERVICES = [["netflix","Netflix"],["disney","Disney+"],["prime","Prime Video"],["apple","Apple TV+"],["max","Max"],["paramount","Paramount+"],
   ["hulu","Hulu"],["peacock","Peacock"],["stan","Stan"],["binge","Binge"],["now","NOW"],["iplayer","BBC iPlayer"],["crave","Crave"],["mubi","MUBI"],["criterion","Criterion"]];
-const svcKey = name => { const n = lc(name || "").replace(/[^a-z0-9]/g, "");
-  return SERVICES.find(([k]) => k === "prime" ? /amazonprime|primevideo/.test(n) : k === "max" ? /^(hbo)?max/.test(n) : k === "now" ? /^now(tv)?$/.test(n) : n.includes(k))?.[0] || null; };
+const svcKey = name => { const n = lc(name || "").replace(/[^a-z0-9]/g, ""); if (/channel$/.test(n)) return null;
+  return SERVICES.find(([k]) => k === "prime" ? /amazonprime|primevideo/.test(n) : k === "max" ? /^(hbo)?max/.test(n) : k === "now" ? /^now(tv)?(cinema|entertainment)?$/.test(n) : n.includes(k))?.[0] || null; };
 const onMine = got => (got?.free || []).filter(p => (P.services || []).includes(svcKey(p.name)));
 async function watchOn(w) {
   if (w.kind !== "film" && w.kind !== "tv") return null;
@@ -2118,14 +2121,14 @@ const faceMap = c => { const out = {};
 const FACE_IMG = p => p ? "https://image.tmdb.org/t/p/w185" + p : "";
 const DETAIL = {
   async film(raw) { const d = await tmdb("movie/"+raw, { append_to_response:"credits" });
-    return { creator:crewName(d.credits,"Director"), length:d.runtime||0, meta:{ genres:(d.genres||[]).map(g=>g.name), faces:faceMap(d.credits), overview:d.overview || "" },
+    return { poster:TMDB_IMG(d.poster_path), creator:crewName(d.credits,"Director"), length:d.runtime||0, meta:{ genres:(d.genres||[]).map(g=>g.name), faces:faceMap(d.credits), overview:d.overview || "" },
       credits:{ director:crewName(d.credits,"Director"), writer:crewName(d.credits,"Screenplay","Writer","Story"), dp:crewName(d.credits,"Director of Photography"),
         editor:crewName(d.credits,"Editor"), composer:crewName(d.credits,"Original Music Composer"), design:crewName(d.credits,"Production Design"),
         cast:(d.credits?.cast||[]).slice(0,4).map(p=>p.name).join(", ") } }; },
   async tv(raw) { const d = await tmdb("tv/"+raw, { append_to_response:"credits" }); const cr = (d.created_by||[]).map(p=>p.name).join(", ");
     const faces = Object.assign(faceMap(d.credits),
       Object.fromEntries((d.created_by||[]).filter(p=>p.profile_path).map(p=>[p.name,p.profile_path])));
-    return { creator:cr, length:d.number_of_episodes||0, meta:{ genres:(d.genres||[]).map(g=>g.name), faces, overview:d.overview || "" },
+    return { poster:TMDB_IMG(d.poster_path), creator:cr, length:d.number_of_episodes||0, meta:{ genres:(d.genres||[]).map(g=>g.name), faces, overview:d.overview || "" },
       credits:{ creator:cr, writer:cr, director:crewName(d.credits,"Director"), dp:crewName(d.credits,"Director of Photography"), composer:crewName(d.credits,"Original Music Composer"),
         cast:(d.credits?.cast||[]).slice(0,4).map(p=>p.name).join(", ") } }; },
   async book(raw) { try { const d = await ol(`/works/${raw}.json`);
@@ -2196,6 +2199,9 @@ function makeLocalSb(seed) {
   const from = t => { const st = { eqs:[], ins:null, up:null, del:false, upsert:null, sorts:[], lim:0, single:false }; const b = {};
     b.select = cols => { st.sel = String(cols || ""); return b; }; b.eq = (k,v) => { st.eqs.push([k,v]); return b; }; b.in = (k,vs) => { st.eqs.push([k,new Set(vs)]); return b; };
     b.neq = (k,v) => { st.eqs.push([k, { not:v }]); return b; };
+    const likeRx = v => new RegExp("^" + String(v).replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/%/g, ".*") + "$");
+    b.like = (k,v) => { st.eqs.push([k, { rx:likeRx(v) }]); return b; };
+    b.not = (k,op,v) => { if (op === "like") st.eqs.push([k, { nrx:likeRx(v) }]); return b; };
     b.gte = (k,v) => { st.eqs.push([k, { gte:v }]); return b; }; b.lte = (k,v) => { st.eqs.push([k, { lte:v }]); return b; };
     /* postgrest's or() is a string of its own filters; only the eq form is used here */
     b.ilike = (k,v) => { st.eqs.push([k, { like:String(v).replace(/%/g,"").toLowerCase() }]); return b; };
@@ -2206,6 +2212,8 @@ function makeLocalSb(seed) {
     b.then = (res, rej) => { try {
       const match = r => st.eqs.every(([k,v]) => v instanceof Set ? v.has(r[k])
           : (v && typeof v === "object" && "not" in v) ? r[k] !== v.not
+          : (v && typeof v === "object" && "rx" in v) ? v.rx.test(String(r[k] ?? ""))
+          : (v && typeof v === "object" && "nrx" in v) ? !v.nrx.test(String(r[k] ?? ""))
           : (v && typeof v === "object" && "like" in v) ? String(r[k]||"").toLowerCase().includes(v.like)
           : (v && typeof v === "object" && "gte" in v) ? String(r[k]||"") >= String(v.gte)
           : (v && typeof v === "object" && "lte" in v) ? String(r[k]||"") <= String(v.lte)
@@ -3168,19 +3176,25 @@ const inviteLink = code => inviteViaWorker ? `${proxy()}/i/${code}${location.pat
    The phone has to say yes first (and on an iPhone, Rooms has to be on the Home Screen).
    Sending goes through the worker, as you: it can only reach people you share a room
    with, and each person's phone decides whether to show it. */
-const pushCan = () => !DEMO && "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
-const pushNeedsHome = () => /iP(hone|ad|od)/.test(navigator.userAgent) && !(navigator.standalone || matchMedia("(display-mode: standalone)").matches);
+const pushCan = () => !DEMO && !sb?.__local && "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+/* an iPhone (or an iPad, which says it's a Mac) only gets notifications once Rooms is on the
+   Home Screen — and in a Safari tab it has no Notification at all, so ask this first */
+const pushNeedsHome = () => !DEMO && (/iP(hone|ad|od)/.test(navigator.userAgent) || (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1))
+  && !(navigator.standalone || matchMedia("(display-mode: standalone)").matches);
 let pushKeyP = null;
 const pushKey = () => pushKeyP ||= fetch(`${proxy()}/push/key`).then(r => r.ok ? r.json() : {}).then(j => j.key || null).catch(() => null);
 const keyBytes = k => Uint8Array.from(atob(k.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((k.length + 3) % 4)), c => c.charCodeAt(0));
 async function pushSub() { if (!pushCan()) return null; const reg = await navigator.serviceWorker.getRegistration(); return reg ? reg.pushManager.getSubscription() : null; }
 async function pushSave(sub) { const j = sub.toJSON();
-  await q(sb.from("push_subs").upsert({ endpoint:j.endpoint, user_id:me.id, p256dh:j.keys.p256dh, auth:j.keys.auth })); }
+  await q(sb.rpc("push_save", { p_endpoint:j.endpoint, p_p256dh:j.keys.p256dh, p_auth:j.keys.auth })); }
+const subKey = sub => sub?.options?.applicationServerKey && btoa(String.fromCharCode(...new Uint8Array(sub.options.applicationServerKey))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 async function pushOn() {
   const key = await pushKey(); if (!key) throw new Error("Notifications aren't switched on for this app yet.");
   if (await Notification.requestPermission() !== "granted") throw new Error("Your phone said no. You can allow it in the phone's settings for Rooms.");
   const reg = await navigator.serviceWorker.ready;
-  const sub = await reg.pushManager.getSubscription() || await reg.pushManager.subscribe({ userVisibleOnly:true, applicationServerKey:keyBytes(key) });
+  let sub = await reg.pushManager.getSubscription();
+  if (sub && subKey(sub) && subKey(sub) !== key) { await sub.unsubscribe().catch(() => {}); sub = null; }
+  sub ||= await reg.pushManager.subscribe({ userVisibleOnly:true, applicationServerKey:keyBytes(key) });
   await pushSave(sub); P.pushAsked = true; saveP(); return true; }
 async function pushOff() { const sub = await pushSub(); if (!sub) return;
   try { await q(sb.from("push_subs").delete().eq("endpoint", sub.endpoint)); } catch {}
@@ -3190,7 +3204,7 @@ async function pushOff() { const sub = await pushSub(); if (!sub) return;
 async function pushKeepUp() { try {
   if (!pushCan() || Notification.permission !== "granted" || !me?.id || sb.__local) return;
   let sub = await pushSub(); if (!sub) return; const key = await pushKey(); if (!key) return;
-  const had = sub.options?.applicationServerKey && btoa(String.fromCharCode(...new Uint8Array(sub.options.applicationServerKey))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  const had = subKey(sub);
   if (had && had !== key) { await sub.unsubscribe(); sub = await (await navigator.serviceWorker.ready).pushManager.subscribe({ userVisibleOnly:true, applicationServerKey:keyBytes(key) }); }
   await pushSave(sub); } catch {} }
 /* tell a room, or one person. Never in the way: if it doesn't go, nothing else stops. */
@@ -3207,9 +3221,8 @@ function takeRoomLink() { const m = /[#&]room=([\w-]{8,40})(?:&sec=(\w+))?/.exec
 addEventListener("hashchange", () => { if (/[#&]room=/.test(location.hash) && me?.id) { takeRoomLink(); switchTab("doors"); } });
 /* the switch, wherever it's shown */
 async function pushSwitchHTML() {
-  if (!pushCan()) return "";
   if (pushNeedsHome()) return `<p class="sub">To get notifications on an iPhone, add Rooms to your Home Screen first: Share → Add to Home Screen, then open it from there.</p>`;
-  if (!await pushKey()) return "";
+  if (!pushCan() || !await pushKey()) return "";
   const on = Notification.permission === "granted" && !!(await pushSub());
   return `<div class="pushrow"><div><b>Notifications on this phone</b><small>${on ? "On — watch nights, picks for you, new people in your rooms." : Notification.permission === "denied" ? "Blocked in your phone's settings." : "Off"}</small></div>
     <button class="chip ${on ? "on" : ""}" id="pushToggle" ${Notification.permission === "denied" ? "disabled" : ""}>${on ? "On" : "Turn on"}</button></div>`; }
@@ -3221,11 +3234,12 @@ function wirePushSwitch(root, after) { const b = $("#pushToggle", root); if (!b)
 /* called once you are through the door, whether that took ten seconds or a sign-up */
 async function useInvite() {
   const code = takeInvite(); if (!code || sb.__local) return false;
-  if (rooms.some(r => r.code === code)) { dropInvite(); return false; }
+  if (rooms.some(r => lc(r.code) === lc(code))) { dropInvite(); return false; }
   try {
     if (rooms.length >= ROOM_LIMIT) throw new Error("Leave a room to join another. You can be in up to three rooms.");
     const r = await q(sb.rpc("join_room", { p_code:code }));
-    dropInvite(); await loadRooms(); if (r?.id) notify({ room:r.id, title:`${me.handle} came into ${r.name || "your room"}`, body:"Say hello — or hand them something to watch.", tag:"join-" + r.id });
+    const wasIn = rooms.some(x => x.id === r?.id);
+    dropInvite(); await loadRooms(); if (r?.id && !wasIn) notify({ room:r.id, title:`${me.handle} came into ${r.name || "your room"}`, body:"Say hello — or hand them something to watch.", tag:"join-" + r.id });
     if (r?.id) { P.activeRoom = r.id; P.feed = "room"; P.feedPicked = true; saveP(); }
     await loadClubs();
     say(`You're in ${rooms.find(x => x.id === r?.id)?.name || "the room"}`, "good");
@@ -3716,9 +3730,10 @@ function openNotes() {
    happened, and this is how you'd hear about it without opening the app. Asked until
    you answer either way, then never again — the switch lives in Settings after that. */
 async function pushAsk() {
-  if (!pushCan() || P.pushAsked || Notification.permission !== "default" || !await pushKey()) return;
-  const body = $("#noteBody"); if (!body) return;
+  if (P.pushAsked) return;
   const home = pushNeedsHome();
+  if (!home && (!pushCan() || Notification.permission !== "default" || !await pushKey())) return;
+  const body = $("#noteBody"); if (!body) return;
   body.insertAdjacentHTML("afterbegin", `<div class="pushask" id="pushAsk"><b>Hear about it when the app's closed?</b>
     <small>${home ? "On an iPhone, add Rooms to your Home Screen first (Share → Add to Home Screen) and open it from there." : "Watch nights, picks people hand you, and someone new in your rooms. Nothing else."}</small>
     <div class="row2">${home ? "" : `<button class="btn soft" id="pushYes">Turn on</button>`}<button class="btn quiet" id="pushNo">${home ? "OK" : "No thanks"}</button></div></div>`);
@@ -4977,7 +4992,7 @@ function openFind() {
     <div id="findWorks"></div><p class="msg" id="findMsg"></p><div id="findRes"></div>
     <div class="stack"><button class="btn quiet" id="findClose">Not now</button></div>`);
   $("#findClose").onclick = closeSheet;
-  $("#findClear").onclick = () => { $("#findQ").value = ""; $("#findRes").innerHTML = ""; $("#findMsg").textContent = ""; $("#findQ").focus(); };
+  $("#findClear").onclick = () => { $("#findQ").value = ""; $("#findRes").innerHTML = ""; $("#findWorks").innerHTML = ""; $("#findMsg").textContent = ""; $("#findQ").focus(); };
   setTimeout(() => $("#findQ")?.focus(), 350);
   $("#findQ").oninput = e => { clearTimeout(findT); const v = e.target.value.trim().replace(/^@/, "");
     const res = $("#findRes"), msg = $("#findMsg");
@@ -5052,7 +5067,7 @@ function slipHTML(e, opts = {}) { const w = remember(e.works) || works[e.work_id
     ${(() => { const t = together(e); return t ? `<div class="loved" style="margin-top:10px"><span class="together">◆ ${t}</span></div>` : ""; })()}
     ${e.loved?.length?`<div class="loved">${e.loved.slice(0,4).map(k => `<span>${esc(k.startsWith("person:")?lc(k.slice(7)):k)}</span>`).join("")}</div>`:""}
     <div class="foot"><div class="acts">${mine ? `<button class="chip" data-edit-review="${e.id}">Edit</button><button class="chip" data-delete-review="${e.id}">Delete</button>` : `<button data-like="${e.id}" class="lk ${same?"on":""}" aria-pressed="${same}" aria-label="${same ? "Liked — tap to take it back" : "Like this"}">${heartSVG(same)}</button><button data-reply="${e.id}" class="lk" aria-label="Reply">${BUBBLE}</button>`
-      }${mine && e.private ? `<span class="tag dim">just me</span>` : mine && e.room_only ? `<span class="tag dim">room only</span>` : ""}</div>${stars(e.score,"sm")}</div>
+      }${mine && (e.private ?? myEntries.find(x => x.id === e.id)?.private) ? `<span class="tag dim">just me</span>` : mine && e.room_only ? `<span class="tag dim">room only</span>` : ""}</div>${stars(e.score,"sm")}</div>
     <div class="likes" data-likes="${e.id}">${(() => { const l = likeLine(e); return l ? `<span>${l}</span>` : ""; })()}</div>
     <div class="thread" data-thread="${e.id}">${threadHTML(e)}</div></div>`; }
 /* Replies: the table has been there since the start and nothing ever showed one. The last
@@ -5069,7 +5084,7 @@ function logLineHTML(es) { const e = es[0], mine = e.user_id === me.id;
   const names = ws.map(w => `<b>${esc(w.title || "")}</b>`);
   const list = names.length < 3 ? names.join(" and ") : names.slice(0, -1).join(", ") + " and " + names[names.length - 1];
   return `<div class="logline"><div class="ll-who">${avatar(e.profiles)}<p><b data-prof="${esc(e.user_id)}">${esc(mine ? "you" : e.profiles?.handle || "someone")}</b> ${verbs.length === 1 ? verbs[0] : "logged"} ${list}<small> · ${when(e.rated_on)}</small></p></div>
-    <div class="ll-row">${es.map((x, i) => `<button class="ll-w" data-entry="${esc(x.id)}" aria-label="${esc(`${ws[i].title || "Untitled"}, ${(x.score / 2).toFixed(1)} stars`)}">${cover(ws[i])}${stars(x.score, "sm")}</button>`).join("")}</div></div>`; }
+    <div class="ll-row">${es.map((x, i) => `<button class="ll-w" data-entry="${esc(x.id)}" data-gw="${esc(x.work_id)}" aria-label="${esc(`${ws[i].title || "Untitled"}, ${(x.score / 2).toFixed(1)} stars`)}">${cover(ws[i])}${stars(x.score, "sm")}</button>`).join("")}</div></div>`; }
 function wireThreads(el, by) {
   const paint = (e, all) => { const t = $(`[data-thread="${CSS.escape(e.id)}"]`, el); if (!t) return; t.innerHTML = threadHTML(e, all); wireOne(t, all); };
   const wireOne = (root, all) => {
@@ -5346,7 +5361,7 @@ function wireRoomButtons() { const nr = $("#newRoom"), jr = $("#joinRoom");
     const code = await askText({ title:"Join a room", sub:"Whoever is already in it can find the code under the room's name.", label:"The six-character code", placeholder:"PIT123", ok:"Join", max:12, upper:true });
     if (!code) return;
     if (rooms.length >= ROOM_LIMIT && !rooms.some(r => r.code.toLowerCase() === code.trim().toLowerCase())) { $("#roomMsg").textContent = "Leave a room to join another. You can be in up to three rooms."; return; }
-    try { const r = await q(sb.rpc("join_room", { p_code:code })); await loadRooms(); if (r?.id) notify({ room:r.id, title:`${me.handle} came into ${r.name || "your room"}`, body:"Say hello — or hand them something to watch.", tag:"join-" + r.id }); if (r?.id) P.activeRoom = r.id; P.feed = "room"; P.feedPicked = true; saveP(); closeSheet(); await loadClubs(); renderDoors(); } catch (e) { $("#roomMsg").textContent = e.message; } }; }
+    try { const r = await q(sb.rpc("join_room", { p_code:code })); const wasIn = rooms.some(x => x.id === r?.id); await loadRooms(); if (r?.id && !wasIn) notify({ room:r.id, title:`${me.handle} came into ${r.name || "your room"}`, body:"Say hello — or hand them something to watch.", tag:"join-" + r.id }); if (r?.id) P.activeRoom = r.id; P.feed = "room"; P.feedPicked = true; saveP(); closeSheet(); await loadClubs(); renderDoors(); } catch (e) { $("#roomMsg").textContent = e.message; } }; }
 async function renderFollowingFeed(fb) {
   const ids = follows.map(f => f.followee); let es = [];
   if (ids.length) { try { es = notApart(await wholeEntries(f => { let x = sb.from("entries").select(ENTRY_SEL);
@@ -6675,6 +6690,7 @@ async function doSearch(term, onPick, resEl, msgEl, box, acts = null) { msgEl.te
     $$("[data-act]", r).forEach(b => b.onclick = ev => { ev.stopPropagation(); onPick(r, b.dataset.act); box?.focus(); }); }); }
 async function ensureWork(hit) { if (works[hit.id]?.credits) return works[hit.id]; const raw = hit.id.split(":")[1]; const extra = await DETAIL[hit.kind](raw).catch(() => ({}));
   const w = Object.assign({ id:hit.id, kind:hit.kind, title:hit.title, year:hit.year, cover:hit.cover, creator:hit.creator||"", length:hit.length||0 }, extra);
+  if (!w.cover && w.poster) w.cover = w.poster; delete w.poster;
   if (hit.release) w.release = hit.release; await q(sb.from("works").upsert(w)); works[hit.id] = w; return w; }
 const savedParts = new Set();
 /* A part cannot be saved on its own: the foreign key points at its parent, and the
@@ -6888,7 +6904,7 @@ async function ensureMyTop(name = "all time") {
   let t = await loadTop(me.id, name);
   if (!t) { const r = await q(sb.from("top_lists").insert({ owner:me.id, name }).select().single()); t = { id:r.id, name, items:[] }; }
   if (!t.items.length && name !== "all time") {
-    const seed = myEntries.filter(e => kindOf(e.work_id) === name).sort((a,b) => b.score - a.score || String(b.rated_on).localeCompare(String(a.rated_on)));
+    const seed = myEntries.filter(e => kindOf(e.work_id) === name && !onlyMine(e.work_id)).sort((a,b) => b.score - a.score || String(b.rated_on).localeCompare(String(a.rated_on)));
     const seen = new Set(), items = [];
     for (const e of seed) { if (seen.has(e.work_id)) continue; seen.add(e.work_id); items.push(e.work_id); if (items.length === 10) break; }
     if (items.length) { try { await q(sb.from("top_list_items").insert(items.map((id,i) => ({ top_list_id:t.id, work_id:id, rank:i+1 })))); t.items = items; } catch {} }
@@ -7183,7 +7199,10 @@ async function loadGames(R) {
   try {
     const [answers, votes, brackets] = await Promise.all([
       promptAnswers(R),
-      q(sb.from("room_votes").select("*").eq("room_id", R.id).gte("created_at", since)),
+      /* swipes are a row per person per title per day, so only today's come back — a few
+         busy evenings would otherwise push this week's prompt votes past the row limit */
+      Promise.all([q(sb.from("room_votes").select("*").eq("room_id", R.id).gte("created_at", since).not("game", "like", "swipe:%")),
+        q(sb.from("room_votes").select("*").eq("room_id", R.id).like("game", `swipe:${today()}:%`))]).then(([a, b]) => [...a, ...b]),
       q(sb.from("room_brackets").select("*").eq("room_id", R.id).eq("month", gameMonth()))]);
     await fillWorks([...answers.map(a => a.work_id), ...(brackets[0]?.seeds || [])]);
     return { ok:true, answers, votes, bracket:brackets[0] || null };
@@ -7407,7 +7426,7 @@ async function openHold(found) {
 async function loadAsks(R) {
   const since = new Date(Date.now() - 14 * 864e5).toISOString();
   try { const asks = await q(sb.from("room_asks").select("*").eq("room_id", R.id).gte("created_at", since).order("created_at", { ascending:false }).limit(4));
-    const open = asks.filter(a => !a.closed || a.user_id === me.id).slice(0, 2); if (!open.length) return [];
+    const open = [...asks.filter(a => !a.closed), ...asks.filter(a => a.closed && a.user_id === me.id)].slice(0, 2); if (!open.length) return [];
     const ans = await q(sb.from("room_ask_answers").select("*").in("ask_id", open.map(a => a.id)));
     await fillWorks(ans.map(x => x.work_id)).catch(() => {});
     return open.map(a => ({ ...a, answers:ans.filter(x => x.ask_id === a.id).sort((x, y) => String(x.created_at).localeCompare(String(y.created_at))) })); }
@@ -7417,7 +7436,7 @@ function asksHTML(R, asks) {
   return asks.map(a => { const mine = a.user_id === me.id;
     return `<div class="card askcard" data-ask="${esc(a.id)}"><div class="askq">${avatar(R.members.find(m => m.id === a.user_id) || { id:a.user_id })}<p><b>${esc(who(R, a.user_id))}</b> ${mine ? "asked" : "asks"}<span>${esc(a.body)}</span></p></div>
       ${a.answers.length ? `<div class="askans">${a.answers.map(x => { const w = works[x.work_id] || {};
-        return `<button class="aska" data-gw="${esc(x.work_id)}" ${x.user_id === me.id ? `data-unask="${esc(a.id)}|${esc(x.work_id)}"` : ""}>${cover(w)}<b>${esc(w.title || "")}</b><small>${esc(who(R, x.user_id))}${x.note ? ` · “${esc(x.note)}”` : ""}</small></button>`; }).join("")}</div>` : `<p class="sub gline" style="margin:8px 0 0">No answers yet.</p>`}
+        return `<div class="askw"><button class="aska" data-gw="${esc(x.work_id)}">${cover(w)}<b>${esc(w.title || "")}</b><small>${esc(who(R, x.user_id))}${x.note ? ` · “${esc(x.note)}”` : ""}</small></button>${x.user_id === me.id ? `<button class="askx" data-unask="${esc(a.id)}|${esc(x.work_id)}">Take back</button>` : ""}</div>`; }).join("")}</div>` : `<p class="sub gline" style="margin:8px 0 0">No answers yet.</p>`}
       <div class="askacts">${a.closed ? `<span class="tag dim">answered</span>` : mine ? `<button class="chip" data-askdone="${esc(a.id)}">That's answered</button>` : `<button class="btn soft" data-askans="${esc(a.id)}">Suggest something</button>`}</div></div>`; }).join("")
     + `<button class="askopen" id="askRoom">${BUBBLE}<span>Ask the room for something to watch, read or play</span></button>`; }
 async function paintAsks(R) { const box = $("#roomAsks"); if (!box) return;
@@ -7438,6 +7457,8 @@ async function paintAsks(R) { const box = $("#roomAsks"); if (!box) return;
   $$("[data-gw]", box).forEach(b => b.onclick = () => openWork(b.dataset.gw));
   $$("[data-askdone]", box).forEach(b => b.onclick = async () => {
     try { await q(sb.from("room_asks").update({ closed:true }).eq("id", b.dataset.askdone)); } catch (e) { oops(e, "Couldn't close it"); } again(); });
+  $$("[data-unask]", box).forEach(b => b.onclick = async () => { const [ask, work] = b.dataset.unask.split("|");
+    try { await q(sb.from("room_ask_answers").delete().eq("ask_id", ask).eq("user_id", me.id).eq("work_id", work)); } catch (e) { oops(e, "Couldn't take it back"); } again(); });
   $$("[data-askans]", box).forEach(b => b.onclick = () => { const a = asks.find(x => x.id === b.dataset.askans); if (a) openAnswerAsk(R, a, again); }); }
 function openAnswerAsk(R, a, onDone) {
   const seen = new Set(), pool = [];
@@ -7523,13 +7544,18 @@ async function openSwipe(R, g, again) {
     drag($(".swc.top", box));
     const tw = deck[i]; watchOn(tw).then(got => { const m = onMine(got), meta = $(`.swc.top[data-sw="${CSS.escape(tw.id)}"] .swmeta small`, box);
       if (m.length && meta) meta.insertAdjacentHTML("beforeend", ` · <b class="swsvc">on ${esc(m[0].name)}</b>`); }).catch(() => {}); };
-  const decide = async yes => { const w = deck[i]; if (!w) return; const card = $(".swc.top");
-    if (card) { card.classList.add(yes ? "goy" : "gon"); }
-    i++; setTimeout(paint, REDUCED ? 0 : 220);
+  let busy = false;
+  const decide = async yes => { const w = deck[i]; if (!w || busy) return; busy = true; const card = $(".swc.top");
+    if (card) { card.classList.add(yes ? "goy" : "gon"); card.onpointerdown = card.onpointermove = card.onpointerup = null; }
+    i++; setTimeout(() => { busy = false; paint(); }, REDUCED ? 0 : 220);
     try { await vote(w.id, yes ? "y" : "n");
-      if (yes && st.yes(w.id) >= 1) { matched.push(w); gameSeen(`m:${R.id}:${day}:${w.id}`, 1);
-        playMatch(w, `${st.yes(w.id) + 1} of you said yes`);
-        notify({ room:R.id, title:`It's a match in ${R.name}: ${w.title}`, body:`${st.yes(w.id) + 1} of you said yes for tonight.`, tag:"swipe-" + R.id, sec:"play" }); } }
+      if (!yes) return;
+      /* count again now, not from when the deck opened: somebody else may have swiped it since */
+      const now = await q(sb.from("room_votes").select("voter,choice").eq("room_id", R.id).eq("game", `swipe:${day}:${w.id}`)).catch(() => null);
+      const ys = now ? now.filter(v => v.choice === "y").length : st.yes(w.id) + 1;
+      if (ys >= 2) { matched.push(w); gameSeen(`m:${R.id}:${day}:${w.id}`, 1);
+        playMatch(w, `${ys} of you said yes`);
+        if (ys === 2) notify({ room:R.id, title:`It's a match in ${R.name}: ${w.title}`, body:"Two of you said yes for tonight.", tag:"swipe-" + R.id, sec:"play" }); } }
     catch (e) { oops(e, "Couldn't save that swipe"); } };
   function drag(c) { if (!c) return; let x0 = null, dx = 0;
     c.onpointerdown = e => { x0 = e.clientX; dx = 0; c.setPointerCapture(e.pointerId); c.style.transition = "none"; };
@@ -7641,7 +7667,10 @@ function openPlanNight(R, onDone) {
    names coming out on the prompt, a new round of the bracket opening, and the month's
    winner. The vote you just cast gets a smaller beat every time. */
 let lastVote = null, gameFocus = null;
-const gameSeen = (key, mark) => { const m = P.gameAnim || {}; if (mark) { P.gameAnim = Object.assign({}, m, { [key]:mark }); saveP(); } return m[key]; };
+const gameSeen = (key, mark) => { const m = P.gameAnim || {};
+  if (mark) { const old = new Date(Date.now() - 4 * 864e5).toISOString().slice(0, 10);
+    P.gameAnim = Object.fromEntries(Object.entries(Object.assign({}, m, { [key]:mark })).filter(([k]) => !k.startsWith("m:") || k.split(":")[2] >= old)); saveP(); }
+  return m[key]; };
 function rollNum(el, to, delay = 0) {
   if (!el || REDUCED || to < 1) return;
   el.textContent = "0"; let n = 0;
@@ -7709,10 +7738,10 @@ async function paintGames(R, es) {
   if ($("#roomGames") !== el) return;
   const nights = await loadNights(R);
   if ($("#roomGames") !== el) return;
-  const night = nights.find(n => n.at >= today()) || null, past = !night && nights.find(n => n.at < today() && dayNo(today()) - dayNo(n.at) <= 14) || null;
+  const night = nights.find(n => n.at >= today()) || null, past = !night && nights.slice().reverse().find(n => n.at < today() && dayNo(today()) - dayNo(n.at) <= 14) || null;
   if (past) await fillWorks(past.options).catch(() => {});
   const swNow = swipeState(R, g);
-  if (swNow.deck.length) await fillWorks(swNow.matches.slice(0, 3)).catch(() => {});
+  if (swNow.deck.length) await fillWorks(swNow.matches).catch(() => {});
   el.innerHTML = (night ? nightHTML(R, night, g) : "") + (night && night.at === today() ? "" : swipeHTML(R, g)) + promptHTML(R, g) + bracketHTML(R, br, g) + (night ? "" : past ? nightAfterHTML(R, past, g) : nightPlanHTML());
   /* the Play tab gets a dot while there's something waiting on you */
   const s = promptState(R, g, gameWeek()), bst = br ? bracketState(R, br, g.votes) : null;
@@ -9376,7 +9405,7 @@ function openEpTalk(ep, list, after, justOpened = false) { if (!ep) return;
   openSheet(`${head}<p class="sub">What your people said.</p>
     <div class="card fr">${list.sort(newestFirst).map(e => `<div class="frrow" style="cursor:default;align-items:flex-start">${avatar(e.profiles)}<span class="t"><b>${esc(e.profiles?.handle || "someone")}</b><span class="epnote">${noteHTML(e.note)}</span></span>${stars(e.score, "sm")}</div>`).join("")}</div>
     <div class="stack"><button class="btn soft" id="epMine">${myPartScore(ep.id) != null ? "Change yours" : "Add yours"}</button><button class="btn quiet" id="epClose">Close</button></div>`);
-  $("#epClose").onclick = closeSheet;
+  $("#epClose").onclick = () => openWork(showOf(ep.id));
   if (justOpened && !REDUCED) $$("#sheetBody .frrow").forEach((r, i) => r.animate([{ transform:"translateY(14px)", opacity:0, filter:"blur(6px)" }, { transform:"none", opacity:1, filter:"blur(0)" }], { duration:420, delay:120 + i * 140, easing:"cubic-bezier(.2,1,.4,1)", fill:"backwards" }));
   $("#epMine").onclick = async () => { await ensurePart(ep); openLog(ep); }; }
 const epRow = ep => { const sc = myPartScore(ep.id), on = mySeen.has(ep.id);
@@ -9510,7 +9539,7 @@ function openLog(w, edit = null, preset = 0) { const cfg = K(w.kind); const love
     ${(() => { const n = !edit && nowOf(w.id); if (!n) return "";
       const d = dayNo(today()) - dayNo(n.started_on); if (!(d > 0)) return "";
       return `<div class="chips" style="margin-top:8px"><button class="chip" id="useStart" type="button">Started ${when(n.started_on)} \u00b7 ${waited(d)}</button></div>`; })()}<div class="lbl">Your rating</div><div id="rateWrap">${starRow()}</div><div class="ticks" id="tickRow"></div><div id="lovedWrap"></div>
-    <div class="lbl">Add a note</div><textarea id="wNote" placeholder="One line, if you want">${edit?.note?esc(edit.note):esc((P.drafts || {})[w.id]?.note || "")}</textarea>
+    <div class="lbl">Add a note</div><textarea id="wNote" placeholder="One line, if you want">${edit ? esc(edit.note || "") : esc((P.drafts || {})[w.id]?.note || "")}</textarea>
     <div class="spoilrow"><button type="button" class="chip" id="wSpoil">Hide a spoiler</button><small>Select the part that gives it away, or tap to hide the whole note.</small></div>
     ${/* room_only has been in the schema since v13 and nothing ever set it, so every
           entry anybody has ever written is public. Only worth offering when there is a
@@ -9522,7 +9551,7 @@ function openLog(w, edit = null, preset = 0) { const cfg = K(w.kind); const love
       <p class="sub" id="whoNote"></p>` : ""}
     <div class="stack"><button class="btn" id="wSave" ${edit||preset?"":"disabled"}>${edit?"Save changes":preset?"Save the entry":"Rate it to save"}</button><button class="btn quiet" id="wCancel">Not now</button></div><p class="msg" id="wMsg"></p>`);
   /* a note half-written when the phone rang is still there next time — kept a fortnight */
-  if (!edit) { let dt; $("#wNote").addEventListener("input", e => { clearTimeout(dt); dt = setTimeout(() => {
+  let dt; if (!edit) { $("#wNote").addEventListener("input", e => { clearTimeout(dt); dt = setTimeout(() => {
       const d = P.drafts = Object.fromEntries(Object.entries(P.drafts || {}).filter(([, v]) => Date.now() - v.at < 14 * 864e5));
       const v = e.target.value.trim(); if (v) d[w.id] = { note:e.target.value, at:Date.now() }; else delete d[w.id]; saveP(); }, 400); });
     if ((P.drafts || {})[w.id]?.note) $("#wMsg").textContent = "Your note from last time is still here."; }
@@ -9561,7 +9590,8 @@ function openLog(w, edit = null, preset = 0) { const cfg = K(w.kind); const love
   /* three ways: anyone, your rooms, or only you — "just me" still counts in your stats,
      your archive and your year, and never appears to anybody else. Only the first two are
      remembered as your usual; a private one is a choice you make each time. */
-  let who = edit ? (edit.private ? "me" : edit.room_only ? "room" : "all")
+  const wasPrivate = !!edit && !!(edit.private ?? myEntries.find(x => x.id === edit.id)?.private);
+  let who = edit ? (wasPrivate ? "me" : edit.room_only ? "room" : "all")
     : P.postTo === "all" || !rooms.length ? "all" : "room";
   let roomOnly = who !== "all";
   const paintWho = () => { const n = $("#whoNote"); if (!n) return;
@@ -9605,14 +9635,15 @@ function openLog(w, edit = null, preset = 0) { const cfg = K(w.kind); const love
     else { while (a < b && /\s/.test(v[a])) a++; while (b > a && /\s/.test(v[b - 1])) b--;
       ta.value = v.slice(0, a) + "||" + v.slice(a, b) + "||" + v.slice(b); }
     ta.focus(); say(whole && a === b ? "Not a spoiler any more" : "Hidden until someone taps it"); };
-  $("#wSave").onclick = async () => { if (!score) return; const e = { user_id:me.id, work_id:w.id, rated_on:$("#wDate").value || today(), score, note:$("#wNote").value.trim() || null, loved:loved.length?loved.slice():null, context:Object.keys(ctx).length?ctx:null, breakdown:null, room_only:roomOnly, ...(who === "me" || edit?.private ? { private:who === "me" } : {}) };
+  $("#wSave").onclick = async () => { if (!score) return; const e = { user_id:me.id, work_id:w.id, rated_on:$("#wDate").value || today(), score, note:$("#wNote").value.trim() || null, loved:loved.length?loved.slice():null, context:Object.keys(ctx).length?ctx:null, breakdown:null, room_only:roomOnly, ...(who === "me" || wasPrivate ? { private:who === "me" } : {}) };
     $("#wSave").disabled = true; try { await saveEntry(e, edit?.id); await loadMine();
-      if (P.drafts?.[w.id]) { delete P.drafts[w.id]; saveP(); }
+      clearTimeout(dt); if (P.drafts?.[w.id]) { delete P.drafts[w.id]; saveP(); }
       const offShelf = !edit?.id && dropFromShelf(w.id);
       /* you are not in the middle of something you have just finished */
       if (!edit?.id && nowOf(w.id)) stopNow(w.id);
       /* a rewatch doesn't ask again — only the first time this work stands in the archive */
-      const firstTime = !edit?.id && myEntries.filter(x => x.work_id === w.id).length === 1;
+      const firstTime = who !== "me" && myEntries.filter(x => x.work_id === w.id && !x.private).length === 1
+        && (!edit?.id || wasPrivate) && !(await ensureRankCache([w.kind]).then(() => (rankCache[w.kind] || []).includes(w.id)).catch(() => false));
       justSwept = w.id; inkWash(w.kind); recs = null; delete tagCache[w.id]; if (P.picked === w.id) { P.picked = null; saveP(); }
       const saved = (edit ? myEntries.find(x => x.id === edit.id) : myEntries.find(x => x.work_id === w.id)) || e;
       /* rate it, place it, done: the placing happens in this sheet, and the end is a toast
@@ -9728,12 +9759,12 @@ function readImport(text) {
   const tvTime = col("series_name","tv_show_name","show_name","series name","show name") >= 0;
   const kind = tvTime ? "tv" : col("movie_name","movie name") >= 0 ? "film" : col("letterboxd uri") >= 0 ? "film" : col("my rating") >= 0 || col("author") >= 0 ? "book" : col("hours") >= 0 || col("app id","appid") >= 0 ? "game" : null;
   const items = rows.slice(1).map(r => ({ title:(r[iTitle]||"").trim(), year:iYear>=0?(r[iYear]||"").trim().slice(0,4):"",
-    rating:iRating>=0?parseFloat(r[iRating]):NaN, date:iDate>=0?(r[iDate]||"").trim().slice(0,10):"", author:iAuthor>=0?(r[iAuthor]||"").trim():"",
+    rating:iRating>=0 && parseFloat(r[iRating]) > 0 ? parseFloat(r[iRating]) : NaN, date:iDate>=0?(r[iDate]||"").trim().slice(0,10):"", author:iAuthor>=0?(r[iAuthor]||"").trim():"",
     ...(tvTime ? { now:true } : {}) }))
     .filter(x => x.title);
   /* an episode log is a row per episode: one show, many rows — keep each title once */
   const once = new Map(); for (const x of items) { const k = lc(x.title) + "|" + x.year; const was = once.get(k);
-    if (!was || (x.date > was.date) || (isNaN(was.rating) && !isNaN(x.rating))) once.set(k, x); }
+    if (!was || (isNaN(was.rating) && !isNaN(x.rating)) || (isNaN(was.rating) === isNaN(x.rating) && x.date > was.date)) once.set(k, x); }
   return { kind, items:[...once.values()] };
 }
 /* Trakt's export is JSON: ratings, watched, history or watchlist files, each entry
@@ -9748,7 +9779,7 @@ function readTrakt(text) {
     const kind = r.movie ? "film" : "tv", tmdb = m.ids?.tmdb;
     const key = kind + ":" + (tmdb || lc(m.title) + m.year);
     const x = by.get(key) || { title:m.title, year:String(m.year || ""), kind, id:tmdb ? `${kind}:${tmdb}` : "", rating:NaN, date:"", watched:false };
-    if (r.rating != null && isNaN(x.rating)) x.rating = +r.rating / 2;
+    if (r.rating != null && !r.episode && !r.season && isNaN(x.rating)) x.rating = +r.rating / 2;
     const when = String(r.rated_at || r.last_watched_at || r.watched_at || r.listed_at || "").slice(0, 10);
     if (when > x.date) x.date = when;
     if (r.plays || r.watched_at || r.last_watched_at) x.watched = true;
@@ -9962,7 +9993,7 @@ function openImport() {
       $("#impMsg").textContent = `${done} of ${items.length} · ${x.title}`;
       const score = isNaN(x.rating) ? null : Math.max(1, Math.min(10, Math.round(x.rating * 2)));
       /* seen it but never rated it: Rooms has no unrated log, so it waits on the shelf or stays behind */
-      if (!score && !x.now && (unrated === "skip" || x.watched)) { unratedSkipped++; continue; }
+      if (!score && (unrated === "skip" || (x.watched && !x.now))) { unratedSkipped++; continue; }
       try {
         const k = x.kind || kind;
         /* Trakt hands over the TMDB id itself, so there's nothing to guess */
@@ -9973,6 +10004,7 @@ function openImport() {
         const w = await ensureWork(hit);
         /* TV Time tracks episodes, not verdicts: a show comes in as one you're watching */
         if (!score && x.now) { if (!nowOf(w.id)) await startNow(w.id); added++; continue; }
+        if (score) loggedIds.add(w.id);
         if (score) await q(sb.from("entries").insert({ user_id:me.id, work_id:w.id, rated_on:/^\d{4}-\d{2}-\d{2}$/.test(x.date) ? x.date : today(), score, note:null, loved:null, context:null, breakdown:null }));
         else if (L && !L.items.includes(w.id)) { await q(sb.from("list_items").insert({ list_id:L.id, work_id:w.id })); L.items.push(w.id); }
         added++;
@@ -10122,7 +10154,7 @@ async function openYou() { let top = { items:[] }; try { top = await ensureMyTop
   if (dq && dg) { dq.oninput = () => { dg.disabled = lc(dq.value.trim()) !== lc(me.handle); };
     dg.onclick = async () => { dg.disabled = true; $("#delMsg").textContent = "Closing it";
       try { await q(sb.rpc("delete_me"));
-        try { await sb.auth.signOut(); } catch {}
+        try { await pushOff().catch(() => {}); await sb.auth.signOut(); } catch {}
         try { localStorage.removeItem("rooms.prefs"); localStorage.removeItem("rooms.db"); } catch {}
         location.reload(); }
       catch (e) { dg.disabled = false;
@@ -10155,7 +10187,7 @@ async function openYou() { let top = { items:[] }; try { top = await ensureMyTop
   $("#importBtn").onclick = openImport;
   const bb2 = $("#bringBtn"); if (bb2) bb2.onclick = openBringOver;
   const pb = $("#paidBtn"); if (pb) pb.onclick = openPaid;
-  $("#sClose").onclick = closeSheet; $("#signOut").onclick = async () => { await sb.auth.signOut(); location.reload(); };
+  $("#sClose").onclick = closeSheet; $("#signOut").onclick = async () => { await pushOff().catch(() => {}); await sb.auth.signOut(); location.reload(); };
   const tk = $("#takeout"); if (tk) tk.onclick = async () => { tk.disabled = true; const was = tk.textContent; tk.textContent = "Gathering…";
     try { const all = await exportEverything();
       downloadJSON(all, `rooms-${me.handle}-${today()}.json`);
