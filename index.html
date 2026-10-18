@@ -1425,6 +1425,30 @@ html.storying{overflow:hidden}
 @keyframes barUp{from{transform:scaleY(0)}}
 .st-share{display:flex;flex-direction:column;gap:10px;margin-top:10px}
 .st-room{display:flex;flex-direction:column;gap:10px}
+/* watch nights */
+.nopts{display:flex;justify-content:center;gap:8px;margin-top:4px}
+.nopt{flex:1 1 0;max-width:calc((100% - 16px) / 3);display:flex;flex-direction:column;gap:5px;border:2px solid transparent;background:var(--cream2);border-radius:14px;padding:7px;color:var(--ink);text-align:left;cursor:pointer;min-width:0}
+.nopt .co{width:100%;aspect-ratio:2/3;height:auto;border-radius:9px;object-fit:cover}
+.nopt b{font-family:var(--head);font-weight:800;font-size:13px;line-height:1.2;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.nopt small{font-size:11px;font-weight:700;color:var(--mute)}
+.nopt.on{border-color:var(--ink)}
+.nopt.lead{box-shadow:0 0 0 3px var(--butter)}
+.linkish{border:0;background:none;padding:0;font:inherit;color:inherit;text-decoration:underline;cursor:pointer}
+.nverdict{display:flex;gap:14px;align-items:flex-start;margin-top:6px}
+.nverdict>.co{width:74px;height:110px;border-radius:10px;object-fit:cover;flex:none}
+.nverdict b{font-family:var(--head);font-weight:900;font-size:19px;display:block}
+.nverdict small{font-size:12px;font-weight:700;color:var(--mute)}
+.nscore{margin:8px 0 6px;font-size:13px;font-weight:700;color:var(--mute)}
+.nscore b{font-family:var(--head);font-weight:900;font-size:28px;color:var(--ink);margin-right:4px}
+.nwho{display:flex;flex-wrap:wrap;gap:8px 12px}
+.nwho span{display:flex;align-items:center;gap:5px}
+.nwho span.dim{opacity:.5}
+.nwho .av svg{width:22px;height:22px}
+.nwho em{font-style:normal;font-size:11px;font-weight:700}
+.npicked{display:flex;flex-wrap:wrap;gap:8px}
+.npchip{display:flex;align-items:center;gap:8px;border:0;border-radius:999px;padding:4px 10px 4px 4px;background:var(--cream2);color:var(--ink);font:inherit;font-size:13px;font-weight:700;cursor:pointer}
+.npchip .co{width:24px;height:34px;border-radius:5px;object-fit:cover}
+.npchip b{font-size:16px;color:var(--mute)}
 .yearrow{background:var(--blue);color:#fff}.yearrow b{color:#fff}
 .welcome{text-align:center}
 .welcome .wel-mark{width:84px;height:84px;margin:6px auto 4px;animation:sealPop .6s cubic-bezier(.2,1.4,.4,1) both}
@@ -1963,7 +1987,7 @@ const LOCAL = !window.__mockSb && (DEMO || SUPABASE_URL.includes("YOUR-"));
 const GAME_KEYS = { room_answers:["room_id","week","user_id"], room_brackets:["room_id","month"], room_votes:["room_id","game","voter"] };
 function makeLocalSb(seed) {
   const KEY = "rooms.db";
-  const blank = { profile:null, signedOut:false, works:{}, profiles:[], entries:[], lists:[], list_items:[], rooms:[], room_members:[], clubs:[], club_members:[], club_votes:[], reactions:[], replies:[], top_lists:[], top_list_items:[], follows:[], nows:[], handovers:[], seen:[], blocks:[], reports:[], settings:[], handles:[], room_answers:[], room_brackets:[], room_votes:[] };
+  const blank = { profile:null, signedOut:false, works:{}, profiles:[], entries:[], lists:[], list_items:[], rooms:[], room_members:[], clubs:[], club_members:[], club_votes:[], reactions:[], replies:[], top_lists:[], top_list_items:[], follows:[], nows:[], handovers:[], seen:[], blocks:[], reports:[], settings:[], handles:[], room_answers:[], room_brackets:[], room_votes:[], room_nights:[] };
   const db = Object.assign({}, blank, seed || JSON.parse(localStorage.getItem(KEY) || "{}"));
   if (!db.nows) db.nows = [];                 /* a log written before v15 has no such key */
   if (!db.handovers) db.handovers = [];       /* nor one written before v16 */
@@ -1971,7 +1995,7 @@ function makeLocalSb(seed) {
   if (!db.blocks) db.blocks = []; if (!db.reports) db.reports = [];   /* nor before v21 */
   if (!db.settings) db.settings = [];                                 /* nor before v22 */
   if (!db.handles) db.handles = [];                                   /* nor before v23 */
-  for (const t of ["room_answers", "room_brackets", "room_votes"]) if (!db[t]) db[t] = [];   /* nor before the games */
+  for (const t of ["room_answers", "room_brackets", "room_votes", "room_nights"]) if (!db[t]) db[t] = [];   /* nor before the games */
   /* v20 gave entries a part column with a default of false. A row written before that
      has no such key, and the feeds now ask for part = false by name — so without this
      every entry anybody already had would quietly stop appearing anywhere. */
@@ -3372,6 +3396,8 @@ async function gameNotes() {
     else if (s.voting && !s.myVote) add(`v:${wk}`, `Voting's open on <b>${esc(promptOf(r.id, wk))}</b>`);
     else if (!s.voting && !s.mine) add(`a:${wk}`, `This week's prompt: <b>${esc(promptOf(r.id, wk))}</b>`);
     if (!s.revealed && last.revealed && last.ans.length) add(`r:${last.wk}`, `Last week's prompt results are in`);
+    const up = (await loadNights(r)).find(n => n.at >= today());
+    if (up && !g.votes.some(v => v.game === "night:" + up.id && v.voter === me.id)) add(`n:${up.id}`, `${esc(nightLabel(up.at))}: vote on what you're watching`);
     if (g.bracket) { const st = bracketState(r, g.bracket, g.votes), mon = MONTHS[+g.bracket.month.slice(5) - 1];
       if (st.champion) add(`c:${g.bracket.month}`, `<b>${esc(works[st.champion]?.title || "")}</b> is the room's ${esc(inWords(g.bracket.kind, 1))} of ${mon}`);
       else if (st.current?.matches.some(mt => !mt.mine)) add(`b:${g.bracket.month}:${st.current.r}`, `${esc(st.current.name)} ${st.current.name === "The final" ? "is" : "are"} open in the bracket`); } }
@@ -6973,6 +6999,91 @@ function bracketHTML(R, br, g) {
         return `<button class="vsit ${on ? "on" : ""}" data-bv="${cur.r}:${i}:${esc(id)}">${cover(w)}<span><b>${esc(w.title || "")}</b><small>${mt.mine ? `<span class="vn" data-n="${n}">${n}</span> ${n === 1 ? "vote" : "votes"}` : `seed ${br.seeds.indexOf(id) + 1}`}</small></span></button>`; }).join(`<span class="bvs">v</span>`)}</div>`).join("")}
     ${pastHTML}</div>`; }
 
+/* ---------- watch-together nights ----------
+   Somebody picks a night and two or three things to watch; the room votes until the
+   night; afterwards the card turns into the verdict — how the room rated whichever won,
+   person by person. Votes go in room_votes like every other game here. */
+const nightLabel = at => { const d = dayNo(at) - dayNo(today());
+  if (d === 0) return "Tonight"; if (d === 1) return "Tomorrow";
+  const dt = new Date(at + "T12:00:00");
+  return d > 0 && d < 7 ? dt.toLocaleDateString("en-GB", { weekday:"long" }) : dt.toLocaleDateString("en-GB", { weekday:"short", day:"numeric", month:"short" }); };
+async function loadNights(R) {
+  const since = new Date(Date.now() - 14 * 864e5); since.setMinutes(since.getMinutes() - since.getTimezoneOffset());
+  try { const ns = await q(sb.from("room_nights").select("*").eq("room_id", R.id).gte("at", since.toISOString().slice(0, 10)).order("at"));
+    await fillWorks(ns.flatMap(n => n.options || [])).catch(() => {}); return ns; } catch { return []; } }
+const nightVotes = (n, g) => g.votes.filter(v => v.game === "night:" + n.id);
+function nightLeader(n, g) { const vs = nightVotes(n, g);
+  return n.options.map(id => ({ id, n:vs.filter(v => v.choice === id).length })).sort((a, b) => b.n - a.n || n.options.indexOf(a.id) - n.options.indexOf(b.id))[0]; }
+function nightHTML(R, n, g) {
+  const vs = nightVotes(n, g), mine = vs.find(v => v.voter === me.id)?.choice, lead = nightLeader(n, g);
+  const ahead = lead.n && vs.filter(v => v.choice === lead.id).length > Math.max(0, ...n.options.filter(id => id !== lead.id).map(id => vs.filter(v => v.choice === id).length));
+  const date = new Date(n.at + "T12:00:00").toLocaleDateString("en-GB", { day:"numeric", month:"short" });
+  const by = n.created_by === me.id ? "you" : (R.members.find(m => m.id === n.created_by)?.handle || "someone");
+  return `<div class="card game nightcard"><div class="h"><span>Watch night</span><span class="tag">${esc(date)}</span></div>
+    <div class="gprompt" style="font-size:22px">${esc(nightLabel(n.at))}: which one?</div>
+    <div class="nopts">${n.options.map(id => { const w = works[id] || {}, c = vs.filter(v => v.choice === id).length;
+      return `<button class="nopt ${mine === id ? "on" : ""} ${ahead && lead.id === id ? "lead" : ""}" data-nv="${esc(id)}">${cover(w)}<b>${esc(w.title || "")}</b><small>${c} ${c === 1 ? "vote" : "votes"}${mine === id ? " · yours" : ""}</small></button>`; }).join("")}</div>
+    <p class="sub gline">${vs.length} of ${R.members.length} voted · put to the room by ${esc(by)}${n.created_by === me.id ? ` · <button class="linkish" id="nightOff">call it off</button>` : ""}</p></div>`; }
+function nightAfterHTML(R, n, g) {
+  const lead = nightLeader(n, g), w = works[lead.id] || {};
+  return `<div class="card game nightcard" data-night="${esc(n.id)}"><div class="h"><span>The room's verdict</span><span class="tag dim">${esc(nightLabel(n.at))}</span></div>
+    <div class="nverdict">${cover(w)}<div><b>${esc(w.title || "")}</b><small>won the vote, ${lead.n} ${lead.n === 1 ? "vote" : "votes"}</small><div id="nightScores"><p class="sub">Gathering the scores…</p></div></div></div></div>`; }
+const nightPlanHTML = () => `<div class="card game nightcard"><div class="h"><span>Watch night</span></div>
+  <p class="sub gline" style="margin-top:4px">Pick a night and two or three options, and let the room vote on what you watch.</p>
+  <div class="stack" style="margin-top:10px"><button class="btn soft" id="nightPlan">Plan a night</button></div></div>`;
+async function fillNightScores(R, n, g) {
+  const box = $("#nightScores"); if (!box) return; const win = nightLeader(n, g).id;
+  try { const es = await q(sb.from("entries").select("user_id,score,rated_on").eq("work_id", win).in("user_id", R.members.map(m => m.id)).gte("rated_on", n.at));
+    if ($("#nightScores") !== box) return;
+    const by = {}; for (const e of es) by[e.user_id] = e;
+    const done = Object.values(by), avg = done.length ? done.reduce((t, e) => t + e.score, 0) / done.length / 2 : 0;
+    box.innerHTML = (done.length ? `<p class="nscore"><b>${avg.toFixed(1)}</b> from ${done.length} of you</p>` : `<p class="sub">Nobody's logged it yet.</p>`)
+      + (!done.length ? "" : `<div class="nwho">${R.members.map(m => { const e = by[m.id]; return `<span class="${e ? "" : "dim"}">${avatar(m)}${e ? stars(e.score, "sm") : "<em>not yet</em>"}</span>`; }).join("")}</div>`)
+      + (!by[me.id] ? `<button class="btn soft" id="nightLog" style="margin-top:10px">Log it</button>` : "");
+    const nl = $("#nightLog"); if (nl) nl.onclick = () => works[win] && openLog(works[win]); } catch { box.innerHTML = `<p class="sub">Couldn't gather the scores.</p>`; } }
+function wireNights(R, el, night, past, again, g) {
+  $$("[data-nv]", el).forEach(b => b.onclick = async () => { b.disabled = true;
+    try { await q(sb.from("room_votes").upsert({ room_id:R.id, game:"night:" + night.id, voter:me.id, choice:b.dataset.nv }));
+      lastVote = { sel:`[data-nv="${CSS.escape(b.dataset.nv)}"]` }; } catch (e) { oops(e, "Couldn't vote"); } again(); });
+  const off = $("#nightOff", el); if (off) off.onclick = async () => {
+    if (!await askYesNo({ title:"Call the night off?", sub:"The options and the votes go with it.", ok:"Call it off", bad:true })) return;
+    try { await q(sb.from("room_nights").delete().eq("id", night.id)); say("Called off"); } catch (e) { oops(e, "Couldn't call it off"); } again(); };
+  const plan = $("#nightPlan", el); if (plan) plan.onclick = () => openPlanNight(R, again);
+  if (past) fillNightScores(R, past, g); }
+/* planning one: when, then what — from your shelf, or anything you search for */
+function openPlanNight(R, onDone) {
+  const ymd = n => { const d = new Date(); d.setDate(d.getDate() + n); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
+  const toDay = wd => (wd - new Date().getDay() + 7) % 7 || 7;          /* the next Friday or Saturday */
+  const dates = [["Tonight", ymd(0)], ["Tomorrow", ymd(1)], ["Friday", ymd(toDay(5))], ["Saturday", ymd(toDay(6))]]
+    .filter(([, d], i, a) => a.findIndex(x => x[1] === d) === i);
+  let at = dates[0][1]; const picks = [];
+  const L = activeList(), shelf = (L ? L.items : []).map(id => works[id]).filter(w => w && (w.kind === "film" || w.kind === "tv") && !logged(w.id) && !isSoon(w));
+  openSheet(`<h3>Plan a watch night</h3><p class="sub">The room votes on these until the night.</p>
+    <div class="lbl">When</div><div class="chips" id="npWhen">${dates.map(([l, d]) => `<button class="chip ${d === at ? "on" : ""}" data-nd="${d}">${l}</button>`).join("")}<input type="date" id="npDate" min="${ymd(0)}" style="width:auto;margin:0"></div>
+    <div class="lbl">Two or three options</div><div class="npicked" id="npPicked"></div>
+    <input id="npFind" type="search" placeholder="Search films and TV" autocomplete="off" style="margin-top:8px">
+    <div class="msg" id="npMsg"></div><div id="npResults"></div>
+    ${shelf.length ? `<div class="lbl">From your shelf</div><div id="npShelf">${shelf.slice(0, 12).map(w => `<div class="row" data-np="${esc(w.id)}">${cover(w)}<div class="t"><b>${esc(w.title)}</b><small>${tag(w.kind)} ${esc(w.year || "")}</small></div><span class="chip">Add</span></div>`).join("")}</div>` : ""}
+    <div class="stack"><button class="btn" id="npGo" disabled>Put it to the room</button><button class="btn quiet" id="npClose">Not now</button></div><p class="msg" id="npErr"></p>`);
+  const paint = () => { $("#npPicked").innerHTML = picks.length ? picks.map(w => `<button class="npchip" data-unp="${esc(w.id)}">${cover(w)}<span>${esc(w.title)}</span><b aria-label="Remove">×</b></button>`).join("")
+      : `<p class="sub" style="margin:0">Nothing yet — add from your shelf or search.</p>`;
+    $$("[data-unp]").forEach(b => b.onclick = () => { picks.splice(picks.findIndex(w => w.id === b.dataset.unp), 1); paint(); });
+    $$("[data-np]").forEach(r => { const on = picks.some(w => w.id === r.dataset.np); $(".chip", r).textContent = on ? "Added" : "Add"; $(".chip", r).classList.toggle("on", on); });
+    $("#npGo").disabled = picks.length < 2; };
+  const add = w => { if (!w || picks.length >= 3 || picks.some(x => x.id === w.id)) { if (picks.length >= 3) say("Three is the most"); return; } picks.push(w); paint(); };
+  paint();
+  $$("[data-nd]").forEach(b => b.onclick = () => { at = b.dataset.nd; $("#npDate").value = ""; $$("[data-nd]").forEach(x => x.classList.toggle("on", x === b)); });
+  $("#npDate").onchange = e => { if (!e.target.value) return; at = e.target.value; $$("[data-nd]").forEach(x => x.classList.remove("on")); };
+  $$("[data-np]").forEach(r => r.onclick = () => { const i = picks.findIndex(w => w.id === r.dataset.np); if (i >= 0) { picks.splice(i, 1); paint(); } else add(works[r.dataset.np]); });
+  let t; $("#npFind").oninput = e => { clearTimeout(t); const v = e.target.value.trim(); if (!v) { $("#npResults").innerHTML = ""; return; }
+    t = setTimeout(() => { const keep = P.kinds; P.kinds = ["film", "tv"];
+      doSearch(v, async r => { try { add(await ensureWork(window.__hits[r.dataset.add])); $("#npFind").value = ""; $("#npResults").innerHTML = ""; } catch (err) { $("#npMsg").textContent = err.message; } },
+        $("#npResults"), $("#npMsg")).finally(() => { P.kinds = keep; }); }, 400); };
+  $("#npClose").onclick = closeSheet;
+  $("#npGo").onclick = async () => { const b = $("#npGo"); b.disabled = true;
+    try { await q(sb.from("room_nights").insert({ room_id:R.id, at, options:picks.map(w => w.id), created_by:me.id }));
+      closeSheet(); say(`Put to ${R.name}`); onDone(); }
+    catch (e) { $("#npErr").textContent = /room_nights/.test(e.message) ? "Watch nights need the latest database update — run schema.sql in Supabase once." : e.message; b.disabled = false; } }; }
 /* ---------- the games, moving ----------
    Three moments are worth a little theatre, and each happens once per person: the
    names coming out on the prompt, a new round of the bracket opening, and the month's
@@ -7024,10 +7135,15 @@ async function paintGames(R, es) {
   if (!g.ok) { el.innerHTML = `<div class="card game"><div class="h"><span>Play</span></div><p class="sub gline">The games need the latest database update — run schema.sql in Supabase once and they switch on for every room.</p></div>`; return; }
   const br = await ensureBracket(R, g, es).catch(() => null);
   if ($("#roomGames") !== el) return;
-  el.innerHTML = promptHTML(R, g) + bracketHTML(R, br, g);
+  const nights = await loadNights(R);
+  if ($("#roomGames") !== el) return;
+  const night = nights.find(n => n.at >= today()) || null, past = !night && nights.find(n => n.at < today() && dayNo(today()) - dayNo(n.at) <= 14) || null;
+  if (past) await fillWorks(past.options).catch(() => {});
+  el.innerHTML = (night ? nightHTML(R, night, g) : "") + promptHTML(R, g) + bracketHTML(R, br, g) + (night ? "" : past ? nightAfterHTML(R, past, g) : nightPlanHTML());
   /* the Play tab gets a dot while there's something waiting on you */
   const s = promptState(R, g, gameWeek()), bst = br ? bracketState(R, br, g.votes) : null;
-  const todo = (!s.voting && !s.mine) || (s.voting && !s.revealed && !s.myVote) || !!bst?.current?.matches.some(mt => !mt.mine);
+  const todo = (!s.voting && !s.mine) || (s.voting && !s.revealed && !s.myVote) || !!bst?.current?.matches.some(mt => !mt.mine)
+    || (night && !g.votes.some(v => v.game === "night:" + night.id && v.voter === me.id));
   const pb = $('[data-rsecbtn="play"]'); if (pb) pb.classList.toggle("dot", !!todo);
   /* the theatre only plays where you can see it: a hidden Play tab saves it for later */
   const showing = !el.closest("[hidden]");
@@ -7050,6 +7166,7 @@ async function paintGames(R, es) {
       lastVote = { sel:`[data-bv="${CSS.escape(b.dataset.bv)}"]` }; }
     catch (e) { oops(e, "Couldn't vote"); } again(); });
   $$("[data-gw]", el).forEach(x => x.onclick = () => openWork(x.dataset.gw));
+  wireNights(R, el, night, past, again, g);
 }
 const fourHTML = items => `<div class="four">${[0,1,2,3].map(i => { const w = works[items[i]]; return w ? `<div class="po" data-work="${esc(w.id)}">${cover(w,"")}<b>${esc(w.title)}</b></div>` : `<div class="po" style="opacity:.4"></div>`; }).join("")}</div>`;
 let recs = null;

@@ -1250,6 +1250,30 @@ end $$;
 revoke all on function room_transfer_owner(uuid, uuid) from public, anon;
 grant execute on function room_transfer_owner(uuid, uuid) to authenticated;
 
+-- ---------- watch-together nights ----------
+-- Somebody in a room picks a night and two or three things to watch; the room votes
+-- (in room_votes, as game 'night:<id>', choice = the work's id) until the night; after
+-- it, the app shows how the room rated whichever won. One row per planned night.
+create table if not exists room_nights (
+  id uuid primary key default gen_random_uuid(),
+  room_id uuid not null references rooms(id) on delete cascade,
+  at date not null,
+  options text[] not null check (array_length(options, 1) between 2 and 3),
+  created_by uuid references profiles(id) on delete set null,
+  created_at timestamptz not null default now()
+);
+create index if not exists room_nights_room_idx on room_nights (room_id, at desc);
+alter table room_nights enable row level security;
+drop policy if exists room_nights_read on room_nights;
+create policy room_nights_read on room_nights for select to authenticated
+  using (room_id in (select my_room_ids()));
+drop policy if exists room_nights_plan on room_nights;
+create policy room_nights_plan on room_nights for insert to authenticated
+  with check (created_by = auth.uid() and room_id in (select my_room_ids()));
+drop policy if exists room_nights_cancel on room_nights;
+create policy room_nights_cancel on room_nights for delete to authenticated
+  using (created_by = auth.uid());
+
 -- ---------- a room's colour ----------
 -- One of the app's pastels, worn by the room's title and its games so each room feels
 -- like its own place. (The app offers four; lilac and sky stay allowed here so an older

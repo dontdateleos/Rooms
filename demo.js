@@ -170,6 +170,8 @@ const roomVotes = [
   /* the semis have started without you */
   vote(`bracket:${MONTH}:2:0`, "u-mo", "film:1", 1), vote(`bracket:${MONTH}:2:0`, "u-cass", "film:5", 1),
   vote(`bracket:${MONTH}:2:1`, "u-mo", "film:6", 1),
+  /* mo has put Saturday to the room; two of you have voted */
+  vote("night:n1", "u-mo", "film:4", 1), vote("night:n1", "u-cass", "film:2", 1),
 ];
 
 export function demoSeed() {
@@ -226,6 +228,7 @@ export function demoSeed() {
 
     room_answers:answers,
     room_votes:roomVotes,
+    room_nights:[{ id:"n1", room_id:"r1", at:soon(2), options:["film:2","film:4","film:9"], created_by:"u-mo", created_at:ago(1) }],
     room_brackets:[{ room_id:"r1", month:MONTH, kind:"film", seeds:SEEDS, created_by:"u-mo", created_at:ago(20) }],
 
     follows:[{ follower:"me", followee:"u-rue" }, { follower:"me", followee:"u-ali" },
