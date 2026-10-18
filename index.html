@@ -1685,6 +1685,19 @@ body.demomode .secbar{top:78px}
   .bell.jolt svg{animation:none}
   .tile,.po,.club,.slip,.btn{transition:none}
   .reveal{opacity:1;transform:none;transition:none}}
+/* iPad and computers: the column stays a readable width, but what's in it uses the room —
+   four posters a row instead of three giant ones — and a sheet floats in the middle as a
+   card instead of stretching edge to edge along the bottom */
+@media (min-width:760px){
+  .grid{grid-template-columns:repeat(4,1fr)}
+  .ywall,.cuts{grid-template-columns:repeat(4,1fr)}
+  .sheet{align-items:center;justify-content:center}
+  .panel{width:min(640px,92vw);border-radius:26px;max-height:88dvh;padding-bottom:24px;box-shadow:0 30px 80px rgba(0,0,0,.35)}
+  .panel .grab{display:none}
+  .swdeck{height:min(56vh,480px)}
+  .askans .aska{width:110px}.askans .aska .co{width:110px;height:160px}
+}
+@media (min-width:1200px){ .grid{grid-template-columns:repeat(5,1fr)} }
 </style>
 </head>
 <body>
