@@ -1383,6 +1383,11 @@ nav button .dot{position:absolute;top:-2px;right:0;min-width:16px;height:16px;bo
   cursor:pointer;white-space:nowrap;animation:updIn .5s cubic-bezier(.2,1.3,.4,1) both}
 .updbar b{font-family:var(--head);font-weight:800}
 .pick-posters{display:flex;gap:6px;margin:8px 0 2px;min-height:0}
+.spoiler{filter:blur(6px);background:color-mix(in srgb,var(--ink) 14%,transparent);border-radius:6px;padding:0 3px;cursor:pointer;transition:filter .3s,background .3s;-webkit-user-select:none;user-select:none}
+.spoiler.shown{filter:none;background:none;cursor:auto;-webkit-user-select:text;user-select:text}
+.spoilrow{display:flex;align-items:center;gap:10px;margin-top:8px}
+.spoilrow .chip{flex:none}
+.spoilrow small{font-size:11.5px;color:var(--mute);line-height:1.35}
 .tonight{display:flex;align-items:center;gap:8px;margin-top:12px;padding:6px;border-radius:16px;background:var(--cream2)}
 .tn-main{flex:1;min-width:0;display:flex;align-items:center;gap:10px;border:0;background:none;padding:0;color:var(--ink);text-align:left;cursor:pointer}
 .tn-main .co{width:30px;height:44px;border-radius:6px;object-fit:cover;flex:none}
@@ -4218,7 +4223,7 @@ async function renderDoors() {
         mem.kind === "still" ? "and never went back" : when(mem.when || mem.entries[0].rated_on)}</span></div>
       ${mem.entries.slice(0,3).map(e => { const w = works[e.work_id] || e.works || {};
         return `<div class="row" data-w="${esc(e.work_id)}">${cover(w)}<div class="t"><b>${esc(w.title||"")}</b>
-          <small>${tag(w.kind)} ${(e.score/2).toFixed(1)}${e.note ? ` · <span class="said">“${esc(e.note)}”</span>` : ""}</small></div></div>`; }).join("")}
+          <small>${tag(w.kind)} ${(e.score/2).toFixed(1)}${noteText(e.note) ? ` · <span class="said">“${esc(noteText(e.note))}”</span>` : ""}</small></div></div>`; }).join("")}
       ${mem.entries.length > 3 ? `<p class="sub">and ${said(mem.entries.length - 3)} more that day.</p>` : ""}
       <div class="stack"><button class="btn soft" id="memShare">Share it</button><button class="btn quiet" id="memGo">Not now</button></div></div>` : ""}
 `;
@@ -4274,6 +4279,20 @@ async function renderDoors() {
   return renderEveryoneFeed(fb);
 }
 /* where to: each of your rooms, then the two feeds that aren't a room */
+/* ---------- spoilers ----------
+   ||like this|| in a note hides that part. Wherever a note is shown in full it's blurred
+   until tapped; wherever it's only quoted in passing — a preview, a memory, a share card
+   — the hidden part is left out altogether, because a blur on an image you've posted
+   can't be tapped and a preview is no place to find out how it ends. */
+const SPOILER = /\|\|([\s\S]+?)\|\|/g;
+const noteText = t => String(t || "").replace(SPOILER, "[spoiler]").trim();
+const noteHTML = t => esc(String(t || "")).replace(SPOILER, (_, x) =>
+  `<span class="spoiler" role="button" tabindex="0" aria-label="Spoiler — tap to show">${x}</span>`);
+/* one listener for every spoiler on every page; it takes the tap so the card behind
+   doesn't open as well */
+document.addEventListener("click", e => { const sp = e.target.closest?.(".spoiler:not(.shown)");
+  if (!sp) return; e.stopPropagation(); e.preventDefault(); sp.classList.add("shown"); sp.setAttribute("aria-label", "Spoiler"); }, true);
+document.addEventListener("keydown", e => { if ((e.key === "Enter" || e.key === " ") && e.target.classList?.contains("spoiler")) { e.preventDefault(); e.target.click(); } });
 /* ---------- a mark for each place ----------
    Drawn the way the avatars are — a flat colour, a lighter top, a darker side, two
    upright eyes — so a room, a feed, a medium or a season has a face. In a pager the
@@ -4582,7 +4601,7 @@ function slipHTML(e, opts = {}) { const w = remember(e.works) || works[e.work_id
   return `<div class="slip" data-slip="${e.id}" style="animation-delay:-${(avHash(e.id) % 65) / 10}s">
     <div class="who" data-prof="${esc(e.user_id)}" style="cursor:pointer">${avatar(e.profiles)} <b>${esc(mine ? "you" : e.profiles?.handle)}</b> · ${K(w.kind).verb} ${when(e.rated_on)}</div>
     <div class="ttl" data-work="${esc(e.work_id)}"><span class="season-cover">${cover(w)}${seasonEntryStamp(e)}</span><div><b>${esc(w.title)}</b><small>${tag(w.kind)} ${esc(w.year||"")}</small></div></div>
-    ${e.note?`<div class="q${String(e.note).length > 210 ? " clip" : ""}">“${esc(e.note)}”</div>${String(e.note).length > 210 ? `<button class="more" data-more="${e.id}">More</button>` : ""}`:""}
+    ${e.note?`<div class="q${String(e.note).length > 210 ? " clip" : ""}">“${noteHTML(e.note)}”</div>${String(e.note).length > 210 ? `<button class="more" data-more="${e.id}">More</button>` : ""}`:""}
     ${(() => { const t = together(e); return t ? `<div class="loved" style="margin-top:10px"><span class="together">◆ ${t}</span></div>` : ""; })()}
     ${e.loved?.length?`<div class="loved">${e.loved.slice(0,4).map(k => `<span>${esc(k.startsWith("person:")?lc(k.slice(7)):k)}</span>`).join("")}</div>`:""}
     <div class="foot"><div class="acts">${mine ? `<button class="chip" data-edit-review="${e.id}">Edit</button><button class="chip" data-delete-review="${e.id}">Delete</button>` : `<button data-like="${e.id}" class="lk ${same?"on":""}" aria-pressed="${same}" aria-label="${same ? "Liked — tap to take it back" : "Like this"}">${heartSVG(same)}</button>`
@@ -7208,7 +7227,7 @@ const CUTS = {
         x.fillStyle = x.__pale; x.font = "600 32px Inter, sans-serif";
         x.fillText([w.year, w.creator].filter(Boolean).join(" · "), CARD.M, y + 14);
         cardStars(x, e.score, CARD.M, y + 96, 54, 16);
-        if (e.note) cardWrap(x, "“" + e.note + "”", CARD.M, y + 210, CARD.W - CARD.M*2, 64, "italic 700 52px Inter, sans-serif", x.__on);
+        if (noteText(e.note)) cardWrap(x, "“" + noteText(e.note) + "”", CARD.M, y + 210, CARD.W - CARD.M*2, 64, "italic 700 52px Inter, sans-serif", x.__on);
         let px = CARD.M, py = CARD.H - 300;
         for (const t of (e.loved||[]).slice(0,5).map(k => k.startsWith("person:") ? lc(k.slice(7)) : k)) {
           x.font = "800 26px Outfit, sans-serif"; const wpx = x.measureText(t).width + 40;
@@ -7217,7 +7236,7 @@ const CUTS = {
         cardFoot(x, lc(e.profiles?.handle || me.handle), `${cfg.verb} ${stampDate(e.rated_on)}`); return c; }],
       ["Quote", async (e) => { const w = works[e.work_id] || {}, cfg = K(w.kind);
         const { c, x } = cardBase("review", cfg.plural, w.kind);
-        const note = e.note || w.title;
+        const note = noteText(e.note) || w.title;
         cardWrap(x, "“" + note + "”", CARD.M, 340, CARD.W - CARD.M*2, 84, "italic 900 68px Outfit, sans-serif", x.__on);
         kicker(x, w.title + (w.year ? " · " + w.year : ""), CARD.H - 300);
         cardStars(x, e.score, CARD.M, CARD.H - 240, 46, 14);
@@ -7590,7 +7609,7 @@ function paintLog(id = "logRows", limit = 0) {
   const more = $("[data-logmore]", el); if (more) more.onclick = () => openWholeLog();
   $$("[data-e]", el).forEach(r => r.onclick = () => { const g = groups[r.dataset.group]; if (g.length === 1) return openEntry(g[0]);
     openSheet(`<h3>${esc(works[r.dataset.group]?.title||"")}</h3><p class="sub">${g.length} entries</p>
-      <div class="card">${g.map(e => `<div class="row" data-ge="${e.id}"><div class="t"><b>${when(e.rated_on)}</b><small>${e.note?esc(String(e.note).slice(0,60)):""}</small></div>${stars(e.score,"sm")}</div>`).join("")}</div>
+      <div class="card">${g.map(e => `<div class="row" data-ge="${e.id}"><div class="t"><b>${when(e.rated_on)}</b><small>${e.note?esc(noteText(e.note).slice(0,60)):""}</small></div>${stars(e.score,"sm")}</div>`).join("")}</div>
       <div class="stack"><button class="btn quiet" id="gClose">Close</button></div>`);
     $("#gClose").onclick = closeSheet; $$("[data-ge]").forEach(x => x.onclick = () => openEntry(g.find(e => e.id === x.dataset.ge))); });
   $$("[data-show]", el).forEach(r => r.onclick = () => openWork(r.dataset.show)); }
@@ -8607,6 +8626,7 @@ function openLog(w, edit = null) { const cfg = K(w.kind); const loved = edit?.lo
       const d = dayNo(today()) - dayNo(n.started_on); if (!(d > 0)) return "";
       return `<div class="chips" style="margin-top:8px"><button class="chip" id="useStart" type="button">Started ${when(n.started_on)} \u00b7 ${waited(d)}</button></div>`; })()}<div class="lbl">Your rating</div><div id="rateWrap">${starRow()}</div><div class="ticks" id="tickRow"></div><div id="lovedWrap"></div>
     <div class="lbl">Add a note</div><textarea id="wNote" placeholder="One line, if you want">${edit?.note?esc(edit.note):""}</textarea>
+    <div class="spoilrow"><button type="button" class="chip" id="wSpoil">Hide a spoiler</button><small>Select the part that gives it away, or tap to hide the whole note.</small></div>
     ${/* room_only has been in the schema since v13 and nothing ever set it, so every
           entry anybody has ever written is public. Only worth offering when there is a
           room to keep it in. */""}
@@ -8682,6 +8702,15 @@ function openLog(w, edit = null) { const cfg = K(w.kind); const loved = edit?.lo
     row.addEventListener("pointercancel", () => { row.classList.remove("holding"); paint(score); });
     row.addEventListener("contextmenu", e => e.preventDefault()); };
   dragStars(); drawLoved(); $("#wCancel").onclick = closeSheet;
+  /* wraps what's selected in || ||; with nothing selected, the whole note. Tapped again on
+     a note that's all spoiler, it takes the marks back off. */
+  $("#wSpoil").onclick = () => { const ta = $("#wNote"), v = ta.value; let a = ta.selectionStart, b = ta.selectionEnd;
+    const whole = /^\s*\|\|[\s\S]*\|\|\s*$/.test(v);
+    if (a === b) { if (!v.trim()) { ta.focus(); return; }
+      ta.value = whole ? v.trim().slice(2, -2) : `||${v.trim()}||`; }
+    else { while (a < b && /\s/.test(v[a])) a++; while (b > a && /\s/.test(v[b - 1])) b--;
+      ta.value = v.slice(0, a) + "||" + v.slice(a, b) + "||" + v.slice(b); }
+    ta.focus(); say(whole && a === b ? "Not a spoiler any more" : "Hidden until someone taps it"); };
   $("#wSave").onclick = async () => { if (!score) return; const e = { user_id:me.id, work_id:w.id, rated_on:$("#wDate").value || today(), score, note:$("#wNote").value.trim() || null, loved:loved.length?loved.slice():null, context:Object.keys(ctx).length?ctx:null, breakdown:null, room_only:roomOnly };
     $("#wSave").disabled = true; try { await saveEntry(e, edit?.id); await loadMine();
       const offShelf = !edit?.id && dropFromShelf(w.id);
@@ -8757,7 +8786,7 @@ function openEntry(e, justSaved = false) { const w = works[e.work_id] || e.works
   openSheet(`${justSaved?`<span class="tag savedchip" style="background:var(--mint)">Saved</span>`:""}<div class="head" style="margin-top:10px">${cover(w)}<div class="hh"><h3>${esc(w.title)}</h3><p class="sub">${tag(w.kind)} ${esc(w.year||"")} · ${esc(mine?"you":e.profiles?.handle||"")} ${cfg.verb} ${when(e.rated_on)}${mine && e.room_only ? ` · <span class="tag dim">room only</span>` : ""}</p><div style="margin-top:10px">${stars(e.score,"big")}</div></div></div>
     ${e.context ? `<div class="ticks">${Object.entries(e.context).filter(([k,v]) => v).map(([k,v]) => `<span class="tk on">${k==="with"?"With "+esc(v):esc(v)}</span>`).join("")}</div>` : ""}
     ${e.loved?.length?`<div class="chips" style="margin-top:12px">${e.loved.map(k => `<span class="chip ${k.startsWith("person:")?"who on":"on"}">${esc(k.startsWith("person:")?lc(k.slice(7)):k)}</span>`).join("")}</div>`:""}
-    ${e.note?`<div class="card"><div class="say" style="font-size:19px;margin:0">“${esc(e.note)}”</div></div>`:""}
+    ${e.note?`<div class="card"><div class="say" style="font-size:19px;margin:0">“${noteHTML(e.note)}”</div></div>`:""}
     <div class="stack"><button class="btn soft" id="eCard">Save the card</button><button class="btn ghost" id="eWork">Open ${esc(w.title)}</button>${mine && e.id?`<button class="btn quiet" id="eEdit">Edit</button><button class="btn quiet" id="eDel">Delete</button>`:""}<button class="btn quiet" id="eClose">Close</button></div>
     ${!mine && e.user_id ? `<p class="sub" style="text-align:center;margin-top:16px">
       <button class="linky" id="eReport">Report this</button> \u00b7

@@ -101,7 +101,7 @@ const LOG = [
 
   ["me","film:7",8,14,"Quiet and enormous.",["the writing","the acting"]],
   ["u-mo","film:7",9,12,"",["the acting"]],
-  ["u-cass","film:7",8,11,"That last shot.",["the ending"]],
+  ["u-cass","film:7",8,11,"That last shot. ||She walks him to the car and doesn't say it, and then she cries on the way back.||",["the ending"]],
 
   ["me","tv:1",10,30,"",["the writing","the acting"]],
   ["u-mo","tv:1",10,26,"Season four is the best television there is.",["the writing"]],
