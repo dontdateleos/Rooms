@@ -10,6 +10,14 @@
  *   /3/*            → tmdb, key added server-side          (film, tv)
  *   /ol/*           → open library                          (books)
  *   /igdb/<endpoint>→ igdb, POST body passed through        (games)
+ *   /push/key       → the public half of the push key       (notifications)
+ *   /push/send      → sends a notification to a room or a person, as the signed-in sender
+ *   /i/<code>/<app path> → an invite page with the room's name for chat previews,
+ *                     which then sends people on to the app
+ *
+ * notifications also need (once — tools/push-keys.mjs sets both for you):
+ *   wrangler secret put VAPID_PUBLIC
+ *   wrangler secret put VAPID_PRIVATE
  *
  * igdb is the reason this exists: it needs a client secret and an oauth token,
  * neither of which can live on a phone.
@@ -20,6 +28,11 @@ const CACHE = { tmdb: 60 * 60 * 24, ol: 60 * 60 * 24, igdb: 60 * 60 * 12 };
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
+
+    /* an invite is opened by a chat app's preview fetcher and then by a person tapping
+       it — neither says where it came from, so this one route comes before the origin
+       check. It only ever sends people on to the app's own address. */
+    if (url.pathname.startsWith("/i/")) return await invitePage(request, url, env);
 
     /* fail closed. an unrestricted worker is an open proxy: anyone who finds the
        url spends this worker's TMDB key and IGDB credentials. so a missing ORIGIN
@@ -36,7 +49,7 @@ export default {
     const cors = {
       "Access-Control-Allow-Origin": from,
       "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
       "Vary": "Origin"
     };
     if (request.method === "OPTIONS") return new Response(null, { headers: cors });
@@ -45,6 +58,8 @@ export default {
       if (url.pathname.startsWith("/3/")) return await tmdb(url, env, ctx, cors);
       if (url.pathname.startsWith("/ol/")) return await openLibrary(url, env, ctx, cors);
       if (url.pathname.startsWith("/igdb/")) return await igdb(request, url, env, ctx, cors);
+      if (url.pathname === "/push/key") return json({ key: env.VAPID_PUBLIC || null }, 200, cors);
+      if (url.pathname === "/push/send" && request.method === "POST") return await pushSend(request, env, ctx, cors);
       return json({ error: "unknown route" }, 404, cors);
     } catch (e) {
       return json({ error: String(e && e.message || e) }, 502, cors);
@@ -147,4 +162,107 @@ function withCors(res, cors) {
   const out = new Response(res.body, res);
   Object.entries(cors).forEach(([k, v]) => out.headers.set(k, v));
   return out;
+}
+
+
+/* ---------- invites with a name on them ----------
+   A chat app shows whatever the page at a link says about itself, and it never runs the
+   app's code — so a link straight to the app shows "Rooms" and nothing else. This page
+   says which room, then forwards the person to the app with the code. */
+const SUPABASE_URL = "https://caaxycmobhssxclrakim.supabase.co";
+const SUPABASE_ANON = "sb_publishable_zvZhatlvUg6F_CDzTmxX9A_Vlv0n3PX";   /* the public key, same as the app's */
+const escHTML = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" })[c]);
+async function invitePage(request, url, env) {
+  const [, , code = "", ...rest] = url.pathname.split("/");
+  const clean = code.replace(/[^A-Za-z0-9]/g, "").slice(0, 16);
+  const home = (env.ORIGIN || "").split(",")[0].trim();
+  /* only ever onward to the app's own origin, with a path that's just a path */
+  const path = ("/" + rest.join("/").replace(/[^A-Za-z0-9._\/-]/g, "")).replace(/\/{2,}/g, "/");
+  const to = `${home}${path}#join=${clean}`;
+  let room = null;
+  if (request.method !== "HEAD" && clean !== "PING") try { const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/room_preview`, { method:"POST",
+      headers:{ "Content-Type":"application/json", apikey:env.SUPABASE_ANON || SUPABASE_ANON, Authorization:`Bearer ${env.SUPABASE_ANON || SUPABASE_ANON}` },
+      body:JSON.stringify({ p_code:clean }) });
+    if (r.ok) room = (await r.json())[0] || null; } catch {}
+  const title = room ? `Come into ${room.name}` : "You're invited to a room";
+  const desc = room ? `${room.members} ${room.members === 1 ? "person" : "friends"} logging what they watch, read and play. Tap to come in.`
+    : "A small room of friends logging what they watch, read and play. Tap to come in.";
+  const img = `${home}${path.replace(/[^/]*$/, "")}icons/og.png`;
+  const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${escHTML(title)} · Rooms</title>
+<meta property="og:type" content="website"><meta property="og:site_name" content="Rooms">
+<meta property="og:title" content="${escHTML(title)}"><meta property="og:description" content="${escHTML(desc)}">
+<meta property="og:image" content="${escHTML(img)}"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image"><meta name="theme-color" content="${escHTML(room?.colour || "#16131C")}">
+<meta http-equiv="refresh" content="0;url=${escHTML(to)}">
+<style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#16131C;color:#F4EDE2;font:600 16px system-ui,sans-serif;text-align:center;padding:24px}a{color:${escHTML(room?.colour || "#FFE066")}}</style>
+</head><body><p>${escHTML(title)}…<br><a href="${escHTML(to)}">Open Rooms</a></p>
+<script>location.replace(${JSON.stringify(to).replace(/</g, "\\u003c")})</script></body></html>`;
+  /* a public page, so anyone may look — the app checks it's there before using it */
+  return new Response(request.method === "HEAD" ? null : html, { headers:{ "Content-Type":"text/html; charset=utf-8", "Cache-Control":"public, max-age=300", "Access-Control-Allow-Origin":"*" } });
+}
+
+/* ---------- notifications ----------
+   Web push, done by hand with the platform's own crypto (RFC 8291 for the message,
+   RFC 8292 for who's sending). The sender's own sign-in asks the database who may be
+   told, so this worker can only reach people the sender already shares a room with. */
+const b64u = buf => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+const unb64u = s => Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((s.length + 3) % 4)), c => c.charCodeAt(0));
+const cat = (...parts) => { const out = new Uint8Array(parts.reduce((n, p) => n + p.length, 0)); let i = 0; for (const p of parts) { out.set(p, i); i += p.length; } return out; };
+const enc = s => new TextEncoder().encode(s);
+async function hkdf(salt, ikm, info, bytes) {
+  const k = await crypto.subtle.importKey("raw", ikm, "HKDF", false, ["deriveBits"]);
+  return new Uint8Array(await crypto.subtle.deriveBits({ name:"HKDF", hash:"SHA-256", salt, info }, k, bytes * 8)); }
+let vapidKey = null;
+async function vapidJWT(env, endpoint) {
+  if (!vapidKey) { const pub = unb64u(env.VAPID_PUBLIC);
+    vapidKey = await crypto.subtle.importKey("jwk", { kty:"EC", crv:"P-256", d:env.VAPID_PRIVATE, x:b64u(pub.slice(1, 33)), y:b64u(pub.slice(33, 65)), ext:true },
+      { name:"ECDSA", namedCurve:"P-256" }, false, ["sign"]); }
+  const head = b64u(enc(JSON.stringify({ typ:"JWT", alg:"ES256" })));
+  const contact = (env.CONTACT || "").includes("@") ? `mailto:${env.CONTACT.trim()}` : ((env.ORIGIN || "").split(",")[0].trim() || "mailto:rooms@example.com");
+  const body = b64u(enc(JSON.stringify({ aud:new URL(endpoint).origin, exp:Math.floor(Date.now() / 1000) + 12 * 3600, sub:contact })));
+  const sig = await crypto.subtle.sign({ name:"ECDSA", hash:"SHA-256" }, vapidKey, enc(`${head}.${body}`));
+  return `${head}.${body}.${b64u(sig)}`; }
+async function encryptFor(sub, payload) {
+  const uaPub = unb64u(sub.p256dh), authSecret = unb64u(sub.auth);
+  const eph = await crypto.subtle.generateKey({ name:"ECDH", namedCurve:"P-256" }, true, ["deriveBits"]);
+  const asPub = new Uint8Array(await crypto.subtle.exportKey("raw", eph.publicKey));
+  const theirs = await crypto.subtle.importKey("raw", uaPub, { name:"ECDH", namedCurve:"P-256" }, false, []);
+  const shared = new Uint8Array(await crypto.subtle.deriveBits({ name:"ECDH", public:theirs }, eph.privateKey, 256));
+  const ikm = await hkdf(authSecret, shared, cat(enc("WebPush: info\0"), uaPub, asPub), 32);
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const cek = await hkdf(salt, ikm, enc("Content-Encoding: aes128gcm\0"), 16);
+  const nonce = await hkdf(salt, ikm, enc("Content-Encoding: nonce\0"), 12);
+  const key = await crypto.subtle.importKey("raw", cek, "AES-GCM", false, ["encrypt"]);
+  const sealed = new Uint8Array(await crypto.subtle.encrypt({ name:"AES-GCM", iv:nonce }, key, cat(enc(payload), new Uint8Array([2]))));
+  const rs = new Uint8Array([0, 0, 16, 0]);                       /* record size 4096 */
+  return cat(salt, rs, new Uint8Array([asPub.length]), asPub, sealed); }
+/* a sender who sends too much is told to wait, per copy of the worker — enough to stop a loop */
+const SENT = new Map();
+async function pushSend(request, env, ctx, cors) {
+  if (!env.VAPID_PUBLIC || !env.VAPID_PRIVATE) return json({ error:"notifications aren't set up on the worker" }, 501, cors);
+  const auth = request.headers.get("Authorization") || "";
+  if (!/^Bearer [\w.-]+$/.test(auth)) return json({ error:"sign in first" }, 401, cors);
+  const b = await request.json().catch(() => ({}));
+  const clip = (s, n) => String(s || "").slice(0, n);
+  const note = { title:clip(b.title, 80) || "Rooms", body:clip(b.body, 180), url:clip(b.url, 200).replace(/[^\w#=&?.\/:-]/g, ""), tag:clip(b.tag, 60) };
+  if (!b.room && !b.to) return json({ error:"who to?" }, 400, cors);
+  const who = auth.slice(-24), now = Date.now(), log = (SENT.get(who) || []).filter(t => now - t < 10 * 60e3);
+  if (log.length >= 20) return json({ error:"slow down" }, 429, cors);
+  SENT.set(who, [...log, now]); if (SENT.size > 2000) SENT.delete(SENT.keys().next().value);
+  const anon = env.SUPABASE_ANON || SUPABASE_ANON;
+  const rpc = (fn, args) => fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, { method:"POST",
+    headers:{ "Content-Type":"application/json", apikey:anon, Authorization:auth }, body:JSON.stringify(args) });
+  const r = await rpc("push_targets", { p_room:b.room || null, p_user:b.to || null });
+  if (!r.ok) return json({ error:"couldn't check who to tell" }, r.status === 401 ? 401 : 502, cors);
+  const subs = (await r.json()).slice(0, 50);
+  const payload = JSON.stringify(note);
+  const results = await Promise.all(subs.map(async s => {
+    try { const res = await fetch(s.endpoint, { method:"POST", body:await encryptFor(s, payload), headers:{
+        "Content-Encoding":"aes128gcm", "Content-Type":"application/octet-stream", TTL:"86400", Urgency:"normal",
+        ...(note.tag ? { Topic:note.tag.replace(/[^\w-]/g, "").slice(0, 32) } : {}),
+        Authorization:`vapid t=${await vapidJWT(env, s.endpoint)}, k=${env.VAPID_PUBLIC}` } });
+      if (res.status === 404 || res.status === 410) ctx.waitUntil(rpc("push_gone", { p_endpoint:s.endpoint }).catch(() => {}));
+      return res.ok; } catch { return false; } }));
+  return json({ sent:results.filter(Boolean).length, of:subs.length }, 200, cors);
 }

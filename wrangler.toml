@@ -6,6 +6,8 @@
 #   wrangler secret put ORIGIN          # https://dontdateleos.github.io
 # and, so Open Library knows who to contact rather than throttling us:
 #   wrangler secret put CONTACT         # an email address for the app
+# and, for notifications on people's phones, once (it makes the keys and sets both):
+#   node tools/push-keys.mjs
 name = "rooms"
 main = "worker.js"
 compatibility_date = "2026-09-01"

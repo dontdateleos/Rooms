@@ -16,6 +16,11 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Rooms">
 <title>Rooms</title>
+<meta name="description" content="What your friends are watching, reading and playing. Small private rooms for logging films, TV, books and games together.">
+<meta property="og:type" content="website"><meta property="og:site_name" content="Rooms"><meta property="og:title" content="Rooms">
+<meta property="og:description" content="What your friends are watching, reading and playing.">
+<meta property="og:image" content="https://dontdateleos.github.io/Rooms/icons/og.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="apple-touch-icon" href="./icons/rooms-180.png">
 <!-- what an iPhone shows while the app opens from the home screen: the mark on the night ground, one per screen size -->
 <link rel="apple-touch-startup-image" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="./icons/splash-1170x2532.png">
@@ -1425,6 +1430,15 @@ html.storying{overflow:hidden}
 @keyframes barUp{from{transform:scaleY(0)}}
 .st-share{display:flex;flex-direction:column;gap:10px;margin-top:10px}
 .st-room{display:flex;flex-direction:column;gap:10px}
+/* notifications */
+.pushrow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0}
+.pushrow b{display:block;font-family:var(--head);font-weight:800;font-size:15px}
+.pushrow small{display:block;font-size:12px;color:var(--mute);margin-top:2px}
+.pushask{background:var(--cream2);border-radius:16px;padding:14px;margin-bottom:12px;display:flex;flex-direction:column;gap:6px}
+.pushask b{font-family:var(--head);font-weight:800;font-size:16px}
+.pushask small{font-size:13px;color:var(--mute);line-height:1.4}
+.pushask .row2{display:flex;gap:8px;margin-top:6px}
+.pushask .row2 .btn{flex:1;margin:0}
 /* watch nights */
 .nopts{display:flex;justify-content:center;gap:8px;margin-top:4px}
 .nopt{flex:1 1 0;max-width:calc((100% - 16px) / 3);display:flex;flex-direction:column;gap:5px;border:2px solid transparent;background:var(--cream2);border-radius:14px;padding:7px;color:var(--ink);text-align:left;cursor:pointer;min-width:0}
@@ -1597,6 +1611,24 @@ body.demomode .secbar{top:78px}
    scores are half-stars 1..10 (10 = five). work ids: film:496243 · tv:1396 · book:OL27448W · game:1942 */
 const SUPABASE_URL = "https://caaxycmobhssxclrakim.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_zvZhatlvUg6F_CDzTmxX9A_Vlv0n3PX";
+/* When the app breaks on somebody's phone, it says so — a line in client_errors (read it in
+   the Supabase dashboard), so it can be fixed before they mention it. Five a visit at most,
+   each only once, never from the demo, and never the noise that isn't ours: a dropped
+   connection, a browser extension, the resize-observer warning every browser prints. */
+const reportCrash = (() => { const seen = new Set(); let left = 5;
+  const NOISE = /ResizeObserver loop|^Script error\.?$|Failed to fetch|Load failed|NetworkError|network error|AbortError|The operation was aborted|chrome-extension:|moz-extension:|safari-extension:/i;
+  return (err, place = "") => { try {
+    const msg = String(err?.message || err || "").slice(0, 500), stack = String(err?.stack || "").slice(0, 4000);
+    if (!msg || NOISE.test(msg) || NOISE.test(stack) || seen.has(msg) || left <= 0 || /(^|[#?&])demo\b/.test(location.hash + location.search)) return;
+    seen.add(msg); left--;
+    let tok = SUPABASE_ANON_KEY;
+    try { for (const k of Object.keys(localStorage)) if (/^sb-.*-auth-token$/.test(k)) tok = JSON.parse(localStorage.getItem(k))?.access_token || tok; } catch {}
+    fetch(`${SUPABASE_URL}/rest/v1/client_errors`, { method:"POST", keepalive:true,
+      headers:{ "Content-Type":"application/json", apikey:SUPABASE_ANON_KEY, Authorization:`Bearer ${tok}`, Prefer:"return=minimal" },
+      body:JSON.stringify({ msg, stack, place:String(place).slice(0, 200), ua:navigator.userAgent.slice(0, 300), ver:document.lastModified.slice(0, 40) }) }).catch(() => {});
+  } catch {} }; })();
+addEventListener("error", e => { if (e.error || e.message) reportCrash(e.error || e.message, `${(e.filename || "").split("/").pop()}:${e.lineno || 0}`); });
+addEventListener("unhandledrejection", e => reportCrash(e.reason, "promise"));
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -2293,7 +2325,7 @@ function say(msg, kind = "") {
 /* what the user was trying to do, then why it didn't happen */
 function oops(e, what) {
   const why = e?.message ? String(e.message).replace(/^(JSON object|Error:)\s*/i, "") : "";
-  console.warn(what, e);
+  console.warn(what, e); if (navigator.onLine !== false) reportCrash(e, `oops: ${what}`);
   say(why && why.length < 90 ? `${what} — ${why}` : what, "bad");
 }
 /* anything that reports its own state should be announced, not just drawn */
@@ -2986,7 +3018,66 @@ function takeInvite() {                       /* read it off the URL once, then 
   try { return localStorage.getItem(INVITE_KEY); } catch { return null; }
 }
 const dropInvite = () => { try { localStorage.removeItem(INVITE_KEY); } catch {} };
-const inviteLink = code => `${location.origin}${location.pathname}#join=${code}`;
+/* Through the worker when it's up to date, so the link shows the room's name in a chat;
+   straight to the app otherwise. The worker only ever forwards to this app's own address. */
+let inviteViaWorker = false;
+if (!DEMO) setTimeout(() => fetch(`${proxy()}/i/PING${location.pathname}`, { method:"HEAD" }).then(r => { inviteViaWorker = r.ok && /text\/html/.test(r.headers.get("Content-Type") || ""); }).catch(() => {}), 4000);
+const inviteLink = code => inviteViaWorker ? `${proxy()}/i/${code}${location.pathname}` : `${location.origin}${location.pathname}#join=${code}`;
+/* ---------- notifications on your phone ----------
+   The bell only knows what happened while the app is open; these reach you when it isn't.
+   The phone has to say yes first (and on an iPhone, Rooms has to be on the Home Screen).
+   Sending goes through the worker, as you: it can only reach people you share a room
+   with, and each person's phone decides whether to show it. */
+const pushCan = () => !DEMO && "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+const pushNeedsHome = () => /iP(hone|ad|od)/.test(navigator.userAgent) && !(navigator.standalone || matchMedia("(display-mode: standalone)").matches);
+let pushKeyP = null;
+const pushKey = () => pushKeyP ||= fetch(`${proxy()}/push/key`).then(r => r.ok ? r.json() : {}).then(j => j.key || null).catch(() => null);
+const keyBytes = k => Uint8Array.from(atob(k.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((k.length + 3) % 4)), c => c.charCodeAt(0));
+async function pushSub() { if (!pushCan()) return null; const reg = await navigator.serviceWorker.getRegistration(); return reg ? reg.pushManager.getSubscription() : null; }
+async function pushSave(sub) { const j = sub.toJSON();
+  await q(sb.from("push_subs").upsert({ endpoint:j.endpoint, user_id:me.id, p256dh:j.keys.p256dh, auth:j.keys.auth })); }
+async function pushOn() {
+  const key = await pushKey(); if (!key) throw new Error("Notifications aren't switched on for this app yet.");
+  if (await Notification.requestPermission() !== "granted") throw new Error("Your phone said no. You can allow it in the phone's settings for Rooms.");
+  const reg = await navigator.serviceWorker.ready;
+  const sub = await reg.pushManager.getSubscription() || await reg.pushManager.subscribe({ userVisibleOnly:true, applicationServerKey:keyBytes(key) });
+  await pushSave(sub); P.pushAsked = true; saveP(); return true; }
+async function pushOff() { const sub = await pushSub(); if (!sub) return;
+  try { await q(sb.from("push_subs").delete().eq("endpoint", sub.endpoint)); } catch {}
+  await sub.unsubscribe().catch(() => {}); }
+/* on every start: a phone that said yes stays on the list, and moves to a new key if the
+   worker's ever changed it */
+async function pushKeepUp() { try {
+  if (!pushCan() || Notification.permission !== "granted" || !me?.id || sb.__local) return;
+  let sub = await pushSub(); if (!sub) return; const key = await pushKey(); if (!key) return;
+  const had = sub.options?.applicationServerKey && btoa(String.fromCharCode(...new Uint8Array(sub.options.applicationServerKey))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  if (had && had !== key) { await sub.unsubscribe(); sub = await (await navigator.serviceWorker.ready).pushManager.subscribe({ userVisibleOnly:true, applicationServerKey:keyBytes(key) }); }
+  await pushSave(sub); } catch {} }
+/* tell a room, or one person. Never in the way: if it doesn't go, nothing else stops. */
+async function notify({ room = null, to = null, title, body = "", tag = "", sec = "" }) {
+  if (DEMO || sb.__local || (!room && !to)) return;
+  try { const { data } = await sb.auth.getSession(); const tok = data?.session?.access_token; if (!tok) return;
+    const url = `${location.origin}${location.pathname}${room ? `#room=${room}${sec ? "&sec=" + sec : ""}` : ""}`;
+    fetch(`${proxy()}/push/send`, { method:"POST", headers:{ "Content-Type":"application/json", Authorization:`Bearer ${tok}` },
+      body:JSON.stringify({ room, to, title, body, url, tag }) }).catch(() => {}); } catch {} }
+/* opened from a notification: go to the room it was about */
+function takeRoomLink() { const m = /[#&]room=([\w-]{8,40})(?:&sec=(\w+))?/.exec(location.hash); if (!m) return;
+  history.replaceState(null, "", location.pathname + location.search);
+  if (rooms.some(r => r.id === m[1])) { P.activeRoom = m[1]; P.feed = "room"; P.feedPicked = true; if (m[2]) P.roomSec = m[2]; saveP(); } }
+addEventListener("hashchange", () => { if (/[#&]room=/.test(location.hash) && me?.id) { takeRoomLink(); switchTab("doors"); } });
+/* the switch, wherever it's shown */
+async function pushSwitchHTML() {
+  if (!pushCan()) return "";
+  if (pushNeedsHome()) return `<p class="sub">To get notifications on an iPhone, add Rooms to your Home Screen first: Share → Add to Home Screen, then open it from there.</p>`;
+  if (!await pushKey()) return "";
+  const on = Notification.permission === "granted" && !!(await pushSub());
+  return `<div class="pushrow"><div><b>Notifications on this phone</b><small>${on ? "On — watch nights, picks for you, new people in your rooms." : Notification.permission === "denied" ? "Blocked in your phone's settings." : "Off"}</small></div>
+    <button class="chip ${on ? "on" : ""}" id="pushToggle" ${Notification.permission === "denied" ? "disabled" : ""}>${on ? "On" : "Turn on"}</button></div>`; }
+function wirePushSwitch(root, after) { const b = $("#pushToggle", root); if (!b) return;
+  b.onclick = async () => { b.disabled = true; const on = b.classList.contains("on");
+    try { if (on) { await pushOff(); say("Notifications off"); } else { await pushOn(); say("Notifications on", "good"); } }
+    catch (e) { say(e.message); }
+    after?.(); }; }
 /* called once you are through the door, whether that took ten seconds or a sign-up */
 async function useInvite() {
   const code = takeInvite(); if (!code || sb.__local) return false;
@@ -2994,7 +3085,7 @@ async function useInvite() {
   try {
     if (rooms.length >= ROOM_LIMIT) throw new Error("Leave a room to join another. You can be in up to three rooms.");
     const r = await q(sb.rpc("join_room", { p_code:code }));
-    dropInvite(); await loadRooms();
+    dropInvite(); await loadRooms(); if (r?.id) notify({ room:r.id, title:`${me.handle} came into ${r.name || "your room"}`, body:"Say hello — or hand them something to watch.", tag:"join-" + r.id });
     if (r?.id) { P.activeRoom = r.id; P.feed = "room"; P.feedPicked = true; saveP(); }
     await loadClubs();
     say(`You're in ${rooms.find(x => x.id === r?.id)?.name || "the room"}`, "good");
@@ -3474,12 +3565,27 @@ function openNotes() {
          or hands you a title, it lands here.</p>`}</div>
     <div class="stack"><button class="btn quiet" id="noteClose">Close</button></div>`);
   $("#noteClose").onclick = closeSheet;
+  pushAsk();
   dealIn($$("#noteBody .note"));
   wireNotes(ns);
   /* marked read on open, not on close — you have seen them, and a badge that survives
      you looking at it is the reason people stop looking */
   markNotesSeen();
 }
+/* the bell is where notifications make sense to ask about: you came here to see what
+   happened, and this is how you'd hear about it without opening the app. Asked until
+   you answer either way, then never again — the switch lives in Settings after that. */
+async function pushAsk() {
+  if (!pushCan() || P.pushAsked || Notification.permission !== "default" || !await pushKey()) return;
+  const body = $("#noteBody"); if (!body) return;
+  const home = pushNeedsHome();
+  body.insertAdjacentHTML("afterbegin", `<div class="pushask" id="pushAsk"><b>Hear about it when the app's closed?</b>
+    <small>${home ? "On an iPhone, add Rooms to your Home Screen first (Share → Add to Home Screen) and open it from there." : "Watch nights, picks people hand you, and someone new in your rooms. Nothing else."}</small>
+    <div class="row2">${home ? "" : `<button class="btn soft" id="pushYes">Turn on</button>`}<button class="btn quiet" id="pushNo">${home ? "OK" : "No thanks"}</button></div></div>`);
+  const done = () => { P.pushAsked = true; saveP(); $("#pushAsk")?.remove(); };
+  $("#pushNo").onclick = done;
+  const y = $("#pushYes"); if (y) y.onclick = async () => { y.disabled = true;
+    try { await pushOn(); say("Notifications on", "good"); } catch (e) { say(e.message); } done(); }; }
 function wireNotes(ns) {
   const el = $("#noteBody"); if (!el) return;
   const by = Object.fromEntries(ns.map(n => [n.id, n]));
@@ -4067,6 +4173,7 @@ async function enter() {
   await despite("your clubs", loadClubs()); await despite("handovers", loadHand());
   loadSettings().catch(() => {});
   await despite("your invite", useInvite());
+  takeRoomLink(); pushKeepUp();
   booting = true;
   switchTab("doors"); movePill(true); checkNew(); joinMeChannel();
   if (!P.onboarded && !myEntries.length) setTimeout(openWelcome, 400);
@@ -4790,7 +4897,8 @@ function wireSlips(el, es) { const by = Object.fromEntries(es.map(e => [e.id, e]
      plus the line of names under it, changes. */
   $$("[data-like]", el).forEach(b => b.onclick = async () => { const e = by[b.dataset.like], has = (e.reactions||[]).some(r => r.user_id === me.id);
     b.disabled = true;
-    try { if (has) await q(sb.from("reactions").delete().eq("entry_id",e.id).eq("user_id",me.id)); else await q(sb.from("reactions").insert({ entry_id:e.id, user_id:me.id }));
+    try { if (has) await q(sb.from("reactions").delete().eq("entry_id",e.id).eq("user_id",me.id)); else { await q(sb.from("reactions").insert({ entry_id:e.id, user_id:me.id }));
+        if (e.user_id && e.user_id !== me.id) notify({ to:e.user_id, title:`${me.handle} liked what you said`, body:`About ${works[e.work_id]?.title || "something you logged"}.`, tag:"like-" + e.id }); }
       e.reactions = has ? (e.reactions||[]).filter(r => r.user_id !== me.id) : [...(e.reactions||[]), { user_id:me.id }];
       b.classList.toggle("on", !has); b.innerHTML = heartSVG(!has);
       b.setAttribute("aria-pressed", String(!has));
@@ -5024,7 +5132,7 @@ function wireRoomButtons() { const nr = $("#newRoom"), jr = $("#joinRoom");
     const code = await askText({ title:"Join a room", sub:"Whoever is already in it can find the code under the room's name.", label:"The six-character code", placeholder:"PIT123", ok:"Join", max:12, upper:true });
     if (!code) return;
     if (rooms.length >= ROOM_LIMIT && !rooms.some(r => r.code.toLowerCase() === code.trim().toLowerCase())) { $("#roomMsg").textContent = "Leave a room to join another. You can be in up to three rooms."; return; }
-    try { const r = await q(sb.rpc("join_room", { p_code:code })); await loadRooms(); if (r?.id) P.activeRoom = r.id; P.feed = "room"; P.feedPicked = true; saveP(); closeSheet(); await loadClubs(); renderDoors(); } catch (e) { $("#roomMsg").textContent = e.message; } }; }
+    try { const r = await q(sb.rpc("join_room", { p_code:code })); await loadRooms(); if (r?.id) notify({ room:r.id, title:`${me.handle} came into ${r.name || "your room"}`, body:"Say hello — or hand them something to watch.", tag:"join-" + r.id }); if (r?.id) P.activeRoom = r.id; P.feed = "room"; P.feedPicked = true; saveP(); closeSheet(); await loadClubs(); renderDoors(); } catch (e) { $("#roomMsg").textContent = e.message; } }; }
 async function renderFollowingFeed(fb) {
   const ids = follows.map(f => f.followee); let es = [];
   if (ids.length) { try { es = notApart(await wholeEntries(f => { let x = sb.from("entries").select(ENTRY_SEL);
@@ -6071,6 +6179,7 @@ async function handTo(ids, w, note) {
   await q(sb.from("works").upsert({ id:w.id, kind:w.kind, title:w.title, year:w.year,
     cover:w.cover, creator:w.creator || "", length:w.length || 0 }));
   await q(sb.from("handovers").upsert(rows, { onConflict:"sender,recipient,work_id" }));
+  for (const id of ids) notify({ to:id, title:`${me.handle} thinks you'd like ${w.title}`, body:note || "It's waiting for you in Rooms.", tag:"hand-" + w.id });
   await loadHand(); }
 async function answerHand(h, yes) {
   const back = handIn.slice(); handIn = handIn.filter(x => x.id !== h.id);
@@ -6962,7 +7071,8 @@ async function ensureBracket(R, g, es) {
     cands[k] = ids; }
   const [kind, ids] = Object.entries(cands).sort((a, b) => b[1].length - a[1].length)[0] || [];
   const size = ids?.length >= 8 ? 8 : ids?.length >= 4 ? 4 : 0; if (!size) return null;
-  try { await q(sb.from("room_brackets").insert({ room_id:R.id, month:gameMonth(), kind, seeds:ids.slice(0, size), created_by:me.id })); } catch {}
+  try { await q(sb.from("room_brackets").insert({ room_id:R.id, month:gameMonth(), kind, seeds:ids.slice(0, size), created_by:me.id }));
+    notify({ room:R.id, title:`This month's bracket is up in ${R.name}`, body:`${size} ${K(kind).label.toLowerCase()} the room loves. Vote the first round.`, tag:"bracket-" + R.id, sec:"play" }); } catch {}
   try { const rows = await q(sb.from("room_brackets").select("*").eq("room_id", R.id).eq("month", gameMonth()));
     await fillWorks(rows[0]?.seeds || []); return rows[0] || null; } catch { return null; } }
 function bracketState(R, br, votes) {
@@ -7082,7 +7192,9 @@ function openPlanNight(R, onDone) {
   $("#npClose").onclick = closeSheet;
   $("#npGo").onclick = async () => { const b = $("#npGo"); b.disabled = true;
     try { await q(sb.from("room_nights").insert({ room_id:R.id, at, options:picks.map(w => w.id), created_by:me.id }));
-      closeSheet(); say(`Put to ${R.name}`); onDone(); }
+      closeSheet(); say(`Put to ${R.name}`); onDone();
+      notify({ room:R.id, title:`${me.handle} planned ${/^To(night|morrow)$/.test(nightLabel(at)) ? nightLabel(at).toLowerCase() : nightLabel(at)} in ${R.name}`,
+        body:`${picks.map(w => w.title).join(", ").replace(/, ([^,]*)$/, " or $1")}? Vote on what you're watching.`, tag:"night-" + R.id, sec:"play" }); }
     catch (e) { $("#npErr").textContent = /room_nights/.test(e.message) ? "Watch nights need the latest database update — run schema.sql in Supabase once." : e.message; b.disabled = false; } }; }
 /* ---------- the games, moving ----------
    Three moments are worth a little theatre, and each happens once per person: the
@@ -9326,6 +9438,7 @@ async function openYou() { let top = { items:[] }; try { top = await ensureMyTop
     ${top.items.length ? `<div class="lbl">Your four · from your ten</div>${fourHTML(top.items)}` : ""}
     <div class="stack"><button class="btn" id="ySave">Save</button></div><p class="msg" id="yMsg"></p>
     <div class="lbl">Settings</div>
+    <div id="pushSlot"></div>
     <div class="lbl" style="margin-top:10px">How the app looks</div><div class="chips">${[["","Auto"],["light","Light"],["dark","Dark"]].map(([k,l]) => `<button class="chip ${(P.theme||"")===k?"on":""}" data-th="${k}">${l}</button>`).join("")}</div>
     <p class="sub" style="margin-top:4px">Auto follows your phone. The ground still warms and dims across the day either way.</p>
     <div class="lbl">Cards</div><div class="chips">${[["","Auto"],["day","Day"],["night","Night"]].map(([k,l]) => `<button class="chip ${(P.cardTheme||"")===k?"on":""}" data-ct="${k}">${l}</button>`).join("")}</div>
@@ -9408,6 +9521,8 @@ async function openYou() { let top = { items:[] }; try { top = await ensureMyTop
     catch (err) { oops(err, "Couldn't reset your shape"); }
     paintAv(); paintMeAv(); refresh(); };
 
+  const fillPush = async () => { const el = $("#pushSlot"); if (!el) return; el.innerHTML = await pushSwitchHTML(); wirePushSwitch(el, fillPush); };
+  fillPush();
   $("#ySave").onclick = async () => { const h = lc($("#yHandle").value.trim()), bio = $("#yBio").value.trim(); if (!/^[a-z0-9_]{2,24}$/.test(h)) { $("#yMsg").textContent = "two to twenty-four, lowercase, no spaces"; return; }
     if (willNotName(h) || willNotName(bio)) { $("#yMsg").textContent = NAME_NO; return; }
     if (h !== lc(me.handle) && await handleTaken(h)) { $("#yMsg").textContent = "someone already has that one"; return; }

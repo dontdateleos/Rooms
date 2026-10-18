@@ -1386,3 +1386,74 @@ language sql stable security definer set search_path = public as $$
 $$;
 revoke all on function room_prompt(uuid, text) from public, anon;
 grant execute on function room_prompt(uuid, text) to authenticated;
+
+-- ---------------------------------------------------------------------------
+-- push notifications. Each phone that says yes leaves its push address here. The
+-- worker sends the notification, but it holds no database key of its own: it asks
+-- push_targets() with the sender's own sign-in, so it can only ever reach people the
+-- sender already shares a room with (or follows each other with). The address alone
+-- can't be used to send anything — that takes the worker's private key.
+create table if not exists push_subs (
+  endpoint text primary key,
+  user_id uuid not null references profiles(id) on delete cascade default auth.uid(),
+  p256dh text not null,
+  auth text not null,
+  created_at timestamptz not null default now()
+);
+create index if not exists push_subs_user_idx on push_subs (user_id);
+alter table push_subs enable row level security;
+drop policy if exists push_subs_mine on push_subs;
+create policy push_subs_mine on push_subs for all to authenticated
+  using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+create or replace function push_targets(p_room uuid default null, p_user uuid default null)
+returns table (endpoint text, p256dh text, auth text)
+language sql security definer stable set search_path = public as $$
+  select s.endpoint, s.p256dh, s.auth from push_subs s
+  where s.user_id <> auth.uid()
+    and ((p_room is not null and p_room in (select my_room_ids())
+          and s.user_id in (select user_id from room_members where room_id = p_room))
+      or (p_user is not null and s.user_id = p_user
+          and (shares_room(p_user)
+            or exists (select 1 from follows f where f.follower = p_user and f.followee = auth.uid()))));
+$$;
+revoke all on function push_targets(uuid, uuid) from public, anon;
+grant execute on function push_targets(uuid, uuid) to authenticated;
+
+-- a phone that has said no since, or been reset: the push service says "gone", so forget it
+create or replace function push_gone(p_endpoint text)
+returns void language sql security definer set search_path = public as $$
+  delete from push_subs where endpoint = p_endpoint;
+$$;
+revoke all on function push_gone(text) from public, anon;
+grant execute on function push_gone(text) to authenticated;
+
+-- ---------------------------------------------------------------------------
+-- invite previews. A link pasted into a chat shows the room's name rather than a bare
+-- address. Only what's on the invite anyway: the room's name, colour and how many are in.
+create or replace function room_preview(p_code text)
+returns table (name text, colour text, members int)
+language sql security definer stable set search_path = public as $$
+  select r.name, r.colour, (select count(*)::int from room_members m where m.room_id = r.id)
+  from rooms r where upper(r.code) = upper(p_code) limit 1;
+$$;
+grant execute on function room_preview(text) to anon, authenticated;
+
+-- ---------------------------------------------------------------------------
+-- crash reports. When the app breaks on someone's phone it writes a line here, so it can
+-- be fixed before they mention it. Write-only: nobody can read these through the app —
+-- look at them in the Supabase dashboard (Table editor → client_errors).
+create table if not exists client_errors (
+  id bigint generated always as identity primary key,
+  user_id uuid default auth.uid(),
+  at timestamptz not null default now(),
+  msg text not null check (length(msg) <= 500),
+  stack text check (length(stack) <= 4000),
+  place text check (length(place) <= 200),
+  ua text check (length(ua) <= 300),
+  ver text check (length(ver) <= 40)
+);
+alter table client_errors enable row level security;
+drop policy if exists client_errors_write on client_errors;
+create policy client_errors_write on client_errors for insert to anon, authenticated
+  with check (user_id is null or user_id = auth.uid());
