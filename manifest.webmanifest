@@ -1,7 +1,7 @@
 {
   "name": "Rooms",
   "short_name": "Rooms",
-  "description": "one log for film, tv, books and games",
+  "description": "What your friends are watching, reading and playing.",
   "start_url": ".",
   "display": "standalone",
   "background_color": "#16131C",
@@ -31,5 +31,14 @@
       "type": "image/png",
       "purpose": "maskable"
     }
-  ]
+  ],
+  "share_target": {
+    "action": "./index.html",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  }
 }

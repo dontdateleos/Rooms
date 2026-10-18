@@ -1491,6 +1491,12 @@ html.storying{overflow:hidden}
 .pushask small{font-size:13px;color:var(--mute);line-height:1.4}
 .pushask .row2{display:flex;gap:8px;margin-top:6px}
 .pushask .row2 .btn{flex:1;margin:0}
+/* scanning a book */
+.scanbox{position:relative;margin-top:12px;border-radius:18px;overflow:hidden;background:#000;aspect-ratio:4/3}
+.scanbox video{width:100%;height:100%;object-fit:cover;display:block}
+.scanline{position:absolute;left:12%;right:12%;top:50%;height:3px;border-radius:2px;background:var(--pink);box-shadow:0 0 12px var(--pink);animation:scanSweep 1.8s ease-in-out infinite}
+@keyframes scanSweep{0%,100%{transform:translateY(-40px)}50%{transform:translateY(40px)}}
+@media (prefers-reduced-motion:reduce){.scanline{animation:none}}
 /* hold a poster */
 .co{-webkit-touch-callout:none}
 .holdrate{margin:4px 0 6px}
@@ -4331,7 +4337,7 @@ async function enter() {
   await despite("your clubs", loadClubs()); await despite("handovers", loadHand());
   loadSettings().catch(() => {});
   await despite("your invite", useInvite());
-  takeRoomLink(); pushKeepUp();
+  takeRoomLink(); pushKeepUp(); takeShare();
   booting = true;
   switchTab("doors"); movePill(true); checkNew(); joinMeChannel();
   if (!P.onboarded && !myEntries.length) setTimeout(openWelcome, 400);
@@ -6840,9 +6846,10 @@ function openAdd() {
   const shelf = candidates().slice(0, 8);
   const recent = myEntries.slice(0, 4);
   openSheet(`<h3>What are you up to?</h3><p class="sub">Search it, or take one off the shelf.
-    <b>Log</b> if you've finished it, <b>Shelf</b> if you haven't got to it, and the third
-    one if you're in the middle of it right now.</p>
+    <b>Log</b> if you've finished it, <b>Shelf</b> if you haven't got to it, and <b>Watching</b>
+    (or Reading, or Playing) if you're in the middle of it right now.</p>
     <input id="aSearch" type="search" placeholder="Search film, TV, books, games" autocomplete="off" style="margin-top:12px">
+    ${canScan() ? `<button class="chip" id="aScan" style="margin-top:8px">Scan a book's barcode</button>` : ""}
     <div class="chips">${Object.keys(KINDS).map(k => `<button class="chip k ${P.kinds.includes(k)?"on":""}" data-ak="${k}">${K(k).label}</button>`).join("")}</div>
     <div class="msg" id="aMsg"></div><div id="aResults"></div>
     ${shelf.length ? `<div class="lbl">On your shelf</div><div class="card" style="margin-top:0">${shelf.map(w => `<div class="row" data-aw="${esc(w.id)}">${cover(w)}<div class="t"><b>${esc(w.title)}</b><small>${tag(w.kind)} ${esc(w.year||"")}</small></div><span class="chip">Log</span></div>`).join("")}</div>` : ""}
@@ -6855,6 +6862,7 @@ function openAdd() {
   $$("[data-aw]").forEach(x => x.onclick = () => openLog(works[x.dataset.aw]));
   wireLog("addLog", 6);
   setTimeout(() => $("#aSearch")?.focus(), 350);
+  const asc = $("#aScan"); if (asc) asc.onclick = openScan;
   let t; $("#aSearch").oninput = e => { clearTimeout(t); const v = e.target.value.trim(); if (!v) { $("#aResults").innerHTML = ""; return; }
     /* the + is for what you just finished, but you don't always arrive having finished it —
        the same result can go to the shelf without pretending you've watched it */
@@ -7375,6 +7383,68 @@ function bracketHTML(R, br, g) {
   new MutationObserver(ms => { for (const m of ms) for (const n of m.addedNodes) if (n.nodeType === 1) sweep(n); }).observe(document.body, { childList:true, subtree:true });
   sweep(document.body);
   document.addEventListener("keydown", e => { if ((e.key === "Enter" || e.key === " ") && e.target.getAttribute?.("role") === "button" && e.target.tagName !== "BUTTON") { e.preventDefault(); e.target.click(); } }); })();
+/* ---------- share to Rooms, and scanning a book ----------
+   Two ways in that skip typing a title. From another app's share button (on Android,
+   once Rooms is installed): an IMDb, Letterboxd, TMDB, Goodreads, Open Library or Steam
+   link becomes the title itself, ready to rate, shelve or start. And on phones whose
+   browser can read barcodes, a book's ISBN from its back cover. */
+async function fromLink(text) {
+  const s = String(text || "");
+  const imdb = /imdb\.com\/(?:[a-z-]+\/)?title\/(tt\d+)/i.exec(s)?.[1];
+  if (imdb) { const d = await tmdb("find/" + imdb, { external_source:"imdb_id" });
+    const m = d.movie_results?.[0], t = d.tv_results?.[0];
+    if (m) return { id:"film:" + m.id, kind:"film", title:m.title, year:(m.release_date || "").slice(0, 4), cover:TMDB_IMG(m.poster_path) };
+    if (t) return { id:"tv:" + t.id, kind:"tv", title:t.name, year:(t.first_air_date || "").slice(0, 4), cover:TMDB_IMG(t.poster_path) }; }
+  const tm = /themoviedb\.org\/(movie|tv)\/(\d+)/i.exec(s);
+  if (tm) { const kind = tm[1] === "movie" ? "film" : "tv", d = await tmdb(`${tm[1]}/${tm[2]}`);
+    return { id:`${kind}:${tm[2]}`, kind, title:d.title || d.name, year:(d.release_date || d.first_air_date || "").slice(0, 4), cover:TMDB_IMG(d.poster_path) }; }
+  const olw = /openlibrary\.org\/works\/(OL\d+W)/i.exec(s)?.[1];
+  if (olw) { const d = await ol(`/works/${olw}.json`);
+    return { id:"book:" + olw, kind:"book", title:d.title, year:"", cover:d.covers?.[0] ? `https://covers.openlibrary.org/b/id/${d.covers[0]}-M.jpg` : "" }; }
+  /* the rest only say the title in their address, so it's looked up the usual way */
+  const bySlug = [[/letterboxd\.com\/(?:[^/\s]+\/)?film\/([a-z0-9-]+)/i, "film"], [/goodreads\.com\/(?:[a-z]+\/)?book\/show\/\d+[.-]([\w-]+)/i, "book"],
+    [/store\.steampowered\.com\/app\/\d+\/([\w-]+)/i, "game"], [/backloggd\.com\/games\/([\w-]+)/i, "game"]];
+  for (const [rx, kind] of bySlug) { const m = rx.exec(s); if (!m) continue;
+    const words = m[1].replace(/[_-]+/g, " ").replace(/\s(\d{4})$/, "").trim(); const yr = /-(\d{4})$/.exec(m[1])?.[1] || "";
+    const hits = await SOURCES[kind](words).catch(() => []); const hit = hits.find(h => !yr || h.year === yr) || hits[0];
+    if (hit) return hit; }
+  return null; }
+async function takeShare() {
+  const qs = new URLSearchParams(location.search), link = qs.get("url") || "", text = qs.get("text") || "", title = qs.get("title") || "";
+  if (!link && !text && !title) return;
+  ["url", "text", "title"].forEach(k => qs.delete(k));
+  history.replaceState(null, "", location.pathname + (qs.toString() ? "?" + qs : "") + location.hash);
+  if (!me?.id) return;
+  say("Looking it up…");
+  let hit = null; try { hit = await fromLink([link, text, title].join(" ")); } catch {}
+  if (hit) { openHold({ hit }); return; }
+  /* nothing recognisable: search for whatever words came with it */
+  const words = (title || text || link).replace(/https?:\/\/\S+/g, "").trim().slice(0, 80);
+  openAdd(); const a = $("#aSearch"); if (a && words) { a.value = words; a.dispatchEvent(new Event("input")); } }
+const canScan = () => "BarcodeDetector" in window && !!navigator.mediaDevices?.getUserMedia;
+async function openScan() {
+  let stream = null, done = false;
+  openSheet(`<h3>Scan a book</h3><p class="sub">Point at the barcode on the back cover.</p>
+    <div class="scanbox"><video id="scanV" playsinline muted></video><i class="scanline"></i></div>
+    <p class="msg" id="scanMsg"></p><div class="stack"><button class="btn quiet" id="scanClose">Not now</button></div>`);
+  const stop = () => { done = true; stream?.getTracks().forEach(t => t.stop()); };
+  $("#scanClose").onclick = () => { stop(); closeSheet(); };
+  const sh = $("#sheet"); const mo = new MutationObserver(() => { if (!sh.classList.contains("on") || !$("#scanV")) { stop(); mo.disconnect(); } });
+  mo.observe(sh, { attributes:true, childList:true, subtree:true });
+  try { stream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:"environment" } }); }
+  catch { $("#scanMsg").textContent = "The camera's off for Rooms — allow it in your phone's settings, or search instead."; return; }
+  const v = $("#scanV"); if (!v) return stop(); v.srcObject = stream; await v.play().catch(() => {});
+  const det = new BarcodeDetector({ formats:["ean_13"] });
+  while (!done) {
+    await new Promise(r => setTimeout(r, 250)); if (done || !v.isConnected) break;
+    let codes = []; try { codes = await det.detect(v); } catch {}
+    const isbn = codes.map(c => c.rawValue).find(c => /^97[89]\d{10}$/.test(c)); if (!isbn) continue;
+    stop(); navigator.vibrate?.(15); $("#scanMsg").textContent = "Got it — looking it up…";
+    try { const d = await ol(`/isbn/${isbn}.json`); const wk = d.works?.[0]?.key?.replace("/works/", "");
+      if (!wk) throw new Error("not found");
+      openHold({ hit:{ id:"book:" + wk, kind:"book", title:d.title, year:(String(d.publish_date || "").match(/\d{4}/) || [""])[0], cover:`https://covers.openlibrary.org/b/isbn/${isbn}-M.jpg` } }); }
+    catch { $("#scanMsg").textContent = `Couldn't find ${isbn} in Open Library — try searching for the title.`; }
+    break; } }
 /* ---------- hold a poster ----------
    Anywhere a cover shows — the feed, the shelf, search, a friend's answer — holding it
    brings up what you'd do with it: rate it there and then (a star opens the log with
