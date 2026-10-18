@@ -1386,6 +1386,11 @@ nav button .dot{position:absolute;top:-2px;right:0;min-width:16px;height:16px;bo
 .spoiler{filter:blur(6px);background:color-mix(in srgb,var(--ink) 14%,transparent);border-radius:6px;padding:0 3px;cursor:pointer;transition:filter .3s,background .3s;-webkit-user-select:none;user-select:none}
 .spoiler.shown{filter:none;background:none;cursor:auto;-webkit-user-select:text;user-select:text}
 .spoilrow{display:flex;align-items:center;gap:10px;margin-top:8px}
+.welcome{text-align:center}
+.welcome .wel-mark{width:84px;height:84px;margin:6px auto 4px;animation:sealPop .6s cubic-bezier(.2,1.4,.4,1) both}
+.welcome .wel-mark svg{width:100%;height:100%}
+.welcome .stack{text-align:initial}
+@keyframes sealPop{from{transform:scale(.4) rotate(-12deg);opacity:0}to{transform:none;opacity:1}}
 .spoilrow .chip{flex:none}
 .spoilrow small{font-size:11.5px;color:var(--mute);line-height:1.35}
 .tonight{display:flex;align-items:center;gap:8px;margin-top:12px;padding:6px;border-radius:16px;background:var(--cream2)}
@@ -3998,7 +4003,7 @@ async function enter() {
   await despite("your invite", useInvite());
   booting = true;
   switchTab("doors"); movePill(true); checkNew(); joinMeChannel();
-  if (!P.onboarded && !myEntries.length) setTimeout(openOnboarding, 400);
+  if (!P.onboarded && !myEntries.length) setTimeout(openWelcome, 400);
 }
 function paintMeAv() { const el = $("#meAv"); if (el) el.innerHTML = avSVG(avFor(me)); }
 $("#meBtn").onclick = () => me && switchTab("taste");
@@ -4006,6 +4011,25 @@ $("#bellBtn").onclick = () => me && openNotes();
 $("#findBtn").onclick = () => me && openFind();
 
 /* ============ FIRST RUN ============ */
+/* The first screen anyone sees after signing up. Three ways in: tell it three things you
+   loved (a minute, and your taste, ten and shelf start from them); bring a whole log from
+   Letterboxd, Goodreads or Steam, for anyone who already keeps one; or look around first,
+   which is allowed and doesn't nag. If an invite brought you, it says whose room you're in. */
+function openWelcome() {
+  const R = activeRoom(), invited = R && R.members.length > 1;
+  const others = invited ? R.members.filter(m => m.id !== me.id).map(m => m.handle) : [];
+  openSheet(`<div class="onb welcome">
+    <div class="wel-mark" aria-hidden="true">${placeMark({ mk:"room", tone:invited ? roomColour(R) : "pink" })}</div>
+    <h3>${invited ? `You're in ${esc(R.name)}` : "Welcome to Rooms"}</h3>
+    <p class="sub">${invited ? `With ${esc(others.slice(0, 3).join(", "))}${others.length > 3 ? ` and ${others.length - 3} more` : ""}. ` : ""}One log for films, TV, books and games — and a room of friends to argue about them with.</p>
+    <div class="stack" style="margin-top:16px">
+      <button class="btn blue" id="welStart">Start with three things you loved</button>
+      <button class="btn ghost" id="welImport">Bring my log from Letterboxd, Goodreads or Steam</button>
+      <button class="btn quiet" id="welLater">Look around first</button></div>
+    <p class="sub" style="margin-top:10px;font-size:12px;text-align:center">Takes about a minute. You can change all of it later.</p></div>`);
+  $("#welStart").onclick = () => openOnboarding();
+  $("#welImport").onclick = () => { P.onboarded = true; saveP(); closeSheet(); setTimeout(openImport, 250); };
+  $("#welLater").onclick = () => { P.onboarded = true; saveP(); closeSheet(); }; }
 function openOnboarding() {
   const picks = [];
   const draw = () => {
@@ -4061,9 +4085,12 @@ function openOnboarding() {
     setTimeout(() => { openSheet(`<div class="onb"><h3>You're in.</h3>
       ${top3.length ? `<div class="say" style="margin-top:14px">You go for <span class="hl" style="background:var(--butter)">${esc(top3[0])}</span>${top3[1]?`, ${esc(top3[1])}`:""}${top3[2]?` and ${esc(top3[2])}`:""}.</div>` : ""}
       <p class="sub">That's your profile. It sharpens every time you log something.</p>
-      ${rooms.length ? `<p class="sub"><b>${esc(rooms[0].name)}</b> is open and waiting. Rooms only does anything with other people in it — one person is enough.</p>` : ""}
-      <div class="stack"><button class="btn blue" id="onbRoom">${rooms.length ? "Bring somebody in" : "Open a room for your friends"}</button><button class="btn ghost" id="onbShelf">Fill the shelf first</button></div></div>`);
-      $("#onbRoom").onclick = () => { closeSheet(); switchTab("doors");
+      ${(() => { const R = activeRoom(); if (!R) return "";
+        return R.members.length > 1 ? `<p class="sub"><b>${esc(R.name)}</b> is waiting — your three are already in it.</p>`
+          : `<p class="sub"><b>${esc(R.name)}</b> is open and waiting. Rooms only does anything with other people in it — one person is enough.</p>`; })()}
+      <div class="stack"><button class="btn blue" id="onbRoom">${activeRoom()?.members.length > 1 ? `Go to ${esc(activeRoom().name)}` : rooms.length ? "Bring somebody in" : "Open a room for your friends"}</button><button class="btn ghost" id="onbShelf">Fill the shelf first</button></div></div>`);
+      $("#onbRoom").onclick = () => { const R = activeRoom(); closeSheet(); switchTab("doors");
+        if (R && R.members.length > 1) return;
         setTimeout(() => { if (rooms.length) openInvite(rooms[0]); else $("#newRoom")?.click(); }, 300); };
       $("#onbShelf").onclick = () => { closeSheet(); switchTab("shelf"); };
     }, 500);
@@ -9285,7 +9312,7 @@ function downloadJSON(obj, name) {
 }
 
 /* a small hook so the card renderers can be exercised by the test harness */
-window.__rooms = { pullRefresh, openFind, setFollow, isFollowing, get follows(){return follows}, openNotes, noteList, noteRow, markNotesSeen, noteCount, newHands, noteSeen, get unseen(){return unseen}, nowVerb, openAdd, RINGS, MARK_RING, ringFromMarks, ringCache, myRing, spanOf, reelIndexNow, memories, dueReview, memForget, MEM_MIN, MEM_DAYS, whoseWord, wordPending, HAND_FLOOR, loadHand, handTo, answerHand, reachable, cameFrom, openHand, get handIn(){return handIn}, get handOut(){return handOut}, get handAll(){return handAll}, reelTo, markReel, REEL, reelCopies, get reelAt(){return reelAt}, facesFor, faceEl, faceMap, FACE_IMG, paintLog, wireLog, openWholeLog, openLog, likeLine, knownName, AV_SHAPES, AV_EYES, AV_COLS, avSVG, avFor, get me(){return me}, get entries(){return myEntries}, get works(){return works}, get rooms(){return rooms},
+window.__rooms = { openWelcome, openOnboarding, pullRefresh, openFind, setFollow, isFollowing, get follows(){return follows}, openNotes, noteList, noteRow, markNotesSeen, noteCount, newHands, noteSeen, get unseen(){return unseen}, nowVerb, openAdd, RINGS, MARK_RING, ringFromMarks, ringCache, myRing, spanOf, reelIndexNow, memories, dueReview, memForget, MEM_MIN, MEM_DAYS, whoseWord, wordPending, HAND_FLOOR, loadHand, handTo, answerHand, reachable, cameFrom, openHand, get handIn(){return handIn}, get handOut(){return handOut}, get handAll(){return handAll}, reelTo, markReel, REEL, reelCopies, get reelAt(){return reelAt}, facesFor, faceEl, faceMap, FACE_IMG, paintLog, wireLog, openWholeLog, openLog, likeLine, knownName, AV_SHAPES, AV_EYES, AV_COLS, avSVG, avFor, get me(){return me}, get entries(){return myEntries}, get works(){return works}, get rooms(){return rooms},
   CUTS, openCuts, spanData, tasteOf, reviewData, yearOf, roomPalmares, tagStats, agreement, activeRoom, q, sb: () => sb, remember,
   joinRoomChannel, leaveRoomChannel, paintHere, onLiveEntry, paintDay, get hereNow(){return hereNow},
   say, oops, markLive, takeInvite, dropInvite, inviteLink, useInvite, exportEverything,
