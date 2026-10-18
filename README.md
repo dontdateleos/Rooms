@@ -32,6 +32,17 @@ others (a custom domain, `http://localhost:8080` for development):
 wrangler secret put ORIGIN     # https://you.github.io
 ```
 
+Notifications on people's phones need a key pair the worker signs them with. Make it and
+hand both halves to the worker in one go (after `wrangler login`), then deploy:
+
+```
+node tools/push-keys.mjs
+wrangler deploy
+```
+
+Run that once — a new pair quietly stops every phone that already said yes until it
+opens the app again. Without it the app simply doesn't offer notifications.
+
 Unset, every request gets a 503. Set, anything that doesn't come from a listed
 origin gets a 403 and never reaches TMDB or IGDB — so a stranger who finds the
 worker URL can't spend your API quota. Debugging with curl means naming an
