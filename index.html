@@ -1382,6 +1382,17 @@ nav button .dot{position:absolute;top:-2px;right:0;min-width:16px;height:16px;bo
   border:0;border-radius:999px;padding:11px 18px;background:var(--ink);color:var(--cream);font:inherit;font-size:13px;box-shadow:0 10px 30px rgba(0,0,0,.25);
   cursor:pointer;white-space:nowrap;animation:updIn .5s cubic-bezier(.2,1.3,.4,1) both}
 .updbar b{font-family:var(--head);font-weight:800}
+.pick-posters{display:flex;gap:6px;margin:8px 0 2px;min-height:0}
+.pick-posters img{width:34px;height:50px;border-radius:6px;object-fit:cover;background:var(--line)}
+.pick-posters span{font-size:11px;font-weight:700;color:var(--mute);background:var(--cream2);border-radius:999px;padding:3px 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:110px}
+.season-recap .recap-rows{display:flex;flex-direction:column;gap:6px}
+.season-recap .gprompt{font-family:var(--head);font-weight:900;letter-spacing:-.02em;line-height:1.15}
+.recap-row{display:flex;align-items:center;gap:10px;font-size:13px}
+.recap-row .season-object{width:28px;height:28px;flex:none}
+.recap-row .season-object svg{width:100%;height:100%}
+.recap-row b{flex:1;font-family:var(--head);font-weight:800}
+.recap-row span:last-child{color:var(--mute);font-weight:700}
+.recap-row em{font-style:normal;color:var(--ink)}
 .credits{display:flex;flex-direction:column;gap:6px;margin-top:6px;padding:14px;border-radius:16px;background:var(--cream2)}
 .credits p{margin:0;font-size:12.5px;line-height:1.45;color:var(--mute)}
 .credits a{color:var(--ink);font-weight:700}
@@ -4162,7 +4173,7 @@ function tonightCard() {
     .find(w => w && !logged(w.id) && !isSoon(w) && !nowOf(w.id));
   if (!nw && !next) return "";
   let season = "";
-  try { const S = HALLOWEEN_2026, ph = seasonPhase(S);
+  try { const S = currentSeason(), ph = seasonPhase(S);
     if (ph.key === "live") { const got = S.challenges.reduce((t, c) => t + seasonEntries(c).length, 0);
       season = `<button class="chip" id="tonightSeason">${esc(S.name)} · ${got ? `${got} logged` : "log one to start"}</button>`; } } catch {}
   const row = (w, sub) => `<div class="row" data-w="${esc(w.id)}">${cover(w)}<div class="t"><b>${esc(w.title)}</b><small>${tag(w.kind)} ${sub}</small></div></div>`;
@@ -4274,6 +4285,8 @@ const PLACE_MARKS = {
   game: c => `<circle cx="24" cy="70" r="16" fill="${avShade(c, -.2)}"/><circle cx="76" cy="70" r="16" fill="${avShade(c, -.2)}"/><rect x="8" y="32" width="84" height="44" rx="22" fill="${c}"/>
     <path d="M30 32h40a22 22 0 0 1 22 22H8a22 22 0 0 1 22-22z" fill="${avShade(c, .3)}"/><path d="M22 48v12M16 54h12" stroke="#151320" stroke-width="4" stroke-linecap="round"/><circle cx="78" cy="52" r="3.5" fill="#151320"/>${MK_EYES(43, 44, 55, 43, 18)}`,
   ghost: c => `<path d="M18 46a32 32 0 0 1 64 0v30q-8 10-16 0t-16 0t-16 0t-16 0z" fill="${c}"/><path d="M50 14a32 32 0 0 1 32 32H18a32 32 0 0 1 32-32z" fill="${avShade(c, .25)}"/><path d="M82 46v30q-8 10-16 0V46a14 14 0 0 0-8-13 32 32 0 0 1 24 13z" fill="${avShade(c, -.18)}"/>${MK_EYES(40, 44, 55, 42)}`,
+  moon: c => `<path d="M62 10a40 40 0 1 0 28 64A34 34 0 0 1 62 10z" fill="${c}"/><path d="M62 10a40 40 0 0 0-50 32c10-14 30-22 50-18-4-6-4-10 0-14z" fill="${avShade(c, .3)}"/>
+    <circle cx="74" cy="22" r="4" fill="${avShade(c, .35)}"/>${MK_EYES(19, 46, 31, 44, 18)}`,
   clubs: c => `<rect x="6" y="40" width="26" height="46" rx="13" fill="${avShade(c, -.2)}"/><rect x="68" y="36" width="26" height="50" rx="13" fill="${avShade(c, -.2)}"/><g fill="#151320" opacity=".75"><rect x="13" y="56" width="4" height="10" rx="2"/><rect x="21" y="55" width="4" height="11" rx="2"/><rect x="75" y="52" width="4" height="10" rx="2"/><rect x="83" y="51" width="4" height="11" rx="2"/></g>
     <rect x="30" y="18" width="40" height="70" rx="20" fill="${c}"/><path d="M50 18a20 20 0 0 1 20 20H30a20 20 0 0 1 20-20z" fill="${avShade(c, .3)}"/>${MK_EYES(41, 44, 53, 42, 18)}`
 };
@@ -7649,7 +7662,8 @@ function ghostMark(tilt, base) {
   </g></svg>`;
 }
 const HALLOWEEN_2026 = {
-  id:"halloween-2026", name:"31 Nights In", starts:"2026-10-01", ends:"2026-10-31",
+  id:"halloween-2026", name:"31 Nights In", label:"Halloween", tone:"apricot", mk:"ghost", starts:"2026-10-01", ends:"2026-10-31",
+  rule:"Horror-tagged logs only.", pitch:"Horror, all October.",
   challenges:[
     { id:"midnight-matinee", kind:"film", icon:"◒", name:"Midnight Matinee", copy:"Log horror films through October.",
       mark:ghostMark(0, AV_COLS[0]) },
@@ -7682,11 +7696,69 @@ const seasonGenres = e => (e.works?.meta?.genres || works[e.work_id]?.meta?.genr
    "Horror fiction", "Fiction, horror" — an exact match against "horror" only ever caught
    the TMDB case. A plain substring covers all of them, films and TV included. */
 const isSeasonHorror = e => seasonGenres(e).some(g => g.includes("horror"));
-function seasonChallengeFor(e, season = HALLOWEEN_2026) {
-  const d = seasonDate(e); if (!d || d < season.starts || d > season.ends || !isSeasonHorror(e)) return null;
+HALLOWEEN_2026.qualifies = isSeasonHorror;
+HALLOWEEN_2026.picks = SEASON_PICKS;
+/* ---------- Long Nights ----------
+   November and December, the long dark: the ones you've been putting off because they're
+   long. A film over two and a half hours, a show of forty episodes or more, a book of five
+   hundred pages, a game of forty hours. Length is already on every title, so nothing new
+   has to be looked up to know what counts. */
+const LONG_ENOUGH = { film:150, tv:40, book:500, game:40 };
+const seasonLength = e => +(e.works?.length || works[e.work_id]?.length || 0);
+function longMark(tilt, base) {
+  const light = avShade(base, .30), dark = avShade(base, -.18);
+  return `<svg viewBox="0 0 100 100" aria-hidden="true"><g transform="rotate(${tilt} 50 54)">
+    <rect x="28" y="6" width="44" height="88" rx="22" fill="${base}"/><path d="M50 6a22 22 0 0 1 22 22H28A22 22 0 0 1 50 6z" fill="${light}"/>
+    <path d="M72 28v44a22 22 0 0 1-14 20c7-6 8-12 8-20V28z" fill="${dark}"/>
+    <g class="eyes" fill="#151320"><rect x="40" y="38" width="7" height="13" rx="3.5"/><rect x="54" y="37" width="7" height="14" rx="3.5"/></g>
+    <path d="M41 60q4 3 8 0" stroke="#151320" stroke-width="3" fill="none" stroke-linecap="round" opacity=".5"/></g></svg>`; }
+const LONG_NIGHTS_2026 = {
+  id:"long-nights-2026", name:"Long Nights", label:"Long Nights", tone:"butter", mk:"moon", starts:"2026-11-01", ends:"2026-12-31",
+  rule:"Long ones only: films over 2½ hours, shows of 40+ episodes, books of 500+ pages, games of 40+ hours.", pitch:"The long ones, while the nights are long.",
+  qualifies: e => { const n = seasonLength(e), min = LONG_ENOUGH[seasonKind(e)]; return !!min && n >= min; },
+  challenges:[
+    { id:"the-long-sit", kind:"film", icon:"◒", name:"The Long Sit", copy:"Films over two and a half hours.", mark:longMark(-2, AV_COLS[0]) },
+    { id:"the-long-haul", kind:"tv", icon:"▤", name:"The Long Haul", copy:"Shows of forty episodes or more.", mark:longMark(2, AV_COLS[2]) },
+    { id:"doorstoppers", kind:"book", icon:"✦", name:"Doorstoppers", copy:"Books of five hundred pages or more.", mark:longMark(-3, AV_COLS[3]) },
+    { id:"hundred-hour-club", kind:"game", icon:"◇", name:"The Forty-Hour Club", copy:"Games of forty hours or more.", mark:longMark(3, AV_COLS[4]) }
+  ],
+  picks:[
+    ...["Lawrence of Arabia","Seven Samurai","The Godfather Part II","Once Upon a Time in America","Barry Lyndon","Magnolia","Fanny and Alexander","The Irishman","Killers of the Flower Moon","Oppenheimer","Andrei Rublev","Heat","The Deer Hunter","Malcolm X","Dune: Part Two"].map(t => ["film", t]),
+    ...["The Wire","The Sopranos","Mad Men","Breaking Bad","Better Call Saul","The Americans","Six Feet Under","Halt and Catch Fire","Friday Night Lights","Avatar: The Last Airbender","Buffy the Vampire Slayer","Battlestar Galactica","Twin Peaks","Deadwood","Columbo"].map(t => ["tv", t]),
+    ...["Middlemarch","The Count of Monte Cristo","War and Peace","Lonesome Dove","Shōgun","A Little Life","The Goldfinch","2666","Jonathan Strange & Mr Norrell","The Stand","The Brothers Karamazov","Anna Karenina","East of Eden","Infinite Jest","The Secret History"].map(t => ["book", t]),
+    ...["The Witcher 3: Wild Hunt","Elden Ring","Baldur's Gate 3","Red Dead Redemption 2","Persona 5 Royal","The Legend of Zelda: Breath of the Wild","Final Fantasy VII Rebirth","Metaphor: ReFantazio","Mass Effect Legendary Edition","Dragon Age: Origins","Yakuza 0","Xenoblade Chronicles 3","Kingdom Come: Deliverance II","Disco Elysium","Hollow Knight"].map(t => ["game", t])
+  ]
+};
+/* ---------- The Catch-Up ----------
+   January and February: everything from last year you meant to get to. What counts is
+   the year a title came out, which every title already carries. The "start here" list is
+   the 2026 titles already going round your rooms and your shelf, rather than a list
+   written in advance. */
+const CATCH_UP_2027 = {
+  id:"catch-up-2027", name:"The Catch-Up", label:"Catch-Up", tone:"mint", mk:"archive", starts:"2027-01-01", ends:"2027-02-28",
+  rule:"Anything first released in 2026.", pitch:"Last year's, before it's too late.",
+  qualifies: e => String(e.works?.year || works[e.work_id]?.year || "") === "2026",
+  challenges:[
+    { id:"catch-up-film", kind:"film", icon:"◒", name:"Missed It in Cinemas", copy:"Films from 2026.", mark:longMark(-2, AV_COLS[0]) },
+    { id:"catch-up-tv", kind:"tv", icon:"▤", name:"Everyone Was Talking About", copy:"Shows from 2026.", mark:longMark(2, AV_COLS[2]) },
+    { id:"catch-up-book", kind:"book", icon:"✦", name:"The Pile by the Bed", copy:"Books from 2026.", mark:longMark(-3, AV_COLS[3]) },
+    { id:"catch-up-game", kind:"game", icon:"◇", name:"The Backlog", copy:"Games from 2026.", mark:longMark(3, AV_COLS[4]) }
+  ],
+  picks:[]
+};
+const SEASONS = [HALLOWEEN_2026, LONG_NIGHTS_2026, CATCH_UP_2027];
+/* The season the Seasons tab is about: the one running; between seasons, the next one
+   (so the tab says what's coming, not what's over); after the last, the last. */
+function currentSeason(d = today()) {
+  return SEASONS.find(s => d >= s.starts && d <= s.ends) || SEASONS.find(s => s.starts > d) || SEASONS[SEASONS.length - 1]; }
+/* a season that ended in the last fortnight still gets a word on how it went */
+const recentlyEnded = (d = today()) => SEASONS.filter(s => s.ends < d && dayNo(d) - dayNo(s.ends) <= 14).at(-1) || null;
+const challengeSeason = id => SEASONS.find(s => s.challenges.some(c => c.id === id)) || currentSeason();
+function seasonChallengeFor(e, season = currentSeason()) {
+  const d = seasonDate(e); if (!d || d < season.starts || d > season.ends || !season.qualifies(e)) return null;
   return season.challenges.find(c => c.kind === seasonKind(e)) || null;
 }
-function seasonEntries(challenge, rows = myEntries, season = HALLOWEEN_2026) {
+function seasonEntries(challenge, rows = myEntries, season = challengeSeason(challenge.id)) {
   /* A title is a single notch no matter how many times someone edits or rewatches it. */
   const seen = new Set();
   return rows.filter(e => { if (seasonChallengeFor(e, season)?.id !== challenge.id || seen.has(e.work_id)) return false;
@@ -7695,29 +7767,32 @@ function seasonEntries(challenge, rows = myEntries, season = HALLOWEEN_2026) {
 function seasonMedal(n) { return [...SEASON_MEDALS].reverse().find(m => n >= m.at) || null; }
 function seasonEntryStamp(e) {
   if (!me || e.user_id !== me.id) return "";
-  const c = seasonChallengeFor(e); if (!c) return "";
+  const c = SEASONS.map(S => seasonChallengeFor(e, S)).find(Boolean); if (!c) return "";
   const n = seasonEntries(c).length, medal = seasonMedal(n);
   const label = `${c.name} · ${n} logged${medal ? ` · ${medal.name}` : ""}`;
   return `<span class="season-stamp ${medal?.tier || ""}" aria-label="${esc(label)}" title="${esc(label)}">${medal?.icon || c.icon}</span>`;
 }
 function openSeasonChallenge(challenge) {
   if (!challenge) return;
-  const picks = SEASON_PICKS.filter(([kind]) => kind === challenge.kind);
+  const S = challengeSeason(challenge.id);
+  let picks = S.picks.filter(([kind]) => kind === challenge.kind);
+  if (!picks.length) picks = Object.values(works).filter(w => w.kind === challenge.kind && !logged(w.id) && S.qualifies({ work_id:w.id, works:w }))
+    .slice(0, 15).map(w => [w.kind, w.title]);
   const entries = seasonEntries(challenge), medal = seasonMedal(entries.length);
-  openSheet(`<div class="head"><div class="season-object ${challenge.kind}">${challenge.mark}</div><div class="hh"><h3>${esc(challenge.name)}</h3><p class="sub">${esc(challenge.copy)} Horror-tagged logs only.</p></div></div>
+  openSheet(`<div class="head"><div class="season-object ${challenge.kind}">${challenge.mark}</div><div class="hh"><h3>${esc(challenge.name)}</h3><p class="sub">${esc(challenge.copy)} ${esc(S.rule)}</p></div></div>
     <div class="card" style="margin-top:14px"><b>${entries.length} logged</b><p class="sub" style="margin-top:4px">${medal ? medal.name + " earned so far." : "Your first qualifying log earns Bronze."}</p></div>
     <div class="lbl">Start here</div><div class="season-picks">${picks.map(([kind,title], i) => `<button class="row" type="button" data-season-pick="${esc(title)}" data-season-kind="${kind}"><span class="rk">${i+1}</span><div class="t"><b>${esc(title)}</b><small>${tag(kind)} · horror pick</small></div><span class="chip">Find</span></button>`).join("")}</div>
     <div class="stack"><button class="btn quiet" id="seasonClose">Back</button></div>`);
   $("#seasonClose").onclick = closeSheet;
   $$('[data-season-pick]').forEach(row => row.onclick = () => { P.kinds = [row.dataset.seasonKind]; saveP(); closeSheet(); switchTab("shelf"); setTimeout(() => { const search = $("#search"); if (!search) return; search.value = row.dataset.seasonPick; search.dispatchEvent(new Event("input", { bubbles:true })); search.focus(); }, 100); });
 }
-function seasonPhase(season = HALLOWEEN_2026) {
+function seasonPhase(season = currentSeason()) {
   const d = today();
   return d < season.starts ? { key:"upcoming", text:`Starts ${when(season.starts)}` }
     : d > season.ends ? { key:"finished", text:`Finished ${when(season.ends)}` }
     : { key:"live", text:`Ends ${when(season.ends)}` };
 }
-async function seasonRank(season = HALLOWEEN_2026) {
+async function seasonRank(season = currentSeason()) {
   if (seasonPhase(season).key === "upcoming") return null;
   try {
     /* This used to pull the whole entries table with no ORDER BY and a flat limit — an
@@ -7725,7 +7800,7 @@ async function seasonRank(season = HALLOWEEN_2026) {
        happened to hand rows back. A season is a month long, so bound the fetch to the
        month it's asking about: smaller, and an ordered slice is at least a consistent one
        if a very large season ever does hit the limit. */
-    const rows = await q(sb.from("entries").select("user_id,work_id,created_at,rated_on,works(kind,meta)")
+    const rows = await q(sb.from("entries").select("user_id,work_id,created_at,rated_on,works(kind,meta,length)")
       .gte("created_at", season.starts + "T00:00:00.000Z").lte("created_at", season.ends + "T23:59:59.999Z")
       .order("created_at").limit(10000));
     const by = new Map();
@@ -7740,46 +7815,74 @@ async function seasonRank(season = HALLOWEEN_2026) {
     return { people:scores.length, inTop:!!mine && mine.n >= 3 && mine.n >= cut, mine:mine?.n || 0, cut };
   } catch { return { people:0, inTop:false }; }
 }
+/* ---------- when a season ends ----------
+   For a fortnight afterwards it gets a card above the next one: what you logged and what
+   you earned, and who in your room went furthest — so the end of a season is a moment,
+   not just the challenges quietly being swapped for new ones. */
+function seasonRecapHTML(S) {
+  const rows = S.challenges.map(c => { const n = seasonEntries(c, myEntries, S).length, m = seasonMedal(n); return { c, n, m }; });
+  const total = rows.reduce((t, r) => t + r.n, 0);
+  return `<div class="card season-recap" id="seasonRecap"><div class="h"><span>${esc(S.name)} is over</span><span class="tag dim">ended ${when(S.ends)}</span></div>
+    <p class="gprompt" style="font-size:22px;margin:8px 0 10px">${total ? `You logged ${total} for it.` : "You sat this one out."}</p>
+    <div class="recap-rows">${rows.map(({ c, n, m }) => `<div class="recap-row"><span class="season-object ${c.kind}">${c.mark}</span><b>${esc(c.name)}</b><span>${n ? `${n}${m ? ` · <em>${m.icon} ${m.name}</em>` : ""}` : "—"}</span></div>`).join("")}</div>
+    <p class="sub gline" id="seasonRecapRoom"></p></div>`; }
+async function fillSeasonRecap(S) {
+  const el = $("#seasonRecapRoom"), R = activeRoom(); if (!el || !R || R.members.length < 2) return;
+  try { const es = await q(sb.from("entries").select("user_id,work_id,created_at,rated_on,works(kind,meta,length)")
+      .in("user_id", R.members.map(m => m.id)).gte("created_at", S.starts + "T00:00:00.000Z").lte("created_at", S.ends + "T23:59:59.999Z").limit(2000));
+    const by = {}; for (const e of es) if (seasonChallengeFor(e, S)) (by[e.user_id] ||= new Set()).add(e.work_id);
+    const top = Object.entries(by).sort((a, b) => b[1].size - a[1].size)[0];
+    if ($("#seasonRecapRoom") === el && top) el.innerHTML = `<b>${esc(R.name)}</b> · ${esc(who(R, top[0]))} went furthest, with ${top[1].size}.`; } catch {} }
+/* the first three picks of each challenge, as covers: looked up once, then remembered */
+async function paintPickPosters(S, root) {
+  const store = P.pickCovers || {};
+  for (const c of S.challenges) {
+    const slot = $(`[data-season-challenge="${c.id}"] .pick-posters`, root); if (!slot) continue;
+    const titles = S.picks.filter(([k]) => k === c.kind).slice(0, 3).map(([, t]) => t);
+    const draw = () => { slot.innerHTML = titles.map(t => store[t] ? `<img src="${esc(store[t])}" alt="" loading="lazy">` : `<span>${esc(t)}</span>`).join(""); };
+    draw();
+    const missing = titles.filter(t => !(t in store)); if (!missing.length || !SOURCES[c.kind]) continue;
+    await Promise.all(missing.map(t => SOURCES[c.kind](t).then(r => { store[t] = r?.[0]?.cover || ""; }).catch(() => {})));
+    P.pickCovers = store; saveP(); if (slot.isConnected) draw(); } }
 let seasonTurn = 0;
 async function renderClubs() {
   const body = $("#clubsBody");
   if (!["season", "clubs"].includes(P.clubTab)) P.clubTab = "season";
-  const season = HALLOWEEN_2026, phase = seasonPhase(season);
+  const season = currentSeason(), phase = seasonPhase(season), ended = recentlyEnded();
   const nClubs = clubs.length + openClubs.length;
-  const places = [place("season", "Halloween", "apricot", "ghost"), place("clubs", "Friend clubs", "lilac", "clubs")];
+  const places = [place("season", season.label, season.tone, season.mk), place("clubs", "Friend clubs", "lilac", "clubs")];
   body.innerHTML = `${pagerHTML(places, P.clubTab, { id:"seasonPager" })}
-    <p class="sub" style="text-align:center">${P.clubTab === "season" ? "This season's challenges, open to everyone." : nClubs ? `${nClubs} ${nClubs === 1 ? "club" : "clubs"} — the small ones you run with friends.` : "The small clubs you run with friends."}</p>
+    <p class="sub" style="text-align:center">${P.clubTab === "season" ? (phase.key === "upcoming" ? `Next up · ${esc(season.pitch)}` : esc(season.pitch)) : nClubs ? `${nClubs} ${nClubs === 1 ? "club" : "clubs"} — the small ones you run with friends.` : "The small clubs you run with friends."}</p>
     <div id="seasonContent"></div>`;
   wirePager($("#seasonPager", body), places, P.clubTab, (k, d) => { P.clubTab = k; saveP(); seasonTurn = d; renderClubs(); });
   pagerArrive(seasonTurn, $("#seasonPager", body), $("#seasonContent", body)); seasonTurn = 0;
   const out = $("#seasonContent");
   if (P.clubTab === "clubs") { await renderFriendClubs(out); return; }
-  const cards = season.challenges.map(c => { const entries = seasonEntries(c), n = entries.length, medal = seasonMedal(n), pickCount = SEASON_PICKS.filter(([kind]) => kind === c.kind).length;
+  const cards = season.challenges.map(c => { const entries = seasonEntries(c), n = entries.length, medal = seasonMedal(n), pickCount = season.picks.filter(([kind]) => kind === c.kind).length || "";
     return `<button class="club season-challenge" type="button" data-season-challenge="${c.id}">
       <div class="season-object ${c.kind}">${c.mark}</div>
-      <div><div class="top"><span class="tag" style="background:${K(c.kind).colour}">${K(c.kind).label}</span><span class="season-open">${pickCount} ${pickCount === 1 ? "pick" : "picks"} <b>›</b></span></div>
+      <div><div class="top"><span class="tag" style="background:${K(c.kind).colour}">${K(c.kind).label}</span><span class="season-open">${pickCount ? `${pickCount} ${pickCount === 1 ? "pick" : "picks"}` : "open"} <b>›</b></span></div>
         <b>${esc(c.name)}</b>
+        <div class="pick-posters" aria-hidden="true"></div>
         ${n ? `<div class="tr"><i style="width:${Math.min(100, Math.round(n / SEASON_MEDALS.at(-1).at * 100))}%"></i></div>
         <div class="pr"><b>${n}</b> logged${medal ? ` · ${medal.name} earned` : ""}</div>
         <div class="season-haul">${SEASON_MEDALS.map(m => `<span class="${n >= m.at ? "on" : ""}" title="${m.name} · ${m.at}">${m.icon}</span>`).join("")}</div>`
         : `<div class="pr">Log one to start</div>`}</div></button>`;
   }).join("");
-  out.innerHTML = `<div class="season-hero">
-      <span class="tag">Public season</span>
+  out.innerHTML = `${ended && ended !== season ? seasonRecapHTML(ended) : ""}<div class="season-hero">
+      <span class="tag">${phase.key === "upcoming" ? "Next season" : phase.key === "finished" ? "Between seasons" : "Public season"}</span>
       <h3>${esc(season.name)}</h3>
-      <p class="sub">${esc(phase.text)} · Horror-tagged logs only. Pick a challenge to see what to start with.</p>
-      <span class="season-ghost" aria-hidden="true"><svg viewBox="0 0 100 100"><g transform="rotate(2 50 54)">
-        <path d="M18 46a32 32 0 0 1 64 0v30q-8 10-16 0t-16 0t-16 0t-16 0z" fill="#8FD3FF"/>
-        <path d="M50 14a32 32 0 0 1 32 32H18a32 32 0 0 1 32-32z" fill="#B1E0FF"/>
-        <path d="M82 46v30q-8 10-16 0V46a14 14 0 0 0-8-13 32 32 0 0 1 24 13z" fill="#75ADD1"/>
-        <g class="eyes" fill="#151320"><rect x="40" y="44" width="7" height="20" rx="3.5"/><rect x="55" y="42" width="7" height="22" rx="3.5"/></g>
-      </g></svg></span>
+      <p class="sub">${phase.key === "finished" ? `Finished ${when(season.ends)}. The next season is on its way — what you earned in this one stays on your profile.`
+        : `${esc(phase.text)} · ${esc(season.rule)} ${phase.key === "upcoming" ? "Have a look at what counts." : "Pick a challenge to see what to start with."}`}</p>
+      <span class="season-ghost" aria-hidden="true">${season.mk === "ghost" ? ghostMark(2, "#8FD3FF") : placeMark({ mk:season.mk, tone:season.tone })}</span>
     </div>${cards}
     <div class="card"><div class="h"><span>Night Owl</span></div>
       <p class="sub" id="seasonRank" style="margin-top:0">${phase.key === "upcoming" ? "The top 10% mark opens with the season. Log at least three qualifying titles to be eligible." : "Checking the current top 10%…"}</p></div>`;
   $$('[data-season-challenge]', out).forEach(row => row.onclick = () => openSeasonChallenge(season.challenges.find(c => c.id === row.dataset.seasonChallenge)));
+  if (ended && ended !== season) fillSeasonRecap(ended);
+  paintPickPosters(season, out);
   if (phase.key !== "upcoming") { const rank = await seasonRank(season), box = $("#seasonRank"); if (box) box.innerHTML = rank.people
-    ? (rank.inTop ? "You are currently in the top 10% of active participants. Keep it through the end of October to earn the mark." : `Top 10% of ${rank.people} active participants. Log at least three qualifying titles; the current line is ${rank.cut} unique title${rank.cut===1?"":"s"}.`)
+    ? (rank.inTop ? `You are currently in the top 10% of active participants. Keep it until ${when(season.ends)} to earn the mark.` : `Top 10% of ${rank.people} active participants. Log at least three qualifying titles; the current line is ${rank.cut} unique title${rank.cut===1?"":"s"}.`)
     : "Be among the first to log a qualifying title. The top 10% mark starts once the season has participants."; }
   revealIn(out);
 }
