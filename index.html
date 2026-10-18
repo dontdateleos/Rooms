@@ -1454,6 +1454,12 @@ html.storying{overflow:hidden}
 @keyframes barUp{from{transform:scaleY(0)}}
 .st-share{display:flex;flex-direction:column;gap:10px;margin-top:10px}
 .st-room{display:flex;flex-direction:column;gap:10px}
+/* where each of you has it, on the room's order */
+.rpos{display:flex;flex-wrap:wrap;gap:4px 8px;margin-top:3px}
+.rpos>span{display:flex;align-items:center;gap:2px;font-size:11px;font-weight:800;color:var(--mute)}
+.rpos .av{width:auto!important;height:auto!important;margin:0!important;display:inline-flex}
+.rpos .av svg{width:16px;height:16px}
+.rpos>span{background:var(--cream2);border-radius:999px;padding:2px 7px 2px 3px}
 /* your people on a title */
 .card.fr{padding:6px 14px}
 .frrow{display:flex;align-items:center;gap:10px;width:100%;border:0;background:none;color:var(--ink);font:inherit;text-align:left;padding:9px 0;cursor:pointer;min-height:44px}
@@ -5577,7 +5583,7 @@ const rankRowHTML = (r, i, showMove) => { const logo = logoCache[r.w.id];
   return `<div class="archcard" data-work="${id}" style="${cover ? "" : `background:${bg}`}">
     ${cover ? `<div class="bg" style="background-image:url('${esc(blurSrc(cover))}')"></div><div class="scrim"></div>` : ""}
     ${unplaced ? "" : `<span class="rk">${pos+1}</span>`}
-    ${!showMove ? "" : unplaced
+    ${!showMove ? "" : unplaced && onlyMine(r.w.id) ? `<div class="rkmove"><span class="tag dim">just me · not ranked</span></div>` : unplaced
       ? `<div class="rkmove"><button class="rkplace" data-rkplace="${id}" data-rkkind="${kind}">Place it</button></div>`
       : `<div class="rkmove"><button class="rkplace" data-rkagain="${id}" data-rkkind="${kind}">Re-place</button>
       <button data-rkup="${id}" data-rkkind="${kind}" ${pos===0?"disabled":""} aria-label="Move up">\u2191</button>
@@ -6850,7 +6856,7 @@ async function ensureMyRank(kind) {
   if (!t.items.length) {
     /* a show you only ever ticked episodes of has no entry of its own, but it stands in
        the archive all the same, at the average of what you gave its seasons */
-    const seed = myEntries.filter(e => kindOf(e.work_id) === kind).map(e => ({ id:e.work_id, score:e.score, on:String(e.rated_on) }));
+    const seed = myEntries.filter(e => kindOf(e.work_id) === kind && !onlyMine(e.work_id)).map(e => ({ id:e.work_id, score:e.score, on:String(e.rated_on) }));
     if (kind === "tv") for (const [sid, d, last] of showsFromParts()) seed.push({ id:sid, score:d.score, on:String(last?.rated_on || "") });
     seed.sort((a,b) => b.score - a.score || b.on.localeCompare(a.on));
     const seen = new Set(), items = [];
@@ -6910,7 +6916,12 @@ const scoreOf = id => { const e = myEntries.find(x => x.work_id === id);
 /* a handful of "which beats which" taps place it exactly, in about log2(n) questions
    instead of one per existing thing. `again` is placing something already in the list:
    backing out then leaves it where it was rather than dropping it to the bottom. */
+/* Ranked lists are read by your rooms (that's how the room's order works), so something
+   you only ever logged as "just me" stays out of yours — otherwise its title would show
+   up there even though the entry itself never does. */
+const onlyMine = id => { const es = myEntries.filter(e => e.work_id === id); return es.length > 0 && es.every(e => e.private); };
 async function rankInsert(kind, workId, again = false, ask = askRank) {
+  if (onlyMine(workId)) return null;
   const t = await ensureMyRank(kind);
   rankListId[kind] = t.id;
   const was = t.items.indexOf(workId);
@@ -7039,14 +7050,19 @@ async function paintRankMeet(R) {
       if (!forA.length || !forB.length) continue;
       const score = Math.abs(forA.length - forB.length) * 10 - (forA.length + forB.length);
       if (!duel || score < duel.score) duel = { k, a, b, forA, forB, score }; } }
-  await fillWorks([...top.map(l => l.w), ...orders.flatMap(([, o]) => o.slice(0, 5).map(x => x.id)), ...(duel ? [duel.a, duel.b] : [])]);
+  await fillWorks([...top.map(l => l.w), ...orders.flatMap(([, o]) => o.slice(0, 30).map(x => x.id)), ...(duel ? [duel.a, duel.b] : [])]);
   if ($("#rankMeet") !== el) return;
   const who = ns => ns.length === 1 ? esc(ns[0]) : ns.slice(0, -1).map(esc).join(", ") + " and " + esc(ns[ns.length - 1]);
-  const orderCard = k => { const o = (orders.find(([kk]) => kk === k) || [, []])[1];
-    return `<div class="card" id="roomOrder"><div class="h"><span>The room's order</span><span class="tag dim">everyone's lists</span></div>
+  /* the room's top ten, and where each of you has it — the order is everybody's, so the
+     row says whose lists it came from rather than a bare "3 of you" */
+  const orderCard = (k, open = false) => { const o = (orders.find(([kk]) => kk === k) || [, []])[1];
+    const pos = id => R.members.map(m => { const L = all[m.id]?.[k] || []; const i = L.indexOf(id); return i < 0 ? null : { m, i }; }).filter(Boolean).sort((a, b) => a.i - b.i);
+    return `<div class="card" id="roomOrder"><div class="h"><span>${esc(R.name)}'s top ${Math.min(open ? o.length : 10, o.length)}</span><span class="tag dim">everyone's lists</span></div>
       ${orders.length > 1 ? `<div class="chips" style="margin-top:8px">${orders.map(([kk]) => `<button class="chip ${kk === k ? "on" : ""}" data-rok="${kk}">${K(kk).plural}</button>`).join("")}</div>` : ""}
-      ${o.slice(0, 5).map((x, i) => { const w = works[x.id] || {};
-        return `<div class="row" data-rmw="${esc(x.id)}"><span class="rk">${i + 1}</span>${cover(w)}<div class="t"><b>${esc(w.title || "")}</b><small>${x.n} of you ranked it</small></div></div>`; }).join("")}</div>`; };
+      ${o.slice(0, open ? 30 : 10).map((x, i) => { const w = works[x.id] || {};
+        return `<div class="row" data-rmw="${esc(x.id)}"><span class="rk">${i + 1}</span>${cover(w)}<div class="t"><b>${esc(w.title || "")}</b><span class="rpos">${pos(x.id).map(({ m, i:j }) => `<span title="${esc(m.id === me.id ? "you" : m.handle)}: #${j + 1}">${avatar(m)}<b>#${j + 1}</b></span>`).join("")}</span></div></div>`; }).join("")}
+      ${!open && o.length > 10 ? `<div class="stack" style="margin-top:6px"><button class="btn quiet" data-roall="${k}">See all ${Math.min(30, o.length)}</button></div>` : ""}
+      <p class="sub" style="margin-top:8px;font-size:12px">Folded together from everyone's ranked lists — only what at least two of you have ranked. Sharpen yours in the archive and this moves.</p></div>`; };
   el.innerHTML = (top.length ? `<div class="card"><div class="h"><span>Where your orders meet</span><span class="tag dim">from everyone's ranked lists</span></div>
     ${top.map(l => { const w = works[l.w] || {};
       return `<div class="row" data-rmw="${esc(l.w)}">${cover(w)}<div class="t"><b>${esc(w.title || "")}</b><small>${esc(l.text)}</small></div></div>`; }).join("")}</div>` : "")
@@ -7057,7 +7073,8 @@ async function paintRankMeet(R) {
     + (orders.length ? orderCard(orders[0][0]) : "");
   const wireRows = root => $$("[data-rmw]", root).forEach(x => x.onclick = () => openWork(x.dataset.rmw));
   const wireOrder = () => { wireRows($("#roomOrder"));
-    $$("[data-rok]", el).forEach(b => b.onclick = () => { $("#roomOrder").outerHTML = orderCard(b.dataset.rok); wireOrder(); }); };
+    $$("[data-rok]", el).forEach(b => b.onclick = () => { $("#roomOrder").outerHTML = orderCard(b.dataset.rok); wireOrder(); });
+    $$("[data-roall]", el).forEach(b => b.onclick = () => { $("#roomOrder").outerHTML = orderCard(b.dataset.roall, true); wireOrder(); }); };
   wireRows(el); wireOrder();
   $$("[data-settle]", el).forEach(b => b.onclick = async () => {
     const pick = b.dataset.settle, other = pick === duel.a ? duel.b : duel.a, k = duel.k;
@@ -9543,6 +9560,7 @@ function openLog(w, edit = null, preset = 0) { const cfg = K(w.kind); const love
       const coverAt = $("#sheetBody .head .co")?.getBoundingClientRect();
       let placed = null;
       if (firstTime) { try { placed = await rankInsert(w.kind, w.id, false, askInSheet); } catch {} }
+      if (onlyMine(w.id)) rankRemove(w.kind, w.id);          /* made private after it was ranked */
       if (!edit?.id) { if (coverAt) flyTo({ getBoundingClientRect:() => coverAt }, $('nav button[data-tab="library"]'), w.cover);
         if (offShelf) tickAway(w.id); }
       closeSheet(); refresh();
