@@ -1492,6 +1492,10 @@ html.storying{overflow:hidden}
 .askacts .btn{margin:0;flex:1}
 .askopen{display:flex;align-items:center;gap:10px;width:100%;border:1.5px dashed var(--line);background:none;color:var(--mute);border-radius:16px;padding:12px 14px;margin:12px 0 4px;font:inherit;font-size:13px;font-weight:700;text-align:left;cursor:pointer;min-height:48px}
 .askopen .hrt{width:20px;height:20px;flex:none}
+/* where a watch-night option streams */
+.nprov{display:flex;align-items:center;gap:3px;margin-top:2px;flex-wrap:wrap}
+.nprov img{width:18px;height:18px;border-radius:5px}
+.nprov em{font-style:normal;font-size:10px;font-weight:800;color:var(--good);margin-left:2px}
 /* the match */
 .matchfx{position:fixed;inset:0;z-index:200;display:grid;place-items:center;background:rgba(14,12,20,.86);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);cursor:pointer}
 .mf-in{display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;color:#F4EDE2;padding:24px}
@@ -1520,6 +1524,7 @@ html.storying{overflow:hidden}
 .swmeta{position:absolute;left:0;right:0;bottom:0;padding:40px 16px 14px;background:linear-gradient(transparent,rgba(10,8,16,.85));color:#fff;display:flex;flex-direction:column;gap:3px}
 .swmeta b{font-family:var(--head);font-weight:900;font-size:22px;line-height:1.1}
 .swmeta small{font-size:12px;font-weight:700;opacity:.9}
+.swsvc{color:#9EF0C9}
 .swstamp{position:absolute;top:18px;padding:4px 10px;border:3px solid;border-radius:10px;font:900 22px var(--head);letter-spacing:.06em;pointer-events:none}
 .swstamp.y{left:16px;color:#7CE0A3;opacity:var(--y);transform:rotate(-12deg)}
 .swstamp.n{right:16px;color:#FF7B7B;opacity:var(--n);transform:rotate(12deg)}
@@ -1950,6 +1955,13 @@ const watchCache = {};
 const REGION = () => { const pick = [P.region, ...(navigator.language || "").split("-").slice(1)]
     .map(x => String(x || "").toUpperCase()).find(x => /^[A-Z]{2}$/.test(x));
   return pick || "AU"; };
+/* the services people actually pay for, by the name JustWatch gives them (matched loosely,
+   since "Disney Plus" and "Disney+" are the same thing to anyone holding a remote) */
+const SERVICES = [["netflix","Netflix"],["disney","Disney+"],["prime","Prime Video"],["apple","Apple TV+"],["max","Max"],["paramount","Paramount+"],
+  ["hulu","Hulu"],["peacock","Peacock"],["stan","Stan"],["binge","Binge"],["now","NOW"],["iplayer","BBC iPlayer"],["crave","Crave"],["mubi","MUBI"],["criterion","Criterion"]];
+const svcKey = name => { const n = lc(name || "").replace(/[^a-z0-9]/g, "");
+  return SERVICES.find(([k]) => k === "prime" ? /amazonprime|primevideo/.test(n) : k === "max" ? /^(hbo)?max/.test(n) : k === "now" ? /^now(tv)?$/.test(n) : n.includes(k))?.[0] || null; };
+const onMine = got => (got?.free || []).filter(p => (P.services || []).includes(svcKey(p.name)));
 async function watchOn(w) {
   if (w.kind !== "film" && w.kind !== "tv") return null;
   const region = REGION(), key = w.id + "|" + region;
@@ -7430,7 +7442,9 @@ async function openSwipe(R, g, again) {
     box.innerHTML = deck.slice(i, i + 2).reverse().map((w, j, a) => `<div class="swc ${j === a.length - 1 ? "top" : ""}" data-sw="${esc(w.id)}">${cover(w)}
       <div class="swmeta"><b>${esc(w.title)}</b><small>${tag(w.kind)} ${esc(w.year || "")}${w.length ? ` · ${w.length}${K(w.kind).unit}` : ""}${st.yes(w.id) ? ` · ${st.yes(w.id)} yes so far` : ""}</small></div>
       <span class="swstamp y">YES</span><span class="swstamp n">NOPE</span></div>`).join("");
-    drag($(".swc.top", box)); };
+    drag($(".swc.top", box));
+    const tw = deck[i]; watchOn(tw).then(got => { const m = onMine(got), meta = $(`.swc.top[data-sw="${CSS.escape(tw.id)}"] .swmeta small`, box);
+      if (m.length && meta) meta.insertAdjacentHTML("beforeend", ` · <b class="swsvc">on ${esc(m[0].name)}</b>`); }).catch(() => {}); };
   const decide = async yes => { const w = deck[i]; if (!w) return; const card = $(".swc.top");
     if (card) { card.classList.add(yes ? "goy" : "gon"); }
     i++; setTimeout(paint, REDUCED ? 0 : 220);
@@ -7490,7 +7504,16 @@ async function fillNightScores(R, n, g) {
       + (!done.length ? "" : `<div class="nwho">${R.members.map(m => { const e = by[m.id]; return `<span class="${e ? "" : "dim"}">${avatar(m)}${e ? stars(e.score, "sm") : "<em>not yet</em>"}</span>`; }).join("")}</div>`)
       + (!by[me.id] ? `<button class="btn soft" id="nightLog" style="margin-top:10px">Log it</button>` : "");
     const nl = $("#nightLog"); if (nl) nl.onclick = () => works[win] && openLog(works[win]); } catch { box.innerHTML = `<p class="sub">Couldn't gather the scores.</p>`; } }
+function paintNightProviders(el) {
+  $$("[data-nv]", el).forEach(async b => { const w = works[b.dataset.nv]; if (!w || $(".nprov", b)) return;
+    const got = await watchOn(w).catch(() => null); if (!got || !b.isConnected) return;
+    const list = got.free.length ? got.free : [], mine = onMine(got);
+    if (!list.length) return;
+    const tag = document.createElement("span"); tag.className = "nprov" + (mine.length ? " mine" : "");
+    tag.innerHTML = list.slice(0, 3).map(p => p.logo ? `<img src="${esc(p.logo)}" alt="${esc(p.name)}" title="${esc(p.name)}" loading="lazy">` : "").join("") + (mine.length ? `<em>on yours</em>` : "");
+    b.appendChild(tag); }); }
 function wireNights(R, el, night, past, again, g) {
+  paintNightProviders(el);
   $$("[data-nv]", el).forEach(b => b.onclick = async () => { b.disabled = true;
     try { await q(sb.from("room_votes").upsert({ room_id:R.id, game:"night:" + night.id, voter:me.id, choice:b.dataset.nv }));
       lastVote = { sel:`[data-nv="${CSS.escape(b.dataset.nv)}"]` }; } catch (e) { oops(e, "Couldn't vote"); } again(); });
@@ -9872,6 +9895,8 @@ async function openYou() { let top = { items:[] }; try { top = await ensureMyTop
     <div class="lbl">Where you are · decides what's streaming</div>
     <input id="region" maxlength="2" autocapitalize="characters" autocomplete="country"
       placeholder="${esc(REGION())}" value="${esc(P.region || "")}" style="text-transform:uppercase">
+    <div class="lbl">What you subscribe to</div><div class="chips" id="svcPick">${SERVICES.map(([k, l]) => `<button class="chip ${(P.services || []).includes(k) ? "on" : ""}" data-svc="${k}">${l}</button>`).join("")}</div>
+    <p class="sub" style="margin-top:4px">Watch nights and swipes mark the options you can already watch.</p>
     ${/* Each source sets terms for showing its data, and these are them: TMDB wants its
           approved logo and that exact sentence in the app's credits; JustWatch's streaming
           data must be credited to JustWatch; IGDB asks for a visible, permanent credit; Open
@@ -9993,6 +10018,8 @@ async function openYou() { let top = { items:[] }; try { top = await ensureMyTop
       $("#newPw").value = ""; $("#pwMsg").textContent = "Saved. That's your password on this email now."; }
     catch (e) { $("#pwMsg").textContent = e.message; }
     finally { sp.disabled = false; } };
+  $$("[data-svc]").forEach(b => b.onclick = () => { const k = b.dataset.svc, on = new Set(P.services || []);
+    on.has(k) ? on.delete(k) : on.add(k); P.services = [...on]; saveP(); b.classList.toggle("on", on.has(k)); });
   const rg = $("#region"); if (rg) rg.onchange = e => {
     const v = e.target.value.trim().toUpperCase();
     P.region = /^[A-Z]{2}$/.test(v) ? v : "";        /* anything else means "work it out" */
