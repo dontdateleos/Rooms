@@ -1383,6 +1383,22 @@ nav button .dot{position:absolute;top:-2px;right:0;min-width:16px;height:16px;bo
   cursor:pointer;white-space:nowrap;animation:updIn .5s cubic-bezier(.2,1.3,.4,1) both}
 .updbar b{font-family:var(--head);font-weight:800}
 .pick-posters{display:flex;gap:6px;margin:8px 0 2px;min-height:0}
+.tonight{display:flex;align-items:center;gap:8px;margin-top:12px;padding:6px;border-radius:16px;background:var(--cream2)}
+.tn-main{flex:1;min-width:0;display:flex;align-items:center;gap:10px;border:0;background:none;padding:0;color:var(--ink);text-align:left;cursor:pointer}
+.tn-main .co{width:30px;height:44px;border-radius:6px;object-fit:cover;flex:none}
+.tn-main span{display:flex;flex-direction:column;min-width:0}
+.tn-main small{font-size:11px;font-weight:700;color:var(--mute)}
+.tn-main b{font-family:var(--head);font-weight:800;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tn-log{flex:none;border:0;border-radius:999px;padding:9px 14px;background:var(--ink);color:var(--cream);font-family:var(--head);font-weight:800;font-size:12.5px;cursor:pointer}
+.tn-spin{flex:none;width:38px;height:38px;border:0;border-radius:50%;background:var(--butter);display:grid;place-items:center;cursor:pointer}
+.tn-spin svg{width:20px;height:20px;fill:none;stroke:var(--onAccent);stroke-width:1.8}
+.tn-spin svg circle{fill:var(--onAccent);stroke:none}
+.shelfsearch{display:flex;gap:8px;align-items:center;margin-top:12px}
+.shelfsearch input{flex:1;min-width:0;margin:0}
+.shelfsearch .chip.filt{margin:0;flex:none}
+/* the library's Shelf/Archive switch: a small one, so it doesn't compete with the pager under it */
+.libbar .seg{width:max-content;margin:4px auto 2px;padding:3px;gap:0}
+.libbar .seg button{flex:none;padding:6px 16px;font-size:12px}
 .pick-posters img{width:34px;height:50px;border-radius:6px;object-fit:cover;background:var(--line)}
 .pick-posters span{font-size:11px;font-weight:700;color:var(--mute);background:var(--cream2);border-radius:999px;padding:3px 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:110px}
 .season-recap .recap-rows{display:flex;flex-direction:column;gap:6px}
@@ -4166,21 +4182,20 @@ function weekCard() {
    to the shelf. What you're in the middle of, the next thing on your shelf, the season if
    one is running, and the wheel. Nothing on the shelf and nothing on the go, and the card
    doesn't appear — an empty prompt on the home screen is just the app wanting something. */
+/* One line, not a card: the room is what this page is about, so "what next for you" gets
+   a strip under its name rather than the first screen. The thing you're on (or the next
+   thing on your shelf), one tap to log it, and the wheel. The season lives on its own tab. */
 function tonightCard() {
   const L = activeList(), n = myNow.find(x => x.works || works[x.work_id]);
   const nw = n && (n.works || works[n.work_id]);
   const next = (L ? L.items : []).map(id => works[id])
     .find(w => w && !logged(w.id) && !isSoon(w) && !nowOf(w.id));
-  if (!nw && !next) return "";
-  let season = "";
-  try { const S = currentSeason(), ph = seasonPhase(S);
-    if (ph.key === "live") { const got = S.challenges.reduce((t, c) => t + seasonEntries(c).length, 0);
-      season = `<button class="chip" id="tonightSeason">${esc(S.name)} · ${got ? `${got} logged` : "log one to start"}</button>`; } } catch {}
-  const row = (w, sub) => `<div class="row" data-w="${esc(w.id)}">${cover(w)}<div class="t"><b>${esc(w.title)}</b><small>${tag(w.kind)} ${sub}</small></div></div>`;
-  return `<div class="card look" id="tonight"><div class="h"><span>Tonight</span>${season}</div>
-    ${nw ? row(nw, nowLine(n)) : ""}${next ? row(next, nw ? "next on your shelf" : "up next on your shelf") : ""}
-    <div class="stack" style="flex-direction:row"><button class="btn soft" id="tonightSpin">Can't decide?</button>${
-      next ? `<button class="btn ghost" id="tonightLog" data-log="${esc(next.id)}">${K(next.kind).verb.replace(/^./, c => c.toUpperCase())} it</button>` : ""}</div></div>`; }
+  const w = nw || next; if (!w) return "";
+  const verb = K(w.kind).verb.replace(/^./, c => c.toUpperCase());
+  return `<div class="tonight" id="tonight">
+    <button class="tn-main" data-w="${esc(w.id)}">${cover(w)}<span><small>${nw ? "Tonight · you're on" : "Tonight · next on your shelf"}</small><b>${esc(w.title)}</b></span></button>
+    <button class="tn-log" id="tonightLog" data-log="${esc(w.id)}">${nw ? "Done it" : `${verb} it`}</button>
+    <button class="tn-spin" id="tonightSpin" aria-label="Can't decide? Spin the wheel"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="4"/><circle cx="9" cy="9" r="1.4"/><circle cx="15" cy="15" r="1.4"/><circle cx="15" cy="9" r="1.4"/><circle cx="9" cy="15" r="1.4"/></svg></button></div>`; }
 function wireTonight() { const c = $("#tonight"); if (!c) return;
   $$("[data-w]", c).forEach(x => x.onclick = () => openWork(x.dataset.w));
   const sp = $("#tonightSpin"); if (sp) sp.onclick = () => openWheel();
@@ -4285,6 +4300,9 @@ const PLACE_MARKS = {
   game: c => `<circle cx="24" cy="70" r="16" fill="${avShade(c, -.2)}"/><circle cx="76" cy="70" r="16" fill="${avShade(c, -.2)}"/><rect x="8" y="32" width="84" height="44" rx="22" fill="${c}"/>
     <path d="M30 32h40a22 22 0 0 1 22 22H8a22 22 0 0 1 22-22z" fill="${avShade(c, .3)}"/><path d="M22 48v12M16 54h12" stroke="#151320" stroke-width="4" stroke-linecap="round"/><circle cx="78" cy="52" r="3.5" fill="#151320"/>${MK_EYES(43, 44, 55, 43, 18)}`,
   ghost: c => `<path d="M18 46a32 32 0 0 1 64 0v30q-8 10-16 0t-16 0t-16 0t-16 0z" fill="${c}"/><path d="M50 14a32 32 0 0 1 32 32H18a32 32 0 0 1 32-32z" fill="${avShade(c, .25)}"/><path d="M82 46v30q-8 10-16 0V46a14 14 0 0 0-8-13 32 32 0 0 1 24 13z" fill="${avShade(c, -.18)}"/>${MK_EYES(40, 44, 55, 42)}`,
+  shelf: c => `<rect x="12" y="10" width="76" height="82" rx="14" fill="${c}"/><path d="M26 10h48a14 14 0 0 1 14 14H12a14 14 0 0 1 14-14z" fill="${avShade(c, .3)}"/>
+    <rect x="12" y="56" width="76" height="7" fill="${avShade(c, -.2)}"/><rect x="22" y="66" width="9" height="20" rx="2" fill="${avShade(c, -.12)}"/><rect x="34" y="70" width="9" height="16" rx="2" fill="${avShade(c, .25)}"/>
+    <rect x="46" y="67" width="9" height="19" rx="2" fill="${avShade(c, -.25)}"/>${MK_EYES(40, 26, 54, 25, 18)}`,
   moon: c => `<path d="M62 10a40 40 0 1 0 28 64A34 34 0 0 1 62 10z" fill="${c}"/><path d="M62 10a40 40 0 0 0-50 32c10-14 30-22 50-18-4-6-4-10 0-14z" fill="${avShade(c, .3)}"/>
     <circle cx="74" cy="22" r="4" fill="${avShade(c, .35)}"/>${MK_EYES(19, 46, 31, 44, 18)}`,
   clubs: c => `<rect x="6" y="40" width="26" height="46" rx="13" fill="${avShade(c, -.2)}"/><rect x="68" y="36" width="26" height="50" rx="13" fill="${avShade(c, -.2)}"/><g fill="#151320" opacity=".75"><rect x="13" y="56" width="4" height="10" rx="2"/><rect x="21" y="55" width="4" height="11" rx="2"/><rect x="75" y="52" width="4" height="10" rx="2"/><rect x="83" y="51" width="4" height="11" rx="2"/></g>
@@ -5216,11 +5234,10 @@ function shelfFilterSheet(counts, soonCount, nowCount) {
     ...(nowCount ? [["now", `In the middle of · ${nowCount}`]] : []),
     ...(soonCount ? [["soon", `Coming · ${soonCount}`]] : [])];
   return `<h3>Filter the shelf</h3>
-    <div class="lbl">Medium</div>
-    <div class="chips">${kindOpts.map(([k, l]) => `<button class="chip ${P.shelfFilter===k?"on":""}" data-kf="${k}">${l}</button>`).join("")}</div>
-    ${soonCount || nowCount ? `<div class="lbl" style="margin-top:14px">When</div>
-    <div class="chips">${whenOpts.map(([k, l]) => `<button class="chip ${(P.when||"")===k?"on":""}" data-wf="${k}">${l}</button>`).join("")}</div>` : ""}`;
+    <p class="sub">Move along the top to pick a medium. This is for when.</p>
+    <div class="chips" style="margin-top:12px">${whenOpts.map(([k, l]) => `<button class="chip ${(P.when||"")===k?"on":""}" data-wf="${k}">${l}</button>`).join("")}</div>`;
 }
+let shelfTurn = 0;
 function renderShelf() {
   const L = activeList();
   /* The shelf holds what you mean to get to; what you're in the middle of belongs with it
@@ -5245,10 +5262,13 @@ function renderShelf() {
       : `<button class="btn soft" id="spinOpen">${left.length >= 2
           ? `Can't decide? ${left.length} to pick from` : "Can't decide? Spin the best of something"}</button>`}</div>
     <div id="resultArea"></div>`;
-  $("#shelfBody").innerHTML = `<h2>Your <span class="hl" style="background:var(--mint)">shelf</span></h2><p class="sub">${all.length ? `${left.length} to go${done ? ` · ${done} done` : ""}${soonCount ? ` · ${soonCount} coming` : ""}` : "Everything you meant to get to."}</p>
-    <input id="search" type="search" placeholder="Search film, TV, books, games" autocomplete="off" style="margin-top:12px">
-    <div class="chips shelfchips">${Object.keys(KINDS).map(k => `<button class="chip k ${P.kinds.includes(k)?"on":""}" data-sk="${k}">${K(k).label}</button>`).join("")}${all.length ? `<button class="chip filt ${P.shelfFilter || P.when ? "on" : ""}" id="shelfFilterBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"/></svg>Filter${
-        (P.shelfFilter?1:0)+(P.when?1:0) ? ` · ${(P.shelfFilter?1:0)+(P.when?1:0)}` : ""}</button>` : ""}</div>
+  if (P.shelfFilter && !counts[P.shelfFilter]) P.shelfFilter = "";
+  const kindsHere = Object.keys(KINDS).filter(k => counts[k]);
+  const places = [place("", "Your shelf", "mint", "shelf"), ...(kindsHere.length > 1 ? kindsHere.map(k => place(k, K(k).plural, KIND_TONE[k], k)) : [])];
+  const scope = P.kinds.length === 4 ? "everything" : P.kinds.map(k => K(k).plural.toLowerCase()).join(", ");
+  $("#shelfBody").innerHTML = `${pagerHTML(places, P.shelfFilter || "", { id:"shelfPager" })}<p class="sub" style="text-align:center">${all.length ? `${left.length} to go${done ? ` · ${done} done` : ""}${soonCount ? ` · ${soonCount} coming` : ""}` : "Everything you meant to get to."}</p>
+    <div class="shelfsearch"><input id="search" type="search" placeholder="Search ${esc(scope)}" autocomplete="off">${all.length ? `<button class="chip filt ${P.when ? "on" : ""}" id="shelfFilterBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"/></svg>${
+        P.when ? ({ out:"Out now", now:"On it", soon:"Coming" }[P.when] || "Filter") : "Filter"}</button>` : ""}</div>
     <div class="msg" id="msg"></div><div id="results"></div>
     ${all.length ? `${pickBar}
       <div class="grid" id="shelfGrid">${rows.map(w => { const soon = isSoon(w), n = nowOf(w.id);
@@ -5271,6 +5291,9 @@ function renderShelf() {
   $$("[data-sk]").forEach(b => b.onclick = () => { const k = b.dataset.sk; if (P.kinds.includes(k)) { if (P.kinds.length > 1) P.kinds = P.kinds.filter(x => x !== k); } else P.kinds = [...P.kinds, k]; saveP(); renderShelf(); });
   const sf = $("#shelfFocus"); if (sf) sf.onclick = () => $("#search")?.focus();
   $$("[data-kt]").forEach(b => b.onclick = () => { P.kinds = [b.dataset.kt]; saveP(); renderShelf(); $("#search")?.focus(); });
+  /* moving along the shelf narrows it to a medium, and search narrows with it */
+  wirePager($("#shelfPager"), places, P.shelfFilter || "", (k, d) => { P.shelfFilter = k; P.kinds = k ? [k] : Object.keys(KINDS); saveP(); shelfTurn = d; renderShelf(); });
+  pagerArrive(shelfTurn, $("#shelfPager"), $("#shelfGrid")); shelfTurn = 0;
   const ffb = $("#shelfFilterBtn"); if (ffb) ffb.onclick = () => {
     openSheet(shelfFilterSheet(counts, soonCount, nowCount));
     $$("[data-kf]").forEach(b => b.onclick = () => { P.shelfFilter = b.dataset.kf; saveP(); closeSheet(); renderShelf(); });
@@ -6905,7 +6928,7 @@ async function renderTaste() { const body = $("#tasteBody"); const t = tasteOf(m
     <button class="iconbtn cog" id="tasteCog" aria-label="Settings">${COG}</button></div>
     ${myEntries.length ? `<button class="card tastemini" id="tasteMore" aria-label="See your whole taste">${tasteMiniHTML(t)}</button>
     <div id="podium"></div>
-    <div class="card" id="recCard"><div class="h"><span>For tonight</span><span class="tag dim">from what you loved</span></div><div id="recBody">${skeleton(1)}</div></div>
+    <div class="card" id="recCard"><div class="h"><span>You might like</span><span class="tag dim">from what you loved</span></div><div id="recBody">${skeleton(1)}</div></div>
     <button class="linkrow" id="tasteAll"><span>Your ten, the charts, your year and more</span><b>›</b></button>`
     : blank("var(--butter)","1","Nothing logged yet","Start with the last thing you finished. Thirty seconds, and your taste starts building.",[["tasteAdd","Log something"]])}`;
   const ta = $("#tasteAdd"); if (ta) ta.onclick = openAdd;
@@ -7784,7 +7807,7 @@ function openSeasonChallenge(challenge) {
     <div class="lbl">Start here</div><div class="season-picks">${picks.map(([kind,title], i) => `<button class="row" type="button" data-season-pick="${esc(title)}" data-season-kind="${kind}"><span class="rk">${i+1}</span><div class="t"><b>${esc(title)}</b><small>${tag(kind)} · horror pick</small></div><span class="chip">Find</span></button>`).join("")}</div>
     <div class="stack"><button class="btn quiet" id="seasonClose">Back</button></div>`);
   $("#seasonClose").onclick = closeSheet;
-  $$('[data-season-pick]').forEach(row => row.onclick = () => { P.kinds = [row.dataset.seasonKind]; saveP(); closeSheet(); switchTab("shelf"); setTimeout(() => { const search = $("#search"); if (!search) return; search.value = row.dataset.seasonPick; search.dispatchEvent(new Event("input", { bubbles:true })); search.focus(); }, 100); });
+  $$('[data-season-pick]').forEach(row => row.onclick = () => { P.kinds = [row.dataset.seasonKind]; P.shelfFilter = row.dataset.seasonKind; saveP(); closeSheet(); switchTab("shelf"); setTimeout(() => { const search = $("#search"); if (!search) return; search.value = row.dataset.seasonPick; search.dispatchEvent(new Event("input", { bubbles:true })); search.focus(); }, 100); });
 }
 function seasonPhase(season = currentSeason()) {
   const d = today();
