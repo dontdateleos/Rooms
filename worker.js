@@ -168,7 +168,7 @@ function withCors(res, cors) {
 /* ---------- invites with a name on them ----------
    A chat app shows whatever the page at a link says about itself, and it never runs the
    app's code — so a link straight to the app shows "Rooms" and nothing else. This page
-   says which room, then forwards the person to the app with the code. */
+   says which room (from peek_room, the same look the sign-in screen gets), then forwards the person to the app with the code. */
 const SUPABASE_URL = "https://caaxycmobhssxclrakim.supabase.co";
 const SUPABASE_ANON = "sb_publishable_zvZhatlvUg6F_CDzTmxX9A_Vlv0n3PX";   /* the public key, same as the app's */
 const escHTML = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" })[c]);
@@ -180,12 +180,13 @@ async function invitePage(request, url, env) {
   const path = ("/" + rest.join("/").replace(/[^A-Za-z0-9._\/-]/g, "")).replace(/\/{2,}/g, "/");
   const to = `${home}${path}#join=${clean}`;
   let room = null;
-  if (request.method !== "HEAD" && clean !== "PING") try { const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/room_preview`, { method:"POST",
+  if (request.method !== "HEAD" && clean !== "PING") try { const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/peek_room`, { method:"POST",
       headers:{ "Content-Type":"application/json", apikey:env.SUPABASE_ANON || SUPABASE_ANON, Authorization:`Bearer ${env.SUPABASE_ANON || SUPABASE_ANON}` },
       body:JSON.stringify({ p_code:clean }) });
     if (r.ok) room = (await r.json())[0] || null; } catch {}
   const title = room ? `Come into ${room.name}` : "You're invited to a room";
-  const desc = room ? `${room.members} ${room.members === 1 ? "person" : "friends"} logging what they watch, read and play. Tap to come in.`
+  const names = room ? (room.handles || []).slice(0, 3) : [];
+  const desc = room ? `${names.length ? names.join(", ") + (room.members > names.length ? ` and ${room.members - names.length} more` : "") + (room.members === 1 ? " is" : " are") + " in here" : "A small room"}, logging what they watch, read and play. Tap to come in.`
     : "A small room of friends logging what they watch, read and play. Tap to come in.";
   const img = `${home}${path.replace(/[^/]*$/, "")}icons/og.png`;
   const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -193,9 +194,9 @@ async function invitePage(request, url, env) {
 <meta property="og:type" content="website"><meta property="og:site_name" content="Rooms">
 <meta property="og:title" content="${escHTML(title)}"><meta property="og:description" content="${escHTML(desc)}">
 <meta property="og:image" content="${escHTML(img)}"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
-<meta name="twitter:card" content="summary_large_image"><meta name="theme-color" content="${escHTML(room?.colour || "#16131C")}">
+<meta name="twitter:card" content="summary_large_image"><meta name="theme-color" content="#16131C">
 <meta http-equiv="refresh" content="0;url=${escHTML(to)}">
-<style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#16131C;color:#F4EDE2;font:600 16px system-ui,sans-serif;text-align:center;padding:24px}a{color:${escHTML(room?.colour || "#FFE066")}}</style>
+<style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#16131C;color:#F4EDE2;font:600 16px system-ui,sans-serif;text-align:center;padding:24px}a{color:#FFE066}</style>
 </head><body><p>${escHTML(title)}…<br><a href="${escHTML(to)}">Open Rooms</a></p>
 <script>location.replace(${JSON.stringify(to).replace(/</g, "\\u003c")})</script></body></html>`;
   /* a public page, so anyone may look — the app checks it's there before using it */

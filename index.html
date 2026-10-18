@@ -93,6 +93,7 @@ header .wrap{display:flex;align-items:center;justify-content:space-between;heigh
 .logo .mark{width:30px;height:30px;display:block;flex:none}
 .logo .mark .eyes{transform-box:fill-box;transform-origin:50% 50%;animation:avBlink 7.2s ease-in-out infinite;animation-delay:3s}
 @media (prefers-reduced-motion:reduce){.logo .mark .eyes{animation:none}}
+.me[hidden]{display:none!important}
 .me{font-family:var(--head);font-weight:800;font-size:13px;background:var(--card);border:0;padding:8px 12px;border-radius:999px;cursor:pointer;color:var(--ink);display:flex;align-items:center;gap:8px;transition:background .2s,color .2s}
 /* Taste is behind your name now, so your name is lit while you're on it, as a tab would be */
 .me.on{background:var(--ink);color:var(--cream)}
@@ -125,12 +126,12 @@ header .wrap{display:flex;align-items:center;justify-content:space-between;heigh
 /* the bell. A count of things that happened TO you — not a count of things to read,
    which is what the Rooms tab already says. Those are different feelings and they were
    sharing one number. */
-.bell{position:relative;width:38px;height:38px;border-radius:50%;border:0;background:var(--card);color:var(--ink);cursor:pointer;
+.bell{position:relative;width:42px;height:42px;border-radius:50%;border:0;background:var(--card);color:var(--ink);cursor:pointer;
   display:none;place-items:center;padding:0;transition:transform .18s cubic-bezier(.3,1.4,.5,1)}
 .bell:not([hidden]){display:grid}
 .bell svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
 .bell:active{transform:scale(.92)}
-.find{width:38px;height:38px;border-radius:50%;border:0;background:var(--card);color:var(--ink);cursor:pointer;
+.find{width:42px;height:42px;border-radius:50%;border:0;background:var(--card);color:var(--ink);cursor:pointer;
   display:none;place-items:center;padding:0;transition:transform .18s cubic-bezier(.3,1.4,.5,1)}
 .find:not([hidden]){display:grid}
 .find svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
@@ -293,6 +294,15 @@ html,body,header,nav{transition:background-color 90s linear,border-color 90s lin
 .booting>*{animation:bootIn .46s cubic-bezier(.16,1,.3,1) both}
 @keyframes bootIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
 .likes:empty{display:none}
+.thread{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.thread:empty{display:none}
+.thread .rep{display:flex;gap:8px;align-items:flex-start}
+.thread .rep .av svg{width:22px;height:22px}
+.thread .rep p{margin:0;font-size:13.5px;line-height:1.4;background:var(--cream2);padding:7px 11px;border-radius:4px 14px 14px 14px;min-width:0;overflow-wrap:anywhere}
+.thread .rep.mine{cursor:pointer}
+.thread .rep b{font-family:var(--head);font-weight:800;margin-right:3px}
+.thread .more{align-self:flex-start;margin:0}
+.replyin{align-self:stretch;text-align:left;border:1px solid var(--line);background:none;color:var(--mute);border-radius:999px;padding:10px 14px;font:inherit;font-size:13px;font-weight:600;cursor:pointer;min-height:40px}
 /* the two fields almost nobody needs, folded away rather than deleted */
 .fold{margin-top:18px;border-top:1px solid var(--line);padding-top:6px}
 .fold>summary{list-style:none;cursor:pointer;font-weight:700;font-size:11px;letter-spacing:.06em;
@@ -462,7 +472,7 @@ button:focus-visible,.linky:focus-visible{outline:3px solid var(--blue);outline-
 /* the sections stay in reach however far down the talk you are */
 .secbar{position:sticky;top:calc(env(safe-area-inset-top) + 44px);z-index:4;margin:10px -18px 0;padding:8px 18px;background:var(--veil);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
 .tfilters{display:flex;gap:2px}
-.tfilters button{border:0;background:none;font:inherit;font-family:var(--head);font-weight:800;font-size:12px;color:var(--mute);padding:4px 8px;border-radius:999px;cursor:pointer}
+.tfilters button{border:0;background:none;font:inherit;font-family:var(--head);font-weight:800;font-size:12.5px;color:var(--mute);padding:10px 10px;min-height:38px;border-radius:999px;cursor:pointer}
 .tfilters button.on{color:var(--ink);background:var(--cream2)}
 .linkrow{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;margin-top:12px;padding:14px 16px;border:0;border-radius:16px;background:var(--cream2);color:var(--ink);font-family:var(--head);font-weight:800;font-size:14px;text-align:left;cursor:pointer}
 .linkrow b{font-size:20px;line-height:1;color:var(--mute)}
@@ -760,6 +770,7 @@ header:has(#meBtn:not([hidden])) .logoword{display:none}
 .tick{width:22px;height:22px;border-radius:999px;border:2px solid var(--line);background:none;flex:none;
   cursor:pointer;display:grid;place-items:center;padding:0;transition:background .18s,border-color .18s}
 .tick.on{background:var(--mint);border-color:var(--mint)}
+.tick{position:relative}.tick::after{content:"";position:absolute;inset:-11px}    /* a 44px target round a 22px mark */
 .tick svg{width:12px;height:12px;opacity:0;transition:opacity .18s;stroke:var(--onAccent);stroke-width:3.4;fill:none;stroke-linecap:round;stroke-linejoin:round}
 .tick.on svg{opacity:1}
 /* the one genuinely finished moment on an episode row got a flat fade while a star
@@ -953,7 +964,7 @@ nav .in:has(.navpill.set) button.on{background:none}
 .tally b{color:var(--ink);font-family:var(--head);font-weight:900;font-size:15px;margin-right:3px}
 
 /* rating */
-.rate{display:flex;gap:6px;padding:8px 0 2px;touch-action:none}
+.rate{display:flex;width:max-content;gap:6px;padding:8px 0 2px;touch-action:none}
 .rate button{width:44px;height:44px;background:none;border:0;padding:0;cursor:pointer;-webkit-user-select:none;user-select:none;transition:transform .12s}
 .rate button svg{width:44px;height:44px;display:block;pointer-events:none}
 .rate.holding button{transform:scale(1.1)}
@@ -1431,6 +1442,14 @@ html.storying{overflow:hidden}
 @keyframes barUp{from{transform:scaleY(0)}}
 .st-share{display:flex;flex-direction:column;gap:10px;margin-top:10px}
 .st-room{display:flex;flex-direction:column;gap:10px}
+/* your people on a title */
+.card.fr{padding:6px 14px}
+.frrow{display:flex;align-items:center;gap:10px;width:100%;border:0;background:none;color:var(--ink);font:inherit;text-align:left;padding:9px 0;cursor:pointer;min-height:44px}
+.frrow+.frrow{border-top:1px solid var(--line)}
+.frrow .av svg{width:28px;height:28px}
+.frrow .t{flex:1;min-width:0;display:flex;flex-direction:column}
+.frrow b{font-family:var(--head);font-weight:800;font-size:14px}
+.frrow small{font-size:12.5px;color:var(--mute);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 /* notifications */
 .pushrow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0}
 .pushrow b{display:block;font-family:var(--head);font-weight:800;font-size:15px}
@@ -2478,7 +2497,7 @@ async function fillWorks(ids) { const need = [...new Set(ids)].filter(id => id &
   if (!need.length) return;
   try { (await q(sb.from("works").select("*").in("id", need))).forEach(remember); } catch {} }
 const logged = id => loggedIds.has(id);
-const ENTRY_SEL = "id,user_id,work_id,rated_on,score,note,loved,breakdown,context,created_at,room_only,profiles!entries_user_id_fkey(id,handle,bio,avatar),works(*),reactions(user_id)";
+const ENTRY_SEL = "id,user_id,work_id,rated_on,score,note,loved,breakdown,context,created_at,room_only,profiles!entries_user_id_fkey(id,handle,bio,avatar),works(*),reactions(user_id),replies(id,user_id,body,created_at,profiles(id,handle,avatar))";
 
 async function loadLists() { const rows = await q(sb.from("lists").select("id,name,created_at,list_items(work_id,added_at,position,works(*))").order("created_at"));
   /* a hand-placed item keeps its slot; anything never dragged falls in behind, oldest first */
@@ -3610,6 +3629,7 @@ function wireNotes(ns) {
     const n = by[x.dataset.note]; if (!n) return;
     closeSheet();
     if (n.kind === "game") { P.activeRoom = n.room.id; P.feed = "room"; P.feedPicked = true; P.roomSec = "play"; saveP();
+      gameFocus = /:[bc]:/.test(n.id) ? "The bracket" : /:n:/.test(n.id) ? "Watch night" : /:[rva]:/.test(n.id) ? "prompt" : null;
       switchTab("doors"); renderDoors(); return; }
     if (n.kind === "follow") return openProfile(n.p.id);
     const w = n.hand?.work_id || n.entry?.work_id;
@@ -4043,6 +4063,7 @@ function renderAuth() {
   const invited = takeInvite();
   b.innerHTML = `<h1>Every room<br>you’ve <span>been in.</span></h1>
     <p class="say">You used to be able to stand in someone’s front room and know them. The shelves told you. Nothing tells you now. <b>This does.</b></p>
+    <p class="note">A small private room for you and your friends: log the films, shows, books and games you finish, see what they made of them, and settle the arguments. <a href="?demo">Look around a demo first</a>.</p>
     ${invited ? `<p class="note" id="invNote"><b>Someone’s put you on the list.</b> Make an account and you'll go straight into their room — the invite waits for you.</p>` : ""}
     <div class="lbl">Email</div><input id="email" type="email" inputmode="email" autocapitalize="none" autocorrect="off" placeholder="you@somewhere">
     <div class="lbl">Password</div><input id="pw" type="password" autocomplete="current-password" placeholder="at least eight characters">
@@ -4793,17 +4814,30 @@ async function findPeople(v) {
     .map(r => ({ r, score:handleMatch(r.handle, t) })).filter(x => Number.isFinite(x.score))
     .sort((a,b) => a.score - b.score || a.r.handle.localeCompare(b.r.handle)).slice(0,20).map(x => x.r);
 }
+/* titles first: anything the app already knows about — your log, your shelf, what the
+   rooms have been logging — with what you and they made of it, one tap from its page.
+   And a way out to the full search when it isn't anywhere yet. */
+function findWorksInto(box, v) { if (!box) return;
+  const t = lc(v); if (t.length < 2) { box.innerHTML = ""; return; }
+  const onShelf = new Set(lists.flatMap(l => l.items));
+  const hits = Object.values(works).filter(w => w?.title && !w.parent_id && lc(w.title).includes(t))
+    .map(w => ({ w, mine:myEntries.find(e => e.work_id === w.id), shelf:onShelf.has(w.id) }))
+    .sort((a, b) => (!!b.mine - !!a.mine) || (b.shelf - a.shelf) || (lc(a.w.title).indexOf(t) - lc(b.w.title).indexOf(t)) || a.w.title.length - b.w.title.length).slice(0, 6);
+  box.innerHTML = (hits.length ? `<div class="lbl">Titles</div>` + hits.map(({ w, mine, shelf }) => `<div class="row" data-fw="${esc(w.id)}" style="cursor:pointer">${cover(w)}<div class="t"><b>${esc(w.title)}</b><small>${tag(w.kind)} ${esc(w.year || "")}${mine ? " · you logged it" : shelf ? " · on your shelf" : ""}</small></div>${mine ? stars(mine.score, "sm") : ""}</div>`).join("") : "")
+    + `<button class="btn ghost" id="findWeb" style="margin-top:8px">Search everywhere for “${esc(v)}”</button>${hits.length ? "" : ""}<div class="lbl">People</div>`;
+  $$("[data-fw]", box).forEach(r => r.onclick = () => openWork(r.dataset.fw));
+  $("#findWeb").onclick = () => { closeSheet(); setTimeout(() => { openAdd(); const a = $("#aSearch"); if (a) { a.value = v; a.dispatchEvent(new Event("input")); } }, 380); }; }
 function openFind() {
-  openSheet(`<h3>Find someone</h3><p class="sub">By handle. Everyone in Rooms is findable —
-      what they've logged still follows the same rules it always did.</p>
-    <div class="searchline"><input id="findQ" type="search" placeholder="handle" autocapitalize="none" autocorrect="off"><button type="button" class="btn ghost clearsearch" id="findClear">Clear</button></div>
-    <p class="msg" id="findMsg"></p><div id="findRes"></div>
+  openSheet(`<h3>Find</h3><p class="sub">Something you or your rooms have logged or shelved, or a person by their handle.</p>
+    <div class="searchline"><input id="findQ" type="search" placeholder="A title, or a handle" autocapitalize="none" autocorrect="off"><button type="button" class="btn ghost clearsearch" id="findClear">Clear</button></div>
+    <div id="findWorks"></div><p class="msg" id="findMsg"></p><div id="findRes"></div>
     <div class="stack"><button class="btn quiet" id="findClose">Not now</button></div>`);
   $("#findClose").onclick = closeSheet;
   $("#findClear").onclick = () => { $("#findQ").value = ""; $("#findRes").innerHTML = ""; $("#findMsg").textContent = ""; $("#findQ").focus(); };
   setTimeout(() => $("#findQ")?.focus(), 350);
   $("#findQ").oninput = e => { clearTimeout(findT); const v = e.target.value.trim().replace(/^@/, "");
     const res = $("#findRes"), msg = $("#findMsg");
+    findWorksInto($("#findWorks"), v);
     if (v.length < 2) { res.innerHTML = ""; msg.textContent = ""; return; }
     msg.textContent = "Looking";
     findT = setTimeout(async () => {
@@ -4873,9 +4907,18 @@ function slipHTML(e, opts = {}) { const w = remember(e.works) || works[e.work_id
     ${e.note?`<div class="q${String(e.note).length > 210 ? " clip" : ""}">“${noteHTML(e.note)}”</div>${String(e.note).length > 210 ? `<button class="more" data-more="${e.id}">More</button>` : ""}`:""}
     ${(() => { const t = together(e); return t ? `<div class="loved" style="margin-top:10px"><span class="together">◆ ${t}</span></div>` : ""; })()}
     ${e.loved?.length?`<div class="loved">${e.loved.slice(0,4).map(k => `<span>${esc(k.startsWith("person:")?lc(k.slice(7)):k)}</span>`).join("")}</div>`:""}
-    <div class="foot"><div class="acts">${mine ? `<button class="chip" data-edit-review="${e.id}">Edit</button><button class="chip" data-delete-review="${e.id}">Delete</button>` : `<button data-like="${e.id}" class="lk ${same?"on":""}" aria-pressed="${same}" aria-label="${same ? "Liked — tap to take it back" : "Like this"}">${heartSVG(same)}</button>`
+    <div class="foot"><div class="acts">${mine ? `<button class="chip" data-edit-review="${e.id}">Edit</button><button class="chip" data-delete-review="${e.id}">Delete</button>` : `<button data-like="${e.id}" class="lk ${same?"on":""}" aria-pressed="${same}" aria-label="${same ? "Liked — tap to take it back" : "Like this"}">${heartSVG(same)}</button><button data-reply="${e.id}" class="lk" aria-label="Reply">${BUBBLE}</button>`
       }${mine && e.room_only ? `<span class="tag dim">room only</span>` : ""}</div>${stars(e.score,"sm")}</div>
-    <div class="likes" data-likes="${e.id}">${(() => { const l = likeLine(e); return l ? `<span>${l}</span>` : ""; })()}</div></div>`; }
+    <div class="likes" data-likes="${e.id}">${(() => { const l = likeLine(e); return l ? `<span>${l}</span>` : ""; })()}</div>
+    <div class="thread" data-thread="${e.id}">${threadHTML(e)}</div></div>`; }
+/* Replies: the table has been there since the start and nothing ever showed one. The last
+   two sit under the card; the rest open on a tap. Yours can be taken back with a tap. */
+function threadHTML(e, all = false) { const rs = (e.replies || []).slice().sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)));
+  const shown = all ? rs : rs.slice(-2);
+  return (rs.length > shown.length ? `<button class="more" data-allreplies="${e.id}">See all ${rs.length} replies</button>` : "")
+    + shown.map(r => `<div class="rep ${r.user_id === me.id ? "mine" : ""}" ${r.user_id === me.id ? `data-unreply="${esc(r.id)}" data-of="${e.id}"` : ""}>${avatar(r.profiles || { id:r.user_id })}<p><b>${esc(r.user_id === me.id ? "you" : r.profiles?.handle || "someone")}</b> ${noteHTML(r.body)}</p></div>`).join("")
+    + (rs.length ? `<button class="replyin" data-reply="${e.id}">Reply</button>` : ""); }
+const BUBBLE = `<svg viewBox="0 0 24 24" aria-hidden="true" class="hrt"><path d="M4 5.5h16a1.5 1.5 0 0 1 1.5 1.5v9a1.5 1.5 0 0 1-1.5 1.5H10l-4.5 3.5V17.5H4A1.5 1.5 0 0 1 2.5 16V7A1.5 1.5 0 0 1 4 5.5z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>`;
 function logLineHTML(es) { const e = es[0], mine = e.user_id === me.id;
   const ws = es.map(x => remember(x.works) || works[x.work_id] || {});
   const verbs = [...new Set(ws.map(w => K(w.kind || "film").verb))];
@@ -4883,11 +4926,31 @@ function logLineHTML(es) { const e = es[0], mine = e.user_id === me.id;
   const list = names.length < 3 ? names.join(" and ") : names.slice(0, -1).join(", ") + " and " + names[names.length - 1];
   return `<div class="logline"><div class="ll-who">${avatar(e.profiles)}<p><b data-prof="${esc(e.user_id)}">${esc(mine ? "you" : e.profiles?.handle || "someone")}</b> ${verbs.length === 1 ? verbs[0] : "logged"} ${list}<small> · ${when(e.rated_on)}</small></p></div>
     <div class="ll-row">${es.map((x, i) => `<button class="ll-w" data-entry="${esc(x.id)}">${cover(ws[i])}${stars(x.score, "sm")}</button>`).join("")}</div></div>`; }
+function wireThreads(el, by) {
+  const paint = (e, all) => { const t = $(`[data-thread="${CSS.escape(e.id)}"]`, el); if (!t) return; t.innerHTML = threadHTML(e, all); wireOne(t, all); };
+  const wireOne = (root, all) => {
+    $$("[data-allreplies]", root).forEach(b => b.onclick = ev => { ev.stopPropagation(); const e = by[b.dataset.allreplies]; if (e) paint(e, true); });
+    $$("[data-reply]", root).forEach(b => b.onclick = async ev => { ev.stopPropagation(); const e = by[b.dataset.reply]; if (!e) return;
+      const body = (await askText({ title:e.user_id === me.id ? "Add to what you said" : `Reply to ${e.profiles?.handle || "them"}`,
+        sub:`About ${esc(works[e.work_id]?.title || e.works?.title || "this")}. Wrap a spoiler in ||two bars||.`, placeholder:"Say something back", ok:"Send", max:600 }) || "").trim();
+      if (!body) return;
+      if (willNotPost(body)) { say("That word doesn't go up here. Say it another way."); return; }
+      try { const r = await q(sb.from("replies").insert({ entry_id:e.id, user_id:me.id, body }).select().single());
+        e.replies = [...(e.replies || []), { ...r, profiles:{ id:me.id, handle:me.handle, avatar:me.avatar } }]; paint(e, all);
+        if (e.user_id !== me.id) notify({ to:e.user_id, title:`${me.handle} replied`, body:noteText(body).slice(0, 140), tag:"reply-" + e.id }); }
+      catch (err) { oops(err, "Couldn't send that"); } });
+    $$("[data-unreply]", root).forEach(b => b.onclick = async ev => { ev.stopPropagation(); const e = by[b.dataset.of]; if (!e) return;
+      if (!await askYesNo({ title:"Take your reply back?", ok:"Take it back", bad:true })) return;
+      try { await q(sb.from("replies").delete().eq("id", b.dataset.unreply)); e.replies = (e.replies || []).filter(r => r.id !== b.dataset.unreply); paint(e, all); }
+      catch (err) { oops(err, "Couldn't take it back"); } }); };
+  /* the bubble in the card's foot opens the same thing as the Reply under a thread */
+  wireOne(el, false); }
 function wireSlips(el, es) { const by = Object.fromEntries(es.map(e => [e.id, e]));
   $$("[data-entry]", el).forEach(b => b.onclick = () => { const e = by[b.dataset.entry]; if (e) openEntry(e); });
   $$("[data-edit-review]", el).forEach(b => b.onclick = () => { const e = by[b.dataset.editReview];
     if (e?.user_id === me.id) openLog(works[e.work_id] || e.works, e); });
   $$("[data-delete-review]", el).forEach(b => b.onclick = () => deleteReview(by[b.dataset.deleteReview]));
+  wireThreads(el, by);
   $$("[data-more]", el).forEach(b => b.onclick = ev => { ev.stopPropagation();
     const qd = b.previousElementSibling; qd.classList.toggle("clip"); b.textContent = qd.classList.contains("clip") ? "More" : "Less"; });
   $$("[data-work]", el).forEach(x => x.onclick = () => openWork(x.dataset.work));
@@ -6440,7 +6503,7 @@ async function doSearch(term, onPick, resEl, msgEl, box, acts = null) { msgEl.te
   const byThem = person ? person.rows.filter(r => !hits.some(h => h.id === r.id)) : [];
   msgEl.textContent = (hits.length || byThem.length) ? errs.join(" · ") : "";
   if (!hits.length && !byThem.length) { resEl.innerHTML = errs.length
-    ? blank("var(--pink)","!","Can't search that", errs.join(" · ") + ". Check your key or the worker under your name → Edit.", [])
+    ? blank("var(--pink)","!","Can't search that", errs.join(" · ") + ". It's usually the connection — try again in a moment.", [])
     : blank("var(--cream2)","?", `Nothing for “${esc(term)}”`, `Try fewer words, or turn on another medium above. Some things simply aren't in TMDB, Open Library or IGDB.`, []);
     return; } window.__hits = Object.assign(window.__hits||{}, Object.fromEntries([...hits, ...byThem].map(h => [h.id, h])));
   const inner = h => `${cover(h)}<div class="t"><b>${esc(h.title)}</b><small>${tag(h.kind)} ${isSoon(h)?`Coming ${when(h.release)}`:esc(h.year||"")}${h.creator?" · "+esc(h.creator):""}</small></div>`;
@@ -6719,7 +6782,7 @@ const unrankIfGone = id => { if (!inArchive(id)) rankRemove(kindOf(id), id); };
 const vsHTML = (a, b, again, o = {}) => `<h3>Which do you like more?</h3>
   <p class="sub">${o.sub ? esc(o.sub) : `Placing <b>${esc(a.title)}</b> among your ${inWords(a.kind)}.`}</p>
   <div class="vs">${[a, b].map((w, i) => `<button class="vsit" data-vs="${i}">${cover(w)}<b>${esc(w.title)}</b><small>${tag(w.kind)} ${esc(w.year||"")}</small></button>`).join("")}</div>
-  <div class="stack"><button class="btn quiet" id="vsSkip">${o.skip || (again ? "Leave it where it was" : "Just put it last")}</button></div>`;
+  <div class="stack"><button class="btn quiet" id="vsSkip">${o.skip || (again ? "Leave it where it was" : "Skip · place it by my rating")}</button></div>`;
 function askRank(a, b, again = false, o = {}) {
   return openAsk(vsHTML(a, b, again, o), done => {
     $$("#askBox [data-vs]").forEach(r => r.onclick = () => done(r.dataset.vs === "0"));
@@ -6763,14 +6826,20 @@ async function rankInsert(kind, workId, again = false, ask = askRank) {
   let lo = 0, hi = items.length;
   let suggested = myScore == null ? null : items.findIndex(id => { const s = scoreOf(id); return s != null && s <= myScore; });
   if (suggested === -1) suggested = items.length - 1;
+  /* where the rating alone would put it — what skipping means, and where the questions
+     stop: three is enough to get close, and nobody logs something to sit an exam */
+  const byScore = myScore == null ? items.length : (i => i < 0 ? items.length : i)(items.findIndex(id => { const s = scoreOf(id); return s != null && s < myScore; }));
+  let asked = 0;
   while (lo < hi) {
+    if (!again && asked >= 3) { lo = hi = Math.max(lo, Math.min(hi, byScore)); break; }
+    asked++;
     const mid = suggested != null ? Math.max(lo, Math.min(hi - 1, suggested)) : (lo + hi) >> 1;
     suggested = null;
     const w = works[workId], other = works[items[mid]];
     if (!w || !other) break;
     const preferNew = await ask(w, other, again && was >= 0);
     if (preferNew === undefined) return null;
-    if (preferNew === null) { if (again && was >= 0) return null; lo = hi = items.length; break; }
+    if (preferNew === null) { if (again && was >= 0) return null; lo = hi = Math.max(lo, Math.min(hi, byScore)); break; }
     if (preferNew) hi = mid; else lo = mid + 1;
   }
   /* taken back (Undo, delete) while the questions were still on screen */
@@ -7130,11 +7199,11 @@ function nightHTML(R, n, g) {
   const ahead = lead.n && vs.filter(v => v.choice === lead.id).length > Math.max(0, ...n.options.filter(id => id !== lead.id).map(id => vs.filter(v => v.choice === id).length));
   const date = new Date(n.at + "T12:00:00").toLocaleDateString("en-GB", { day:"numeric", month:"short" });
   const by = n.created_by === me.id ? "you" : (R.members.find(m => m.id === n.created_by)?.handle || "someone");
-  return `<div class="card game nightcard"><div class="h"><span>Watch night</span><span class="tag">${esc(date)}</span></div>
+  return `<div class="card game nightcard"><div class="h"><span>Watch night</span><span class="tag dim">${esc(date)}</span></div>
     <div class="gprompt" style="font-size:22px">${esc(nightLabel(n.at))}: which one?</div>
     <div class="nopts">${n.options.map(id => { const w = works[id] || {}, c = vs.filter(v => v.choice === id).length;
       return `<button class="nopt ${mine === id ? "on" : ""} ${ahead && lead.id === id ? "lead" : ""}" data-nv="${esc(id)}">${cover(w)}<b>${esc(w.title || "")}</b><small>${c} ${c === 1 ? "vote" : "votes"}${mine === id ? " · yours" : ""}</small></button>`; }).join("")}</div>
-    <p class="sub gline">${vs.length} of ${R.members.length} voted · put to the room by ${esc(by)}${n.created_by === me.id ? ` · <button class="linkish" id="nightOff">call it off</button>` : ""}</p></div>`; }
+    <p class="sub gline">${mine ? "" : "<b>Tap one to vote.</b> "}${vs.length} of ${R.members.length} voted · put to the room by ${esc(by)}${n.created_by === me.id ? ` · <button class="linkish" id="nightOff">call it off</button>` : ""}</p></div>`; }
 function nightAfterHTML(R, n, g) {
   const lead = nightLeader(n, g), w = works[lead.id] || {};
   return `<div class="card game nightcard" data-night="${esc(n.id)}"><div class="h"><span>The room's verdict</span><span class="tag dim">${esc(nightLabel(n.at))}</span></div>
@@ -7201,7 +7270,7 @@ function openPlanNight(R, onDone) {
    Three moments are worth a little theatre, and each happens once per person: the
    names coming out on the prompt, a new round of the bracket opening, and the month's
    winner. The vote you just cast gets a smaller beat every time. */
-let lastVote = null;
+let lastVote = null, gameFocus = null;
 const gameSeen = (key, mark) => { const m = P.gameAnim || {}; if (mark) { P.gameAnim = Object.assign({}, m, { [key]:mark }); saveP(); } return m[key]; };
 function rollNum(el, to, delay = 0) {
   if (!el || REDUCED || to < 1) return;
@@ -7280,6 +7349,9 @@ async function paintGames(R, es) {
     catch (e) { oops(e, "Couldn't vote"); } again(); });
   $$("[data-gw]", el).forEach(x => x.onclick = () => openWork(x.dataset.gw));
   wireNights(R, el, night, past, again, g);
+  if (gameFocus) { const want = gameFocus; gameFocus = null;
+    const card = $$(".card.game", el).find(c => ($(".h span", c)?.textContent || "").toLowerCase().includes(want.toLowerCase()));
+    if (card) setTimeout(() => card.scrollIntoView({ block:"center", behavior:REDUCED ? "auto" : "smooth" }), 250); }
 }
 const fourHTML = items => `<div class="four">${[0,1,2,3].map(i => { const w = works[items[i]]; return w ? `<div class="po" data-work="${esc(w.id)}">${cover(w,"")}<b>${esc(w.title)}</b></div>` : `<div class="po" style="opacity:.4"></div>`; }).join("")}</div>`;
 let recs = null;
@@ -8490,6 +8562,7 @@ async function openWork(id) { let w = works[id]; if (!w) { try { const rows = aw
   const cfg = K(w.kind);
   openSheet(`<div class="head">${cover(w)}<div class="hh"><h3>${esc(w.title)}</h3><p class="sub">${tag(w.kind)} ${esc(w.year||"")}${w.creator?" · "+esc(w.creator):""}${w.length?` · ${w.length}${cfg.unit}`:""}</p></div></div>
     <div class="numbers" id="wNumbers"><div><b>—</b><span>You</span></div><div><b>—</b><span>Your room</span></div><div><b>—</b><span>Following</span></div><div><b>—</b><span>Everyone</span></div></div>
+    <div id="wFriends"></div>
     <p class="sumup mine" id="wAgain" hidden></p>
     ${w.kind === "film" || w.kind === "tv" ? `<div id="wWatch"></div>` : ""}
     <div class="card"><div class="h"><span>Everyone</span><span class="tag dim" id="wCount">—</span></div><div class="trio" id="wTrio"><div><b>—</b><span>Score</span></div><div><b>—</b><span>Logged it</span></div><div><b>—</b><span>Agree</span></div></div>
@@ -8505,7 +8578,7 @@ async function openWork(id) { let w = works[id]; if (!w) { try { const rows = aw
     <div class="card"><div class="h"><span>Details</span></div>${Object.entries(w.credits||{}).filter(([k,v]) => v).map(([r,n]) => `<div class="kv"><span>${r === "dp" ? "camerawork" : r}</span>${esc(n)}</div>`).join("")}${w.meta?.genres?.length?`<div class="kv"><span>genres</span>${esc(w.meta.genres.join(", "))}</div>`:""}</div>
     ${w.kind === "tv" && !isPart(w.id) ? `<details class="fold" id="wParts"><summary>Seasons and episodes</summary>
       <div id="wSeasons"><p class="empty" style="padding:12px 0">Looking</p></div></details>` : ""}
-    <div id="wEntries"></div><div class="stack"><button class="btn soft" id="wCard">Save the card</button><button class="btn quiet" id="wClose">Close</button></div>`);
+    <div id="wEntries"></div><div class="stack"><button class="btn soft" id="wCard">Share it</button><button class="btn quiet" id="wClose">Close</button></div>`);
   $("#wClose").onclick = closeSheet; $("#wLog").onclick = () => openLog(w); $("#wShelf").onclick = async () => { const b = $("#wShelf"); b.disabled = true;
     const on = activeList()?.items.includes(w.id);
     try { if (on) await removeFromShelf(w.id); else await addToShelf(w.id); } finally {
@@ -8607,6 +8680,13 @@ async function openWork(id) { let w = works[id]; if (!w) { try { const rows = aw
         ? "Ratings without tags. Log it and say what you loved — yours will be the first."
         : `Be the first. What you tap here becomes the vocabulary everyone else sees.`, [["wFirst", cfg.verb.replace(/^./,c=>c.toUpperCase()) + " it"]]);
   const others = es.filter(e => e.user_id !== me.id);
+  /* the people you actually know, first: everyone in your rooms and everyone you follow,
+     one line each with what they gave it and what they said — that's usually the question */
+  { const mine2 = new Set([...rooms.flatMap(r => r.members.map(m => m.id)), ...follows.map(f => f.followee)]); mine2.delete(me.id);
+    const best = {}; for (const e of others) if (mine2.has(e.user_id) && (!best[e.user_id] || e.rated_on > best[e.user_id].rated_on)) best[e.user_id] = e;
+    const fr = Object.values(best).sort((a, b) => b.score - a.score), box = $("#wFriends");
+    if (box && fr.length) { box.innerHTML = `<div class="lbl">Your people</div><div class="card fr">${fr.slice(0, 8).map(e => `<button class="frrow" data-fe="${esc(e.id)}">${avatar(e.profiles)}<span class="t"><b>${esc(e.profiles?.handle || "someone")}</b>${e.note ? `<small>“${esc(noteText(e.note).slice(0, 90))}${noteText(e.note).length > 90 ? "…" : ""}”</small>` : ""}</span>${stars(e.score, "sm")}</button>`).join("")}</div>`;
+      $$("[data-fe]", box).forEach(b => b.onclick = () => { const e = fr.find(x => x.id === b.dataset.fe); if (e) openEntry(e); }); } }
   const myTaste = tasteOf(myEntries);
   P.entrySort = P.entrySort || "popular";
   const paint = () => { const el = $("#wEntries"); if (!el) return;
@@ -8994,7 +9074,7 @@ function openLog(w, edit = null) { const cfg = K(w.kind); const loved = edit?.lo
     ${(() => { const n = !edit && nowOf(w.id); if (!n) return "";
       const d = dayNo(today()) - dayNo(n.started_on); if (!(d > 0)) return "";
       return `<div class="chips" style="margin-top:8px"><button class="chip" id="useStart" type="button">Started ${when(n.started_on)} \u00b7 ${waited(d)}</button></div>`; })()}<div class="lbl">Your rating</div><div id="rateWrap">${starRow()}</div><div class="ticks" id="tickRow"></div><div id="lovedWrap"></div>
-    <div class="lbl">Add a note</div><textarea id="wNote" placeholder="One line, if you want">${edit?.note?esc(edit.note):""}</textarea>
+    <div class="lbl">Add a note</div><textarea id="wNote" placeholder="One line, if you want">${edit?.note?esc(edit.note):esc((P.drafts || {})[w.id]?.note || "")}</textarea>
     <div class="spoilrow"><button type="button" class="chip" id="wSpoil">Hide a spoiler</button><small>Select the part that gives it away, or tap to hide the whole note.</small></div>
     ${/* room_only has been in the schema since v13 and nothing ever set it, so every
           entry anybody has ever written is public. Only worth offering when there is a
@@ -9002,10 +9082,15 @@ function openLog(w, edit = null) { const cfg = K(w.kind); const loved = edit?.lo
     ${isPart(w.id) ? `<p class="sub" style="margin-top:14px">Seasons and episodes live on the show's page. They never go in anybody's feed \u2014 only the show does.</p>` : ""}
     ${rooms.length && !isPart(w.id) ? `<div class="lbl">Who sees this</div><div class="seg" id="wWho">${
       [["all","Everyone"],["room","Just the room"]].map(([k,l]) =>
-        `<button data-who="${k}" class="${(edit ? (edit.room_only ? "room" : "all") : (P.postTo === "room" ? "room" : "all")) === k ? "on" : ""}">${l}</button>`).join("")}</div>
+        `<button data-who="${k}" class="${(edit ? (edit.room_only ? "room" : "all") : (P.postTo === "all" ? "all" : "room")) === k ? "on" : ""}">${l}</button>`).join("")}</div>
       <p class="sub" id="whoNote"></p>
       <p class="sub" style="margin-top:4px">Everyone means anybody with an account, not just people you know. Just the room means ${rooms.length === 1 ? esc(rooms[0].name) : "members of your rooms"} and nobody else.</p>` : ""}
-    <div class="stack"><button class="btn" id="wSave" ${edit?"":"disabled"}>${edit?"Save changes":"Save the entry"}</button><button class="btn quiet" id="wCancel">Not now</button></div><p class="msg" id="wMsg"></p>`);
+    <div class="stack"><button class="btn" id="wSave" ${edit?"":"disabled"}>${edit?"Save changes":"Rate it to save"}</button><button class="btn quiet" id="wCancel">Not now</button></div><p class="msg" id="wMsg"></p>`);
+  /* a note half-written when the phone rang is still there next time — kept a fortnight */
+  if (!edit) { let dt; $("#wNote").addEventListener("input", e => { clearTimeout(dt); dt = setTimeout(() => {
+      const d = P.drafts = Object.fromEntries(Object.entries(P.drafts || {}).filter(([, v]) => Date.now() - v.at < 14 * 864e5));
+      const v = e.target.value.trim(); if (v) d[w.id] = { note:e.target.value, at:Date.now() }; else delete d[w.id]; saveP(); }, 400); });
+    if ((P.drafts || {})[w.id]?.note) $("#wMsg").textContent = "Your note from last time is still here."; }
   const us = $("#useStart");
   if (us) us.onclick = () => { const n = nowOf(w.id); if (!n) return;
     $("#wDate").value = n.started_on; us.classList.add("on"); us.textContent = "Using that date"; us.disabled = true; };
@@ -9038,7 +9123,7 @@ function openLog(w, edit = null) { const cfg = K(w.kind); const loved = edit?.lo
       if ($("#lovedWrap")?.dataset.drawn) paintLoved(); }).catch(()=>{}); };
   /* remembered, and shown every time, because a sticky choice you cannot see is a
      choice that eventually surprises you */
-  let roomOnly = edit ? !!edit.room_only : P.postTo === "room";
+  let roomOnly = edit ? !!edit.room_only : (rooms.length > 0 && P.postTo !== "all");
   const paintWho = () => { const n = $("#whoNote"); if (!n) return;
     n.textContent = roomOnly
       ? `Only ${rooms.length === 1 ? esc(rooms[0].name) : "your rooms"} can see this one.`
@@ -9067,7 +9152,7 @@ function openLog(w, edit = null) { const cfg = K(w.kind); const loved = edit?.lo
     row.addEventListener("pointerup", () => { row.classList.remove("holding"); if (live === score) return;
       score = live; $("#rateWrap").innerHTML = starRow(); dragStars();
       $$("#rateWrap button").slice(0, Math.ceil(score/2)).forEach((sb2, n) => setTimeout(() => { sb2.classList.add("pop"); setTimeout(() => sb2.classList.remove("pop"), 340); }, n*45));
-      $("#wSave").disabled = false; if (navigator.vibrate) navigator.vibrate(8); drawLoved(); });
+      $("#wSave").disabled = false; if (!edit) $("#wSave").textContent = "Save the entry"; if (navigator.vibrate) navigator.vibrate(8); drawLoved(); });
     row.addEventListener("pointercancel", () => { row.classList.remove("holding"); paint(score); });
     row.addEventListener("contextmenu", e => e.preventDefault()); };
   dragStars(); drawLoved(); $("#wCancel").onclick = closeSheet;
@@ -9082,6 +9167,7 @@ function openLog(w, edit = null) { const cfg = K(w.kind); const loved = edit?.lo
     ta.focus(); say(whole && a === b ? "Not a spoiler any more" : "Hidden until someone taps it"); };
   $("#wSave").onclick = async () => { if (!score) return; const e = { user_id:me.id, work_id:w.id, rated_on:$("#wDate").value || today(), score, note:$("#wNote").value.trim() || null, loved:loved.length?loved.slice():null, context:Object.keys(ctx).length?ctx:null, breakdown:null, room_only:roomOnly };
     $("#wSave").disabled = true; try { await saveEntry(e, edit?.id); await loadMine();
+      if (P.drafts?.[w.id]) { delete P.drafts[w.id]; saveP(); }
       const offShelf = !edit?.id && dropFromShelf(w.id);
       /* you are not in the middle of something you have just finished */
       if (!edit?.id && nowOf(w.id)) stopNow(w.id);

@@ -1429,17 +1429,6 @@ revoke all on function push_gone(text) from public, anon;
 grant execute on function push_gone(text) to authenticated;
 
 -- ---------------------------------------------------------------------------
--- invite previews. A link pasted into a chat shows the room's name rather than a bare
--- address. Only what's on the invite anyway: the room's name, colour and how many are in.
-create or replace function room_preview(p_code text)
-returns table (name text, colour text, members int)
-language sql security definer stable set search_path = public as $$
-  select r.name, r.colour, (select count(*)::int from room_members m where m.room_id = r.id)
-  from rooms r where upper(r.code) = upper(p_code) limit 1;
-$$;
-grant execute on function room_preview(text) to anon, authenticated;
-
--- ---------------------------------------------------------------------------
 -- crash reports. When the app breaks on someone's phone it writes a line here, so it can
 -- be fixed before they mention it. Write-only: nobody can read these through the app —
 -- look at them in the Supabase dashboard (Table editor → client_errors).
