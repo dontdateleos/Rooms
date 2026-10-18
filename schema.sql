@@ -47,6 +47,8 @@ create table if not exists entries (
 create index if not exists entries_user_idx on entries (user_id, rated_on desc);
 create index if not exists entries_work_idx on entries (work_id);
 create index if not exists entries_loved_idx on entries using gin (loved);
+-- "just me": counts in your own stats and year, and nobody else ever sees it
+alter table entries add column if not exists private boolean not null default false;
 
 -- ---------- rooms ----------
 create table if not exists rooms (
@@ -253,6 +255,7 @@ language sql security definer stable set search_path = public as $$
   join works w on w.id = e.work_id
   where e.user_id in (select user_id from room_members where room_id = p_room)
     and p_room in (select my_room_ids())
+    and (not e.private or e.user_id = auth.uid())
   order by e.created_at desc
 $$;
 
@@ -731,21 +734,21 @@ grant execute on function apart_from(uuid) to authenticated;
 -- every door a person's writing comes through
 drop policy if exists entries_read on entries;
 create policy entries_read on entries for select to authenticated
-  using ((user_id = auth.uid() or (not room_only) or shares_room(user_id))
+  using ((user_id = auth.uid() or (not private and ((not room_only) or shares_room(user_id))))
     and not apart_from(user_id));
 
 drop policy if exists reactions_read on reactions;
 create policy reactions_read on reactions for select to authenticated
   using (not apart_from(reactions.user_id) and exists (
     select 1 from entries e where e.id = reactions.entry_id
-      and (e.user_id = auth.uid() or (not e.room_only) or shares_room(e.user_id))
+      and (e.user_id = auth.uid() or (not e.private and ((not e.room_only) or shares_room(e.user_id))))
       and not apart_from(e.user_id)));
 
 drop policy if exists replies_read on replies;
 create policy replies_read on replies for select to authenticated
   using (not apart_from(replies.user_id) and exists (
     select 1 from entries e where e.id = replies.entry_id
-      and (e.user_id = auth.uid() or (not e.room_only) or shares_room(e.user_id))
+      and (e.user_id = auth.uid() or (not e.private and ((not e.room_only) or shares_room(e.user_id))))
       and not apart_from(e.user_id)));
 
 drop policy if exists nows_read on nows;
@@ -936,7 +939,7 @@ language sql security definer stable set search_path = public as $$
   with latest as (
     select distinct on (e.user_id, e.work_id) e.user_id, e.work_id, e.score
       from entries e
-     where not e.part and not e.room_only
+     where not e.part and not e.room_only and not e.private
        and (p_since is null or e.rated_on >= p_since)
        and not apart_from(e.user_id)
      order by e.user_id, e.work_id, e.rated_on desc, e.created_at desc

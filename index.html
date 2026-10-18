@@ -2377,11 +2377,14 @@ function paintBehind() {
 }
 /* one entries query, with the whole/part filter wherever the column exists to filter on */
 async function wholeEntries(build) {
+  /* a "just me" entry is only ever yours to see, and the database keeps it from everyone
+     else; this keeps it out of the feeds and charts you see as well */
+  const mine = new Set(myEntries.filter(e => e.private).map(e => e.id)), keep = es => mine.size ? es.filter(e => !mine.has(e.id)) : es;
   if (!behind.has("v20")) {
-    try { return await q(build(true)); }
+    try { return keep(await q(build(true))); }
     catch (e) { if (!missingBit(e)) throw e; needs("v20", "parts are filtered on the device"); }
   }
-  return (await q(build(false))).filter(e => !isPart(e.work_id));
+  return keep((await q(build(false))).filter(e => !isPart(e.work_id)));
 }
 
 /* ---------- writes survive a dead connection ---------- */
@@ -4981,7 +4984,7 @@ function slipHTML(e, opts = {}) { const w = remember(e.works) || works[e.work_id
     ${(() => { const t = together(e); return t ? `<div class="loved" style="margin-top:10px"><span class="together">◆ ${t}</span></div>` : ""; })()}
     ${e.loved?.length?`<div class="loved">${e.loved.slice(0,4).map(k => `<span>${esc(k.startsWith("person:")?lc(k.slice(7)):k)}</span>`).join("")}</div>`:""}
     <div class="foot"><div class="acts">${mine ? `<button class="chip" data-edit-review="${e.id}">Edit</button><button class="chip" data-delete-review="${e.id}">Delete</button>` : `<button data-like="${e.id}" class="lk ${same?"on":""}" aria-pressed="${same}" aria-label="${same ? "Liked — tap to take it back" : "Like this"}">${heartSVG(same)}</button><button data-reply="${e.id}" class="lk" aria-label="Reply">${BUBBLE}</button>`
-      }${mine && e.room_only ? `<span class="tag dim">room only</span>` : ""}</div>${stars(e.score,"sm")}</div>
+      }${mine && e.private ? `<span class="tag dim">just me</span>` : mine && e.room_only ? `<span class="tag dim">room only</span>` : ""}</div>${stars(e.score,"sm")}</div>
     <div class="likes" data-likes="${e.id}">${(() => { const l = likeLine(e); return l ? `<span>${l}</span>` : ""; })()}</div>
     <div class="thread" data-thread="${e.id}">${threadHTML(e)}</div></div>`; }
 /* Replies: the table has been there since the start and nothing ever showed one. The last
@@ -9412,11 +9415,10 @@ function openLog(w, edit = null, preset = 0) { const cfg = K(w.kind); const love
           entry anybody has ever written is public. Only worth offering when there is a
           room to keep it in. */""}
     ${isPart(w.id) ? `<p class="sub" style="margin-top:14px">Seasons and episodes live on the show's page. They never go in anybody's feed \u2014 only the show does.</p>` : ""}
-    ${rooms.length && !isPart(w.id) ? `<div class="lbl">Who sees this</div><div class="seg" id="wWho">${
-      [["all","Everyone"],["room","Just the room"]].map(([k,l]) =>
-        `<button data-who="${k}" class="${(edit ? (edit.room_only ? "room" : "all") : (P.postTo === "all" ? "all" : "room")) === k ? "on" : ""}">${l}</button>`).join("")}</div>
-      <p class="sub" id="whoNote"></p>
-      <p class="sub" style="margin-top:4px">Everyone means anybody with an account, not just people you know. Just the room means ${rooms.length === 1 ? esc(rooms[0].name) : "members of your rooms"} and nobody else.</p>` : ""}
+    ${!isPart(w.id) ? `<div class="lbl">Who sees this</div><div class="seg" id="wWho">${
+      [["all","Everyone"], ...(rooms.length ? [["room","Just the room"]] : []), ["me","Just me"]].map(([k,l]) =>
+        `<button data-who="${k}">${l}</button>`).join("")}</div>
+      <p class="sub" id="whoNote"></p>` : ""}
     <div class="stack"><button class="btn" id="wSave" ${edit||preset?"":"disabled"}>${edit?"Save changes":preset?"Save the entry":"Rate it to save"}</button><button class="btn quiet" id="wCancel">Not now</button></div><p class="msg" id="wMsg"></p>`);
   /* a note half-written when the phone rang is still there next time — kept a fortnight */
   if (!edit) { let dt; $("#wNote").addEventListener("input", e => { clearTimeout(dt); dt = setTimeout(() => {
@@ -9455,14 +9457,19 @@ function openLog(w, edit = null, preset = 0) { const cfg = K(w.kind); const love
       if ($("#lovedWrap")?.dataset.drawn) paintLoved(); }).catch(()=>{}); };
   /* remembered, and shown every time, because a sticky choice you cannot see is a
      choice that eventually surprises you */
-  let roomOnly = edit ? !!edit.room_only : (rooms.length > 0 && P.postTo !== "all");
+  /* three ways: anyone, your rooms, or only you — "just me" still counts in your stats,
+     your archive and your year, and never appears to anybody else. Only the first two are
+     remembered as your usual; a private one is a choice you make each time. */
+  let who = edit ? (edit.private ? "me" : edit.room_only ? "room" : "all")
+    : P.postTo === "all" || !rooms.length ? "all" : "room";
+  let roomOnly = who !== "all";
   const paintWho = () => { const n = $("#whoNote"); if (!n) return;
-    n.textContent = roomOnly
-      ? `Only ${rooms.length === 1 ? esc(rooms[0].name) : "your rooms"} can see this one.`
-      : "Anyone in Rooms can find this, and anyone can like it.";
-    $$("[data-who]").forEach(b => b.classList.toggle("on", (b.dataset.who === "room") === roomOnly)); };
-  $$("[data-who]").forEach(b => b.onclick = () => { roomOnly = b.dataset.who === "room";
-    P.postTo = roomOnly ? "room" : "all"; saveP(); paintWho(); });
+    n.textContent = who === "me" ? "Only you. It counts in your stats and your year, and never shows to anybody — not even your rooms."
+      : who === "room" ? `Only ${rooms.length === 1 ? rooms[0].name : "your rooms"} can see this one.`
+      : "Anybody with an account can find this, not just people you know.";
+    $$("[data-who]").forEach(b => b.classList.toggle("on", b.dataset.who === who)); };
+  $$("[data-who]").forEach(b => b.onclick = () => { who = b.dataset.who; roomOnly = who !== "all";
+    if (who !== "me") { P.postTo = who; saveP(); } paintWho(); });
   paintWho();
   /* one gesture, not two fighting over the same pointer: press anywhere on the row and
      the nearest half-star fills live under your finger; drag to adjust; lift to commit.
@@ -9497,7 +9504,7 @@ function openLog(w, edit = null, preset = 0) { const cfg = K(w.kind); const love
     else { while (a < b && /\s/.test(v[a])) a++; while (b > a && /\s/.test(v[b - 1])) b--;
       ta.value = v.slice(0, a) + "||" + v.slice(a, b) + "||" + v.slice(b); }
     ta.focus(); say(whole && a === b ? "Not a spoiler any more" : "Hidden until someone taps it"); };
-  $("#wSave").onclick = async () => { if (!score) return; const e = { user_id:me.id, work_id:w.id, rated_on:$("#wDate").value || today(), score, note:$("#wNote").value.trim() || null, loved:loved.length?loved.slice():null, context:Object.keys(ctx).length?ctx:null, breakdown:null, room_only:roomOnly };
+  $("#wSave").onclick = async () => { if (!score) return; const e = { user_id:me.id, work_id:w.id, rated_on:$("#wDate").value || today(), score, note:$("#wNote").value.trim() || null, loved:loved.length?loved.slice():null, context:Object.keys(ctx).length?ctx:null, breakdown:null, room_only:roomOnly, ...(who === "me" || edit?.private ? { private:who === "me" } : {}) };
     $("#wSave").disabled = true; try { await saveEntry(e, edit?.id); await loadMine();
       if (P.drafts?.[w.id]) { delete P.drafts[w.id]; saveP(); }
       const offShelf = !edit?.id && dropFromShelf(w.id);
@@ -9525,7 +9532,7 @@ function openLog(w, edit = null, preset = 0) { const cfg = K(w.kind); const love
       if (saved.id) sayUndo(where, async () => {
         try { await q(sb.from("entries").delete().eq("id", saved.id)); await loadMine(); unrankIfGone(w.id); refresh();
           say("Taken back"); } catch (err) { oops(err, "Couldn't take that back"); } }, 6);
-    } catch (err) { $("#wMsg").textContent = err.message; $("#wSave").disabled = false; } }; }
+    } catch (err) { $("#wMsg").textContent = /private/.test(err.message) ? "“Just me” needs the latest database update — run schema.sql in Supabase once." : err.message; $("#wSave").disabled = false; } }; }
 
 /* ============ ENTRY PAGE ============ */
 /* ---------- reporting and blocking ----------
