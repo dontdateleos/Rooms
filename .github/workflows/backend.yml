@@ -1,0 +1,73 @@
+# Sets up the backend from GitHub, so nothing has to be run from a computer: the database
+# (schema.sql, which is safe to run again and again) and the Cloudflare worker, including
+# the notification keys the first time. It runs when either of them changes, or by hand
+# from the Actions tab ("Deploy the backend" → Run workflow).
+#
+# Once, in GitHub → the repo → Settings → Secrets and variables → Actions → New secret:
+#   SUPABASE_DB_URL        Supabase → Connect → "Session pooler" connection string, with
+#                          your database password in it (the pooler one: GitHub can't
+#                          reach the direct address)
+#   CLOUDFLARE_API_TOKEN   Cloudflare → My Profile → API Tokens → Create Token →
+#                          "Edit Cloudflare Workers" template
+#   SUPABASE_SERVICE_KEY   Supabase → Project Settings → API → service_role (secret)
+#   CONTACT                an email address for the app (Open Library and push services
+#                          ask for one)
+# Optional: CLOUDFLARE_ACCOUNT_ID (if your token can see more than one account) and ORIGIN
+# (only if it isn't set on the worker already). Anything not set is skipped, not failed.
+name: Deploy the backend
+on:
+  push:
+    branches: [main]
+    paths: [schema.sql, worker.js, wrangler.toml, tools/push-keys.mjs, .github/workflows/backend.yml]
+  workflow_dispatch:
+concurrency: backend
+jobs:
+  database:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run schema.sql on Supabase
+        env:
+          DB: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          if [ -z "$DB" ]; then echo "::notice::SUPABASE_DB_URL isn't set, so the database was left alone."; exit 0; fi
+          command -v psql >/dev/null || { sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client; }
+          # notices ("already exists, skipping") are expected on every run after the first
+          psql "$DB" -v ON_ERROR_STOP=1 -q -f schema.sql >/dev/null 2>/tmp/err || { grep -v NOTICE /tmp/err; exit 1; }
+          echo "::notice::schema.sql is up to date in Supabase."
+  worker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Deploy the worker and its secrets
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          CONTACT: ${{ secrets.CONTACT }}
+          ORIGIN_VALUE: ${{ secrets.ORIGIN }}
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then echo "::notice::CLOUDFLARE_API_TOKEN isn't set, so the worker was left alone."; exit 0; fi
+          [ -z "$CLOUDFLARE_ACCOUNT_ID" ] && unset CLOUDFLARE_ACCOUNT_ID
+          W="npx --yes wrangler@4"
+          $W deploy
+          have=$($W secret list --format json 2>/dev/null || echo "[]")
+          has() { echo "$have" | node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>{try{process.exit(JSON.parse(d).some(s=>s.name===process.argv[1])?0:1)}catch{process.exit(1)}})" "$1"; }
+          put() { printf '%s' "$2" | $W secret put "$1" >/dev/null && echo "set $1"; }
+          # the notification keys are made once and then kept: a new pair would quietly
+          # switch off every phone that had already said yes
+          if ! has VAPID_PUBLIC || ! has VAPID_PRIVATE; then
+            keys=$(node tools/push-keys.mjs --print)
+            put VAPID_PUBLIC "$(echo "$keys" | node -pe 'JSON.parse(require("fs").readFileSync(0)).VAPID_PUBLIC')"
+            put VAPID_PRIVATE "$(echo "$keys" | node -pe 'JSON.parse(require("fs").readFileSync(0)).VAPID_PRIVATE')"
+          fi
+          [ -n "$SERVICE_KEY" ] && put SUPABASE_SERVICE_KEY "$SERVICE_KEY"
+          [ -n "$CONTACT" ] && put CONTACT "$CONTACT"
+          [ -n "$ORIGIN_VALUE" ] && put ORIGIN "$ORIGIN_VALUE"
+          has ORIGIN || [ -n "$ORIGIN_VALUE" ] || echo "::warning::The worker has no ORIGIN yet — add an ORIGIN secret (https://dontdateleos.github.io) and run this again."
+          echo "::notice::The worker is deployed."

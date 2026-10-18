@@ -10,6 +10,8 @@ import { execSync } from "node:child_process";
 const b64u = b => Buffer.from(b).toString("base64url");
 const k = await c.subtle.generateKey({ name:"ECDSA", namedCurve:"P-256" }, true, ["sign"]);
 const pub = b64u(await c.subtle.exportKey("raw", k.publicKey)), priv = (await c.subtle.exportKey("jwk", k.privateKey)).d;
+/* the deploy workflow asks for the pair without setting them, and sets them itself */
+if (process.argv.includes("--print")) { console.log(JSON.stringify({ VAPID_PUBLIC:pub, VAPID_PRIVATE:priv })); process.exit(0); }
 for (const [name, value] of [["VAPID_PUBLIC", pub], ["VAPID_PRIVATE", priv]]) {
   try { execSync(`npx wrangler secret put ${name}`, { input:value, stdio:["pipe", "inherit", "inherit"] }); }
   catch { console.log(`\nCouldn't set ${name} automatically. Run \`wrangler secret put ${name}\` and paste:\n${value}\n`); } }

@@ -52,6 +52,21 @@ origin gets a 403 and never reaches TMDB or IGDB — so a stranger who finds the
 worker URL can't spend your API quota. Debugging with curl means naming an
 origin yourself: `curl -H "Origin: https://you.github.io" ...`.
 
+## Setting it all up from GitHub (no computer needed)
+
+`.github/workflows/backend.yml` runs `schema.sql` on Supabase and deploys the worker —
+making the notification keys the first time — whenever either changes, or by hand from
+the Actions tab. Add these once under Settings → Secrets and variables → Actions:
+
+| Secret | Where it comes from |
+|---|---|
+| `SUPABASE_DB_URL` | Supabase → Connect → Session pooler connection string, password filled in |
+| `CLOUDFLARE_API_TOKEN` | Cloudflare → My Profile → API Tokens → "Edit Cloudflare Workers" template |
+| `SUPABASE_SERVICE_KEY` | Supabase → Project Settings → API → service_role |
+| `CONTACT` | an email address for the app |
+
+Then Actions → Deploy the backend → Run workflow. Anything not set is skipped with a note.
+
 ## The backend, when you want rooms
 
 1. Make a Supabase project.
