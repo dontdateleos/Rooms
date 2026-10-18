@@ -9643,15 +9643,39 @@ function readImport(text) {
   const rows = parseCSV(text); if (rows.length < 2) return { kind:null, items:[] };
   const head = rows[0].map(h => lc(h.trim()));
   const col = (...names) => { for (const n of names) { const i = head.indexOf(n); if (i >= 0) return i; } return -1; };
-  const iTitle = col("name","title","game","book title"), iYear = col("year","original publication year","first published"),
-        iRating = col("rating","my rating","score"), iDate = col("date","date read","watched date","date added"), iAuthor = col("author","director","developer");
+  const iTitle = col("name","title","game","book title","movie_name","movie name","series_name","series name","tv_show_name","show_name","show name","show","series","movie"), iYear = col("year","original publication year","first published"),
+        iRating = col("rating","my rating","score"), iDate = col("date","date read","watched date","date added","watched_at","created_at","updated_at"), iAuthor = col("author","director","developer");
   if (iTitle < 0) return { kind:null, items:[] };
-  const kind = col("letterboxd uri") >= 0 ? "film" : col("my rating") >= 0 || col("author") >= 0 ? "book" : col("hours") >= 0 || col("app id","appid") >= 0 ? "game" : null;
+  const tvTime = col("series_name","tv_show_name","show_name","series name","show name") >= 0;
+  const kind = tvTime ? "tv" : col("movie_name","movie name") >= 0 ? "film" : col("letterboxd uri") >= 0 ? "film" : col("my rating") >= 0 || col("author") >= 0 ? "book" : col("hours") >= 0 || col("app id","appid") >= 0 ? "game" : null;
   const items = rows.slice(1).map(r => ({ title:(r[iTitle]||"").trim(), year:iYear>=0?(r[iYear]||"").trim().slice(0,4):"",
-    rating:iRating>=0?parseFloat(r[iRating]):NaN, date:iDate>=0?(r[iDate]||"").trim().slice(0,10):"", author:iAuthor>=0?(r[iAuthor]||"").trim():"" }))
+    rating:iRating>=0?parseFloat(r[iRating]):NaN, date:iDate>=0?(r[iDate]||"").trim().slice(0,10):"", author:iAuthor>=0?(r[iAuthor]||"").trim():"",
+    ...(tvTime ? { now:true } : {}) }))
     .filter(x => x.title);
-  return { kind, items };
+  /* an episode log is a row per episode: one show, many rows — keep each title once */
+  const once = new Map(); for (const x of items) { const k = lc(x.title) + "|" + x.year; const was = once.get(k);
+    if (!was || (x.date > was.date) || (isNaN(was.rating) && !isNaN(x.rating))) once.set(k, x); }
+  return { kind, items:[...once.values()] };
 }
+/* Trakt's export is JSON: ratings, watched, history or watchlist files, each entry
+   carrying the film or show with its TMDB id. Ratings are out of ten (five stars); a
+   watched or history entry with no rating anywhere in the file is marked as seen. */
+function readTrakt(text) {
+  let j; try { j = JSON.parse(text); } catch { return { kind:null, items:[] }; }
+  const rows = Array.isArray(j) ? j : Object.values(j).flat().filter(x => x && typeof x === "object");
+  const by = new Map();
+  for (const r of rows) {
+    const m = r.movie || (!r.episode && r.show) || (r.episode && r.show) || null; if (!m?.title) continue;
+    const kind = r.movie ? "film" : "tv", tmdb = m.ids?.tmdb;
+    const key = kind + ":" + (tmdb || lc(m.title) + m.year);
+    const x = by.get(key) || { title:m.title, year:String(m.year || ""), kind, id:tmdb ? `${kind}:${tmdb}` : "", rating:NaN, date:"", watched:false };
+    if (r.rating != null && isNaN(x.rating)) x.rating = +r.rating / 2;
+    const when = String(r.rated_at || r.last_watched_at || r.watched_at || r.listed_at || "").slice(0, 10);
+    if (when > x.date) x.date = when;
+    if (r.plays || r.watched_at || r.last_watched_at) x.watched = true;
+    by.set(key, x); }
+  const items = [...by.values()];
+  return { kind:items.length && items.every(x => x.kind === items[0].kind) ? items[0].kind : null, items }; }
 /* ---------- bringing a log that has no account with it ----------
    Somebody can use Rooms without an account: the whole log sits in this browser and no
    server ever sees it. That was always meant to be a real way to use it rather than a
@@ -9822,20 +9846,28 @@ function openBringOver() {
 }
 
 function openImport() {
-  openSheet(`<h3>Bring your log with you</h3><p class="sub">Export a CSV from Letterboxd, Goodreads or Steam and paste it here. We match by title and year, rate what you rated, and skip anything already logged.</p>
-    <div class="lbl">Which</div><div class="chips" id="impKinds">${Object.keys(KINDS).map(k => `<button class="chip ${k==="film"?"on":""}" data-ik="${k}">${K(k).label}</button>`).join("")}<button class="chip" data-ik="">Guess</button></div>
+  openSheet(`<h3>Bring your log with you</h3><p class="sub">From Letterboxd, Goodreads, Steam or TV Time (a CSV), or Trakt (its JSON export). Choose the file or paste it in. We match each one, rate what you rated, and skip anything already logged.</p>
+    <input type="file" id="impFile" accept=".csv,.json,.txt,text/csv,application/json" style="margin-top:10px">
+    <div class="lbl">Which</div><div class="chips" id="impKinds"><button class="chip on" data-ik="">Work it out</button>${Object.keys(KINDS).map(k => `<button class="chip" data-ik="${k}">${K(k).label}</button>`).join("")}</div>
     <div class="lbl">Paste the CSV</div><textarea id="impText" style="min-height:140px;font-family:ui-monospace,monospace;font-size:12px" placeholder="Date,Name,Year,Rating&#10;2024-03-02,Aftersun,2022,5"></textarea>
+    <div class="lbl">Anything without a rating</div><div class="chips" id="impUnrated"><button class="chip on" data-iu="shelf">Put it on my shelf</button><button class="chip" data-iu="skip">Leave it out</button></div>
     <div class="stack"><button class="btn" id="impGo">Read it</button><button class="btn quiet" id="impClose">Not now</button></div>
     <div id="impBody"></div><p class="msg" id="impMsg"></p>`);
-  let forced = "film";
+  let forced = "", fileText = "", unrated = "shelf";
+  $$("[data-iu]").forEach(b => b.onclick = () => { unrated = b.dataset.iu; $$("[data-iu]").forEach(x => x.classList.toggle("on", x === b)); });
+  $("#impFile").onchange = async e => { const f = e.target.files?.[0]; if (!f) return;
+    fileText = await f.text(); $("#impText").value = fileText.length < 200000 ? fileText : `${f.name} · ${Math.round(fileText.length / 1024)} KB, ready to read`;
+    $("#impMsg").textContent = ""; };
   $$("[data-ik]").forEach(b => b.onclick = () => { forced = b.dataset.ik; $$("[data-ik]").forEach(x => x.classList.toggle("on", x === b)); });
   $("#impClose").onclick = closeSheet;
   $("#impGo").onclick = () => {
-    const { kind, items } = readImport($("#impText").value);
-    const use = forced || kind;
+    const raw = fileText && !$("#impText").value.startsWith(fileText.slice(0, 40)) && !/ KB, ready to read$/.test($("#impText").value) ? $("#impText").value : (fileText || $("#impText").value);
+    const { kind, items } = /^\s*[\[{]/.test(raw) ? readTrakt(raw) : readImport(raw);
+    const use = forced || kind || (items.length && items.every(x => x.kind) ? items[0].kind : null);
     if (!items.length) { $("#impMsg").textContent = "Couldn't find a title column in that."; return; }
     if (!use) { $("#impMsg").textContent = "Tell me which medium it is."; return; }
-    $("#impBody").innerHTML = `<div class="card"><div class="h"><span>${items.length} rows · ${K(use).label}</span><span class="tag dim">preview</span></div>
+    const kinds = [...new Set(items.map(x => x.kind || use))];
+    $("#impBody").innerHTML = `<div class="card"><div class="h"><span>${items.length} rows · ${kinds.map(k => K(k).label).join(" and ")}</span><span class="tag dim">preview</span></div>
       ${items.slice(0,5).map(x => `<div class="row" style="cursor:default"><div class="t"><b>${esc(x.title)}</b><small>${esc(x.year||"")}${isNaN(x.rating)?"":" · "+x.rating+"★"}${x.date?" · "+esc(x.date):""}</small></div></div>`).join("")}
       ${items.length > 5 ? `<p class="msg">and ${items.length-5} more</p>` : ""}</div>
       <div class="prog"><i id="impProg" style="width:0%"></i></div>
@@ -9845,16 +9877,23 @@ function openImport() {
   async function runImport(items, kind) {
     const btn = $("#impRun"); btn.disabled = true; let done = 0, added = 0, missed = [];
     const L = activeList();
+    let unratedSkipped = 0;
     for (const x of items) {
       done++; $("#impProg").style.width = Math.round(done/items.length*100) + "%";
       $("#impMsg").textContent = `${done} of ${items.length} · ${x.title}`;
+      const score = isNaN(x.rating) ? null : Math.max(1, Math.min(10, Math.round(x.rating * 2)));
+      /* seen it but never rated it: Rooms has no unrated log, so it waits on the shelf or stays behind */
+      if (!score && !x.now && (unrated === "skip" || x.watched)) { unratedSkipped++; continue; }
       try {
-        const hits = await SOURCES[kind](x.title);
-        const hit = hits.find(h => !x.year || h.year === x.year) || hits[0];
+        const k = x.kind || kind;
+        /* Trakt hands over the TMDB id itself, so there's nothing to guess */
+        const hit = x.id ? { id:x.id, kind:k, title:x.title, year:x.year || "" }
+          : await SOURCES[k](x.title).then(hits => hits.find(h => !x.year || h.year === x.year) || hits[0]);
         if (!hit) { missed.push(x.title); continue; }
         if (logged(hit.id)) continue;
         const w = await ensureWork(hit);
-        const score = isNaN(x.rating) ? null : Math.max(1, Math.min(10, Math.round(x.rating * 2)));
+        /* TV Time tracks episodes, not verdicts: a show comes in as one you're watching */
+        if (!score && x.now) { if (!nowOf(w.id)) await startNow(w.id); added++; continue; }
         if (score) await q(sb.from("entries").insert({ user_id:me.id, work_id:w.id, rated_on:/^\d{4}-\d{2}-\d{2}$/.test(x.date) ? x.date : today(), score, note:null, loved:null, context:null, breakdown:null }));
         else if (L && !L.items.includes(w.id)) { await q(sb.from("list_items").insert({ list_id:L.id, work_id:w.id })); L.items.push(w.id); }
         added++;
@@ -9863,7 +9902,7 @@ function openImport() {
     }
     await loadMine(); recs = null;
     $("#impMsg").textContent = "";
-    $("#impBody").innerHTML = `<div class="card"><div class="h"><span>Imported ${added}</span><span class="tag dim">${missed.length} skipped</span></div>
+    $("#impBody").innerHTML = `<div class="card"><div class="h"><span>Imported ${added}</span><span class="tag dim">${missed.length} skipped</span></div>${unratedSkipped ? `<p class="sub" style="margin:6px 0 0">${unratedSkipped} without a rating ${unratedSkipped === 1 ? "was" : "were"} left out — Rooms needs a score to log something.</p>` : ""}
       ${missed.length ? `<p class="empty">Couldn't match: ${esc(missed.slice(0,8).join(", "))}${missed.length>8?` and ${missed.length-8} more`:""}. Search for those by hand.</p>` : `<p class="empty">All matched. <b>Your taste just got a lot sharper.</b></p>`}
       <div class="stack"><button class="btn" id="impDone">Done</button></div></div>`;
     $("#impDone").onclick = () => { closeSheet(); switchTab("taste"); };
@@ -10109,7 +10148,7 @@ function downloadJSON(obj, name) {
 }
 
 /* a small hook so the card renderers can be exercised by the test harness */
-window.__rooms = { openYearStory, storyYear, openWelcome, openOnboarding, pullRefresh, openFind, setFollow, isFollowing, get follows(){return follows}, openNotes, noteList, noteRow, markNotesSeen, noteCount, newHands, noteSeen, get unseen(){return unseen}, nowVerb, openAdd, RINGS, MARK_RING, ringFromMarks, ringCache, myRing, spanOf, reelIndexNow, memories, dueReview, memForget, MEM_MIN, MEM_DAYS, whoseWord, wordPending, HAND_FLOOR, loadHand, handTo, answerHand, reachable, cameFrom, openHand, get handIn(){return handIn}, get handOut(){return handOut}, get handAll(){return handAll}, reelTo, markReel, REEL, reelCopies, get reelAt(){return reelAt}, facesFor, faceEl, faceMap, FACE_IMG, paintLog, wireLog, openWholeLog, openLog, likeLine, knownName, AV_SHAPES, AV_EYES, AV_COLS, avSVG, avFor, get me(){return me}, get entries(){return myEntries}, get works(){return works}, get rooms(){return rooms},
+window.__rooms = { openYearStory, storyYear, openWelcome, openOnboarding, openImport, pullRefresh, openFind, setFollow, isFollowing, get follows(){return follows}, openNotes, noteList, noteRow, markNotesSeen, noteCount, newHands, noteSeen, get unseen(){return unseen}, nowVerb, openAdd, RINGS, MARK_RING, ringFromMarks, ringCache, myRing, spanOf, reelIndexNow, memories, dueReview, memForget, MEM_MIN, MEM_DAYS, whoseWord, wordPending, HAND_FLOOR, loadHand, handTo, answerHand, reachable, cameFrom, openHand, get handIn(){return handIn}, get handOut(){return handOut}, get handAll(){return handAll}, reelTo, markReel, REEL, reelCopies, get reelAt(){return reelAt}, facesFor, faceEl, faceMap, FACE_IMG, paintLog, wireLog, openWholeLog, openLog, likeLine, knownName, AV_SHAPES, AV_EYES, AV_COLS, avSVG, avFor, get me(){return me}, get entries(){return myEntries}, get works(){return works}, get rooms(){return rooms},
   CUTS, openCuts, spanData, tasteOf, reviewData, yearOf, roomPalmares, tagStats, agreement, activeRoom, q, sb: () => sb, remember,
   joinRoomChannel, leaveRoomChannel, paintHere, onLiveEntry, paintDay, get hereNow(){return hereNow},
   say, oops, markLive, takeInvite, dropInvite, inviteLink, useInvite, exportEverything,
