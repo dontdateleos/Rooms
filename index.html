@@ -461,8 +461,6 @@ a:focus-visible,[tabindex]:focus-visible,.chip:focus-visible,[data-work]:focus-v
 /* the title as a pager */
 .pager{display:flex;align-items:center;gap:10px;margin-top:14px;touch-action:pan-y;-webkit-user-select:none;user-select:none}
 .pgmid{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:9px;position:relative}
-.pgmid h2{position:relative;z-index:1}
-.pgbloom{position:absolute;z-index:0;pointer-events:none}
 .placewash{position:fixed;inset:0;z-index:3;pointer-events:none;mix-blend-mode:normal;animation:placeWash .8s cubic-bezier(.35,.8,.3,1) both}
 @keyframes placeWash{0%{clip-path:circle(0% at 50% 42%);opacity:.5}45%{clip-path:circle(80% at 50% 42%);opacity:.32}100%{clip-path:circle(120% at 50% 42%);opacity:0}}
 .pgmid h2{margin:0;max-width:100%;display:flex;justify-content:center}
@@ -3844,6 +3842,16 @@ function paintLib(n, instant) { const bar = $("#libBar"); if (!bar) return;
   $$("[data-lib]", bar).forEach(b => { const on = b.dataset.lib === n;
     b.classList.toggle("on", on); b.setAttribute("aria-selected", on ? "true" : "false"); });
   glideSeg($(".seg", bar), instant); }
+/* Each tab has a colour — the room you're in, the season that's on, mint for the shelf,
+   sky for the archive, lilac for you — and swiping to a tab opens it out from the middle
+   of the screen as the page arrives, then fades. */
+function tabTone(n) {
+  if (n === "doors") return roomColour(activeRoom());
+  if (n === "clubs") return currentSeason()?.tone || "butter";
+  return { shelf:"mint", archive:"sky", taste:"lilac", library:"mint" }[n] || "butter"; }
+function tabWash(n) { if (REDUCED || !n) return;
+  const w = document.createElement("span"); w.className = "placewash"; w.style.background = `var(--${tabTone(n)})`;
+  document.body.appendChild(w); setTimeout(() => w.remove(), 900); }
 function switchTab(n, how = {}) { shelfEdit = false;
   if (n === "library") n = LIB.includes(P.libSide) ? P.libSide : "shelf";
   if (LIB.includes(n) && P.libSide !== n) { P.libSide = n; saveP(); }
@@ -3982,6 +3990,7 @@ let tabDrag = false;
       anims = [glide(s.here, { transform:end, opacity:.6 }, ms, EASE), glide(s.lib, { transform:end, opacity:1 }, ms, EASE),
         glide(s.there, { transform:"translateX(0)", opacity:1 }, ms + 160, SPRING)];
       settleKids(s.kids[1]);
+      tabWash(s.to);
       if (navigator.vibrate) navigator.vibrate(6);
       movePill(); if (s.pillTo !== s.pillFrom) wobblePill(); }
     else { anims = [glide(s.here, { transform:"translateX(0)", opacity:1 }, ms + 120, SPRING), glide(s.lib, { transform:"translateX(0)", opacity:1 }, ms + 120, SPRING),
@@ -4845,25 +4854,8 @@ function pagerArrive(dir, pg, ...els) {
   const from = pagerFrom; pagerFrom = null;
   if (!dir || REDUCED) return;
   const hl = pg && $(".hl", pg);
-  /* The new place's colour comes from the middle: a wash of it opens out from the centre
-     of the screen and fades, and behind the name a drop of it swells wide across the
-     header, then pulls in to fit the name as the letters land. */
-  if (hl) { const col = hl.style.background || getComputedStyle(hl).backgroundColor;
-    const wash = document.createElement("span"); wash.className = "placewash"; wash.style.background = col;
-    document.body.appendChild(wash); setTimeout(() => wash.remove(), 900);
-    const mid = $(".pgmid", pg), r = hl.getBoundingClientRect(), m = mid.getBoundingClientRect();
-    const drop = document.createElement("span"); drop.className = "pgbloom"; drop.style.background = col;
-    const cx = r.left + r.width / 2 - m.left, cy = r.top + r.height / 2 - m.top;
-    Object.assign(drop.style, { left:`${cx - r.width / 2}px`, top:`${cy - r.height / 2}px`, width:`${r.width}px`, height:`${r.height}px` });
-    mid.appendChild(drop);
-    const wide = Math.max(r.width, m.width) / r.width;
-    /* each step eases on its own: one curve over the whole thing rushed the swell into its first tenth of a second */
-    drop.animate([{ transform:"scale(0)", borderRadius:"50%", opacity:1 },
-      { transform:`scale(${Math.min(wide, 2.6)}, 1.5)`, borderRadius:"22px", opacity:1, offset:.45 },
-      { transform:"scale(1.04, 1)", borderRadius:"10px", opacity:1, offset:.8 },
-      { transform:"none", borderRadius:"10px", opacity:0 }].map(f => ({ easing:"cubic-bezier(.3,.9,.3,1)", ...f })), { duration:620 }).onfinish = () => drop.remove();
-    hl.animate([{ opacity:0, transform:"scale(.9)" }, { opacity:0, transform:"scale(.9)", offset:.5 }, { opacity:1, transform:"scale(1.04)", offset:.8 }, { opacity:1, transform:"none" }],
-      { duration:620, easing:"ease-out" }); }
+  if (hl) hl.animate([{ transform:"perspective(500px) rotateX(-90deg)", opacity:.2 }, { transform:"none", opacity:1 }],
+    { duration:420, delay:240, easing:"cubic-bezier(.2,1.3,.4,1)", fill:"backwards" });
   const cur = pg && $(".pgcur", pg), old = from && from.id === pg?.id && $(`.pgdot[data-place="${CSS.escape(from.key)}"]`, pg);
   if (cur && old) {
     const a = old.getBoundingClientRect(), b = cur.getBoundingClientRect(), dx = (a.left + a.width / 2) - (b.left + b.width / 2);
