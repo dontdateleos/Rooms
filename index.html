@@ -4857,10 +4857,11 @@ function pagerArrive(dir, pg, ...els) {
     Object.assign(drop.style, { left:`${cx - r.width / 2}px`, top:`${cy - r.height / 2}px`, width:`${r.width}px`, height:`${r.height}px` });
     mid.appendChild(drop);
     const wide = Math.max(r.width, m.width) / r.width;
+    /* each step eases on its own: one curve over the whole thing rushed the swell into its first tenth of a second */
     drop.animate([{ transform:"scale(0)", borderRadius:"50%", opacity:1 },
       { transform:`scale(${Math.min(wide, 2.6)}, 1.5)`, borderRadius:"22px", opacity:1, offset:.45 },
       { transform:"scale(1.04, 1)", borderRadius:"10px", opacity:1, offset:.8 },
-      { transform:"none", borderRadius:"10px", opacity:0 }], { duration:620, easing:"cubic-bezier(.3,.9,.3,1)" }).onfinish = () => drop.remove();
+      { transform:"none", borderRadius:"10px", opacity:0 }].map(f => ({ easing:"cubic-bezier(.3,.9,.3,1)", ...f })), { duration:620 }).onfinish = () => drop.remove();
     hl.animate([{ opacity:0, transform:"scale(.9)" }, { opacity:0, transform:"scale(.9)", offset:.5 }, { opacity:1, transform:"scale(1.04)", offset:.8 }, { opacity:1, transform:"none" }],
       { duration:620, easing:"ease-out" }); }
   const cur = pg && $(".pgcur", pg), old = from && from.id === pg?.id && $(`.pgdot[data-place="${CSS.escape(from.key)}"]`, pg);
