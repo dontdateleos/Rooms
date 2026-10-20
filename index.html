@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1">
 <meta name="theme-color" content="#FFF7EC">
 <meta name="color-scheme" content="light dark">
 <script>/* before anything paints: a dark app that flashes cream first is worse than no
@@ -1747,7 +1747,8 @@ section.leaving{display:none!important}
 .reveal.in .stars i{animation:none}
 /* Off-screen cards cost nothing: the phone skips laying out and painting anything below the
    fold until it's nearly scrolled to, so a long feed shows its first screen at once. */
-.slip,.logline,.archcard,#shelfGrid .cell{content-visibility:auto;contain-intrinsic-size:auto 240px}
+.slip,.logline,.archcard{content-visibility:auto;contain-intrinsic-size:auto 240px}
+html{touch-action:manipulation}
 /* taps: one small press, the same everywhere */
 @keyframes chipPop{0%{transform:scale(1)}45%{transform:scale(1.06)}100%{transform:scale(1)}}
 @keyframes tabPop{0%{transform:scale(.96)}60%{transform:scale(1.02)}100%{transform:scale(1)}}
@@ -3215,7 +3216,7 @@ function revealIn(root) {
   const fold = rbox.top + rbox.height * .88;
   $$(":scope > .slip, :scope > .card, :scope > .club, :scope > .twin", root).forEach((el, i) => {
     if (el.dataset.revealed) return; el.dataset.revealed = "1";
-    /* what's already on screen is simply there; only what you scroll to rises into place */
+    /* on screen already: the tab's own arrival (riseIn) moves it; further down, it rises as you scroll to it */
     if (el.getBoundingClientRect().top < fold) return;
     el.classList.add("reveal"); watching.add(el); obs.observe(el);
   });
@@ -3903,6 +3904,14 @@ function paintLib(n, instant) { const bar = $("#libBar"); if (!bar) return;
   $$("[data-lib]", bar).forEach(b => { const on = b.dataset.lib === n;
     b.classList.toggle("on", on); b.setAttribute("aria-selected", on ? "true" : "false"); });
   glideSeg($(".seg", bar), instant); }
+/* A tab opening: the blocks you can see rise a few pixels into place, a beat apart —
+   the same straight-up movement as scrolling to them. One page, nothing sliding sideways. */
+function riseIn(sec) { if (!sec || REDUCED) return;
+  const blocks = $$(".slip,.logline,.card,.club,.twin,.tonight,.cell,.archcard,.blank,.roomline,.secbar", sec)
+    .filter(el => { if (el.parentElement?.closest(".slip,.card,.club,.cell,.archcard")) return false;
+      const r = el.getBoundingClientRect(); return r.height > 0 && r.bottom > 60 && r.top < innerHeight; }).slice(0, 7);
+  blocks.forEach((el, i) => el.animate([{ opacity:0, transform:"translateY(14px)" }, { opacity:1, transform:"none" }],
+    { duration:320, delay:i * 45, easing:"cubic-bezier(.2,.8,.2,1)", fill:"backwards" })); }
 function switchTab(n, how = {}) { shelfEdit = false;
   if (n === "library") n = LIB.includes(P.libSide) ? P.libSide : "shelf";
   if (LIB.includes(n) && P.libSide !== n) { P.libSide = n; saveP(); }
@@ -3919,7 +3928,7 @@ function switchTab(n, how = {}) { shelfEdit = false;
   $$("main section").forEach(s => { const on = s.id === "tab-"+n; s.classList.toggle("on", on); s.classList.remove("leaving", "arrived");
     });
   paintLib(n, !(LIB.includes(cur) && LIB.includes(n)));
-  requestAnimationFrame(() => movePill()); scrollTo(0,0);
+  requestAnimationFrame(() => { movePill(); if (was !== now) riseIn($("#tab-" + n)); }); scrollTo(0,0);
   /* drawn once, now, as it arrives — never again a moment later, which made it jump. The
      room feed drawn in the last minute only needs its live connection back. */
   if (n === "doors" && was !== now && Date.now() - (drawnAt.doors || 0) < 60000 && $("#doorsBody")?.children.length) {
