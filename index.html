@@ -1711,8 +1711,10 @@ body.demomode .secbar{top:78px}
 .av .eyes{animation-duration:11s}
 .logo .mark .eyes,.pgmark .eyes,.season-object .eyes,.season-ghost .eyes{animation-duration:10s}
 /* arriving: a short straight rise or fade, everywhere */
-section.on > div > *{animation:rise var(--m-slow) var(--m-ease) both}
-@keyframes rise{from{transform:translate(var(--slide,0px),8px);opacity:0}to{transform:none;opacity:1}}
+section.on > div > *{animation:none}
+section.entering{animation:tabIn .22s var(--m-ease) both}
+@keyframes tabIn{from{opacity:0;transform:translateX(calc(var(--slide,0px) * .5))}to{opacity:1;transform:none}}
+section.leaving{display:none!important}
 .cell.dealt{animation:dealIn var(--m-slow) var(--m-ease) both}
 @keyframes dealIn{from{transform:translateY(10px) scale(.97);opacity:0}to{transform:none;opacity:1}}
 .chips .chip.seat{animation:seatIn var(--m-med) var(--m-ease) both}
@@ -3900,27 +3902,17 @@ function switchTab(n, how = {}) { shelfEdit = false;
   $$("nav button[data-tab]").forEach(b => { const on = b.dataset.tab === navOf(n);
     b.classList.toggle("on", on); if (on) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current"); });
   $("#meBtn")?.classList.toggle("on", n === "taste");
-  /* the outgoing screen used to just disappear while the incoming one eased in; now it
-     leaves in the direction you came from instead, so the two read as one handoff */
-  const outgoing = was !== now && !REDUCED && !how.swiped ? $$("main section").find(s => s.classList.contains("on")) : null;
-  /* a swiped-in page has already arrived under your finger, so it doesn't make an entrance
-     as well; it stays marked until the next change of tab, since a render it does on the way
-     in (or one landing a moment later) would otherwise replay the entrance and jump */
-  $$("main section").forEach(s => s.classList.toggle("arrived", !!how.swiped && s.id === "tab-" + n));
-  $$("main section").forEach(s => { const on = s.id === "tab-"+n;
-    if (s === outgoing && !on) { s.classList.remove("on"); s.classList.add("leaving");
-      setTimeout(() => s.classList.remove("leaving"), 230); }
-    else s.classList.toggle("on", on); });
+  /* one page on screen at a time: the old one goes at once, the new one fades in a few
+     pixels from the side you moved towards. Nothing leaves while something arrives. */
+  $$("main section").forEach(s => { const on = s.id === "tab-"+n; s.classList.toggle("on", on); s.classList.remove("leaving", "arrived");
+    if (on && was !== now && !REDUCED) { s.classList.remove("entering"); void s.offsetWidth; s.classList.add("entering");
+      clearTimeout(s._enter); s._enter = setTimeout(() => s.classList.remove("entering"), 260); } });
   paintLib(n, !(LIB.includes(cur) && LIB.includes(n)));
   movePill(); scrollTo(0,0);
-  /* A swiped-in page is already on screen, drawn as you left it, and its blocks are still
-     jiggling into place: redrawing it now would swap them out mid-jiggle, and the room
-     feed would flash its loading shapes while it fetched. So the redraw waits until the
-     page has settled, and the room feed skips it altogether when it was drawn in the last
-     minute (it only needs its live connection back). */
-  if (how.swiped) { clearTimeout(swipeDrawT); swipeDrawT = setTimeout(() => { if (currentTab() !== n) return;
-      if (n === "doors" && Date.now() - (drawnAt.doors || 0) < 60000) { if (feedNow() === "room" && activeRoom()) joinRoomChannel(activeRoom()); return; }
-      RENDER[n]?.(); drawnAt[n] = Date.now(); }, 720); }
+  /* drawn once, now, as it arrives — never again a moment later, which made it jump. The
+     room feed drawn in the last minute only needs its live connection back. */
+  if (n === "doors" && was !== now && Date.now() - (drawnAt.doors || 0) < 60000 && $("#doorsBody")?.children.length) {
+    if (feedNow() === "room" && activeRoom()) joinRoomChannel(activeRoom()); }
   else { RENDER[n]?.(); drawnAt[n] = Date.now(); }
   /* some tabs draw after a fetch, so the old position may not exist yet on the first try:
      keep reaching for it briefly, and stop the moment the finger takes over */
@@ -3947,129 +3939,47 @@ $$("#libBar [data-lib]").forEach(b => b.onclick = () => { if (currentTab() !== b
    scrolls, a slider, the shelf while you arrange it, anything you type in. */
 let tabDrag = false;
 (() => { const main = $("main"); if (!main) return;
+  /* One page on screen at a time. The page you're on comes a little way with your finger
+     — enough to feel the swipe take hold — and letting go past the threshold (or with a
+     flick) changes tab the same way a tap does: the old page goes, the new one fades in.
+     Nothing slides in alongside, so nothing overlaps. It stands aside for anything that
+     already owns a sideways drag — a pager, a row that scrolls, a slider, the shelf while
+     you arrange it, anything you type in. */
   const owns = el => { for (let n = el; n && n !== main; n = n.parentElement) {
-    if (n.matches?.("input,textarea,select,[contenteditable],.pager,.wheelwrap,.grid.editing,.rate,.seg")) return true;
+    if (n.matches?.("input,textarea,select,[contenteditable],.pager,.wheelwrap,.grid.editing,.rate,.seg,.swdeck")) return true;
     if (n.scrollWidth > n.clientWidth + 2 && /auto|scroll/.test(getComputedStyle(n).overflowX)) return true; }
     return false; };
-  const EASE = "cubic-bezier(.22,1,.36,1)";           /* fast out, long soft landing */
-  let s = null;                                        /* the drag in progress */
-  const W = () => main.clientWidth || innerWidth;
-  const band = (x, w) => { const m = w * .16; return m * (1 - 1 / (Math.abs(x) / m * .6 + 1)) * Math.sign(x); };
-  function begin(dir) {
-    const cur = currentTab(), at = TAB_ORDER.indexOf(cur), to = TAB_ORDER[at + dir] || null;
-    const here = $("#tab-" + cur), there = to && $("#tab-" + to);
-    /* the library's toggle belongs to the library: it rides with the page when you leave
-       it, and stays put when you're only crossing from one side of the library to the other */
-    const lib = $("#libBar"), libRides = !lib.hidden && !(LIB.includes(cur) && LIB.includes(to));
-    s.cur = cur; s.to = to; s.dir = dir; s.here = here; s.there = there; s.lib = libRides ? lib : null;
-    if (there) { there.classList.add("incoming");
-      /* sit it at the height you'll land on, so it doesn't jump when it takes over */
-      there.style.top = (here.offsetTop + scrollY - (tabScroll[to] || 0)) + "px";
-      /* and inside the page's side margins: lifted out of the flow it would span the margins
-         too, sit 18px to the left, and jump right when it took over */
-      const cs = getComputedStyle(main); there.style.left = cs.paddingLeft; there.style.right = cs.paddingRight; }
-    if (there && !there.firstElementChild?.children.length) there.firstElementChild.innerHTML = skeleton(3);
-    /* the blocks you can see on each page, which trail behind your finger like jelly */
-    /* blocks, not whole sections: a wrapper taller than half the screen is opened up and its
-       own children used instead, so the cards jiggle rather than the page wobbling as one */
-    const kids = sec => { let list = [...(sec?.firstElementChild?.children || [])];
-      for (let pass = 0; pass < 2; pass++) list = list.flatMap(k => k.getBoundingClientRect().height > innerHeight * .5 && k.children.length > 1 ? [...k.children] : [k]);
-      return list.filter(k => { const r = k.getBoundingClientRect(); return r.height && r.bottom > 0 && r.top < innerHeight; }).slice(0, 6); };
-    s.kids = [kids(here), kids(there)];
-    s.kids.flat().forEach(k => k.style.willChange = "translate");
-    s.pillFrom = $("nav button[data-tab].on"); s.pillTo = to && $(`nav button[data-tab="${navOf(to)}"]`);
-    $("#navPill")?.classList.add("tracking");
-    document.documentElement.classList.add("tabdrag"); tabDrag = true; }
-  function paint(x) { const w = W(), p = Math.min(1, Math.abs(x) / w);
-    const tx = s.there ? x : band(x, w);
-    s.here.style.transform = `translateX(${tx}px)`;
-    s.here.style.opacity = String(1 - p * .25);
-    if (s.lib) s.lib.style.transform = `translateX(${tx}px)`;
-    if (s.there) s.there.style.transform = `translateX(${tx + s.dir * w}px)`;
-    /* each block lags a little more than the one above it; translate, not transform, so it
-       never fights the entrance animation that owns their transform */
-    s.kids.forEach(list => list.forEach((k, j) => { k.style.transition = "none";
-      k.style.translate = `${Math.max(-26, Math.min(26, -tx * .045 * (j + 1)))}px 0`; }));
-    /* taffy: the pill's leading edge runs ahead to the next tab while its tail holds on,
-       then lets go — the same stretch the dots make when they move */
-    const pill = $("#navPill");
-    if (pill && s.pillFrom && s.pillTo && s.pillTo !== s.pillFrom) {
-      const a = s.pillFrom, b = s.pillTo, al = a.offsetLeft, ar = al + a.offsetWidth, bl = b.offsetLeft, br = bl + b.offsetWidth;
-      const lead = Math.min(1, p * 1.8), trail = Math.max(0, (p - .35) / .65) ** 1.5, right = bl > al;
-      const L = al + (bl - al) * (right ? trail : lead), R = ar + (br - ar) * (right ? lead : trail);
-      pill.style.left = L + "px"; pill.style.width = Math.max(0, R - L) + "px";
-      pill.style.transform = `scaleY(${1 - Math.sin(p * Math.PI) * .22})`; } }
-  function tidy() { [s.here, s.there, s.lib].forEach(el => { if (!el) return;
-      el.style.transition = el.style.transform = el.style.opacity = el.style.transformOrigin = ""; });
-    /* the blocks may still be jiggling: let them finish, then tidy them */
-    const kids = (s.kids || []).flat(); setTimeout(() => kids.forEach(k => { k.style.transition = k.style.translate = k.style.willChange = ""; }), 760);
-    if (s.there) { s.there.classList.remove("incoming"); s.there.style.top = s.there.style.left = s.there.style.right = ""; }
-    const pill = $("#navPill"); if (pill) { pill.classList.remove("tracking"); pill.style.transform = ""; }
-    document.documentElement.classList.remove("tabdrag"); tabDrag = false; }
-  /* landing overshoots and springs back; the blocks catch up one after another with a jiggle */
-  const SPRING = "cubic-bezier(.25,1.1,.4,1)", JELLY = "cubic-bezier(.2,.8,.2,1)";   /* a settle, not a wobble */
-  function settleKids(list) { list.forEach((k, j) => { k.style.transition = `translate 460ms ${JELLY} ${30 + j * 45}ms`; k.style.translate = "0 0"; }); }
-  function wobblePill() { const pill = $("#navPill"); if (!pill) return; pill.style.transform = "";
-    pill.animate([{ transform:"none" }, { transform:"scale(1.16,.8)" }, { transform:"scale(.95,1.08)" }, { transform:"none" }], { duration:420, delay:90, easing:"ease-out" }); }
-  /* The settle runs as Web Animations rather than CSS transitions on a timer: the page is
-     handed over the moment its animation actually finishes, not when a timer guessed it
-     would, which on a phone (where a transition can start a frame or two late) cut the
-     bounce off halfway and snapped it into place. */
-  function release(x, v) { const w = W();
-    if (s.raf) { cancelAnimationFrame(s.raf); s.raf = 0; paint(s.x); }
-    const go = s.there && (Math.abs(x) > w * .33 || (Math.abs(v) > .45 && Math.sign(v) === Math.sign(x)));
-    const ms = Math.round(Math.max(220, Math.min(380, (go ? w - Math.abs(x) : Math.abs(x)) / Math.max(.9, Math.abs(v)))));
-    const glide = (el, to, duration, easing) => el ? el.animate([{ transform:el.style.transform || "none", opacity:el.style.opacity || 1 }, to],
-      { duration, easing, fill:"forwards" }) : null;
-    $("#navPill")?.classList.remove("tracking");
-    let anims;
-    if (go) { const end = `translateX(${-s.dir * w}px)`;
-      anims = [glide(s.here, { transform:end, opacity:.6 }, ms, EASE), glide(s.lib, { transform:end, opacity:1 }, ms, EASE),
-        glide(s.there, { transform:"translateX(0)", opacity:1 }, ms + 160, SPRING)];
-      settleKids(s.kids[1]);
-      if (navigator.vibrate) navigator.vibrate(6);
-      movePill(); if (s.pillTo !== s.pillFrom) wobblePill(); }
-    else { anims = [glide(s.here, { transform:"translateX(0)", opacity:1 }, ms + 120, SPRING), glide(s.lib, { transform:"translateX(0)", opacity:1 }, ms + 120, SPRING),
-        glide(s.there, { transform:`translateX(${s.dir * w}px)`, opacity:1 }, ms, EASE)];
-      settleKids(s.kids[0]);
-      movePill(); $("#navPill") && ($("#navPill").style.transform = ""); }
-    anims = anims.filter(Boolean);
-    const d = s; let done = false;
-    /* landing is one step, run once — when the animations finish, or straight away if
-       you put your finger down again before they have. A swipe started during the bounce
-       used to be ignored until it ended, which on a quick second swipe felt stuck. */
-    const land = () => { if (done) return; done = true; landing = null; s = d; tidy();
-      /* the page has already arrived, so the tab change is told not to animate it again */
-      if (go) switchTab(d.to, { swiped:true });
-      anims.forEach(a => a.cancel()); s = null; };
-    landing = land;
-    Promise.all(anims.map(a => a.finished)).catch(() => {}).then(land); }
-  let landing = null;
-  main.addEventListener("touchstart", e => { if (landing) landing(); if (s) return;
+  let s = null;
+  const page = () => $("#tab-" + currentTab());
+  const reach = x => 56 * (1 - 1 / (Math.abs(x) / 90 + 1)) * Math.sign(x);   /* follows, then resists */
+  const clear = el => { if (el) { el.style.transform = ""; el.style.opacity = ""; el.style.transition = ""; } };
+  main.addEventListener("touchstart", e => { if (s) return;
     if (e.touches.length !== 1 || !me || shelfEdit || $("#sheet")?.classList.contains("on")) return;
     if (!TAB_ORDER.includes(currentTab()) || owns(e.target)) return;
     const t = e.touches[0]; s = { x0:t.clientX, y0:t.clientY, lock:null, x:0, hist:[[t.clientX, performance.now()]] }; }, { passive:true });
   main.addEventListener("touchmove", e => { if (!s || s.lock === "y") return;
     const t = e.touches[0], dx = t.clientX - s.x0, dy = t.clientY - s.y0;
     if (!s.lock) { if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
-      if (Math.abs(dy) > Math.abs(dx) * .8 || REDUCED) { s.lock = REDUCED && Math.abs(dx) > Math.abs(dy) * 2 ? "flick" : "y"; if (s.lock === "y") { s = null; return; } }
-      else { s.lock = "x"; begin(dx < 0 ? 1 : -1); } }
-    if (s.lock !== "x") return;
+      if (Math.abs(dy) > Math.abs(dx) * .8) { s = null; return; }
+      s.lock = "x"; tabDrag = true; }
     e.preventDefault();
-    s.x = t.clientX - s.x0;
-    /* dragging back past where you started turns it into a drag the other way */
-    if (Math.sign(s.x) === s.dir && Math.abs(s.x) > 4) { const keep = s; tidy(); s = keep; begin(-s.dir); }
-    s.hist.push([t.clientX, performance.now()]); if (s.hist.length > 6) s.hist.shift();
-    /* one paint per frame however fast the finger reports in (a 120Hz screen sends twice that) */
-    if (!s.raf) s.raf = requestAnimationFrame(() => { if (!s) return; s.raf = 0; paint(s.x); }); }, { passive:false });
-  const end = e => { if (!s) return;
-    if (s.lock === "flick") { const dx = e.changedTouches[0].clientX - s.x0, to = TAB_ORDER[TAB_ORDER.indexOf(currentTab()) + (dx < 0 ? 1 : -1)];
-      s = null; if (to && Math.abs(dx) > 70) switchTab(to); return; }
-    if (s.lock !== "x") { s = null; return; }
-    const h = s.hist, a = h[0], b = h[h.length - 1], v = b[1] - a[1] > 0 ? (b[0] - a[0]) / (b[1] - a[1]) : 0;
-    release(s.x, v); };
+    s.x = dx; s.hist.push([t.clientX, performance.now()]); if (s.hist.length > 6) s.hist.shift();
+    if (REDUCED || s.raf) return;
+    s.raf = requestAnimationFrame(() => { if (!s) return; s.raf = 0;
+      const to = TAB_ORDER[TAB_ORDER.indexOf(currentTab()) + (s.x < 0 ? 1 : -1)], el = page(); if (!el) return;
+      el.style.transition = "none"; el.style.transform = `translateX(${reach(s.x) * (to ? 1 : .5)}px)`;
+      el.style.opacity = to ? String(1 - Math.min(.3, Math.abs(s.x) / 700)) : ""; }); }, { passive:false });
+  const end = () => { if (!s) return; const d = s; s = null; tabDrag = false;
+    if (d.lock !== "x") return;
+    const h = d.hist, a = h[0], b = h[h.length - 1], v = b[1] - a[1] > 0 ? (b[0] - a[0]) / (b[1] - a[1]) : 0;
+    const to = TAB_ORDER[TAB_ORDER.indexOf(currentTab()) + (d.x < 0 ? 1 : -1)], el = page();
+    const go = to && (Math.abs(d.x) > Math.min(120, (main.clientWidth || innerWidth) * .28) || (Math.abs(v) > .5 && Math.sign(v) === Math.sign(d.x) && Math.abs(d.x) > 30));
+    if (go) { clear(el); if (navigator.vibrate) navigator.vibrate(6); switchTab(to); return; }
+    if (!el || REDUCED) { clear(el); return; }
+    el.style.transition = "transform .22s cubic-bezier(.2,.8,.2,1), opacity .22s"; el.style.transform = ""; el.style.opacity = "";
+    setTimeout(() => clear(el), 260); };
   main.addEventListener("touchend", end, { passive:true });
-  main.addEventListener("touchcancel", () => { if (s?.lock === "x") release(0, 0); else s = null; }, { passive:true }); })();
+  main.addEventListener("touchcancel", end, { passive:true }); })();
 const HOLDS = { library: () => openWheel(), doors: () => { if (currentTab() !== "doors") switchTab("doors"); openFeedPick(); } };
 $$("nav button[data-tab]").forEach(b => { const act = HOLDS[b.dataset.tab]; if (!act) return; let t = null;
   const stop = () => { clearTimeout(t); t = null; };
