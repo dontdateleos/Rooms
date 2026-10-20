@@ -930,7 +930,7 @@ header:has(#meBtn:not([hidden])) .logoword{display:none}
 /* 19 — the active pill travels between tabs */
 nav .in{position:relative}
 .navpill{position:absolute;top:9px;bottom:9px;border-radius:99px;background:var(--ink);z-index:0;
-  left:0;width:0;opacity:0;transition:left .34s cubic-bezier(.3,1.25,.4,1),width .34s cubic-bezier(.3,1.25,.4,1)}
+  left:0;width:0;opacity:0;transition:left .16s cubic-bezier(.2,.8,.2,1),width .16s cubic-bezier(.2,.8,.2,1)}
 .navpill.set{opacity:1}
 nav button{z-index:1}
 nav .in:has(.navpill.set) button.on{background:none}
@@ -1712,7 +1712,7 @@ body.demomode .secbar{top:78px}
 .logo .mark .eyes,.pgmark .eyes,.season-object .eyes,.season-ghost .eyes{animation-duration:10s}
 /* arriving: a short straight rise or fade, everywhere */
 section.on > div > *{animation:none}
-section.entering{animation:tabIn .22s var(--m-ease) both}
+section.entering{animation:none}
 @keyframes tabIn{from{opacity:0;transform:translateX(calc(var(--slide,0px) * .5))}to{opacity:1;transform:none}}
 section.leaving{display:none!important}
 .cell.dealt{animation:dealIn var(--m-slow) var(--m-ease) both}
@@ -1740,6 +1740,14 @@ section.leaving{display:none!important}
 .reveal.in .stars i{animation:starIn var(--m-med) var(--m-ease) both}
 .st-kinds div,.st-words span{animation:stIn var(--m-slow) var(--m-ease) both}
 .pgdot{transition:width .26s var(--m-ease),opacity .25s}
+/* scrolling: a card rises a little into place as it comes up from below — straight up,
+   never in from the side */
+.reveal{opacity:0;transform:translateY(14px);transition:opacity .32s var(--m-ease),transform .36s var(--m-ease)}
+.reveal.in{opacity:1;transform:none}
+.reveal.in .stars i{animation:none}
+/* Off-screen cards cost nothing: the phone skips laying out and painting anything below the
+   fold until it's nearly scrolled to, so a long feed shows its first screen at once. */
+.slip,.logline,.archcard,#shelfGrid .cell{content-visibility:auto;contain-intrinsic-size:auto 240px}
 /* taps: one small press, the same everywhere */
 @keyframes chipPop{0%{transform:scale(1)}45%{transform:scale(1.06)}100%{transform:scale(1)}}
 @keyframes tabPop{0%{transform:scale(.96)}60%{transform:scale(1.02)}100%{transform:scale(1)}}
@@ -2017,7 +2025,10 @@ const IN_WORDS = { film:"film", tv:"show", book:"book", game:"game" };
 const inWords = (k, n = 2) => `${IN_WORDS[k] || k}${n === 1 ? "" : "s"}`;
 const kindOf = id => String(id).split(":")[0];
 const tag = k => `<span class="tag ${k}">${K(k).label}</span>`;
-const cover = (w, cls = "co") => w?.cover ? `<img class="${cls}" src="${esc(w.cover)}" alt="" onload="this.classList.add('ok')" onerror="this.remove()">` : `<div class="${cls}"></div>`;
+/* a cover fades in the first time it loads; once it's been seen, a redraw (coming back
+   to a tab, say) shows it straight away rather than fading every poster in again */
+const seenCovers = window.__seenCovers = new Set();
+const cover = (w, cls = "co") => w?.cover ? `<img class="${cls}${seenCovers.has(w.cover) ? " ok" : ""}" src="${esc(w.cover)}" alt="" onload="this.classList.add('ok');window.__seenCovers.add(this.getAttribute('src'))" onerror="this.remove()">` : `<div class="${cls}"></div>`;
 
 /* ============ prefs + sources ============ */
 const WORKER = "https://rooms.jordandf1.workers.dev";
@@ -3203,9 +3214,10 @@ function revealIn(root) {
   const rbox = revealRoot ? revealRoot.getBoundingClientRect() : { top:0, bottom:window.innerHeight, height:window.innerHeight };
   const fold = rbox.top + rbox.height * .88;
   $$(":scope > .slip, :scope > .card, :scope > .club, :scope > .twin", root).forEach((el, i) => {
-    if (el.dataset.revealed) return; el.dataset.revealed = "1"; el.classList.add("reveal");
-    if (el.getBoundingClientRect().top < fold) setTimeout(() => el.classList.add("in"), Math.min(i, 6) * 45);
-    else { watching.add(el); obs.observe(el); }
+    if (el.dataset.revealed) return; el.dataset.revealed = "1";
+    /* what's already on screen is simply there; only what you scroll to rises into place */
+    if (el.getBoundingClientRect().top < fold) return;
+    el.classList.add("reveal"); watching.add(el); obs.observe(el);
   });
   setTimeout(sweep, 60); keepSweeping();
   setTimeout(() => { for (const el of [...watching]) { el.classList.add("in"); revealObs?.unobserve(el); watching.delete(el); } }, 6000);
@@ -3905,10 +3917,9 @@ function switchTab(n, how = {}) { shelfEdit = false;
   /* one page on screen at a time: the old one goes at once, the new one fades in a few
      pixels from the side you moved towards. Nothing leaves while something arrives. */
   $$("main section").forEach(s => { const on = s.id === "tab-"+n; s.classList.toggle("on", on); s.classList.remove("leaving", "arrived");
-    if (on && was !== now && !REDUCED) { s.classList.remove("entering"); void s.offsetWidth; s.classList.add("entering");
-      clearTimeout(s._enter); s._enter = setTimeout(() => s.classList.remove("entering"), 260); } });
+    });
   paintLib(n, !(LIB.includes(cur) && LIB.includes(n)));
-  movePill(); scrollTo(0,0);
+  requestAnimationFrame(() => movePill()); scrollTo(0,0);
   /* drawn once, now, as it arrives — never again a moment later, which made it jump. The
      room feed drawn in the last minute only needs its live connection back. */
   if (n === "doors" && was !== now && Date.now() - (drawnAt.doors || 0) < 60000 && $("#doorsBody")?.children.length) {
