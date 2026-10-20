@@ -461,8 +461,7 @@ a:focus-visible,[tabindex]:focus-visible,.chip:focus-visible,[data-work]:focus-v
 /* the title as a pager */
 .pager{display:flex;align-items:center;gap:10px;margin-top:14px;touch-action:pan-y;-webkit-user-select:none;user-select:none}
 .pgmid{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:9px;position:relative}
-.placewash{position:fixed;inset:0;z-index:3;pointer-events:none;mix-blend-mode:normal;animation:placeWash .8s cubic-bezier(.35,.8,.3,1) both}
-@keyframes placeWash{0%{clip-path:circle(0% at 50% 42%);opacity:.5}45%{clip-path:circle(80% at 50% 42%);opacity:.32}100%{clip-path:circle(120% at 50% 42%);opacity:0}}
+
 .pgmid h2{margin:0;max-width:100%;display:flex;justify-content:center}
 .pgarrow{width:38px;height:38px;flex:none;border:0;border-radius:50%;background:var(--cream2);color:var(--ink);display:grid;place-items:center;cursor:pointer}
 .pgarrow:active{transform:scale(.92)}
@@ -1695,6 +1694,54 @@ body.demomode .secbar{top:78px}
   .bell.jolt svg{animation:none}
   .tile,.po,.club,.slip,.btn{transition:none}
   .reveal{opacity:1;transform:none;transition:none}}
+/* ---------- calm motion ----------
+   One rule for the whole app: things move when something happens, then settle, and
+   nothing moves on its own. One family of timings and one soft ease-out, with no
+   overshoot anywhere a page or a card arrives — a tap's small press is the only spring. */
+:root{--m-ease:cubic-bezier(.2,.8,.2,1);--m-fast:.16s;--m-med:.26s;--m-slow:.36s}
+/* nothing idles: no drifting cards, bobbing faces, perking marks or floating cases */
+.slip{animation:none}
+.av:not(#meAv) svg{animation:none!important}
+.cabmark{animation:none}
+.tok .rise{animation:none}
+.season-ghost svg{animation:none}
+.emptydoor,.emptydoor .zz,.emptydoor .glass{animation:none}
+.emptydoor.look .eyes{animation:doorBlink 7s infinite}
+/* blinking stays — it's what makes them faces — but rarely */
+.av .eyes{animation-duration:11s}
+.logo .mark .eyes,.pgmark .eyes,.season-object .eyes,.season-ghost .eyes{animation-duration:10s}
+/* arriving: a short straight rise or fade, everywhere */
+section.on > div > *{animation:rise var(--m-slow) var(--m-ease) both}
+@keyframes rise{from{transform:translate(var(--slide,0px),8px);opacity:0}to{transform:none;opacity:1}}
+.cell.dealt{animation:dealIn var(--m-slow) var(--m-ease) both}
+@keyframes dealIn{from{transform:translateY(10px) scale(.97);opacity:0}to{transform:none;opacity:1}}
+.chips .chip.seat{animation:seatIn var(--m-med) var(--m-ease) both}
+@keyframes seatIn{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:none}}
+.cell.landed .po{animation:landed var(--m-slow) var(--m-ease)}
+@keyframes landed{0%{transform:translateY(-6px) scale(1.04)}100%{transform:none}}
+.cell.shoved .po{animation:shoved var(--m-slow) var(--m-ease)}
+.newline{animation:labelUp var(--m-med) var(--m-ease) .1s both}
+.moment-row.fresh{animation:rowIn var(--m-slow) var(--m-ease)}
+.slip.landedNow{animation:landIn var(--m-slow) var(--m-ease) both}
+.dealt-in{animation:dealDown var(--m-slow) var(--m-ease) both}
+.feedIn{animation:feedIn var(--m-med) var(--m-ease) both}
+.saying .w{animation:wordUp var(--m-slow) var(--m-ease) both}
+.settled{animation:resIn var(--m-med) var(--m-ease) both}
+.booting>*{animation:bootIn var(--m-slow) var(--m-ease) both}
+.cuts button.drawn{animation:cutIn var(--m-slow) var(--m-ease) both}
+.st-slide.on,.st-kinds div,.st-words span{animation-timing-function:var(--m-ease)}
+.tiles .tile{animation:bloom var(--m-slow) var(--m-ease) both}
+.here .face.came{animation:faceIn var(--m-slow) var(--m-ease) both}
+.twin.given{animation:givenPop var(--m-med) var(--m-ease)}
+.av.new svg > g > *{animation:asm var(--m-med) var(--m-ease) both}
+.av.new .eyes{animation:asm var(--m-med) var(--m-ease) both, avBlink 11s ease-in-out infinite}
+.reveal.in .stars i{animation:starIn var(--m-med) var(--m-ease) both}
+.st-kinds div,.st-words span{animation:stIn var(--m-slow) var(--m-ease) both}
+.pgdot{transition:width .26s var(--m-ease),opacity .25s}
+/* taps: one small press, the same everywhere */
+@keyframes chipPop{0%{transform:scale(1)}45%{transform:scale(1.06)}100%{transform:scale(1)}}
+@keyframes tabPop{0%{transform:scale(.96)}60%{transform:scale(1.02)}100%{transform:scale(1)}}
+@keyframes heartPop{0%{transform:scale(1)}35%{transform:scale(.88)}70%{transform:scale(1.14)}100%{transform:none}}
 /* iPad and computers: the column stays a readable width, but what's in it uses the room —
    four posters a row instead of three giant ones — and a sheet floats in the middle as a
    card instead of stretching edge to edge along the bottom */
@@ -3842,16 +3889,6 @@ function paintLib(n, instant) { const bar = $("#libBar"); if (!bar) return;
   $$("[data-lib]", bar).forEach(b => { const on = b.dataset.lib === n;
     b.classList.toggle("on", on); b.setAttribute("aria-selected", on ? "true" : "false"); });
   glideSeg($(".seg", bar), instant); }
-/* Each tab has a colour — the room you're in, the season that's on, mint for the shelf,
-   sky for the archive, lilac for you — and swiping to a tab opens it out from the middle
-   of the screen as the page arrives, then fades. */
-function tabTone(n) {
-  if (n === "doors") return roomColour(activeRoom());
-  if (n === "clubs") return currentSeason()?.tone || "butter";
-  return { shelf:"mint", archive:"sky", taste:"lilac", library:"mint" }[n] || "butter"; }
-function tabWash(n) { if (REDUCED || !n) return;
-  const w = document.createElement("span"); w.className = "placewash"; w.style.background = `var(--${tabTone(n)})`;
-  document.body.appendChild(w); setTimeout(() => w.remove(), 900); }
 function switchTab(n, how = {}) { shelfEdit = false;
   if (n === "library") n = LIB.includes(P.libSide) ? P.libSide : "shelf";
   if (LIB.includes(n) && P.libSide !== n) { P.libSide = n; saveP(); }
@@ -3970,7 +4007,7 @@ let tabDrag = false;
     const pill = $("#navPill"); if (pill) { pill.classList.remove("tracking"); pill.style.transform = ""; }
     document.documentElement.classList.remove("tabdrag"); tabDrag = false; }
   /* landing overshoots and springs back; the blocks catch up one after another with a jiggle */
-  const SPRING = "cubic-bezier(.34,1.45,.5,1)", JELLY = "cubic-bezier(.3,1.8,.5,1)";
+  const SPRING = "cubic-bezier(.25,1.1,.4,1)", JELLY = "cubic-bezier(.2,.8,.2,1)";   /* a settle, not a wobble */
   function settleKids(list) { list.forEach((k, j) => { k.style.transition = `translate 460ms ${JELLY} ${30 + j * 45}ms`; k.style.translate = "0 0"; }); }
   function wobblePill() { const pill = $("#navPill"); if (!pill) return; pill.style.transform = "";
     pill.animate([{ transform:"none" }, { transform:"scale(1.16,.8)" }, { transform:"scale(.95,1.08)" }, { transform:"none" }], { duration:420, delay:90, easing:"ease-out" }); }
@@ -3990,7 +4027,6 @@ let tabDrag = false;
       anims = [glide(s.here, { transform:end, opacity:.6 }, ms, EASE), glide(s.lib, { transform:end, opacity:1 }, ms, EASE),
         glide(s.there, { transform:"translateX(0)", opacity:1 }, ms + 160, SPRING)];
       settleKids(s.kids[1]);
-      tabWash(s.to);
       if (navigator.vibrate) navigator.vibrate(6);
       movePill(); if (s.pillTo !== s.pillFrom) wobblePill(); }
     else { anims = [glide(s.here, { transform:"translateX(0)", opacity:1 }, ms + 120, SPRING), glide(s.lib, { transform:"translateX(0)", opacity:1 }, ms + 120, SPRING),
@@ -4854,8 +4890,8 @@ function pagerArrive(dir, pg, ...els) {
   const from = pagerFrom; pagerFrom = null;
   if (!dir || REDUCED) return;
   const hl = pg && $(".hl", pg);
-  if (hl) hl.animate([{ transform:"perspective(500px) rotateX(-90deg)", opacity:.2 }, { transform:"none", opacity:1 }],
-    { duration:420, delay:240, easing:"cubic-bezier(.2,1.3,.4,1)", fill:"backwards" });
+  if (hl) hl.animate([{ transform:"perspective(500px) rotateX(-70deg)", opacity:0 }, { transform:"none", opacity:1 }],
+    { duration:320, delay:200, easing:"cubic-bezier(.2,.8,.2,1)", fill:"backwards" });
   const cur = pg && $(".pgcur", pg), old = from && from.id === pg?.id && $(`.pgdot[data-place="${CSS.escape(from.key)}"]`, pg);
   if (cur && old) {
     const a = old.getBoundingClientRect(), b = cur.getBoundingClientRect(), dx = (a.left + a.width / 2) - (b.left + b.width / 2);
