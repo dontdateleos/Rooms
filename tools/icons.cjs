@@ -11,7 +11,7 @@ const font = w => `data:font/woff2;base64,${fs.readFileSync(path.join(ROOT, `ven
 /* the mark: four rooms, three with the lights off and one lit with someone home */
 const MARK = `<svg viewBox="10 10 80 80" xmlns="http://www.w3.org/2000/svg">
   <rect x="12" y="12" width="36" height="36" rx="10" fill="#F5A3C7" fill-opacity=".32"/>
-  <rect x="52" y="12" width="36" height="36" rx="10" fill="#FFB36B" fill-opacity=".32"/>
+  <rect x="52" y="12" width="36" height="36" rx="10" fill="#FFB36B" fill-opacity=".4"/>
   <rect x="12" y="52" width="36" height="36" rx="10" fill="#B9A6FF" fill-opacity=".32"/>
   <rect x="52" y="52" width="36" height="36" rx="10" fill="#8FD3FF"/>
   <g fill="#151320"><rect x="63" y="63" width="4.6" height="10" rx="2.3"/><rect x="72.4" y="64" width="4.6" height="11" rx="2.3"/></g></svg>`;
