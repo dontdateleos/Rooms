@@ -33,7 +33,7 @@
 <link rel="apple-touch-startup-image" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="./icons/splash-750x1334.png">
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="modulepreload" href="./vendor/supabase.js">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%2316131C'/%3E%3Cg transform='translate%2850 50%29 scale%28.78%29 translate%28-54 -54%29'%3E%3Crect x='14' y='10' width='62' height='84' rx='10' fill='%2372A9CC'/%3E%3Crect x='22' y='18' width='46' height='76' rx='5' fill='%23FFF3B8'/%3E%3Cpath d='M68 94h26l-9-13-17-4z' fill='%23FFF3B8' opacity='.7'/%3E%3Cpath d='M22 18l34 7v73l-34-6z' fill='%238FD3FF'/%3E%3Cpath d='M22 18l34 7v8l-34-6z' fill='%23B1E0FF'/%3E%3Ccircle cx='50' cy='70' r='3' fill='%2372A9CC'/%3E%3Cg class='eyes' fill='%23151320'%3E%3Crect x='30' y='44' width='7' height='16' rx='3.5'/%3E%3Crect x='41' y='46' width='7' height='18' rx='3.5'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%2316131C'/%3E%3Cg transform='translate%2850 50%29 scale%28.8%29 translate%28-50 -50%29'%3E%3Crect x='12' y='12' width='36' height='36' rx='10' fill='%23F5A3C7' fill-opacity='.32'/%3E%3Crect x='52' y='12' width='36' height='36' rx='10' fill='%23FFB36B' fill-opacity='.32'/%3E%3Crect x='12' y='52' width='36' height='36' rx='10' fill='%23B9A6FF' fill-opacity='.32'/%3E%3Crect x='52' y='52' width='36' height='36' rx='10' fill='%238FD3FF'/%3E%3Cg fill='%23151320'%3E%3Crect x='63' y='63' width='4.6' height='10' rx='2.3'/%3E%3Crect x='72.4' y='64' width='4.6' height='11' rx='2.3'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E">
 <!-- the type is served from here. Fetching it from Google handed fonts.gstatic.com an
      IP address every time somebody opened the app, which bought us nothing and cost a
      paragraph of the privacy policy. Same files, same subsets. -->
@@ -93,6 +93,8 @@ header .wrap{display:flex;align-items:center;justify-content:space-between;heigh
 .logo .mark{width:30px;height:30px;display:block;flex:none}
 .logo .mark .eyes{transform-box:fill-box;transform-origin:50% 50%;animation:avBlink 7.2s ease-in-out infinite;animation-delay:3s}
 @media (prefers-reduced-motion:reduce){.logo .mark .eyes{animation:none}}
+/* the three rooms with the lights off: dim on dark, a soft tint on cream */
+html[data-theme="light"] .logo .mark .off{fill-opacity:.45}
 .me[hidden]{display:none!important}
 .me{font-family:var(--head);font-weight:800;font-size:13px;background:var(--card);border:0;padding:8px 12px;border-radius:999px;cursor:pointer;color:var(--ink);display:flex;align-items:center;gap:8px;transition:background .2s,color .2s}
 /* Taste is behind your name now, so your name is lit while you're on it, as a tab would be */
@@ -1771,7 +1773,7 @@ html{touch-action:manipulation}
 <body>
 
 <header><h1 class="sr-only">Rooms</h1><div class="wrap">
-  <div class="logo"><svg class="mark" viewBox="9 9 90 90" aria-hidden="true"><rect x="14" y="10" width="62" height="84" rx="10" fill="#72A9CC"/><rect x="22" y="18" width="46" height="76" rx="5" fill="#FFF3B8"/><path d="M68 94h26l-9-13-17-4z" fill="#FFF3B8" opacity=".7"/><path d="M22 18l34 7v73l-34-6z" fill="#8FD3FF"/><path d="M22 18l34 7v8l-34-6z" fill="#B1E0FF"/><circle cx="50" cy="70" r="3" fill="#72A9CC"/><g class="eyes" fill="#151320"><rect x="30" y="44" width="7" height="16" rx="3.5"/><rect x="41" y="46" width="7" height="18" rx="3.5"/></g></svg><span class="logoword">Rooms</span></div>
+  <div class="logo"><svg class="mark" viewBox="10 10 80 80" aria-hidden="true"><rect class="off" x="12" y="12" width="36" height="36" rx="10" fill="#F5A3C7" fill-opacity=".32"/><rect class="off" x="52" y="12" width="36" height="36" rx="10" fill="#FFB36B" fill-opacity=".32"/><rect class="off" x="12" y="52" width="36" height="36" rx="10" fill="#B9A6FF" fill-opacity=".32"/><rect x="52" y="52" width="36" height="36" rx="10" fill="#8FD3FF"/><g class="eyes" fill="#151320"><rect x="63" y="63" width="4.6" height="10" rx="2.3"/><rect x="72.4" y="64" width="4.6" height="11" rx="2.3"/></g></svg><span class="logoword">Rooms</span></div>
   <div class="hr">
     <button class="me" id="meBtn" hidden><span class="av" id="meAv"></span><span id="meName"></span></button>
     <button class="find" id="findBtn" aria-label="Find someone" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></button>
@@ -8070,11 +8072,15 @@ function cardCtx(kind) {
   return { c, x };
 }
 function cardMark(x, left, top, h = 34) {
-  const r = h * .23, off = h * .41;            /* two rooms, the second overlapping the first */
-  const box = (px, col, alpha = 1) => { x.save(); x.globalAlpha = alpha; x.fillStyle = col;
-    x.beginPath(); x.roundRect(px, top, h, h, r); x.fill(); x.restore(); };
-  box(left, CARD.cols.film);
-  box(left + off, "#8FD3FF", .85);
+  /* the Rooms mark: four rooms, three with the lights off and one lit with someone home */
+  const S = h * 1.25, y0 = top - (S - h) / 2, c = S * .45, g = S - 2 * c, r = c * .28;
+  const box = (px, py, col, alpha) => { x.save(); x.globalAlpha = alpha; x.fillStyle = col;
+    x.beginPath(); x.roundRect(px, py, c, c, r); x.fill(); x.restore(); };
+  box(left, y0, "#F5A3C7", .32); box(left + c + g, y0, "#FFB36B", .32); box(left, y0 + c + g, "#B9A6FF", .32);
+  box(left + c + g, y0 + c + g, "#8FD3FF", 1);
+  const ex = left + c + g + c / 2, ey = y0 + c + g + c * .3, ew = c * .13;
+  x.fillStyle = "#151320";
+  [[-c * .13, 0, c * .28], [c * .13, c * .03, c * .31]].forEach(([dx, dy, eh]) => { x.beginPath(); x.roundRect(ex + dx - ew / 2, ey + dy, ew, eh, ew / 2); x.fill(); });
 }
 function cardHead(x, label) { cardMark(x, CARD.M, 84, 36);
   x.fillStyle = x.__on; x.font = "900 40px Outfit, sans-serif"; x.fillText("ROOMS", CARD.M + 76, 116);
