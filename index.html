@@ -1870,27 +1870,6 @@ nav button .dot{top:0;right:calc(50% - 24px)}
 .sn-sum p{margin:3px 0 0;color:#C9BFE0;font-size:13px;line-height:1.4}
 .lbl .sn-key,.lbl small{font-family:var(--body);font-weight:600;letter-spacing:0;text-transform:none;color:var(--mute);margin-left:auto;font-size:11.5px}
 .lbl:has(small){display:flex;align-items:baseline;gap:10px}
-.sn-cal{padding:12px 12px 10px}
-.sn-mhead{display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:8px}
-.sn-mhead b{font-family:var(--head);font-weight:800;font-size:15px;min-width:90px;text-align:center}
-.sn-mgo{width:32px;height:32px;border-radius:50%;border:0;background:var(--cream2);color:var(--ink);font:800 16px var(--head);cursor:pointer}
-.sn-mgo:disabled{opacity:.3;cursor:default}
-.sn-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px}
-.sn-grid .dn{font-family:var(--head);font-weight:800;font-size:10px;color:var(--mute);text-align:center}
-.sn-grid .d{position:relative;aspect-ratio:1;border:0;border-radius:9px;background:var(--cream2);color:var(--mute);font-family:var(--head);font-weight:800;font-size:11.5px;
-  display:grid;place-items:center;cursor:pointer;padding:0;transition:transform .15s}
-.sn-grid .d:active{transform:scale(.92)}
-.sn-grid .d.mine{color:#151320}
-.sn-grid .d.later{opacity:.45}
-.sn-grid .d.out{opacity:.18;pointer-events:none}
-.sn-grid .d.today{box-shadow:0 0 0 2px var(--butter) inset;color:var(--ink)}
-.sn-grid .d.mine.today{box-shadow:0 0 0 2px var(--ink) inset}
-.sn-grid .d.sel{outline:2px solid var(--ink);outline-offset:1px}
-.sn-grid .d em{position:absolute;top:2px;right:4px;font-style:normal;font-size:8.5px}
-.sn-grid .d .fr{position:absolute;bottom:3px;left:50%;transform:translateX(-50%);display:flex;gap:2px}
-.sn-grid .d .fr i{width:4px;height:4px;border-radius:50%;background:var(--good)}
-.sn-grid .d.mine .fr i{background:#151320}
-.sn-note{margin:10px 2px 0;min-height:20px}
 .sn-tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .sn-tile{border:0;background:var(--card);color:var(--ink);border-radius:18px;padding:12px;text-align:left;display:grid;gap:7px;cursor:pointer;font:inherit;min-width:0;align-content:start}
 .sn-tile .top{display:flex;justify-content:space-between;align-items:center;gap:6px}
@@ -1912,15 +1891,40 @@ nav button .dot{top:0;right:calc(50% - 24px)}
 .sn-rr.me .sn-bar i{background:var(--apricot);opacity:1}
 .sn-rr .n{font-family:var(--head);font-weight:900;font-size:16px;min-width:20px;text-align:right}
 
-.sn-strip{display:block;width:calc(100% + 98px);margin-top:14px;border:0;background:rgba(255,255,255,.06);border-radius:14px;padding:10px 10px 8px;cursor:pointer;text-align:left;color:#C9BFE0}
-.sn-strip:active{transform:scale(.99)}
-.sn-sgrid{display:grid;gap:3px}
-.sn-sgrid i{aspect-ratio:1;border-radius:3px;background:rgba(255,255,255,.12);position:relative}
-.sn-sgrid i.later{opacity:.4}
-.sn-sgrid i.them::after{content:"";position:absolute;inset:0;margin:auto;width:3px;height:3px;border-radius:50%;background:var(--mint)}
-.sn-sgrid i.today{box-shadow:0 0 0 1.5px var(--butter)}
-.sn-scap{display:flex;justify-content:space-between;font-size:11.5px;font-weight:600;margin-top:7px}
-.sn-scap b{font-family:var(--head);font-size:14px;line-height:1}
+
+/* Seasons, alive: your covers on each tile, what the room just logged, faces racing */
+.sn-covers{display:flex;margin:-2px 0 0}
+.snc{width:22px;height:32px;border-radius:5px;overflow:hidden;background:var(--cream2);box-shadow:0 0 0 2px var(--card);flex:none}
+.snc + .snc{margin-left:-7px}
+.snc .snci{width:100%;height:100%;object-fit:cover;display:block}
+.sn-lately{display:flex;gap:10px;overflow-x:auto;scrollbar-width:none;margin:0 -18px;padding:2px 18px 4px}
+.sn-lately::-webkit-scrollbar{display:none}
+.sn-late{flex:none;width:92px;border:0;background:none;padding:0;text-align:left;color:var(--ink);cursor:pointer;font:inherit}
+.sn-late .po{width:92px;height:auto;aspect-ratio:2/3;border-radius:12px;padding:6px}
+.sn-late .po b{font-size:10px}
+.sn-late .who{position:absolute;right:-4px;bottom:-4px;z-index:2}
+.sn-late .who .av{width:30px;height:30px;display:block;background:var(--cream);border-radius:10px;padding:2px}
+.sn-late small{display:block;margin-top:6px;font-size:11px;color:var(--mute);line-height:1.3}
+.sn-late small b{color:var(--ink);font-weight:700}
+.sn-late .po{overflow:visible}
+.sn-late .po img{border-radius:12px}
+.sn-rr{display:grid;grid-template-columns:minmax(0,30%) 1fr auto;align-items:center;gap:12px;padding:12px 0;cursor:pointer}
+.sn-rr b{width:auto}
+.sn-rr b em{display:block;font-style:normal;font-family:var(--body);font-weight:700;font-size:10px;color:var(--good);letter-spacing:.02em}
+.sn-lane{position:relative;height:6px;border-radius:3px;background:var(--cream2);margin-right:14px}
+.sn-lane .fill{position:absolute;left:0;top:0;bottom:0;border-radius:3px;background:var(--ink);opacity:.25}
+.sn-rr.me .sn-lane .fill{background:var(--apricot);opacity:1}
+.sn-lane .runner{position:absolute;top:50%;transform:translate(-50%,-50%)}
+.sn-lane .runner .av{width:28px;height:28px;display:block}
+.sn-rr.lead .n{color:var(--apricot)}
+/* Friend clubs */
+.clubchips{margin-top:2px;margin-bottom:12px}
+.clubposters{display:flex;gap:5px;margin:10px 0 4px;align-items:center}
+.cp{width:30px;aspect-ratio:2/3;border-radius:6px;overflow:hidden;position:relative;background:var(--cream2);flex:none;opacity:.35;transition:opacity .3s}
+.cp.done{opacity:1}
+.cp .cpi{width:100%;height:100%;object-fit:cover;display:block}
+.cp.done::after{content:"";position:absolute;right:2px;bottom:2px;width:9px;height:9px;border-radius:50%;background:var(--good);box-shadow:0 0 0 1.5px var(--card)}
+.cpmore{font-size:11px;font-weight:700;color:var(--mute);margin-left:2px}
 </style>
 </head>
 <body>
@@ -8810,9 +8814,11 @@ async function renderFriendClubs(el) { const R = activeRoom();
   const clubCard = (c, joined) => { const items = c.items || [], done = items.filter(id => logged(id)).length,
       pct = items.length ? Math.round(done/items.length*100) : 0, ks = [...new Set(items.map(kindOf))], d = daysTo(c.due);
     return `<div class="club ${c.scope === "open" ? "open" : ""}" data-c="${c.id}">
-      <div class="top"><span class="tag" style="background:${c.scope === "open" ? "var(--lilac)" : "var(--cream2)"}">${esc(c.label)}</span>
+      <div class="top"><span class="tag" style="background:${c.scope === "open" ? "var(--lilac)" : "var(--sky)"}">${esc(c.label || (c.scope === "open" ? "Open" : "Your room"))}</span>
         <span class="deadline ${d !== null && d <= 7 ? "soon" : ""}">${d === null ? "rolling" : d < 0 ? "finished" : d === 0 ? "ends today" : d + " days left"}</span></div>
       <b>${esc(c.name)}</b>
+      ${items.length ? `<div class="clubposters">${items.slice(0, 8).map(id => { const w = works[id];
+        return `<span class="cp${logged(id) ? " done" : ""}" style="${w?.cover ? "" : `background:${K(kindOf(id)).colour}`}">${w ? cover(w, "cpi") : ""}</span>`; }).join("")}${items.length > 8 ? `<span class="cpmore">+${items.length - 8}</span>` : ""}</div>` : ""}
       <div class="tr"><i data-pct="${pct}" style="width:${clubWas[c.id] != null ? clubWas[c.id] : pct}%"></i></div>
       <div class="pr"><b data-done="${done}">${clubDone[c.id] != null ? clubDone[c.id] : done}</b> of ${items.length}${pct === 100 ? " · you finished it" : ""} ${ks.map(tag).join(" ")}</div>
       ${ballotClosed(c) ? `<div class="pr" style="color:var(--good)">Results are in</div>` : ""}
@@ -8834,9 +8840,8 @@ async function renderFriendClubs(el) { const R = activeRoom();
 
   const yours = [...clubs, ...openClubs.filter(c => myClubIds.has(c.id))];
   const open = openClubs.filter(c => !myClubIds.has(c.id));
-  el.innerHTML = `<p class="sub">A programme with a deadline. Yours are private to a room; open ones anybody can join.</p>
-    <div class="seg">${[["yours",`Yours${yours.length?" · "+yours.length:""}`],["open",`Open to everyone${open.length?" · "+open.length:""}`]].map(([k,l]) =>
-      `<button data-ct2="${k}" class="${P.clubSub===k?"on":""}">${l}</button>`).join("")}</div>
+  el.innerHTML = `<div class="chiprow clubchips">${[["yours",`Yours${yours.length?" · "+yours.length:""}`],["open",`Open to everyone${open.length?" · "+open.length:""}`]].map(([k,l]) =>
+      `<button data-ct2="${k}" class="chip pchip ${P.clubSub===k?"on":""}">${l}</button>`).join("")}</div>
     <div id="clubList"></div>
     ${P.clubSub === "yours" ? `<div class="stack"><button class="btn soft" id="newClub">Start a club</button>${R ? "" : ""}</div>` : `<div class="stack"><button class="btn ghost" id="newOpenClub">Start one for everyone</button></div>`}`;
   $$("[data-ct2]", el).forEach(b => b.onclick = () => { P.clubSub = b.dataset.ct2; saveP(); renderClubs(); });
@@ -9071,7 +9076,7 @@ async function renderClubs() {
   const nClubs = clubs.length + openClubs.length;
   const places = [place("season", season.label, season.tone, season.mk), place("clubs", "Friend clubs", "lilac", "clubs")];
   body.innerHTML = `${pagerHTML(places, P.clubTab, { id:"seasonPager", mode:"tabs", title:"Seasons" })}
-    <p class="sub seasonsub">${P.clubTab === "season" ? (phase.key === "upcoming" ? `Next up · ${esc(season.pitch)}` : esc(season.pitch)) : nClubs ? `${nClubs} ${nClubs === 1 ? "club" : "clubs"} — the small ones you run with friends.` : "The small clubs you run with friends."}</p>
+    <p class="sub seasonsub">${P.clubTab === "season" ? (phase.key === "upcoming" ? `Next up · ${esc(season.pitch)}` : esc(season.pitch)) : "A list with a deadline, done together. Yours stay in your room; open ones anyone can join."}</p>
     <div id="seasonContent"></div>`;
   wirePager($("#seasonPager", body), places, P.clubTab, (k, d) => { P.clubTab = k; saveP(); seasonTurn = d; renderClubs(); });
   pagerArrive(seasonTurn, $("#seasonPager", body), $("#seasonContent", body)); seasonTurn = 0;
@@ -9102,96 +9107,69 @@ async function renderClubs() {
           <b>${ringNum}</b><small>${ringWord}</small></div>
         <div class="sn-sum"><b>${total ? `${total} logged` : phase.key === "upcoming" ? "Starts " + esc(when(season.starts)) : "Nothing logged yet"}</b>
           <p>${best.length ? best.map(x => `${x.m.name} in ${esc(x.c.name)}`).slice(0, 2).join(" · ") : phase.key === "upcoming" ? esc(season.pitch) : "Log one that counts and your first medal lands."}${next && phase.key === "live" ? `<br>${next.to.at - next.n} more ${SN_NOUN[next.c.kind][next.to.at - next.n === 1 ? 0 : 1]} for ${next.to.name}.` : ""}</p></div>
-      </div>
-      <button class="sn-strip" id="snStrip" type="button" aria-label="See the season night by night"></button></div>
+      </div></div>
     <div class="lbl">Four ways in</div>
     <div class="sn-tiles">${earned.map(({ c, n, m }) => `<button class="sn-tile" type="button" data-season-challenge="${c.id}">
         <span class="top"><span class="tag" style="background:${K(c.kind).colour}">${K(c.kind).label}</span><small>${n ? `${n} logged` : "not started"}</small></span>
         <b>${esc(c.name)}</b>
+        ${n ? `<span class="sn-covers">${seasonEntries(c, myEntries, season).slice(0, 4).map(e => `<span class="snc">${cover(works[e.work_id] || e.works, "snci")}</span>`).join("")}</span>` : ""}
         <span class="sn-steps" aria-label="${m ? m.name + " earned" : "no medal yet"}">${SEASON_MEDALS.map(x => `<i class="${n >= x.at ? "on " + x.tier : ""}"></i>`).join("")}</span>
         <small>${m ? `${m.name}${SEASON_MEDALS.find(x => x.at > n) ? ` · ${SEASON_MEDALS.find(x => x.at > n).name} at ${SEASON_MEDALS.find(x => x.at > n).at}` : " · all done"}` : `${esc(c.copy)}`}</small></button>`).join("")}</div>
+    <div id="snLately"></div>
     <div id="snRace"></div>
 `;
   $$('[data-season-challenge]', out).forEach(row => row.onclick = () => openSeasonChallenge(season.challenges.find(c => c.id === row.dataset.seasonChallenge)));
   if (ended && ended !== season) fillSeasonRecap(ended);
-  paintSeasonStrip(season, mine, null);
+  /* the ring fills and the number counts up as the page opens */
+  if (!REDUCED) { const fl = $(".sn-ring .fl", out), nb = $(".sn-ring b", out), to = fl?.getAttribute("stroke-dasharray");
+    if (fl && to) fl.animate([{ strokeDasharray:`0 ${C.toFixed(1)}` }, { strokeDasharray:to }], { duration:900, delay:150, easing:"cubic-bezier(.2,.8,.2,1)", fill:"backwards" });
+    if (nb && ringNum > 0) { nb.textContent = "0"; setTimeout(() => tickTo(nb, ringNum), 150); } }
   revealIn(out);
   /* the room's half arrives after: their nights on the calendar, and the race */
-  seasonRoom(season).then(room => { if (!$("#snStrip")) return; paintSeasonStrip(season, mine, room); paintSeasonRace(season, room, total); }).catch(() => {});
+  seasonRoom(season).then(room => { if (!$("#snRace")) return; paintSeasonLately(room); paintSeasonRace(season, room, total); }).catch(() => {});
   /* Night Owl (the top-10% mark) is off for now; seasonRank still works if it comes back */
 }
-/* ---------- the season, by night ----------
-   One month at a time (a season can run two); the arrows step between them. A night you
-   logged something that counts is filled with its medium's colour; a dot underneath for
-   each friend in the room who did; today is ringed; nights to come are faint. Tap a night
-   to see what it was. */
-const SN_DAYS = ["M", "T", "W", "T", "F", "S", "S"];
 const SN_NOUN = { film:["film", "films"], tv:["show", "shows"], book:["book", "books"], game:["game", "games"] };
-let snMonth = null;
-function seasonMonths(S) { const out = []; let [y, m] = S.starts.split("-").map(Number); const [ey, em] = S.ends.split("-").map(Number);
-  while (y < ey || (y === ey && m <= em)) { out.push(`${y}-${String(m).padStart(2, "0")}`); m++; if (m > 12) { m = 1; y++; } }
-  return out; }
-function paintSeasonMonth(S, mine, room) {
-  const el = $("#snCal"); if (!el) return;
-  const months = seasonMonths(S), t = today();
-  if (!months.includes(snMonth)) snMonth = months.find(x => t.startsWith(x)) || (t < S.starts ? months[0] : months.at(-1));
-  const [y, m] = snMonth.split("-").map(Number), n = new Date(Date.UTC(y, m, 0)).getUTCDate(), lead = (new Date(Date.UTC(y, m - 1, 1)).getUTCDay() + 6) % 7;
-  const byDay = {}; for (const { e, c } of mine) (byDay[seasonDate(e)] ||= []).push({ e, c });
-  const theirs = room?.byDay || {};
-  const at = months.indexOf(snMonth);
-  let cells = SN_DAYS.map(d => `<span class="dn" aria-hidden="true">${d}</span>`).join("") + `<span></span>`.repeat(lead);
-  for (let d = 1; d <= n; d++) {
-    const iso = `${snMonth}-${String(d).padStart(2, "0")}`, inS = iso >= S.starts && iso <= S.ends, mineHere = byDay[iso] || [], f = (theirs[iso] || new Set()).size;
-    const col = mineHere.length ? K(mineHere[0].c.kind).colour : "";
-    cells += `<button type="button" class="d${!inS ? " out" : ""}${iso > t ? " later" : ""}${iso === t ? " today" : ""}${mineHere.length ? " mine" : ""}" data-snday="${iso}"
-      ${col ? `style="background:${col}"` : ""} aria-label="${d} ${MONTHS[m - 1]}${mineHere.length ? `, you logged ${mineHere.length}` : ""}${f ? `, ${f} from your room` : ""}">${d}${mineHere.length > 1 ? `<em>${mineHere.length}</em>` : ""}${f ? `<span class="fr">${"<i></i>".repeat(Math.min(3, f))}</span>` : ""}</button>`; }
-  el.innerHTML = `<div class="sn-mhead">${months.length > 1 ? `<button class="sn-mgo" data-snm="-1" aria-label="Previous month" ${at ? "" : "disabled"}>‹</button>` : ""}
-      <b>${MONTHS[m - 1]}</b>${months.length > 1 ? `<button class="sn-mgo" data-snm="1" aria-label="Next month" ${at < months.length - 1 ? "" : "disabled"}>›</button>` : ""}</div>
-    <div class="sn-grid">${cells}</div><p class="sub sn-note" id="snNote">${mine.length ? "Tap a night to see what it was." : "Your nights light up here as you log."}</p>`;
-  $$("[data-snm]", el).forEach(b => b.onclick = () => { snMonth = months[at + +b.dataset.snm]; paintSeasonMonth(S, mine, room); });
-  $$("[data-snday]", el).forEach(b => b.onclick = () => { const iso = b.dataset.snday, mh = byDay[iso] || [], who = [...(theirs[iso] || [])];
-    $$("[data-snday]", el).forEach(x => x.classList.toggle("sel", x === b));
-    const names = who.map(id => room?.names[id]).filter(Boolean);
-    $("#snNote").innerHTML = `<b>${+iso.slice(8)} ${MONTHS[+iso.slice(5, 7) - 1]}:</b> ${iso > t ? "still to come." : `${mh.length ? `you logged ${mh.map(x => `<b>${esc(works[x.e.work_id]?.title || x.e.works?.title || "something")}</b>`).join(", ")}` : "nothing from you"}${names.length ? `; ${esc(names.slice(0, 3).join(", "))}${names.length > 3 ? ` and ${names.length - 3} more` : ""} too` : ""}.`}`; }); }
-/* The season in one glance, inside its card: every night a small square, yours filled in
-   the colour of what you logged, a dot where only your room did, today ringed, nights to
-   come faint. Tapping it opens the full month, night by night. */
-function paintSeasonStrip(S, mine, room) {
-  const el = $("#snStrip"); if (!el) return;
-  const t = today(), days = [], byDay = {}, theirs = room?.byDay || {};
-  for (const { e, c } of mine) (byDay[seasonDate(e)] ||= []).push(c);
-  for (let n = dayNo(S.starts); n <= dayNo(S.ends); n++) days.push(new Date(n * 864e5).toISOString().slice(0, 10));
-  const cols = Math.min(31, Math.ceil(days.length / 2));
-  const month = MONTHS[+((t >= S.starts && t <= S.ends ? t : S.starts).slice(5, 7)) - 1];
-  el.innerHTML = `<span class="sn-sgrid" style="grid-template-columns:repeat(${cols},minmax(0,1fr))">${days.map(d => { const m = byDay[d], f = theirs[d]?.size;
-      return `<i class="${m ? "mine" : f ? "them" : ""}${d === t ? " today" : ""}${d > t ? " later" : ""}"${m ? ` style="background:${K(m[0].kind).colour}"` : ""}></i>`; }).join("")}</span>
-    <span class="sn-scap">${days.length > 31 ? "The season" : "Your " + month}, night by night<b>›</b></span>`;
-  el.onclick = () => { openSheet(`<h3>${esc(S.name)}, night by night</h3><p class="sub">Yours in colour, your room as dots. Tap a night to see what it was.</p>
-      <div class="card sn-cal" id="snCal"></div><div class="stack"><button class="btn quiet" id="snClose">Close</button></div>`);
-    paintSeasonMonth(S, mine, room); $("#snClose").onclick = closeSheet; }; }
 /* everyone in your room's entries for the season, once a visit */
 const snRoomCache = {};
 async function seasonRoom(S) {
   const R = activeRoom(); if (!R || R.members.length < 2) return null;
   const key = S.id + ":" + R.id; if (snRoomCache[key]) return snRoomCache[key];
-  const rows = await q(sb.from("entries").select("user_id,work_id,created_at,rated_on,works(kind,meta,length,year,title)")
+  const rows = await q(sb.from("entries").select("user_id,work_id,created_at,rated_on,works(kind,meta,length,year,title,cover)")
     .in("user_id", R.members.map(m => m.id)).gte("created_at", S.starts + "T00:00:00.000Z").lte("created_at", S.ends + "T23:59:59.999Z").limit(4000));
-  const byDay = {}, count = {}, seen = {};
+  const count = {}, seen = {}, recent = [];
   for (const e of rows) { if (!seasonChallengeFor(e, S)) continue;
     const u = e.user_id, k = u + ":" + e.work_id; if (seen[k]) continue; seen[k] = 1;
-    count[u] = (count[u] || 0) + 1;
-    if (u !== me.id) (byDay[seasonDate(e)] ||= new Set()).add(u); }
-  const names = Object.fromEntries(R.members.map(m => [m.id, m.handle]));
-  return snRoomCache[key] = { byDay, count, names, members:R.members, room:R }; }
+    count[u] = (count[u] || 0) + 1; if (e.works?.id) remember(e.works); recent.push(e); }
+  recent.sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
+  const people = Object.fromEntries(R.members.map(m => [m.id, m]));
+  const fresh = new Set(recent.filter(e => Date.now() - new Date(e.created_at) < 864e5).map(e => e.user_id));
+  return snRoomCache[key] = { count, recent:recent.slice(0, 12), people, fresh, members:R.members, room:R }; }
+/* Lately: the room's newest season logs as posters, a face on each, newest first, so the
+   page shows people doing the thing rather than only a score */
+function paintSeasonLately(room) {
+  const el = $("#snLately"); if (!el || !room?.recent.length) return;
+  el.innerHTML = `<div class="lbl">Lately in the room</div><div class="sn-lately">${room.recent.map(e => { const w = works[e.work_id] || e.works || {}, p = room.people[e.user_id];
+      return `<button class="sn-late" type="button" data-work="${esc(e.work_id)}"><span class="po">${cover(w, "co")}<b>${esc(w.title || "")}</b><span class="who">${p ? avatar(p) : ""}</span></span>
+        <small><b>${p?.id === me.id ? "you" : esc(p?.handle || "someone")}</b> · ${esc(noteAgo(e.created_at))}</small></button>`; }).join("")}</div>`;
+  $$("[data-work]", el).forEach(b => b.onclick = () => openWork(b.dataset.work));
+  if (!REDUCED) $$(".sn-late", el).slice(0, 5).forEach((x, i) => x.animate([{ opacity:0, transform:"translateX(18px)" }, { opacity:1, transform:"none" }], { duration:360, delay:i * 60, easing:"cubic-bezier(.2,.8,.2,1)", fill:"backwards" })); }
 function paintSeasonRace(S, room, myTotal) {
   const el = $("#snRace"); if (!el || !room) return;
   const rows = room.members.map(p => ({ p, n:p.id === me.id ? myTotal : room.count[p.id] || 0 })).sort((a, b) => b.n - a.n || (a.p.id === me.id ? -1 : 1));
   const lead = rows[0], meAt = rows.findIndex(r => r.p.id === me.id);
   const line = !lead.n ? "Nobody's on the board yet." : lead.p.id === me.id ? "You're out in front." : meAt === -1 ? "" : `${esc(lead.p.handle)}'s ahead${rows[meAt].n < lead.n ? ` by ${lead.n - rows[meAt].n}` : ""}.`;
   el.innerHTML = `<div class="lbl">The room's race<small>${line}</small></div>
-    <div class="card sn-race">${rows.slice(0, 8).map((r, i) => `<div class="sn-rr${r.p.id === me.id ? " me" : ""}" data-prof="${esc(r.p.id)}"><span class="rk">${i + 1}</span>${avatar(r.p)}<b>${esc(r.p.handle)}${r.p.id === me.id ? " <small>(you)</small>" : ""}</b>
-      <span class="sn-bar"><i style="width:${lead.n ? Math.round(r.n / lead.n * 100) : 0}%"></i></span><span class="n">${r.n}</span></div>`).join("")}</div>`;
-  $$("[data-prof]", el).forEach(x => x.onclick = () => { if (x.dataset.prof !== me.id) openProfile(x.dataset.prof); }); }
+    <div class="card sn-race">${rows.slice(0, 8).map((r, i) => { const pct = lead.n ? Math.round(r.n / lead.n * 100) : 0;
+      return `<div class="sn-rr${r.p.id === me.id ? " me" : ""}${i === 0 && r.n ? " lead" : ""}" data-prof="${esc(r.p.id)}">
+        <b>${esc(r.p.handle)}${r.p.id === me.id ? " <small>(you)</small>" : ""}${room.fresh.has(r.p.id) ? ` <em>new today</em>` : ""}</b>
+        <span class="sn-lane"><i class="fill" style="width:${pct}%"></i><span class="runner" style="left:${pct}%">${avatar(r.p)}</span></span>
+        <span class="n">${r.n}</span></div>`; }).join("")}</div>`;
+  $$("[data-prof]", el).forEach(x => x.onclick = () => { if (x.dataset.prof !== me.id) openProfile(x.dataset.prof); });
+  /* off the line: each face runs out to where it's got to, a beat apart */
+  if (!REDUCED) $$(".sn-rr", el).forEach((row, i) => { const f = $(".fill", row), r = $(".runner", row), to = r.style.left;
+    f.animate([{ width:"0%" }, { width:f.style.width }], { duration:800, delay:120 + i * 90, easing:"cubic-bezier(.2,.8,.2,1)", fill:"backwards" });
+    r.animate([{ left:"0%" }, { left:to }], { duration:800, delay:120 + i * 90, easing:"cubic-bezier(.2,.8,.2,1)", fill:"backwards" }); }); }
 
 /* renderClubsOld is gone: it was already dead before the season screen arrived,
    superseded twice over, and nothing routed to it. */
