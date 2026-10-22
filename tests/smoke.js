@@ -80,7 +80,7 @@ const BASE = (process.env.BASE || "http://127.0.0.1:8934").replace(/\/$/, "");
         fire("touchstart", 200); for (let i = 1; i <= 6; i++) { fire("touchmove", 200 - i * 8); await new Promise(r => setTimeout(r, 120)); } fire("touchend", 152); });
       await wait(700); await expect("#tab-doors.on", "Rooms still, after a short drag");
       if (await page.$("section.incoming")) throw new Error("a peeking tab was left behind");
-      await swipe(-160); await expect("#tab-clubs.on", "Seasons after a swipe left");
+      await swipe(-160); await expect("#tab-shelf.on", "Queue after a swipe left");
       await swipe(160); await expect("#tab-doors.on", "Rooms after a swipe back"); });
     await step("hold library to spin", async () => { await tap("nav button", "Seasons"); await wait(600);
       const b = page.locator('nav button[data-tab="library"]'); const box = await b.boundingBox();

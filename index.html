@@ -1849,9 +1849,9 @@ header.titled .hdrtitle{opacity:1;transform:none}
 
 <nav id="nav"><div class="in"><span class="navpill" id="navPill"></span>
   <button data-tab="doors">Rooms</button>
-  <button data-tab="clubs">Seasons</button>
-  <button id="add" aria-label="Log something"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
   <button data-tab="library">Queue</button>
+  <button id="add" aria-label="Log something"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+  <button data-tab="clubs">Seasons</button>
   <button data-tab="taste">You</button>
 </div></nav>
 <div class="demobar" id="demobar" role="region" aria-label="Demo" hidden>Demo &middot; invented people &middot; nothing is saved</div>
@@ -4004,7 +4004,7 @@ if (window.ResizeObserver) { const nb = $("nav .in");
   if (nb) new ResizeObserver(() => requestAnimationFrame(() => movePill(true))).observe(nb); }
 document.fonts?.ready.then(() => movePill(true)).catch(() => {});
 
-const TAB_ORDER = ["doors", "clubs", "shelf", "archive", "taste"];
+const TAB_ORDER = ["doors", "shelf", "archive", "clubs", "taste"];
 const drawnAt = {}; let swipeDrawT = 0;
 /* each tab keeps where you were in it; tapping the tab you're already on goes to the top */
 const tabScroll = {};
