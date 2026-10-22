@@ -1925,6 +1925,68 @@ nav button .dot{top:0;right:calc(50% - 24px)}
 .cp .cpi{width:100%;height:100%;object-fit:cover;display:block}
 .cp.done::after{content:"";position:absolute;right:2px;bottom:2px;width:9px;height:9px;border-radius:50%;background:var(--good);box-shadow:0 0 0 1.5px var(--card)}
 .cpmore{font-size:11px;font-weight:700;color:var(--mute);margin-left:2px}
+
+/* ---------- alive, quietly ----------
+   Calm motion took every idle away, and the app went still in a way that read as asleep.
+   This gives some of it back, smaller and slower, and never in step: the faces breathe,
+   sway or bob by shape and now and then glance aside; posters in the feeds float a pixel
+   or two; the ghost and the empty-state rooms bob. Nothing moves enough to read as a
+   loading state, and none of it runs for anyone who has asked for less motion. */
+@media (prefers-reduced-motion:no-preference){
+  .av:not(#meAv) svg[data-shape]{transform-origin:50% 82%;animation-duration:var(--dur,6s)!important;animation-iteration-count:infinite!important;
+    animation-timing-function:ease-in-out!important;animation-delay:calc(1.2s + var(--id,0s))!important}
+  .av:not(#meAv) svg[data-shape="ball"]{animation-name:liveBreathe!important;--dur:5.4s}
+  .av:not(#meAv) svg[data-shape="box"]{animation-name:liveNod!important;--dur:6.6s}
+  .av:not(#meAv) svg[data-shape="cube"]{animation-name:liveNod!important;--dur:7.4s}
+  .av:not(#meAv) svg[data-shape="can"]{animation-name:liveSway!important;--dur:6.2s}
+  .av:not(#meAv) svg[data-shape="cone"]{animation-name:liveTeeter!important;--dur:5s}
+  .av:not(#meAv) svg[data-shape="ghost"]{animation-name:liveBob!important;--dur:4.8s}
+  .av:not(#meAv) svg[data-shape="pill"]{animation-name:liveBob!important;--dur:5.4s}
+  .av:not(#meAv) svg[data-shape="arch"]{animation-name:liveSway!important;--dur:7.8s}
+  .av:not(#meAv) svg[data-shape="step"]{animation-name:liveBreathe!important;--dur:6.8s}
+  /* eyes: a blink on their own clock, and every so often a look to one side and back */
+  .av:not(.new) .eyes{animation:avBlink 7.4s ease-in-out infinite, liveGlance 15s ease-in-out infinite;
+    animation-delay:calc(2s + var(--bd,0s)), calc(5s + var(--id,0s))}
+  .logo .mark .re.lit{animation:avBlink 9s ease-in-out infinite, liveGlance 17s ease-in-out infinite;animation-delay:3s, 6s}
+  .logo .mark .re.lit:nth-of-type(2){animation-delay:4.2s, 8s}
+  .season-ghost svg,.season-object svg{animation:liveBob 4.8s ease-in-out infinite!important}
+  .emptydoor.hope{animation:liveBob 5.2s ease-in-out infinite!important}
+  .emptydoor .zz{animation:doorZ 3.2s ease-in-out infinite!important}
+  .emptydoor .zz.z2{animation-delay:1.3s!important}
+  /* posters in the feeds drift up a couple of pixels and back, each on its own beat */
+  .slip .co,.logline .co,.moment-row .co,.tn-main .co,.sn-late .po,.ll-w .co,.row[data-w] .co{animation:liveFloat 7.2s ease-in-out infinite}
+  .slip:nth-child(3n+1) .co,.moment-row:nth-child(3n+1) .co,.sn-late:nth-child(3n+1) .po,.row[data-w]:nth-child(3n+1) .co{animation-delay:-2.4s;animation-duration:8.1s}
+  .slip:nth-child(3n+2) .co,.moment-row:nth-child(3n+2) .co,.sn-late:nth-child(3n+2) .po,.row[data-w]:nth-child(3n+2) .co{animation-delay:-4.9s;animation-duration:6.6s}
+  /* things you can tap give a little under your finger, and lift a touch under a mouse */
+  .slip,.sn-tile,.club,.archcard,.sn-late,.season-challenge,.feedrow{transition:transform .18s cubic-bezier(.2,.8,.2,1)}
+  .sn-tile:active,.club:active,.archcard:active,.sn-late:active,.season-challenge:active{transform:scale(.975)}
+  @media (hover:hover){.sn-tile:hover,.club:hover,.archcard:hover,.sn-late:hover{transform:translateY(-2px)}}
+}
+@keyframes liveBreathe{0%,100%{transform:scale(1)}50%{transform:scale(1.03,.975)}}
+@keyframes liveNod{0%,62%,100%{transform:rotate(0)}30%{transform:rotate(2.6deg)}}
+@keyframes liveSway{0%,100%{transform:rotate(-1.8deg)}50%{transform:rotate(1.8deg)}}
+@keyframes liveTeeter{0%,100%{transform:rotate(-2.6deg)}50%{transform:rotate(2.6deg)}}
+@keyframes liveBob{0%,100%{transform:translateY(0)}45%{transform:translateY(-4%)}70%{transform:translateY(1%)}}
+@keyframes liveGlance{0%,42%,86%,100%{translate:0 0}47%,58%{translate:22% 0}63%,78%{translate:-16% 0}}
+@keyframes liveFloat{0%,100%{translate:0 0}50%{translate:0 -2px}}
+
+/* ---------- drawn like the characters ----------
+   The faces are flat colour with a lit top and a shaded side, and the rest of the app
+   borrows that: cards get a faint shaded base, buttons, tags and chips sit on a darker
+   lip like something you could press, the + is a little lit dome, and a poster with no
+   cover yet is drawn as a flat block with a lit top and a shaded side instead of a bare
+   gradient. */
+.card,.slip,.club,.sn-tile,.blank{box-shadow:0 14px 34px -26px rgba(21,19,32,.3),inset 0 -3px 0 rgba(21,19,32,.035)}
+html[data-theme="dark"] .slip,html[data-theme="dark"] .club,html[data-theme="dark"] .card,html[data-theme="dark"] .blank,html[data-theme="dark"] .sn-tile{
+  box-shadow:0 0 0 1px var(--line),inset 0 1px 0 rgba(255,255,255,.045),inset 0 -3px 0 rgba(0,0,0,.2)}
+.btn:not(.quiet):not(.ghost){box-shadow:inset 0 -3px 0 rgba(0,0,0,.16);transition:transform .12s,box-shadow .12s}
+.btn:not(.quiet):not(.ghost):active{transform:translateY(1px);box-shadow:inset 0 -1px 0 rgba(0,0,0,.16)}
+.tag{box-shadow:inset 0 -2px 0 rgba(21,19,32,.13)}
+.tag.dim{box-shadow:none}
+.chip.on{box-shadow:inset 0 -2px 0 rgba(0,0,0,.22)}
+#add{box-shadow:0 10px 22px -10px rgba(21,19,32,.55),inset 0 -4px 0 rgba(0,0,0,.24),inset 0 2px 0 rgba(255,255,255,.14)}
+.po:not(:has(img.ok))::before{content:"";position:absolute;left:0;right:0;top:0;height:16%;background:rgba(255,255,255,.2);pointer-events:none}
+.po:not(:has(img.ok))::after{content:"";position:absolute;top:0;bottom:0;right:0;width:12%;background:rgba(21,19,32,.1);pointer-events:none}
 </style>
 </head>
 <body>
