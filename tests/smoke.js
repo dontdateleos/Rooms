@@ -51,7 +51,7 @@ const BASE = (process.env.BASE || "http://127.0.0.1:8934").replace(/\/$/, "");
     await step("room picker", async () => { await tap("#feedPick"); await wait(500); await expect("[data-fp]", "rooms to pick"); await closeSheet(); });
     await step("room menu", async () => { await tap("#roomMenu"); await wait(500); await expect("#roomSeats", "the members"); await closeSheet(); });
     await step("bell", async () => { await tap("#bellBtn"); await wait(500); await expect("#noteBody", "the bell's list"); await closeSheet(); });
-    await step("archive", async () => { await tap("nav button", "Library"); await wait(700); await tap("#libBar [data-lib='archive']"); await wait(900); await expect(".archcard", "archive cards");
+    await step("archive", async () => { await tap("nav button", "Queue"); await wait(700); await tap("#libBar [data-lib='archive']"); await wait(900); await expect(".archcard", "archive cards");
       await tap('#cabPager [data-place]:nth-child(2)'); await wait(900); await expect(".archcard", "cards for one medium");
       await tap('#cabPager [data-place]'); await wait(700); });
     await step("seasons", async () => { await tap("nav button", "Seasons"); await wait(900); await expect("#seasonPager", "the seasons page");
@@ -60,7 +60,7 @@ const BASE = (process.env.BASE || "http://127.0.0.1:8934").replace(/\/$/, "");
       await tap('#seasonPager [data-place="season"]'); await wait(700); });
     await step("shelf", async () => { await tap("nav button", "Seasons"); await wait(700);
       /* Library comes back to the side you left it on */
-      await tap("nav button", "Library"); await wait(900); await expect("#tab-archive.on", "the archive, where Library was left");
+      await tap("nav button", "Queue"); await wait(900); await expect("#tab-archive.on", "the archive, where Library was left");
       await tap("#libBar [data-lib='shelf']"); await wait(900); await expect("#shelfGrid .cell", "shelf posters"); });
     await step("tonight", async () => { await tap("nav button", "Rooms"); await wait(1200); await expect("#tonight", "the tonight card");
       await tap("#tonightSpin"); await wait(700); if (!(await page.$("#sheet.on"))) throw new Error("Can't decide? didn't open the wheel"); await closeSheet(); });

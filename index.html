@@ -1839,7 +1839,7 @@ header.titled .hdrtitle{opacity:1;transform:none}
 <main class="wrap">
   <section id="tab-auth" class="on"><div class="auth" id="authBody"></div></section>
   <section id="tab-doors"><div id="doorsBody"></div></section>
-  <div class="libbar" id="libBar" hidden><h2 class="pagetitle" data-pagetitle="Library">Library</h2><div class="seg glide ul" role="tablist" aria-label="Your library"><span class="segglide"></span>
+  <div class="libbar" id="libBar" hidden><h2 class="pagetitle" data-pagetitle="Queue">Queue</h2><div class="seg glide ul" role="tablist" aria-label="Your queue"><span class="segglide"></span>
     <button data-lib="shelf" role="tab">Shelf</button><button data-lib="archive" role="tab">Archive</button></div></div>
   <section id="tab-archive"><div id="archiveBody"></div></section>
   <section id="tab-shelf"><div id="shelfBody"></div></section>
@@ -1851,7 +1851,7 @@ header.titled .hdrtitle{opacity:1;transform:none}
   <button data-tab="doors">Rooms</button>
   <button data-tab="clubs">Seasons</button>
   <button id="add" aria-label="Log something"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
-  <button data-tab="library">Library</button>
+  <button data-tab="library">Queue</button>
   <button data-tab="taste">You</button>
 </div></nav>
 <div class="demobar" id="demobar" role="region" aria-label="Demo" hidden>Demo &middot; invented people &middot; nothing is saved</div>
@@ -5938,7 +5938,6 @@ function renderShelf() {
         `<div class="row" style="cursor:default">${cover(w)}<div class="t"><b>${esc(w.title)}</b>
           <small>${tag(w.kind)} from ${esc(h.sender_p?.handle || "someone")}${h.note ? ` · “${esc(h.note)}”` : ""}</small></div>
           <span class="chip" data-yes="${esc(h.id)}">Take it</span><span class="chip" data-no="${esc(h.id)}">No</span></div>`).join("")}</div>`; })()}
-    <div id="recShelf"></div>
     <div class="lbl">Coming soon · add to the shelf</div><div id="waitBody"><p class="msg">Loading what's coming</p></div>
     <p class="sub" style="margin-top:6px;font-size:12px">Films, shows and games with a date on them.
       Books don't appear here — no book source publishes a forthcoming list.</p>
@@ -5988,30 +5987,11 @@ function renderShelf() {
   justDealt = justSwept = null;
   wireShelf(); if (shelfEdit) paintEdit();
   wireSearch();
-  if (P.picked && !logged(P.picked) && works[P.picked]) showResult(works[P.picked]); renderWaiting(); renderShelfRecs(); }
+  if (P.picked && !logged(P.picked) && works[P.picked]) showResult(works[P.picked]); renderWaiting(); }
 /* openLibraryFilters is gone: it moved both filter rows behind a "Filters" button and
    a sheet, which hid the counts and cost an extra tap to see what you were part-way
    through — the shelf used to answer "what am I on right now" at a glance, and this
    sheet made you go looking for it. The chips are back inline, above, where they were. */
-/* The shelf is where you decide what's next, so what your taste suggests belongs here and
-   not only on your own profile page — the same recommendations, one tap from landing. It
-   filters again on render rather than trusting the cache, so adding one makes it leave the
-   list on the spot. Nothing to suggest and the whole block goes, label and all: an empty
-   heading on the shelf is just a reminder that the app wanted something from you. */
-async function renderShelfRecs() { const el = $("#recShelf"); if (!el) return;
-  const on = new Set(lists.flatMap(l => l.items));
-  const rs = (await loadRecs().catch(() => [])).filter(({ r }) => !logged(r.id) && !on.has(r.id)).slice(0, 5);
-  if (!el.isConnected) return;
-  /* Silence is right when the lookup simply had nothing left to offer. It isn't right
-     when you've rated nothing highly yet — then the block is the only thing that tells
-     you the feature exists at all. */
-  if (!rs.length) { el.innerHTML = myEntries.some(e => e.score >= 8) ? ""
-    : `<div class="lbl">Because of what you rated</div><p class="empty">Rate something four stars or more and things like it start turning up here.</p>`;
-    return; }
-  window.__hits = Object.assign(window.__hits||{}, Object.fromEntries(rs.map(x => [x.r.id, x.r])));
-  el.innerHTML = `<div class="lbl">Because of what you rated</div><div class="card" style="margin-top:0">${rs.map(({ r, why }) =>
-    `<div class="row" data-rec="${esc(r.id)}">${cover(r)}<div class="t"><b>${esc(r.title)}</b><small>${tag(r.kind)} ${esc(r.year||"")} · because of ${esc(why)}</small></div><span class="chip">Add</span></div>`).join("")}</div>`;
-  $$("[data-rec]", el).forEach(x => x.onclick = () => addToShelf(x.dataset.rec)); }
 /* Something you're in the middle of is, by definition, a thing you mean to get to, so the
    wheel can land on it even if it never went on the shelf — and the count on the button
    matches the pool behind it, which it would not if the shelf and the wheel disagreed. */
@@ -8040,9 +8020,17 @@ async function renderTaste() { const body = $("#tasteBody"); const t = tasteOf(m
   const rb = $("#recBody"); if (!rb) return;
   /* a card that loads forever is worse than no card: if nothing comes back in a few
      seconds (offline, a source down, nothing to suggest) it simply isn't there */
-  const rs = (await Promise.race([loadRecs().catch(() => []), new Promise(r => setTimeout(() => r([]), 8000))])).slice(0, 3);
+  /* Recommendations live here, with your taste, rather than on the shelf: the shelf is what
+     you've chosen, this is what your taste suggests. Nothing you've logged or already
+     shelved, so adding one makes it leave the list on the spot. */
+  const on = new Set(lists.flatMap(l => l.items));
+  const rs = (await Promise.race([loadRecs().catch(() => []), new Promise(r => setTimeout(() => r([]), 8000))]))
+    .filter(({ r }) => !logged(r.id) && !on.has(r.id)).slice(0, 5);
   if ($("#recBody") !== rb) return;
-  if (!rs.length) { $("#recCard")?.remove(); return; }
+  /* silence is right when there's nothing left to offer; it isn't when you haven't rated
+     anything highly yet, because then this is the only thing saying the feature exists */
+  if (!rs.length) { if (myEntries.some(e => e.score >= 8)) $("#recCard")?.remove();
+    else rb.innerHTML = `<p class="empty">Rate something four stars or more and things like it start turning up here.</p>`; return; }
   window.__hits = Object.assign(window.__hits||{}, Object.fromEntries(rs.map(x => [x.r.id, x.r])));
   rb.innerHTML = rs.map(({ r, why }) => `<div class="row" data-rec="${esc(r.id)}">${cover(r)}<div class="t"><b>${esc(r.title)}</b><small>${tag(r.kind)} ${esc(r.year||"")} · because of ${esc(why)}</small></div><span class="chip">Add</span></div>`).join("");
   $$("[data-rec]", rb).forEach(x => x.onclick = async () => { await addToShelf(x.dataset.rec); recs = recs.filter(e => e.r.id !== x.dataset.rec); renderTaste(); }); }
