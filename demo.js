@@ -43,6 +43,12 @@ const WORKS = [
   ["book:3","book","Trust","2022","Hernan Diaz",416,"#8FD3FF","#5C9CC4"],
   ["game:1","game","Outer Wilds","2019","Mobius Digital",22,"#9EF0C9","#5AAE89"],
   ["game:2","game","Disco Elysium","2019","ZA/UM",30,"#B9A6FF","#8271CC"],
+  /* a few horror titles, so the Halloween season has something on its calendar */
+  ["film:30","film","The Thing","1982","John Carpenter",109,"#8FD3FF","#4E7E9C"],
+  ["film:31","film","Hereditary","2018","Ari Aster",127,"#FF8E6E","#9C4636"],
+  ["film:32","film","The Witch","2015","Robert Eggers",92,"#9EF0C9","#4F7E66"],
+  ["tv:30","tv","The Haunting of Hill House","2018","Mike Flanagan",10,"#B9A6FF","#5E4E96"],
+  ["book:30","book","Mexican Gothic","2020","Silvia Moreno-Garcia",301,"#F5A3C7","#9C5376"],
 ];
 const COMING = [
   ["film:20","film","The Bride!","2026","Maggie Gyllenhaal",0,"#FF8E6E","#C96A52", soon(38)],
@@ -59,6 +65,8 @@ const GENRES = {
   "book:1":["Science fiction"], "book:2":["Drama","History"], "book:3":["Drama","History"],
   "game:1":["Adventure","Mystery"], "game:2":["Role-playing","Mystery"],
   "film:20":["Horror","Romance"], "game:20":["Adventure","Action"],
+  "film:30":["Horror","Science Fiction"], "film:31":["Horror","Drama"], "film:32":["Horror","Mystery"],
+  "tv:30":["Drama","Horror","Mystery"], "book:30":["Horror fiction","Gothic"],
 };
 /* what the pick wheel shows under a spun title — the shelf's things, since those are
    what the wheel lands on. Written for the demo, not lifted from anywhere. */
@@ -132,6 +140,17 @@ const LOG = [
   ["u-mo","book:3",7,1,"",[]],
   ["u-mo","game:2",9,1,"",[]],
   ["u-ali","film:9",7,1.5,"",[]],
+  /* the Halloween season: a few nights each, so the calendar and the room's race have life */
+  ["me","film:31",9,18,"Not a jump scare in it and I didn't sleep.",["the acting"]],
+  ["me","book:30",8,11,"",[]],
+  ["me","film:32",8,4,"",["the look"]],
+  ["u-mo","film:30",10,20,"The blood test. Every time.",["the writing"]],
+  ["u-mo","tv:30",9,13,"",[]],
+  ["u-mo","film:31",8,8,"",[]],
+  ["u-mo","book:30",8,5,"",[]],
+  ["u-cass","film:32",9,15,"",["the look"]],
+  ["u-cass","film:30",8,10,"",[]],
+  ["u-ali","film:31",7,3,"",[]],
 ];
 
 const entries = LOG.map(([u,w,score,d,note,loved], i) => ({
