@@ -1788,12 +1788,47 @@ html{touch-action:manipulation}
   .askans .aska{width:110px}.askans .aska .co{width:110px;height:160px}
 }
 @media (min-width:1200px){ .grid{grid-template-columns:repeat(5,1fr)} }
+
+/* ---------- the top of a page ----------
+   Where you are is the page's name; tap it to go somewhere else (the room's name lists
+   your rooms). Under it, one row of labelled tabs with a line that slides to the one
+   you're on. Filters a level down (which medium) are chips. Scroll past the name and it
+   fades into the bar at the top, so you always know where you are. */
+.pagetitle{margin:0;font-family:var(--head);font-weight:900;font-size:30px;letter-spacing:-.03em;line-height:1.08}
+.pager.ptitle{display:block;margin-top:12px}
+.ptitle h2{display:block;max-width:100%}
+.ptitle .feedpick{gap:9px;max-width:100%;text-align:left}
+.ptitle .hl{background:none!important;color:var(--ink);padding:0;border-radius:0;line-height:1.08}
+.ptitle .tdot{width:12px;height:12px;border-radius:4px;flex:none;margin-top:4px}
+.ptitle .feedpick svg{width:20px;height:20px;opacity:.5;fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round;margin-top:4px}
+.pager.ptabs{display:block;margin-top:12px}
+.seg.ul{background:none;border-radius:0;padding:0;gap:24px;border-bottom:1px solid var(--line);margin:6px 0 0}
+.seg.ul button{flex:none;padding:10px 0 11px;border-radius:0;font-size:14.5px}
+.seg.ul button.on{background:none;color:var(--ink)}
+.seg.ul .segglide{top:auto;bottom:-1px;height:3px;border-radius:3px 3px 0 0;background:var(--ink)}
+.secbar:has(.seg.ul){padding-top:2px;padding-bottom:0}
+.secbar .seg.ul{margin:0}
+.roomsecs.ul button.dot::after{top:9px;right:-10px}
+.libbar{padding-top:12px}
+.libbar .seg.ul{width:auto;margin:6px 0 0;padding:0;gap:24px}
+.libbar .seg.ul button{padding:10px 0 11px;font-size:14.5px}
+.pager.pchips{display:block;margin-top:12px;touch-action:auto}
+.chiprow{display:flex;gap:7px;overflow-x:auto;scrollbar-width:none;margin:0 -18px;padding:2px 18px}
+.chiprow::-webkit-scrollbar{display:none}
+.pchip{flex:none;display:inline-flex;align-items:center;gap:6px}
+.pchip i{width:8px;height:8px;border-radius:50%;flex:none}
+.shelfsub,.seasonsub{text-align:left}
+.hdrtitle{font-family:var(--head);font-weight:900;font-size:17px;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  max-width:44vw;opacity:0;transform:translateY(4px);transition:opacity .2s cubic-bezier(.2,.8,.2,1),transform .2s cubic-bezier(.2,.8,.2,1);pointer-events:none}
+header.titled .hdrtitle{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){.hdrtitle{transition:none}}
+@media (min-width:760px){.chiprow{margin:0;padding:2px 0}}
 </style>
 </head>
 <body>
 
 <header><h1 class="sr-only">Rooms</h1><div class="wrap">
-  <div class="logo"><svg class="mark" viewBox="10 10 80 80" aria-hidden="true"><rect class="rm" data-r="0" x="12" y="12" width="36" height="36" rx="10" fill="#F5A3C7"/><rect class="rm" data-r="1" x="52" y="12" width="36" height="36" rx="10" fill="#FFB36B"/><rect class="rm" data-r="2" x="12" y="52" width="36" height="36" rx="10" fill="#B9A6FF"/><rect class="rm lit" data-r="3" x="52" y="52" width="36" height="36" rx="10" fill="#8FD3FF"/><g class="eyes re" fill="#151320"><rect x="23" y="23" width="4.6" height="10" rx="2.3"/><rect x="32.4" y="24" width="4.6" height="11" rx="2.3"/></g><g class="eyes re" fill="#151320"><rect x="63" y="23" width="4.6" height="10" rx="2.3"/><rect x="72.4" y="24" width="4.6" height="11" rx="2.3"/></g><g class="eyes re" fill="#151320"><rect x="23" y="63" width="4.6" height="10" rx="2.3"/><rect x="32.4" y="64" width="4.6" height="11" rx="2.3"/></g><g class="eyes re lit" fill="#151320"><rect x="63" y="63" width="4.6" height="10" rx="2.3"/><rect x="72.4" y="64" width="4.6" height="11" rx="2.3"/></g></svg><span class="logoword">Rooms</span></div>
+  <div class="logo"><svg class="mark" viewBox="10 10 80 80" aria-hidden="true"><rect class="rm" data-r="0" x="12" y="12" width="36" height="36" rx="10" fill="#F5A3C7"/><rect class="rm" data-r="1" x="52" y="12" width="36" height="36" rx="10" fill="#FFB36B"/><rect class="rm" data-r="2" x="12" y="52" width="36" height="36" rx="10" fill="#B9A6FF"/><rect class="rm lit" data-r="3" x="52" y="52" width="36" height="36" rx="10" fill="#8FD3FF"/><g class="eyes re" fill="#151320"><rect x="23" y="23" width="4.6" height="10" rx="2.3"/><rect x="32.4" y="24" width="4.6" height="11" rx="2.3"/></g><g class="eyes re" fill="#151320"><rect x="63" y="23" width="4.6" height="10" rx="2.3"/><rect x="72.4" y="24" width="4.6" height="11" rx="2.3"/></g><g class="eyes re" fill="#151320"><rect x="23" y="63" width="4.6" height="10" rx="2.3"/><rect x="32.4" y="64" width="4.6" height="11" rx="2.3"/></g><g class="eyes re lit" fill="#151320"><rect x="63" y="63" width="4.6" height="10" rx="2.3"/><rect x="72.4" y="64" width="4.6" height="11" rx="2.3"/></g></svg><span class="hdrtitle" id="hdrTitle" aria-hidden="true"></span><span class="logoword">Rooms</span></div>
   <div class="hr">
     <button class="me" id="meBtn" hidden><span class="av" id="meAv"></span><span id="meName"></span></button>
     <button class="find" id="findBtn" aria-label="Find someone" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></button>
@@ -1804,7 +1839,7 @@ html{touch-action:manipulation}
 <main class="wrap">
   <section id="tab-auth" class="on"><div class="auth" id="authBody"></div></section>
   <section id="tab-doors"><div id="doorsBody"></div></section>
-  <div class="libbar" id="libBar" hidden><div class="seg glide" role="tablist" aria-label="Your library"><span class="segglide"></span>
+  <div class="libbar" id="libBar" hidden><h2 class="pagetitle" data-pagetitle="Library">Library</h2><div class="seg glide ul" role="tablist" aria-label="Your library"><span class="segglide"></span>
     <button data-lib="shelf" role="tab">Shelf</button><button data-lib="archive" role="tab">Archive</button></div></div>
   <section id="tab-archive"><div id="archiveBody"></div></section>
   <section id="tab-shelf"><div id="shelfBody"></div></section>
@@ -3983,6 +4018,22 @@ function paintLib(n, instant) { const bar = $("#libBar"); if (!bar) return;
   $$("[data-lib]", bar).forEach(b => { const on = b.dataset.lib === n;
     b.classList.toggle("on", on); b.setAttribute("aria-selected", on ? "true" : "false"); });
   glideSeg($(".seg", bar), instant); }
+/* The collapsing title. Each page marks its own name with data-pagetitle; once that
+   scrolls up under the header, the header says it instead (beside the mark), and when
+   you scroll back it hands it back. Re-pointed whenever the page underneath changes. */
+let titleEl = null, titleQ = 0, titleW = 0;
+function titleCheck() { const hdr = $("header"); if (!hdr) return;
+  const on = !!titleEl?.isConnected && titleEl.offsetParent !== null
+    && titleEl.getBoundingClientRect().bottom < hdr.getBoundingClientRect().bottom - 2;
+  hdr.classList.toggle("titled", on); }
+function watchTitle() { titleW = 0; const slot = $("#hdrTitle"); if (!slot) return;
+  const lib = $("#libBar"), inLib = lib && !lib.hidden;
+  titleEl = (inLib ? $("[data-pagetitle]", lib) : null) || $("main > section.on [data-pagetitle]");
+  const t = titleEl?.dataset.pagetitle || ""; if (slot.textContent !== t) slot.textContent = t;
+  titleCheck(); }
+addEventListener("scroll", () => { if (!titleQ) titleQ = requestAnimationFrame(() => { titleQ = 0; titleCheck(); }); }, { passive:true });
+new MutationObserver(() => { if (!titleW) titleW = requestAnimationFrame(watchTitle); })
+  .observe(document.querySelector("main"), { childList:true, subtree:true, attributes:true, attributeFilter:["hidden"] });
 /* A tab opening: the blocks you can see rise a few pixels into place, a beat apart —
    the same straight-up movement as scrolling to them. One page, nothing sliding sideways. */
 function riseIn(sec) { if (!sec || REDUCED) return;
@@ -4007,7 +4058,7 @@ function switchTab(n, how = {}) { shelfEdit = false;
   $$("main section").forEach(s => { const on = s.id === "tab-"+n; s.classList.toggle("on", on); s.classList.remove("leaving", "arrived");
     });
   paintLib(n, !(LIB.includes(cur) && LIB.includes(n)));
-  requestAnimationFrame(() => { movePill(); if (was !== now) riseIn($("#tab-" + n)); }); scrollTo(0,0);
+  requestAnimationFrame(() => { movePill(); watchTitle(); if (was !== now) riseIn($("#tab-" + n)); }); scrollTo(0,0);
   /* drawn once, now, as it arrives — never again a moment later, which made it jump. The
      room feed drawn in the last minute only needs its live connection back. */
   if (n === "doors" && was !== now && Date.now() - (drawnAt.doors || 0) < 60000 && $("#doorsBody")?.children.length) {
@@ -4853,20 +4904,26 @@ const place = (key, name, tone, mk) => ({ key, name, tone, mk, col:`var(--${tone
    the title, arrows either side, a swipe across it, and a dot per place in that place's
    colour. One look to learn, and the dots say how many there are and where you are. */
 function pagerHTML(places, curKey, o = {}) {
-  const at = Math.max(0, places.findIndex(p => p.key === curKey)), cur = places[at];
-  const nb = d => places[(at + d + places.length) % places.length], many = places.length > 1;
-  const ARROW = d => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${d}"/></svg>`;
-  const name = `<span class="hl" style="background:${cur.col}">${esc(cur.name)}</span>`;
-  return `<div class="pager"${o.id ? ` id="${o.id}"` : ""}>
-      ${many ? `<button class="pgarrow" data-go="-1" aria-label="Back to ${esc(nb(-1).name)}">${ARROW("M15 6l-6 6 6 6")}</button>` : ""}
-      <div class="pgmid"><h2>${o.titleId ? `<button class="feedpick" id="${o.titleId}" aria-haspopup="dialog" aria-label="${esc(cur.name)} · ${esc(o.titleHint || "see them all")}">${name}</button>` : `<span class="feedpick">${name}</span>`}</h2>
-        ${many ? `<div class="pgdots">${places.map(p => p === cur
-          ? `<button class="pgdot pgcur" data-place="${esc(p.key)}" aria-label="${esc(p.name)}" aria-current="true">${placeMark(p)}</button>`
-          : `<button class="pgdot" data-place="${esc(p.key)}" aria-label="${esc(p.name)}" style="--c:${p.col}"></button>`).join("")}</div>` : ""}</div>
-      ${many ? `<button class="pgarrow" data-go="1" aria-label="On to ${esc(nb(1).name)}">${ARROW("M9 6l6 6-6 6")}</button>` : ""}</div>`; }
+  const at = Math.max(0, places.findIndex(p => p.key === curKey)), cur = places[at], many = places.length > 1;
+  const id = o.id ? ` id="${o.id}"` : "";
+  /* a filter a level down (which medium): one row of chips, sideways if it needs to be */
+  if (o.mode === "chips") return `<div class="pager pchips"${id}>${many ? `<div class="chiprow" role="tablist">${places.map((p, i) =>
+      `<button class="chip pchip ${p === cur ? "on" : ""}" data-place="${esc(p.key)}" role="tab" aria-selected="${p === cur}">${p.key ? `<i style="background:${p.col}"></i>` : ""}${esc(i === 0 && o.allLabel ? o.allLabel : p.name)}</button>`).join("")}</div>` : ""}</div>`;
+  /* a few places side by side (the season, your clubs): the page's name, then labelled tabs */
+  if (o.mode === "tabs") return `<div class="pager ptabs"${id}>${o.title ? `<h2 class="pagetitle" data-pagetitle="${esc(o.title)}">${esc(o.title)}</h2>` : ""}
+      <div class="seg glide ul" role="tablist"><span class="segglide" aria-hidden="true"></span>${places.map(p =>
+      `<button class="${p === cur ? "on" : ""}" data-place="${esc(p.key)}" role="tab" aria-selected="${p === cur}">${esc(p.name)}</button>`).join("")}</div></div>`;
+  /* which room you're in: its name is the title, and tapping it lists everywhere you can go */
+  const DOWN = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>`;
+  const name = `<i class="tdot" style="background:${cur.col}"></i><span class="hl">${esc(cur.name)}</span>`;
+  return `<div class="pager ptitle"${id}><h2 class="pagetitle" data-pagetitle="${esc(cur.name)}">${o.titleId
+      ? `<button class="feedpick" id="${o.titleId}" aria-haspopup="dialog" aria-label="${esc(cur.name)} · ${esc(o.titleHint || "see them all")}">${name}${DOWN}</button>`
+      : `<span class="feedpick">${name}</span>`}</h2></div>`; }
 /* go(key, dir): dir is +1 or -1, which way you moved, so the new title can arrive from that side */
 function wirePager(pg, places, curKey, go) {
   if (!pg || places.length < 2) return;
+  const sg = $(".seg.glide", pg); if (sg) requestAnimationFrame(() => glideSeg(sg, true));
+  const chips = pg.classList.contains("pchips");
   const at = Math.max(0, places.findIndex(p => p.key === curKey));
   const leave = () => { pagerFrom = { id:pg.id, key:curKey, mark:$(".pgcur", pg)?.innerHTML || "" }; };
   const step = d => { leave(); go(places[(at + d + places.length) % places.length].key, d); };
@@ -4882,6 +4939,7 @@ function wirePager(pg, places, curKey, go) {
   const settle = () => { const h = hl(); if (!h || !h.style.transform) return;
     h.animate([{ transform:h.style.transform, opacity:h.style.opacity || 1 }, { transform:"none", opacity:1 }], { duration:260, easing:"cubic-bezier(.2,1.3,.4,1)" });
     h.style.transform = ""; h.style.opacity = ""; };
+  if (chips) { $(".pchip.on", pg)?.scrollIntoView({ block:"nearest", inline:"nearest" }); return; }
   pg.addEventListener("touchstart", e => { if (e.touches.length !== 1) { x0 = null; return; }
     x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; dx = 0; side = null; }, { passive:true });
   pg.addEventListener("touchmove", e => { if (x0 == null) return;
@@ -5317,7 +5375,7 @@ async function renderRoomFeed(fb, R) {
         Send one person the link and the whole thing switches on.</span>
         <button class="btn blue" id="aloneInvite">Send the invite link</button>
         ${showcase()}</div></div>` : ""}
-      <div class="secbar"><div class="seg roomsecs glide" aria-label="Room sections"><span class="segglide" aria-hidden="true"></span>${secs.map(([k,l]) => `<button data-rsecbtn="${k}" class="${sec===k?"on":""}">${l}</button>`).join("")}</div></div>
+      <div class="secbar"><div class="seg roomsecs glide ul" aria-label="Room sections"><span class="segglide" aria-hidden="true"></span>${secs.map(([k,l]) => `<button data-rsecbtn="${k}" class="${sec===k?"on":""}">${l}</button>`).join("")}</div></div>
     ${/* Cross-paths and handover moments are their own thing, not one of the three ways
          of filtering "what the room said" — showing them only under the Activity filter
          meant the freshness bookkeeping above (which runs on every render, filter or no)
@@ -5625,7 +5683,7 @@ function renderCabinet() {
   if (P.cabKind && !counts[P.cabKind]) P.cabKind = "";
   /* everything first, then each medium you've finished something in, each in its colour */
   const places = [place("", "Your archive", "sky", "archive"), ...(kinds.length > 1 ? kinds.map(k => place(k, K(k).plural, KIND_TONE[k], k)) : [])];
-  body.innerHTML = `${pagerHTML(places, P.cabKind || "", { id:"cabPager" })}
+  body.innerHTML = `${pagerHTML(places, P.cabKind || "", { id:"cabPager", mode:"chips", allLabel:"All" })}
     ${logCount() ? `<div class="cabbar">
         <p class="sub" id="cabSub"></p>
         <button class="cabsort" id="cabSortBtn" aria-label="Sort the archive">${CAB_SORTS[cabSort()]}${CHEV}</button>
@@ -5851,7 +5909,7 @@ function renderShelf() {
   const kindsHere = Object.keys(KINDS).filter(k => counts[k]);
   const places = [place("", "Your shelf", "mint", "shelf"), ...(kindsHere.length > 1 ? kindsHere.map(k => place(k, K(k).plural, KIND_TONE[k], k)) : [])];
   const scope = P.kinds.length === 4 ? "everything" : P.kinds.map(k => K(k).plural.toLowerCase()).join(", ");
-  $("#shelfBody").innerHTML = `${pagerHTML(places, P.shelfFilter || "", { id:"shelfPager" })}<p class="sub" style="text-align:center">${all.length ? `${left.length} to go${done ? ` · ${done} done` : ""}${soonCount ? ` · ${soonCount} coming` : ""}` : "Everything you meant to get to."}</p>
+  $("#shelfBody").innerHTML = `${pagerHTML(places, P.shelfFilter || "", { id:"shelfPager", mode:"chips", allLabel:"All" })}<p class="sub shelfsub">${all.length ? `${left.length} to go${done ? ` · ${done} done` : ""}${soonCount ? ` · ${soonCount} coming` : ""}` : "Everything you meant to get to."}</p>
     <div class="shelfsearch"><input id="search" type="search" placeholder="Search ${esc(scope)}" autocomplete="off">${all.length ? `<button class="chip filt ${P.when ? "on" : ""}" id="shelfFilterBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"/></svg>${
         P.when ? ({ out:"Out now", now:"On it", soon:"Coming" }[P.when] || "Filter") : "Filter"}</button>` : ""}</div>
     <div class="msg" id="msg"></div><div id="results"></div>
@@ -7949,7 +8007,7 @@ function tasteMiniHTML(t) {
       <small>See the whole picture ›</small></div></div>`; }
 const COG = `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.6 1.6 0 0 0 .32 1.77l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.6 1.6 0 0 0-1.77-.32 1.6 1.6 0 0 0-1 1.47V21a2 2 0 1 1-4 0v-.11a1.6 1.6 0 0 0-1.05-1.47 1.6 1.6 0 0 0-1.77.32l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.6 1.6 0 0 0 .32-1.77 1.6 1.6 0 0 0-1.47-1H3a2 2 0 1 1 0-4h.11a1.6 1.6 0 0 0 1.47-1.05 1.6 1.6 0 0 0-.32-1.77l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.6 1.6 0 0 0 1.77.32H9a1.6 1.6 0 0 0 1-1.47V3a2 2 0 1 1 4 0v.11a1.6 1.6 0 0 0 1 1.47 1.6 1.6 0 0 0 1.77-.32l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.6 1.6 0 0 0-.32 1.77V9a1.6 1.6 0 0 0 1.47 1H21a2 2 0 1 1 0 4h-.11a1.6 1.6 0 0 0-1.47 1z"/></svg>`;
 async function renderTaste() { const body = $("#tasteBody"); const t = tasteOf(myEntries);
-  body.innerHTML = `<div class="pagehead"><button class="tasteme" id="tasteMe" aria-label="Open your profile">${avatar(me)}<div><h2 style="margin:0">${esc(me.handle)}</h2>${me.bio?`<p class="sub" style="margin-top:2px">${esc(me.bio)}</p>`:""}</div></button>
+  body.innerHTML = `<div class="pagehead"><button class="tasteme" id="tasteMe" aria-label="Open your profile">${avatar(me)}<div><h2 style="margin:0" data-pagetitle="${esc(me.handle)}">${esc(me.handle)}</h2>${me.bio?`<p class="sub" style="margin-top:2px">${esc(me.bio)}</p>`:""}</div></button>
     <button class="iconbtn cog" id="tasteCog" aria-label="Settings">${COG}</button></div>
     ${myEntries.length ? `<button class="card tastemini" id="tasteMore" aria-label="See your whole taste">${tasteMiniHTML(t)}</button>
     <div id="podium"></div>
@@ -8905,8 +8963,8 @@ async function renderClubs() {
   const season = currentSeason(), phase = seasonPhase(season), ended = recentlyEnded();
   const nClubs = clubs.length + openClubs.length;
   const places = [place("season", season.label, season.tone, season.mk), place("clubs", "Friend clubs", "lilac", "clubs")];
-  body.innerHTML = `${pagerHTML(places, P.clubTab, { id:"seasonPager" })}
-    <p class="sub" style="text-align:center">${P.clubTab === "season" ? (phase.key === "upcoming" ? `Next up · ${esc(season.pitch)}` : esc(season.pitch)) : nClubs ? `${nClubs} ${nClubs === 1 ? "club" : "clubs"} — the small ones you run with friends.` : "The small clubs you run with friends."}</p>
+  body.innerHTML = `${pagerHTML(places, P.clubTab, { id:"seasonPager", mode:"tabs", title:"Seasons" })}
+    <p class="sub seasonsub">${P.clubTab === "season" ? (phase.key === "upcoming" ? `Next up · ${esc(season.pitch)}` : esc(season.pitch)) : nClubs ? `${nClubs} ${nClubs === 1 ? "club" : "clubs"} — the small ones you run with friends.` : "The small clubs you run with friends."}</p>
     <div id="seasonContent"></div>`;
   wirePager($("#seasonPager", body), places, P.clubTab, (k, d) => { P.clubTab = k; saveP(); seasonTurn = d; renderClubs(); });
   pagerArrive(seasonTurn, $("#seasonPager", body), $("#seasonContent", body)); seasonTurn = 0;

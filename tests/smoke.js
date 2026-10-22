@@ -41,24 +41,23 @@ const BASE = (process.env.BASE || "http://127.0.0.1:8934").replace(/\/$/, "");
       for (const sec of ["Play", "Charts", "Year", "Talk"]) { await tap("[data-rsecbtn]", sec); await wait(900); }
       await expect("#roomGames .card", "the games"); });
     await step("moving between places", async () => {
+      /* the room's name is the menu: tap it, pick somewhere else, and come back */
       const title = () => page.locator("#feedPick").innerText();
-      const was = await title(); await tap('[data-go="1"]'); await wait(900);
-      if ((await title()) === was) throw new Error("the next arrow didn't move");
-      await tap('[data-go="-1"]'); await wait(900);
-      if ((await title()) !== was) throw new Error("the back arrow didn't come back");
-      await tap(".pgdot:not(.pgcur)"); await wait(900);
-      if ((await title()) === was) throw new Error("a dot didn't move"); 
-      await tap(".pgdot"); await wait(900); });
+      const was = await title(); await tap("#feedPick"); await wait(500);
+      await tap("[data-fp]:not(.on)"); await wait(900);
+      if ((await title()) === was) throw new Error("picking another place didn't move");
+      await tap("#feedPick"); await wait(500); await tap("[data-fp]"); await wait(900);
+      if ((await title()) !== was) throw new Error("couldn't get back to the room"); });
     await step("room picker", async () => { await tap("#feedPick"); await wait(500); await expect("[data-fp]", "rooms to pick"); await closeSheet(); });
     await step("room menu", async () => { await tap("#roomMenu"); await wait(500); await expect("#roomSeats", "the members"); await closeSheet(); });
     await step("bell", async () => { await tap("#bellBtn"); await wait(500); await expect("#noteBody", "the bell's list"); await closeSheet(); });
     await step("archive", async () => { await tap("nav button", "Library"); await wait(700); await tap("#libBar [data-lib='archive']"); await wait(900); await expect(".archcard", "archive cards");
-      await tap('#cabPager [data-go="1"]'); await wait(900); await expect(".archcard", "cards for one medium");
-      await tap('#cabPager .pgdot'); await wait(700); });
+      await tap('#cabPager [data-place]:nth-child(2)'); await wait(900); await expect(".archcard", "cards for one medium");
+      await tap('#cabPager [data-place]'); await wait(700); });
     await step("seasons", async () => { await tap("nav button", "Seasons"); await wait(900); await expect("#seasonPager", "the seasons page");
-      await tap('#seasonPager [data-go="1"]'); await wait(900);
-      if (!(await page.locator("#seasonPager .hl").innerText()).includes("clubs")) throw new Error("couldn't move to friend clubs");
-      await tap('#seasonPager [data-go="1"]'); await wait(700); });
+      await tap('#seasonPager [data-place="clubs"]'); await wait(900);
+      if (!(await page.locator("#seasonPager button.on").innerText()).toLowerCase().includes("clubs")) throw new Error("couldn't move to friend clubs");
+      await tap('#seasonPager [data-place="season"]'); await wait(700); });
     await step("shelf", async () => { await tap("nav button", "Seasons"); await wait(700);
       /* Library comes back to the side you left it on */
       await tap("nav button", "Library"); await wait(900); await expect("#tab-archive.on", "the archive, where Library was left");
