@@ -1911,6 +1911,16 @@ nav button .dot{top:0;right:calc(50% - 24px)}
 .sn-bar i{display:block;height:100%;border-radius:3px;background:var(--ink);opacity:.75;transition:width .5s cubic-bezier(.2,.8,.2,1)}
 .sn-rr.me .sn-bar i{background:var(--apricot);opacity:1}
 .sn-rr .n{font-family:var(--head);font-weight:900;font-size:16px;min-width:20px;text-align:right}
+
+.sn-strip{display:block;width:calc(100% + 98px);margin-top:14px;border:0;background:rgba(255,255,255,.06);border-radius:14px;padding:10px 10px 8px;cursor:pointer;text-align:left;color:#C9BFE0}
+.sn-strip:active{transform:scale(.99)}
+.sn-sgrid{display:grid;gap:3px}
+.sn-sgrid i{aspect-ratio:1;border-radius:3px;background:rgba(255,255,255,.12);position:relative}
+.sn-sgrid i.later{opacity:.4}
+.sn-sgrid i.them::after{content:"";position:absolute;inset:0;margin:auto;width:3px;height:3px;border-radius:50%;background:var(--mint)}
+.sn-sgrid i.today{box-shadow:0 0 0 1.5px var(--butter)}
+.sn-scap{display:flex;justify-content:space-between;font-size:11.5px;font-weight:600;margin-top:7px}
+.sn-scap b{font-family:var(--head);font-size:14px;line-height:1}
 </style>
 </head>
 <body>
@@ -9092,9 +9102,8 @@ async function renderClubs() {
           <b>${ringNum}</b><small>${ringWord}</small></div>
         <div class="sn-sum"><b>${total ? `${total} logged` : phase.key === "upcoming" ? "Starts " + esc(when(season.starts)) : "Nothing logged yet"}</b>
           <p>${best.length ? best.map(x => `${x.m.name} in ${esc(x.c.name)}`).slice(0, 2).join(" · ") : phase.key === "upcoming" ? esc(season.pitch) : "Log one that counts and your first medal lands."}${next && phase.key === "live" ? `<br>${next.to.at - next.n} more ${SN_NOUN[next.c.kind][next.to.at - next.n === 1 ? 0 : 1]} for ${next.to.name}.` : ""}</p></div>
-      </div></div>
-    <div class="lbl">The month<small class="sn-key">yours in colour · your room as dots</small></div>
-    <div class="card sn-cal" id="snCal"></div>
+      </div>
+      <button class="sn-strip" id="snStrip" type="button" aria-label="See the season night by night"></button></div>
     <div class="lbl">Four ways in</div>
     <div class="sn-tiles">${earned.map(({ c, n, m }) => `<button class="sn-tile" type="button" data-season-challenge="${c.id}">
         <span class="top"><span class="tag" style="background:${K(c.kind).colour}">${K(c.kind).label}</span><small>${n ? `${n} logged` : "not started"}</small></span>
@@ -9105,10 +9114,10 @@ async function renderClubs() {
 `;
   $$('[data-season-challenge]', out).forEach(row => row.onclick = () => openSeasonChallenge(season.challenges.find(c => c.id === row.dataset.seasonChallenge)));
   if (ended && ended !== season) fillSeasonRecap(ended);
-  paintSeasonMonth(season, mine, null);
+  paintSeasonStrip(season, mine, null);
   revealIn(out);
   /* the room's half arrives after: their nights on the calendar, and the race */
-  seasonRoom(season).then(room => { if (!$("#snCal")) return; paintSeasonMonth(season, mine, room); paintSeasonRace(season, room, total); }).catch(() => {});
+  seasonRoom(season).then(room => { if (!$("#snStrip")) return; paintSeasonStrip(season, mine, room); paintSeasonRace(season, room, total); }).catch(() => {});
   /* Night Owl (the top-10% mark) is off for now; seasonRank still works if it comes back */
 }
 /* ---------- the season, by night ----------
@@ -9144,6 +9153,22 @@ function paintSeasonMonth(S, mine, room) {
     $$("[data-snday]", el).forEach(x => x.classList.toggle("sel", x === b));
     const names = who.map(id => room?.names[id]).filter(Boolean);
     $("#snNote").innerHTML = `<b>${+iso.slice(8)} ${MONTHS[+iso.slice(5, 7) - 1]}:</b> ${iso > t ? "still to come." : `${mh.length ? `you logged ${mh.map(x => `<b>${esc(works[x.e.work_id]?.title || x.e.works?.title || "something")}</b>`).join(", ")}` : "nothing from you"}${names.length ? `; ${esc(names.slice(0, 3).join(", "))}${names.length > 3 ? ` and ${names.length - 3} more` : ""} too` : ""}.`}`; }); }
+/* The season in one glance, inside its card: every night a small square, yours filled in
+   the colour of what you logged, a dot where only your room did, today ringed, nights to
+   come faint. Tapping it opens the full month, night by night. */
+function paintSeasonStrip(S, mine, room) {
+  const el = $("#snStrip"); if (!el) return;
+  const t = today(), days = [], byDay = {}, theirs = room?.byDay || {};
+  for (const { e, c } of mine) (byDay[seasonDate(e)] ||= []).push(c);
+  for (let n = dayNo(S.starts); n <= dayNo(S.ends); n++) days.push(new Date(n * 864e5).toISOString().slice(0, 10));
+  const cols = Math.min(31, Math.ceil(days.length / 2));
+  const month = MONTHS[+((t >= S.starts && t <= S.ends ? t : S.starts).slice(5, 7)) - 1];
+  el.innerHTML = `<span class="sn-sgrid" style="grid-template-columns:repeat(${cols},minmax(0,1fr))">${days.map(d => { const m = byDay[d], f = theirs[d]?.size;
+      return `<i class="${m ? "mine" : f ? "them" : ""}${d === t ? " today" : ""}${d > t ? " later" : ""}"${m ? ` style="background:${K(m[0].kind).colour}"` : ""}></i>`; }).join("")}</span>
+    <span class="sn-scap">${days.length > 31 ? "The season" : "Your " + month}, night by night<b>›</b></span>`;
+  el.onclick = () => { openSheet(`<h3>${esc(S.name)}, night by night</h3><p class="sub">Yours in colour, your room as dots. Tap a night to see what it was.</p>
+      <div class="card sn-cal" id="snCal"></div><div class="stack"><button class="btn quiet" id="snClose">Close</button></div>`);
+    paintSeasonMonth(S, mine, room); $("#snClose").onclick = closeSheet; }; }
 /* everyone in your room's entries for the season, once a visit */
 const snRoomCache = {};
 async function seasonRoom(S) {
