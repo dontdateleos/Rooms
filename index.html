@@ -1869,7 +1869,7 @@ nav button .dot{top:0;right:calc(50% - 24px)}
   <section id="tab-auth" class="on"><div class="auth" id="authBody"></div></section>
   <section id="tab-doors"><div id="doorsBody"></div></section>
   <div class="libbar" id="libBar" hidden><h2 class="pagetitle" data-pagetitle="Queue">Queue</h2><div class="seg glide ul" role="tablist" aria-label="Your queue"><span class="segglide"></span>
-    <button data-lib="shelf" role="tab">Shelf</button><button data-lib="archive" role="tab">Archive</button></div></div>
+    <button data-lib="shelf" role="tab">Up next</button><button data-lib="archive" role="tab">Finished</button></div></div>
   <section id="tab-archive"><div id="archiveBody"></div></section>
   <section id="tab-shelf"><div id="shelfBody"></div></section>
   <section id="tab-taste"><div id="tasteBody"></div></section>
@@ -3965,7 +3965,7 @@ function wireNotes(ns) {
     const yes = "yes" in b.dataset, h = handIn.find(x => x.id === (b.dataset.yes || b.dataset.no));
     if (!h) return; b.textContent = "…";
     const row = b.closest(".note"), face = row && $(".av", row);
-    if (await answerHand(h, yes)) { say(yes ? "On the shelf" : "Gone");
+    if (await answerHand(h, yes)) { say(yes ? "In Up next" : "Gone");
       /* taken means it went somewhere, so show it going: onto the Library tab, which is
          where it now is. Declined just folds away. */
       if (yes) flyTo(face, $('nav button[data-tab="library"]'), works[h.work_id]?.cover);
@@ -4472,7 +4472,7 @@ async function enter() {
   $("#meBtn").hidden = false; $("#meName").textContent = me.handle; paintMeAv();
   $("#nav").classList.add("on"); $("#add").classList.add("live"); setTimeout(logoWake, 250);
   $("#bellBtn").hidden = false; $("#findBtn").hidden = false;
-  await Promise.all([despite("your shelf", loadLists()), despite("your log", loadMine()),
+  await Promise.all([despite("Up next", loadLists()), despite("your log", loadMine()),
     despite("your rooms", loadRooms()), despite("who you follow", loadFollows()),
     despite("founders", loadFounders()), despite("what's on now", loadNow()),
     despite("who follows you", loadFollowsMe()), despite("what you've finished", loadSeen()),
@@ -4636,7 +4636,7 @@ function openOnboarding() {
       ${(() => { const R = activeRoom(); if (!R) return "";
         return R.members.length > 1 ? `<p class="sub"><b>${esc(R.name)}</b> is waiting — your three are already in it.</p>`
           : `<p class="sub"><b>${esc(R.name)}</b> is open and waiting. Rooms only does anything with other people in it — one person is enough.</p>`; })()}
-      <div class="stack"><button class="btn blue" id="onbRoom">${activeRoom()?.members.length > 1 ? `Go to ${esc(activeRoom().name)}` : rooms.length ? "Bring somebody in" : "Open a room for your friends"}</button><button class="btn ghost" id="onbShelf">Fill the shelf first</button></div></div>`);
+      <div class="stack"><button class="btn blue" id="onbRoom">${activeRoom()?.members.length > 1 ? `Go to ${esc(activeRoom().name)}` : rooms.length ? "Bring somebody in" : "Open a room for your friends"}</button><button class="btn ghost" id="onbShelf">Fill Up next first</button></div></div>`);
       $("#onbRoom").onclick = () => { const R = activeRoom(); closeSheet(); switchTab("doors");
         if (R && R.members.length > 1) return;
         setTimeout(() => { if (rooms.length) openInvite(rooms[0]); else $("#newRoom")?.click(); }, 300); };
@@ -4794,7 +4794,7 @@ function tonightCard() {
   const w = nw || next; if (!w) return "";
   const verb = K(w.kind).verb.replace(/^./, c => c.toUpperCase());
   return `<div class="tonight" id="tonight">
-    <button class="tn-main" data-w="${esc(w.id)}">${cover(w)}<span><small>${nw ? "Tonight · you're on" : "Tonight · next on your shelf"}</small><b>${esc(w.title)}</b></span></button>
+    <button class="tn-main" data-w="${esc(w.id)}">${cover(w)}<span><small>${nw ? "Tonight · you're on" : "Tonight · up next"}</small><b>${esc(w.title)}</b></span></button>
     <button class="tn-log" id="tonightLog" data-log="${esc(w.id)}">${nw ? "Done it" : `${verb} it`}</button>
     <button class="tn-spin" id="tonightSpin" aria-label="Can't decide? Spin the wheel"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="4"/><circle cx="9" cy="9" r="1.4"/><circle cx="15" cy="15" r="1.4"/><circle cx="15" cy="9" r="1.4"/><circle cx="9" cy="15" r="1.4"/></svg></button></div>`; }
 function wireTonight() { const c = $("#tonight"); if (!c) return;
@@ -5137,7 +5137,7 @@ function findWorksInto(box, v) { if (!box) return;
   const hits = Object.values(works).filter(w => w?.title && !w.parent_id && lc(w.title).includes(t))
     .map(w => ({ w, mine:myEntries.find(e => e.work_id === w.id), shelf:onShelf.has(w.id) }))
     .sort((a, b) => (!!b.mine - !!a.mine) || (b.shelf - a.shelf) || (lc(a.w.title).indexOf(t) - lc(b.w.title).indexOf(t)) || a.w.title.length - b.w.title.length).slice(0, 6);
-  box.innerHTML = (hits.length ? `<div class="lbl">Titles</div>` + hits.map(({ w, mine, shelf }) => `<div class="row" data-fw="${esc(w.id)}" style="cursor:pointer">${cover(w)}<div class="t"><b>${esc(w.title)}</b><small>${tag(w.kind)} ${esc(w.year || "")}${mine ? " · you logged it" : shelf ? " · on your shelf" : ""}</small></div>${mine ? stars(mine.score, "sm") : ""}</div>`).join("") : "")
+  box.innerHTML = (hits.length ? `<div class="lbl">Titles</div>` + hits.map(({ w, mine, shelf }) => `<div class="row" data-fw="${esc(w.id)}" style="cursor:pointer">${cover(w)}<div class="t"><b>${esc(w.title)}</b><small>${tag(w.kind)} ${esc(w.year || "")}${mine ? " · you logged it" : shelf ? " · in Up next" : ""}</small></div>${mine ? stars(mine.score, "sm") : ""}</div>`).join("") : "")
     + `<button class="btn ghost" id="findWeb" style="margin-top:8px">Search everywhere for “${esc(v)}”</button>${hits.length ? "" : ""}<div class="lbl">People</div>`;
   $$("[data-fw]", box).forEach(r => r.onclick = () => openWork(r.dataset.fw));
   $("#findWeb").onclick = () => { closeSheet(); setTimeout(() => { openAdd(); const a = $("#aSearch"); if (a) { a.value = v; a.dispatchEvent(new Event("input")); } }, 380); }; }
@@ -5713,12 +5713,12 @@ function renderCabinet() {
   /* everything first, then all four mediums, each in its colour — always all four, so a
      medium you haven't finished anything in yet is still there to find, with a word on
      how it fills up, rather than missing as if the app didn't do TV */
-  const places = [place("", "Your archive", "sky", "archive"), ...(logCount() ? CAB_ORDER.map(k => place(k, K(k).plural, KIND_TONE[k], k)) : [])];
+  const places = [place("", "Finished", "sky", "archive"), ...(logCount() ? CAB_ORDER.map(k => place(k, K(k).plural, KIND_TONE[k], k)) : [])];
   body.innerHTML = `${pagerHTML(places, P.cabKind || "", { id:"cabPager", mode:"chips", allLabel:"All" })}
     ${logCount() ? `<div class="cabbar">
         <p class="sub" id="cabSub"></p>
-        <button class="cabsort" id="cabSortBtn" aria-label="Sort the archive">${CAB_SORTS[cabSort()]}${CHEV}</button>
-        <button class="cabfind ${cabQ ? "on" : ""}" id="cabFindBtn" aria-label="Search the archive" aria-expanded="${cabQ ? "true" : "false"}">${LENS}</button>
+        <button class="cabsort" id="cabSortBtn" aria-label="Sort what you've finished">${CAB_SORTS[cabSort()]}${CHEV}</button>
+        <button class="cabfind ${cabQ ? "on" : ""}" id="cabFindBtn" aria-label="Search what you've finished" aria-expanded="${cabQ ? "true" : "false"}">${LENS}</button>
       </div>
       <input id="cabQ" class="searchlog" type="search" placeholder="Find something in here" autocomplete="off" value="${esc(cabQ)}"${cabQ ? "" : " hidden"}>`
     : `<p class="sub" id="cabSub"></p>`}
@@ -5822,7 +5822,7 @@ const rankRowHTML = (r, i, showMove) => { const logo = logoCache[r.w.id];
 function kindBlank(k) {
   const on = myNow.filter(n => kindOf(n.work_id) === k).length, noun = K(k).plural.toLowerCase();
   const body = k === "tv"
-    ? `When you finish a show, or rate a season of one, it stands here.${on ? ` You're in the middle of ${on === 1 ? "one" : on} — log ${on === 1 ? "it" : "them"} when you're done.` : " Shows you're still watching wait on your shelf until then."}`
+    ? `When you finish a show, or rate a season of one, it stands here.${on ? ` You're in the middle of ${on === 1 ? "one" : on} — log ${on === 1 ? "it" : "them"} when you're done.` : " Shows you're still watching wait in Up next until then."}`
     : `When you finish ${k === "book" ? "a book" : k === "game" ? "a game" : "a film"}, it stands here.${on ? ` You're in the middle of ${on === 1 ? "one" : on} right now.` : ""}`;
   return blank(`var(--${KIND_TONE[k]})`, "+", k === "tv" ? "No shows yet" : `No ${noun} yet`, body, [["cabLogKind", k === "tv" ? "Log a show" : `Log ${k === "book" ? "a book" : k === "game" ? "a game" : "a film"}`, "soft"]]); }
 function paintTrays() {
@@ -5851,9 +5851,9 @@ function paintTrays() {
       <div class="archlist${P.cabDense === "compact" ? " compact" : ""}">${by[k].map((r, i) => rankRowHTML(r, i, ranked)).join("")}</div></div>`).join("")
     : cabQ ? `<p class="empty">Nothing in here matches \u201c${esc(cabQ)}\u201d.</p>`
     : P.cabKind ? kindBlank(P.cabKind)
-    : blank("var(--mint)", "\u25af", "Nothing in here yet",
-        "Log something and it stands here, with its own cover on it. The shelf is what you mean to get to; this is what you got to.",
-        [["cabShelf", "Back to the shelf", "soft"]]);
+    : blank("var(--mint)", "\u25af", "Nothing finished yet",
+        "Log something and it stands here, with its own cover on it. Up next is what you mean to get to; this is what you've finished.",
+        [["cabShelf", "Back to Up next", "soft"]]);
   $$(".archcard[data-work]", el).forEach(r => r.onclick = () => openWork(r.dataset.work));
   /* only when it's the same cards in a new order — a filter or a search changes which
      cards there are, and sliding those around would just be noise */
@@ -5885,7 +5885,7 @@ function paintTrays() {
 }
 function wireCabinet() {
   const sb2 = $("#cabSortBtn"); if (sb2) sb2.onclick = async () => {
-    const v = await openAsk(`<h3>Sort the archive</h3><div class="stack">${Object.entries(CAB_SORTS).map(([k, l]) =>
+    const v = await openAsk(`<h3>Sort what you've finished</h3><div class="stack">${Object.entries(CAB_SORTS).map(([k, l]) =>
       `<button class="btn ${cabSort() === k ? "" : "quiet"}" data-sortpick="${k}">${l}</button>`).join("")}</div>
       <div class="lbl" style="margin-top:16px">Cards</div><div class="seg">${[["", "Roomy"], ["compact", "Compact"]].map(([k, l]) =>
         `<button data-dense="${k}" class="${(P.cabDense || "") === k ? "on" : ""}">${l}</button>`).join("")}</div>`,
@@ -5917,7 +5917,7 @@ function shelfFilterSheet(counts, soonCount, nowCount) {
   const whenOpts = [["", "All"], ["out", "Out now"],
     ...(nowCount ? [["now", `In the middle of · ${nowCount}`]] : []),
     ...(soonCount ? [["soon", `Coming · ${soonCount}`]] : [])];
-  return `<h3>Filter the shelf</h3>
+  return `<h3>Filter Up next</h3>
     <p class="sub">Move along the top to pick a medium. This is for when.</p>
     <div class="chips" style="margin-top:12px">${whenOpts.map(([k, l]) => `<button class="chip ${(P.when||"")===k?"on":""}" data-wf="${k}">${l}</button>`).join("")}</div>`;
 }
@@ -5948,7 +5948,7 @@ function renderShelf() {
     <div id="resultArea"></div>`;
   if (P.shelfFilter && !counts[P.shelfFilter]) P.shelfFilter = "";
   const kindsHere = Object.keys(KINDS).filter(k => counts[k]);
-  const places = [place("", "Your shelf", "mint", "shelf"), ...(kindsHere.length > 1 ? kindsHere.map(k => place(k, K(k).plural, KIND_TONE[k], k)) : [])];
+  const places = [place("", "Up next", "mint", "shelf"), ...(kindsHere.length > 1 ? kindsHere.map(k => place(k, K(k).plural, KIND_TONE[k], k)) : [])];
   const scope = P.kinds.length === 4 ? "everything" : P.kinds.map(k => K(k).plural.toLowerCase()).join(", ");
   $("#shelfBody").innerHTML = `${pagerHTML(places, P.shelfFilter || "", { id:"shelfPager", mode:"chips", allLabel:"All" })}<p class="sub shelfsub">${all.length ? `${left.length} to go${done ? ` · ${done} done` : ""}${soonCount ? ` · ${soonCount} coming` : ""}` : "Everything you meant to get to."}</p>
     <div class="shelfsearch"><input id="search" type="search" placeholder="Search ${esc(scope)}" autocomplete="off">${all.length ? `<button class="chip filt ${P.when ? "on" : ""}" id="shelfFilterBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"/></svg>${
@@ -5960,14 +5960,14 @@ function renderShelf() {
           ${soon ? `<span class="soon-tag">${when(w.release)}</span>` : `<button class="tick ${logged(w.id)?"done":""}" data-t="${esc(w.id)}" aria-label="log it"></button>`}</div>
           <div class="cap"><span>${soon ? "Coming" : n ? nowLine(n) : (() => { const f = cameFrom(w.id);
             return f ? `from ${esc(f.sender_p?.handle || "a friend")}` : esc(w.year||""); })()}</span><span>${!soon && !n && w.length ? w.length+K(w.kind).unit : ""}</span></div></div>`; }).join("")}</div>`
-      : `<div class="tiles" style="margin-top:16px">${Object.keys(KINDS).map((k,i) => `<div class="tile" style="background:${K(k).colour};--r:${[-2,1.5,1,-1.5][i]}deg" data-kt="${k}"><small>Search</small><b>${K(k).plural}</b></div>`).join("")}</div>${blank("var(--mint)","+","An empty shelf","Everything you meant to get to, in one place — out now or still coming. Pick a medium above, or search.",[["shelfFocus","Search for something"]])}${pickBar}`}
+      : `<div class="tiles" style="margin-top:16px">${Object.keys(KINDS).map((k,i) => `<div class="tile" style="background:${K(k).colour};--r:${[-2,1.5,1,-1.5][i]}deg" data-kt="${k}"><small>Search</small><b>${K(k).plural}</b></div>`).join("")}</div>${blank("var(--mint)","+","Nothing up next","Everything you meant to get to, in one place — out now or still coming. Pick a medium above, or search.",[["shelfFocus","Search for something"]])}${pickBar}`}
     ${(() => { const q = handIn.map(h => [h, h.works || works[h.work_id]]).filter(([, w]) => w);
       if (!q.length) return "";
       return `<div class="lbl">Handed to you</div><div class="card" style="margin-top:0">${q.map(([h, w]) =>
         `<div class="row" style="cursor:default">${cover(w)}<div class="t"><b>${esc(w.title)}</b>
           <small>${tag(w.kind)} from ${esc(h.sender_p?.handle || "someone")}${h.note ? ` · “${esc(h.note)}”` : ""}</small></div>
           <span class="chip" data-yes="${esc(h.id)}">Take it</span><span class="chip" data-no="${esc(h.id)}">No</span></div>`).join("")}</div>`; })()}
-    <div class="lbl">Coming soon · add to the shelf</div><div id="waitBody"><p class="msg">Loading what's coming</p></div>
+    <div class="lbl">Coming soon · add to Up next</div><div id="waitBody"><p class="msg">Loading what's coming</p></div>
     <p class="sub" style="margin-top:6px;font-size:12px">Films, shows and games with a date on them.
       Books don't appear here — no book source publishes a forthcoming list.</p>
 `;
@@ -6001,7 +6001,7 @@ function renderShelf() {
     const yes = "yes" in b.dataset, h = handIn.find(x => x.id === (b.dataset.yes || b.dataset.no));
     if (!h) return; b.textContent = "…";
     const row = b.closest(".row") || b.parentElement;
-    if (await answerHand(h, yes)) { say(yes ? "On the shelf" : "Gone");
+    if (await answerHand(h, yes)) { say(yes ? "In Up next" : "Gone");
       if (yes) flyTo(row, $('nav button[data-tab="library"]'), works[h.work_id]?.cover);
       if (row && !REDUCED) { row.classList.add("folding");
         setTimeout(renderShelf, yes ? 600 : 460); } else renderShelf(); } });
@@ -6201,7 +6201,7 @@ async function openWheel() {
   openSheet(`<h3>Can't decide?</h3><p class="sub">${best
       ? `The best ${K(bestKind()).plural.toLowerCase()}${gName ? " · " + esc(gName.toLowerCase()) : ""} · ${avail} to draw from${seenMode() ? " · " + esc(seenName.toLowerCase()) : ""}${hlName ? " · " + esc(hlName.toLowerCase()) : ""}`
       : `${c.length} to pick from${seenMode() ? " · " + esc(seenName.toLowerCase()) : ""}${P.shelfFilter ? " · " + K(P.shelfFilter).plural.toLowerCase() : ""}${P.pickTag ? " · " + esc(P.pickTag.startsWith("p:") ? facetName(P.pickTag) : facetName(P.pickTag).toLowerCase()) : ""}${hlName ? " · " + esc(hlName.toLowerCase()) : ""} · nothing unreleased`}</p>
-    <div class="seg" style="margin-top:12px">${[["shelf","Your shelf"],["best","The best"]].map(([k,l]) =>
+    <div class="seg" style="margin-top:12px">${[["shelf","Up next"],["best","The best"]].map(([k,l]) =>
       `<button data-pf="${k}" class="${pickFrom()===k?"on":""}">${l}</button>`).join("")}</div>
     <div class="seg">${[["deck","Deal them"],["wheel","Spin for it"]].map(([k,l]) =>
       `<button data-pm="${k}" class="${pickMode()===k?"on":""}">${l}</button>`).join("")}</div>
@@ -6304,7 +6304,7 @@ function drawWheel() { const c = pickPool(); wheelItems = c; const area = $("#wh
       ? blank("var(--butter)","○", "Nothing left in that lot",
           "You've logged everything the list had. Try another kind, or a different genre.", [["wheelAll","Anything"]])
       : blank("var(--butter)","○", narrow ? "Nothing left there" : "Nothing left to spin",
-          narrow ? "Everything matching that is logged already. Widen it, or add something." : "You've logged everything on your shelf. Add something and the wheel comes back.",
+          narrow ? "Everything matching that is logged already. Widen it, or add something." : "You've logged everything in Up next. Add something and the wheel comes back.",
           [["wheelAll","Everything"],["wheelAdd","Add something","ghost"]]);
     $("#wheelAll").onclick = () => { if (seenMode() === "only") { P.seen = "any"; saveP(); deckItems = []; openWheel(); }
       else if (best) { (P.bestGenre ||= {})[bestKind()] = ""; saveP(); bestHand = []; loadBest().then(openWheel); }
@@ -6445,14 +6445,14 @@ function showResult(w) { const el = resultEl(); if (!el) return;
     ${aboutSlot()}
     <div id="pickWatch"></div>
     <div class="stack"><button class="btn" id="pickNow">${nowVerb(w.kind)} it tonight</button>${
-      activeList()?.items.includes(w.id) ? "" : `<button class="btn ghost" id="pickShelf">Put it on the shelf</button>`
+      activeList()?.items.includes(w.id) ? "" : `<button class="btn ghost" id="pickShelf">Add to Up next</button>`
     }<button class="btn quiet" id="pickedBtn">Already ${K(w.kind).verb} it</button><button class="btn quiet" id="againBtn">Again</button></div></div>`;
   $("#pickNow").onclick = async () => { const b = $("#pickNow"); b.disabled = true; await startPick(w); b.disabled = false; };
   $("#pickedBtn").onclick = async () => { const b = $("#pickedBtn"); b.disabled = true;
     try { const full = works[w.id] || await ensureWork(w); openLog(full); }
     catch (e) { oops(e, "Couldn't open that"); } finally { b.disabled = false; } };
   const sh = $("#pickShelf"); if (sh) sh.onclick = async () => { sh.disabled = true; sh.textContent = "Adding";
-    try { await addToShelf(w.id); sh.textContent = "On the shelf"; } catch { sh.disabled = false; sh.textContent = "Put it on the shelf"; } };
+    try { await addToShelf(w.id); sh.textContent = "In Up next"; } catch { sh.disabled = false; sh.textContent = "Add to Up next"; } };
   paintWatch(w, "pickWatch", true);
   $("#againBtn").onclick = () => { P.picked = null; saveP(); if (wheelItems.length >= 3) spin(); else drawWheel(); };
   paintAbout(w, el); }
@@ -6866,11 +6866,11 @@ async function addToShelf(id) { const L = activeList(), hit = window.__hits?.[id
        so while a search is open the shelf waits and the row says it landed */
     const box = $("#search"), open = box && box.value.trim();
     const row = $(`[data-add="${CSS.escape(id)}"], [data-up="${CSS.escape(id)}"], [data-rec="${CSS.escape(id)}"]`);
-    if (row) { row.classList.add("done"); const c = $("[data-act='shelf']", row) || $(".chip", row); if (c) c.textContent = "On the shelf"; }
+    if (row) { row.classList.add("done"); const c = $("[data-act='shelf']", row) || $(".chip", row); if (c) c.textContent = "In Up next"; }
     if (m) m.textContent = "";
     if (open) shelfStale = true;
     else if (currentTab() === "shelf") renderShelf();
-  } catch (e) { if (m) m.textContent = ""; oops(e, "Couldn't add that to the shelf"); } }
+  } catch (e) { if (m) m.textContent = ""; oops(e, "Couldn't add that to Up next"); } }
 async function removeFromShelf(id) { const L = activeList(); if (!L || !L.items.includes(id)) return;
   const cell = $(`[data-cell="${CSS.escape(id)}"]`);
   /* where every other cell was before the grid re-laid, so the rest can be seen sliding
@@ -6898,13 +6898,13 @@ function closeGap(was) {
     requestAnimationFrame(() => { c.style.transition = ""; c.style.transform = ""; }); });
   setTimeout(() => g.classList.remove("settling"), 460); }
 /* Logging something is the whole reason it was on the shelf, so finishing it takes it
-   off — it moves down into "Off the shelf" rather than sitting in the grid with a tick
+   off — it moves down into "Out of Up next" rather than sitting in the grid with a tick
    waiting to be tidied away. Editing an old entry isn't finishing anything, so that
    leaves the shelf alone. No animation here: the sheet is closing over it anyway. */
 function dropFromShelf(id) { const L = activeList(); if (!L || !L.items.includes(id)) return false;
   const back = L.items.slice(); L.items = L.items.filter(x => x !== id);
   q(sb.from("list_items").delete().eq("list_id", L.id).eq("work_id", id))
-    .catch(e => { L.items = back; oops(e, "Couldn't take that off the shelf"); if (currentTab() === "shelf") renderShelf(); });
+    .catch(e => { L.items = back; oops(e, "Couldn't take that out of Up next"); if (currentTab() === "shelf") renderShelf(); });
   return true; }
 
 /* the shelf, arranged: hold a tile to pick it up, drag to move it, \u00d7 to take it off */
@@ -6912,7 +6912,7 @@ function paintEdit() { const grid = $("#shelfGrid"); if (!grid) return;
   grid.classList.add("editing");
   $$("[data-cell]", grid).forEach(c => { const po = $(".po", c); if (!po || $(".rm", po)) return;
     const b = document.createElement("button"); b.type = "button"; b.className = "rm"; b.textContent = "\u00d7";
-    b.setAttribute("aria-label", "Take it off the shelf");
+    b.setAttribute("aria-label", "Take it out of Up next");
     b.onclick = ev => { ev.stopPropagation(); removeFromShelf(c.dataset.cell); };
     po.appendChild(b); });
   const bar = $(".shelfbar"); if (bar && !$("#shelfDone")) {
@@ -6979,7 +6979,7 @@ async function renderWaiting() { const el = $("#waitBody"); if (!el) return;
     const res = await Promise.all(jobs); upcoming = res.flat().filter(x => x.date && x.date >= today()).sort((a,b) => a.date.localeCompare(b.date)).slice(0,8); }
   if (!upcoming.length) { el.innerHTML = `<p class="empty">Nothing dated yet.</p>`; return; } const L = activeList();
   window.__hits = Object.assign(window.__hits||{}, Object.fromEntries(upcoming.map(u => [u.id, u])));
-  el.innerHTML = `<div class="card" style="margin-top:0">${upcoming.map(r => `<div class="row" data-up="${esc(r.id)}">${cover(r)}<div class="t"><b>${esc(r.title)}</b><small>${tag(r.kind)} ${when(r.date)}</small></div><span class="chip ${L?.items.includes(r.id)?"on":""}">${L?.items.includes(r.id)?"On the shelf":"Add"}</span></div>`).join("")}</div>`;
+  el.innerHTML = `<div class="card" style="margin-top:0">${upcoming.map(r => `<div class="row" data-up="${esc(r.id)}">${cover(r)}<div class="t"><b>${esc(r.title)}</b><small>${tag(r.kind)} ${when(r.date)}</small></div><span class="chip ${L?.items.includes(r.id)?"on":""}">${L?.items.includes(r.id)?"In Up next":"Add"}</span></div>`).join("")}</div>`;
   $$("[data-up]", el).forEach(x => x.onclick = () => addToShelf(x.dataset.up)); }
 
 /* ============ THE ADD BUTTON ============ */
@@ -6988,14 +6988,14 @@ function openAdd(only) {
   if (only && KINDS[only]) P.kinds = [only];
   const shelf = candidates().slice(0, 8);
   const recent = myEntries.slice(0, 4);
-  openSheet(`<h3>What are you up to?</h3><p class="sub">Search it, or take one off the shelf.
-    <b>Log</b> if you've finished it, <b>Shelf</b> if you haven't got to it, and <b>Watching</b>
+  openSheet(`<h3>What are you up to?</h3><p class="sub">Search it, or pick one from Up next.
+    <b>Log</b> if you've finished it, <b>Up next</b> if you haven't got to it, and <b>Watching</b>
     (or Reading, or Playing) if you're in the middle of it right now.</p>
     <input id="aSearch" type="search" placeholder="Search film, TV, books, games" autocomplete="off" style="margin-top:12px">
     ${canScan() ? `<button class="chip" id="aScan" style="margin-top:8px">Scan a book's barcode</button>` : ""}
     <div class="chips">${Object.keys(KINDS).map(k => `<button class="chip k ${P.kinds.includes(k)?"on":""}" data-ak="${k}">${K(k).label}</button>`).join("")}</div>
     <div class="msg" id="aMsg"></div><div id="aResults"></div>
-    ${shelf.length ? `<div class="lbl">On your shelf</div><div class="card" style="margin-top:0">${shelf.map(w => `<div class="row" data-aw="${esc(w.id)}">${cover(w)}<div class="t"><b>${esc(w.title)}</b><small>${tag(w.kind)} ${esc(w.year||"")}</small></div><span class="chip">Log</span></div>`).join("")}</div>` : ""}
+    ${shelf.length ? `<div class="lbl">Up next</div><div class="card" style="margin-top:0">${shelf.map(w => `<div class="row" data-aw="${esc(w.id)}">${cover(w)}<div class="t"><b>${esc(w.title)}</b><small>${tag(w.kind)} ${esc(w.year||"")}</small></div><span class="chip">Log</span></div>`).join("")}</div>` : ""}
     ${recent.length ? `<div class="lbl">Again</div><div class="card" style="margin-top:0">${recent.map(e => { const w = works[e.work_id]||{};
       return `<div class="row" data-aw="${esc(e.work_id)}">${cover(w)}<div class="t"><b>${esc(w.title)}</b><small>${tag(w.kind)} last ${K(w.kind).verb} ${when(e.rated_on)}</small></div><span class="chip">Again</span></div>`; }).join("")}</div>` : ""}
     ${logBlock("addLog", { label:`Your log · ${logCount()}` })}
@@ -7017,7 +7017,7 @@ function openAdd(only) {
         if (act === "now") { if (await startNow(w.id)) { closeSheet(); say(`${nowVerb(w.kind)} it`); refresh(); } return; }
         openLog(w); } catch (err) { $("#aMsg").textContent = err.message; }
     }, $("#aResults"), $("#aMsg"), null,
-      [["log","Log"],["shelf","Shelf"],["now", h => nowVerb(h.kind)]]), 400); };
+      [["log","Log"],["shelf","Up next"],["now", h => nowVerb(h.kind)]]), 400); };
 }
 $("#add").onclick = () => { const b = $("#add"); b.classList.remove("busy"); void b.offsetWidth; b.classList.add("busy"); if (navigator.vibrate) navigator.vibrate(8); openAdd(); };
 
@@ -7279,7 +7279,7 @@ async function paintRankMeet(R) {
       ${o.slice(0, open ? 30 : 10).map((x, i) => { const w = works[x.id] || {};
         return `<div class="row" data-rmw="${esc(x.id)}"><span class="rk">${i + 1}</span>${cover(w)}<div class="t"><b>${esc(w.title || "")}</b><span class="rpos">${pos(x.id).map(({ m, i:j }) => `<span title="${esc(m.id === me.id ? "you" : m.handle)}: #${j + 1}">${avatar(m)}<b>#${j + 1}</b></span>`).join("")}</span></div></div>`; }).join("")}
       ${!open && o.length > 10 ? `<div class="stack" style="margin-top:6px"><button class="btn quiet" data-roall="${k}">See all ${Math.min(30, o.length)}</button></div>` : ""}
-      <p class="sub" style="margin-top:8px;font-size:12px">Folded together from everyone's ranked lists — only what at least two of you have ranked. Sharpen yours in the archive and this moves.</p></div>`; };
+      <p class="sub" style="margin-top:8px;font-size:12px">Folded together from everyone's ranked lists — only what at least two of you have ranked. Sharpen yours in Finished and this moves.</p></div>`; };
   el.innerHTML = (top.length ? `<div class="card"><div class="h"><span>Where your orders meet</span><span class="tag dim">from everyone's ranked lists</span></div>
     ${top.map(l => { const w = works[l.w] || {};
       return `<div class="row" data-rmw="${esc(l.w)}">${cover(w)}<div class="t"><b>${esc(w.title || "")}</b><small>${esc(l.text)}</small></div></div>`; }).join("")}</div>` : "")
@@ -7403,7 +7403,7 @@ function promptHTML(R, g) {
   if (!s.voting) {
     const inNames = s.answered.map(id => who(R, id));
     body = `${s.mine ? answerTile(s.mine, { foot:"your answer · nobody sees whose until the end" }) : ""}
-      <div class="stack" style="margin-top:10px"><button class="btn ${s.mine ? "ghost" : ""}" id="gAnswer">${s.mine ? "Change your answer" : "Answer it from your archive"}</button></div>
+      <div class="stack" style="margin-top:10px"><button class="btn ${s.mine ? "ghost" : ""}" id="gAnswer">${s.mine ? "Change your answer" : "Answer it from what you've finished"}</button></div>
       <p class="sub gline">${s.ans.length ? `${s.ans.length} of ${R.members.length} in` + (inNames.length ? ` · ${esc(inNames.join(", "))}` : "") : "Nobody's answered yet"} · voting opens ${s.ans.length >= 2 ? "Friday, or when everyone's in" : "once two of you have answered"}</p>`;
   } else if (!s.revealed) {
     body = `<div class="anslist">${blind(s.ans, s.wk).map(a => { const k = akey(a), mine = s.mine === a;
@@ -7432,9 +7432,9 @@ function openAnswer(R, g, onDone) {
   for (const [sid] of showsFromParts()) if (!seen.has(sid) && works[sid]) { seen.add(sid); pool.push(works[sid]); }
   let pick = mine ? works[mine.work_id] : null;
   openSheet(`<h3>${esc(promptOf(R.id, wk))}</h3>
-    <p class="sub">Pick from your archive and pitch it in a line. Nobody sees whose is whose until the votes are in.</p>
+    <p class="sub">Pick from what you've finished and pitch it in a line. Nobody sees whose is whose until the votes are in.</p>
     <div id="gaPicked"></div>
-    <input id="gaFind" type="search" placeholder="Find it in your archive" autocomplete="off" style="margin-top:12px">
+    <input id="gaFind" type="search" placeholder="Find something you've finished" autocomplete="off" style="margin-top:12px">
     <div id="gaList" class="galist"></div>
     <div class="lbl" style="margin-top:14px">Your pitch</div>
     <textarea id="gaPitch" maxlength="140" placeholder="One line. Make the room want it.">${esc(mine?.pitch || "")}</textarea>
@@ -7445,7 +7445,7 @@ function openAnswer(R, g, onDone) {
   const paintList = () => { const t = lc($("#gaFind").value).trim();
     const hits = pool.filter(w => !t || lc([w.title, w.creator, w.year].filter(Boolean).join(" ")).includes(t)).slice(0, 30);
     $("#gaList").innerHTML = hits.map(w => `<div class="row" data-ga="${esc(w.id)}">${cover(w)}<div class="t"><b>${esc(w.title)}</b><small>${tag(w.kind)} ${esc(w.year || "")}</small></div></div>`).join("")
-      || `<p class="empty">Nothing in your archive matches that.</p>`;
+      || `<p class="empty">Nothing you've finished matches that.</p>`;
     $$("[data-ga]").forEach(r => r.onclick = () => { pick = works[r.dataset.ga]; paintPicked(); $("#gaPitch").focus(); }); };
   paintPicked(); paintList();
   $("#gaFind").oninput = paintList;
@@ -7498,7 +7498,7 @@ function bracketState(R, br, votes) {
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 function bracketHTML(R, br, g) {
   if (!br) return `<div class="card game"><div class="h"><span>The bracket</span></div>
-    <p class="sub gline">Starts once the room has four things in common — rank a few in your archive, or log some of the same things.</p></div>`;
+    <p class="sub gline">Starts once the room has four things in common — rank a few in Finished, or log some of the same things.</p></div>`;
   const st = bracketState(R, br, g.votes), mon = MONTHS[+br.month.slice(5) - 1];
   const head = `<div class="h"><span>The bracket</span><span class="tag dim">${esc(K(br.kind).plural)} · ${mon}</span></div>`;
   const past = st.rounds.filter(r => r.closed && r !== st.current);
@@ -7609,7 +7609,7 @@ async function openHold(found) {
     <div class="lbl">${mine ? `${V} it again` : `${V} it`} — tap a star</div>
     <div class="rate holdrate">${[1, 2, 3, 4, 5].map(i => `<button data-hs="${i * 2}" aria-label="${i} stars"><svg viewBox="0 0 24 24">${starPath(0)}</svg></button>`).join("")}</div>
     <div class="holdacts">
-      ${isSoon(w) || !logged(w.id) ? `<button class="chip" id="hShelf">${shelved() ? "Take it off the shelf" : "Put it on the shelf"}</button>` : ""}
+      ${isSoon(w) || !logged(w.id) ? `<button class="chip" id="hShelf">${shelved() ? "Take it out of Up next" : "Add to Up next"}</button>` : ""}
       ${!logged(w.id) && !isSoon(w) && !nowOf(w.id) ? `<button class="chip" id="hNow">I'm on it now</button>` : ""}
       ${reachable().length ? `<button class="chip" id="hHand">Tell someone</button>` : ""}
       <button class="chip" id="hPage">Open its page</button></div>
@@ -7617,7 +7617,7 @@ async function openHold(found) {
   $$("[data-hs]").forEach(b => b.onclick = () => { const sc = +b.dataset.hs; closeSheet(); setTimeout(() => openLog(w, null, sc), 360); });
   $("#hClose").onclick = closeSheet; $("#hPage").onclick = () => openWork(w.id);
   const hs = $("#hShelf"); if (hs) hs.onclick = async () => { hs.disabled = true;
-    try { if (shelved()) { await removeFromShelf(w.id); say("Off the shelf"); } else { await addToShelf(w.id); say("On the shelf", "good"); } } finally { closeSheet(); } };
+    try { if (shelved()) { await removeFromShelf(w.id); say("Out of Up next"); } else { await addToShelf(w.id); say("In Up next", "good"); } } finally { closeSheet(); } };
   const hn = $("#hNow"); if (hn) hn.onclick = async () => { try { await startNow(w.id); say(`On it: ${w.title}`, "good"); } catch (e) { oops(e, "Couldn't start it"); } closeSheet(); };
   const hh = $("#hHand"); if (hh) hh.onclick = () => openHand(w); }
 (() => { let timer = null, start = null, fired = false;
@@ -7717,7 +7717,7 @@ function swipeHTML(R, g) {
   const st = swipeState(R, g), names = st.people.filter(id => id !== me.id).map(id => who(R, id));
   const top = st.matches.slice(0, 3).map(id => works[id]).filter(Boolean);
   if (!st.deck.length) return `<div class="card game swipecard"><div class="h"><span>Tonight's pick</span></div>
-    <p class="sub gline" style="margin-top:4px">Can't agree on what to watch? Put your shelf in and swipe through everyone's. Two yeses on the same thing is a match.</p>
+    <p class="sub gline" style="margin-top:4px">Can't agree on what to watch? Put your Up next in and swipe through everyone's. Two yeses on the same thing is a match.</p>
     <div class="stack" style="margin-top:10px"><button class="btn soft" id="swGo">Start swiping</button></div></div>`;
   return `<div class="card game swipecard"><div class="h"><span>Tonight's pick</span><span class="tag dim">${st.deck.length} in the deck</span></div>
     ${top.length ? `<div class="swmatch">${top.map(w => `<button class="swm" data-gw="${esc(w.id)}">${cover(w)}<b>${esc(w.title)}</b><small>${st.yes(w.id)} said yes</small></button>`).join("")}</div>
@@ -7741,7 +7741,7 @@ async function openSwipe(R, g, again) {
       if (!st.deck.length) notify({ room:R.id, title:`${me.handle} wants to pick tonight's watch`, body:"Swipe through the room's shelves — two yeses is a match.", tag:"swipe-" + R.id, sec:"play" }); }
     catch (e) { oops(e, "Couldn't start"); return; }
     const fresh = await loadGames(R); if (fresh.ok) g = fresh; st = swipeState(R, g);
-    if (!st.left.length) { say(mine.length ? `Your ${mine.length} are in the deck — the others swipe them now` : "Your shelf has no films or shows to put in", mine.length ? "good" : ""); again(); return; } }
+    if (!st.left.length) { say(mine.length ? `Your ${mine.length} are in the deck — the others swipe them now` : "There are no films or shows in your Up next to put in", mine.length ? "good" : ""); again(); return; } }
   await fillWorks(st.left).catch(() => {});
   const deck = st.left.map(id => works[id]).filter(Boolean).sort((a, b) => st.yes(b.id) - st.yes(a.id)); let i = 0, matched = [];
   openSheet(`<h3>Tonight's pick</h3><p class="sub">Right for yes, left for no. Two yeses on anything is a match.</p>
@@ -7852,10 +7852,10 @@ function openPlanNight(R, onDone) {
     <div class="lbl">Two or three options</div><div class="npicked" id="npPicked"></div>
     <input id="npFind" type="search" placeholder="Search films and TV" autocomplete="off" style="margin-top:8px">
     <div class="msg" id="npMsg"></div><div id="npResults"></div>
-    ${shelf.length ? `<div class="lbl">From your shelf</div><div id="npShelf">${shelf.slice(0, 12).map(w => `<div class="row" data-np="${esc(w.id)}">${cover(w)}<div class="t"><b>${esc(w.title)}</b><small>${tag(w.kind)} ${esc(w.year || "")}</small></div><span class="chip">Add</span></div>`).join("")}</div>` : ""}
+    ${shelf.length ? `<div class="lbl">From Up next</div><div id="npShelf">${shelf.slice(0, 12).map(w => `<div class="row" data-np="${esc(w.id)}">${cover(w)}<div class="t"><b>${esc(w.title)}</b><small>${tag(w.kind)} ${esc(w.year || "")}</small></div><span class="chip">Add</span></div>`).join("")}</div>` : ""}
     <div class="stack"><button class="btn" id="npGo" disabled>Put it to the room</button><button class="btn quiet" id="npClose">Not now</button></div><p class="msg" id="npErr"></p>`);
   const paint = () => { $("#npPicked").innerHTML = picks.length ? picks.map(w => `<button class="npchip" data-unp="${esc(w.id)}">${cover(w)}<span>${esc(w.title)}</span><b aria-label="Remove">×</b></button>`).join("")
-      : `<p class="sub" style="margin:0">Nothing yet — add from your shelf or search.</p>`;
+      : `<p class="sub" style="margin:0">Nothing yet — add from Up next or search.</p>`;
     $$("[data-unp]").forEach(b => b.onclick = () => { picks.splice(picks.findIndex(w => w.id === b.dataset.unp), 1); paint(); });
     $$("[data-np]").forEach(r => { const on = picks.some(w => w.id === r.dataset.np); $(".chip", r).textContent = on ? "Added" : "Add"; $(".chip", r).classList.toggle("on", on); });
     $("#npGo").disabled = picks.length < 2; };
@@ -9228,9 +9228,9 @@ async function openWork(id) { let w = works[id]; if (!w) { try { const rows = aw
     <div class="card"><div class="h"><span>Everyone</span><span class="tag dim" id="wCount">—</span></div><div class="trio" id="wTrio"><div><b>—</b><span>Score</span></div><div><b>—</b><span>Logged it</span></div><div><b>—</b><span>Agree</span></div></div>
       <p class="sumup" id="wVerdict" hidden></p>
       <div class="lbl">What people loved</div><div id="wLoved">${skeleton(2)}</div></div>
-    ${isSoon(w) ? `<p class="sub" style="margin-top:12px">Out ${when(w.release)}. It's on your shelf until then.</p>` : ""}
+    ${isSoon(w) ? `<p class="sub" style="margin-top:12px">Out ${when(w.release)}. It's in Up next until then.</p>` : ""}
     <div id="wNow"></div>
-    <div class="stack"><button class="btn ${isSoon(w)?"ghost":""}" id="wLog">${logged(w.id)?"Log it again":isSoon(w)?"Log it anyway":cfg.verb.replace(/^./,c=>c.toUpperCase())+" it"}</button><button class="btn ghost" id="wShelf">${activeList()?.items.includes(w.id)?"Take it off the shelf":"Put it on the shelf"}</button>${
+    <div class="stack"><button class="btn ${isSoon(w)?"ghost":""}" id="wLog">${logged(w.id)?"Log it again":isSoon(w)?"Log it anyway":cfg.verb.replace(/^./,c=>c.toUpperCase())+" it"}</button><button class="btn ghost" id="wShelf">${activeList()?.items.includes(w.id)?"Take it out of Up next":"Add to Up next"}</button>${
       reachable().length ? `<button class="btn quiet" id="wHand">Tell someone to ${cfg.verb === "read" ? "read" : cfg.verb === "played" ? "play" : "watch"} it</button>` : ""}${
       myOpenClubs().length ? `<button class="btn quiet" id="wClub">Add it to a club</button>` : ""}</div>
     <div class="chips" id="wClubs" hidden style="margin-top:8px"><p class="sub" style="width:100%;margin:0 0 2px">Lit means it's in there. Tap to add or take out.</p>${myOpenClubs().map(c =>
@@ -9242,7 +9242,7 @@ async function openWork(id) { let w = works[id]; if (!w) { try { const rows = aw
   $("#wClose").onclick = closeSheet; $("#wLog").onclick = () => openLog(w); $("#wShelf").onclick = async () => { const b = $("#wShelf"); b.disabled = true;
     const on = activeList()?.items.includes(w.id);
     try { if (on) await removeFromShelf(w.id); else await addToShelf(w.id); } finally {
-      b.textContent = activeList()?.items.includes(w.id) ? "Take it off the shelf" : "Put it on the shelf"; b.disabled = false; } };
+      b.textContent = activeList()?.items.includes(w.id) ? "Take it out of Up next" : "Add to Up next"; b.disabled = false; } };
   /* the fold costs nothing until it is opened, which is the whole point of it */
   const pf = $("#wParts");
   if (pf) pf.addEventListener("toggle", () => { if (pf.open && !pf.dataset.done) { pf.dataset.done = "1"; paintParts(w); } });
@@ -9296,7 +9296,7 @@ async function openWork(id) { let w = works[id]; if (!w) { try { const rows = aw
     const gap = w.kind === "tv" && !isPart(w.id) ? scoreGap(myEntries, myParts, w.id) : null;
     if (gap) bits.push(`You gave it <b>${(gap.own/2).toFixed(1)}</b>. Your ${
       gap.seasons === 1 ? "season" : "seasons"} come to <b>${(gap.parts/2).toFixed(1)}</b>.`);
-    const days = shelfAge(w.id); if (days) bits.push(`It's been on your shelf ${waited(days)}.`);
+    const days = shelfAge(w.id); if (days) bits.push(`It's been in Up next ${waited(days)}.`);
     if (bits.length) { ag.innerHTML = bits.join(" "); ag.hidden = false; } }
   /* the middle state: neither meaning to, nor done with */
   const paintNow = () => { const el = $("#wNow"); if (!el) return;
@@ -9367,12 +9367,12 @@ async function openWork(id) { let w = works[id]; if (!w) { try { const rows = aw
    half is a broken app. Marks are never in here — those are earned. */
 const TIERS = [
   { name:"Everyone", price:"Free", paid:false,
-    has:["Logging, rating, tagging","Rooms, agreement, the shelf","Who's here and live arrivals",
+    has:["Logging, rating, tagging","Rooms, agreement, Up next","Who's here and live arrivals",
          "Every earned mark","Download everything"],
     note:"Everything that makes the app work for somebody else lives here. This is not a trial, it is the app." },
   { name:"Rooms, paid", price:"£2/mo", paid:true,
     has:["Slip skins and card themes","Ring colours — never ring shapes, those are earned",
-         "More than one shelf","Full history and stats","A look for the room, if the room pays"],
+         "More than one Up next list","Full history and stats","A look for the room, if the room pays"],
     note:"Cosmetic and personal. Nothing here changes what anyone sees of your taste, only what it's wearing." },
 ];
 function openPaid() {
@@ -9700,7 +9700,7 @@ async function openProfile(userId) { const self = userId === me.id;
     ${Object.keys(theirTens).length ? `<div class="card"><div class="h"><span>${self?"Your":esc(p.handle)+"'s"} tens</span><span class="tag dim">by medium</span></div>
       ${Object.entries(theirTens).map(([k,items]) => `<div class="lbl" style="margin-top:10px">${K(k).plural}</div>
         <div class="chips">${items.slice(0,5).map((id,i) => `<span class="chip" data-work="${esc(id)}">${i+1}. ${esc(works[id]?.title||"")}</span>`).join("")}</div>`).join("")}</div>` : ""}
-    ${rankKinds.length ? `<div class="card"><div class="h"><span>${self?"Your":esc(p.handle)+"'s"} archive, ranked</span><span class="tag dim">top three by medium</span></div>
+    ${rankKinds.length ? `<div class="card"><div class="h"><span>${self?"Your":esc(p.handle)+"'s"} rankings</span><span class="tag dim">top three by medium</span></div>
       ${rankKinds.map(k => `<div class="lbl" style="margin-top:10px">${K(k).plural}</div>
         <div class="archlist mini">${ranks[k].slice(0, 3).filter(id => works[id]).map((id, i) => rankRowHTML({ w:works[id], score:0 }, i, false)).join("")}</div>`).join("")}</div>` : ""}
     <div class="lbl">Entries</div>${es.length ? es.slice(0,20).map(e => slipHTML(e)).join("") : `<p class="empty">Nothing logged yet.</p>`}
@@ -9892,7 +9892,7 @@ function openLog(w, edit = null, preset = 0) { const cfg = K(w.kind); const love
       if (!edit?.id) { if (coverAt) flyTo({ getBoundingClientRect:() => coverAt }, $('nav button[data-tab="library"]'), w.cover);
         if (offShelf) tickAway(w.id); }
       closeSheet(); refresh();
-      if (offShelf) say("Off the shelf");
+      if (offShelf) say("Out of Up next");
       /* an edit came from the entry, so it goes back to the entry */
       if (edit?.id) { openEntry(saved, true); return; }
       const where = !placed ? "Logged" : placed.of === 1 ? `Logged · your first ${inWords(w.kind, 1)}`
@@ -10099,7 +10099,7 @@ async function bringOver(b, say = () => {}) {
       .map(i => ({ list_id:L.id, work_id:i.work_id, added_at:i.added_at || null,
         position:Number.isFinite(+i.position) ? +i.position : null }));
     for (const c of inChunks(add)) { await q(sb.from("list_items").insert(c)); out.shelf += c.length;
-      say(`The shelf \u00b7 ${out.shelf} of ${add.length}`); }
+      say(`Up next \u00b7 ${out.shelf} of ${add.length}`); }
   }
 
   /* only into an empty ten. Overwriting somebody's ten with an older one is the single
@@ -10156,7 +10156,7 @@ function openBringOver() {
     const line = (n, one, many) => n ? `<div class="kv"><span>${n === 1 ? one : many}</span>${n}</div>` : "";
     $("#bringBody").innerHTML = `<div class="card"><div class="h"><span>What's in it</span><span class="tag dim">${esc(f.name)}</span></div>
       ${line(b.entries.length, "entry", "entries")}
-      ${line(b.listItems.length, "thing on the shelf", "things on the shelf")}
+      ${line(b.listItems.length, "thing in Up next", "things in Up next")}
       ${line(b.topItems.length, "in your ten", "in your ten")}
       ${line(b.nows.length, "you were in the middle of", "you were in the middle of")}
       ${line(b.seen.length, "episode ticked", "episodes ticked")}
@@ -10178,7 +10178,7 @@ function openBringOver() {
         $("#bringProg").style.width = "100%";
         await Promise.all([loadMine(), loadLists(), loadNow(), loadSeen()]);
         refresh();
-        const bits = [[out.entries,"entries"],[out.shelf,"onto the shelf"],[out.ten,"into your ten"],
+        const bits = [[out.entries,"entries"],[out.shelf,"into Up next"],[out.ten,"into your ten"],
           [out.nows,"in the middle of"],[out.seen,"episodes"]].filter(([n]) => n).map(([n,l]) => `${n} ${l}`);
         $("#bringBody").innerHTML = `<div class="card"><div class="h"><span>Brought over</span></div>
           <p class="sub" style="margin-top:4px">${bits.length ? esc(bits.join(" \u00b7 ")) : "Nothing new \u2014 it was all here already."}${
@@ -10196,7 +10196,7 @@ function openImport() {
     <input type="file" id="impFile" accept=".csv,.json,.txt,text/csv,application/json" style="margin-top:10px">
     <div class="lbl">Which</div><div class="chips" id="impKinds"><button class="chip on" data-ik="">Work it out</button>${Object.keys(KINDS).map(k => `<button class="chip" data-ik="${k}">${K(k).label}</button>`).join("")}</div>
     <div class="lbl">Paste the CSV</div><textarea id="impText" style="min-height:140px;font-family:ui-monospace,monospace;font-size:12px" placeholder="Date,Name,Year,Rating&#10;2024-03-02,Aftersun,2022,5"></textarea>
-    <div class="lbl">Anything without a rating</div><div class="chips" id="impUnrated"><button class="chip on" data-iu="shelf">Put it on my shelf</button><button class="chip" data-iu="skip">Leave it out</button></div>
+    <div class="lbl">Anything without a rating</div><div class="chips" id="impUnrated"><button class="chip on" data-iu="shelf">Put it in Up next</button><button class="chip" data-iu="skip">Leave it out</button></div>
     <div class="stack"><button class="btn" id="impGo">Read it</button><button class="btn quiet" id="impClose">Not now</button></div>
     <div id="impBody"></div><p class="msg" id="impMsg"></p>`);
   let forced = "", fileText = "", unrated = "shelf";
