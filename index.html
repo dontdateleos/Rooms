@@ -5680,9 +5680,11 @@ const LENS = `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11
 function renderCabinet() {
   const body = $("#archiveBody"); if (!body) return;
   const counts = cabinetCounts(), kinds = CAB_ORDER.filter(k => counts[k]);
-  if (P.cabKind && !counts[P.cabKind]) P.cabKind = "";
-  /* everything first, then each medium you've finished something in, each in its colour */
-  const places = [place("", "Your archive", "sky", "archive"), ...(kinds.length > 1 ? kinds.map(k => place(k, K(k).plural, KIND_TONE[k], k)) : [])];
+  if (P.cabKind && !CAB_ORDER.includes(P.cabKind)) P.cabKind = "";
+  /* everything first, then all four mediums, each in its colour — always all four, so a
+     medium you haven't finished anything in yet is still there to find, with a word on
+     how it fills up, rather than missing as if the app didn't do TV */
+  const places = [place("", "Your archive", "sky", "archive"), ...(logCount() ? CAB_ORDER.map(k => place(k, K(k).plural, KIND_TONE[k], k)) : [])];
   body.innerHTML = `${pagerHTML(places, P.cabKind || "", { id:"cabPager", mode:"chips", allLabel:"All" })}
     ${logCount() ? `<div class="cabbar">
         <p class="sub" id="cabSub"></p>
@@ -5787,6 +5789,13 @@ const rankRowHTML = (r, i, showMove) => { const logo = logoCache[r.w.id];
 /* the full-width banner is the one display now, whatever the sort \u2014 only the up/down
    handles are rank-only, since every other sort's order is computed, not a thing
    you'd drag. */
+/* one medium, nothing finished in it yet: say how it fills, and offer the way in */
+function kindBlank(k) {
+  const on = myNow.filter(n => kindOf(n.work_id) === k).length, noun = K(k).plural.toLowerCase();
+  const body = k === "tv"
+    ? `When you finish a show, or rate a season of one, it stands here.${on ? ` You're in the middle of ${on === 1 ? "one" : on} — log ${on === 1 ? "it" : "them"} when you're done.` : " Shows you're still watching wait on your shelf until then."}`
+    : `When you finish ${k === "book" ? "a book" : k === "game" ? "a game" : "a film"}, it stands here.${on ? ` You're in the middle of ${on === 1 ? "one" : on} right now.` : ""}`;
+  return blank(`var(--${KIND_TONE[k]})`, "+", k === "tv" ? "No shows yet" : `No ${noun} yet`, body, [["cabLogKind", k === "tv" ? "Log a show" : `Log ${k === "book" ? "a book" : k === "game" ? "a game" : "a film"}`, "soft"]]); }
 function paintTrays() {
   const el = $("#cabTrays"); if (!el) return;
   const rows = cabinetRows();
@@ -5800,6 +5809,7 @@ function paintTrays() {
   const sub = $("#cabSub");
   /* the per-medium counts live on the chips now, so this line only says how many */
   if (sub) sub.innerHTML = rows.length ? `${rows.length} ${cabQ ? "match" : "finished"}`
+    : P.cabKind && !cabQ ? "None finished yet"
     : logCount() ? "Nothing in here matches that." : "Everything you finish stands here.";
   /* on Ranked each medium's heading carries the two things you do with an order:
      tighten it, and show it off */
@@ -5811,6 +5821,7 @@ function paintTrays() {
         <span>${esc(K(k).plural)} <em>${by[k].length}</em></span>${trayActs(k)}</div>
       <div class="archlist${P.cabDense === "compact" ? " compact" : ""}">${by[k].map((r, i) => rankRowHTML(r, i, ranked)).join("")}</div></div>`).join("")
     : cabQ ? `<p class="empty">Nothing in here matches \u201c${esc(cabQ)}\u201d.</p>`
+    : P.cabKind ? kindBlank(P.cabKind)
     : blank("var(--mint)", "\u25af", "Nothing in here yet",
         "Log something and it stands here, with its own cover on it. The shelf is what you mean to get to; this is what you got to.",
         [["cabShelf", "Back to the shelf", "soft"]]);
@@ -5866,6 +5877,7 @@ function wireCabinet() {
 }
 function wireTokens() {
   const bk = $("#cabShelf"); if (bk) bk.onclick = () => switchTab("shelf");
+  const lk = $("#cabLogKind"); if (lk) lk.onclick = () => openAdd(P.cabKind);
 }
 /* medium and "when" used to sit as two more chip rows on the shelf, on top of the view
    toggle, the search box and its own kind chips — four rows of controls before any
@@ -6962,7 +6974,9 @@ async function renderWaiting() { const el = $("#waitBody"); if (!el) return;
   $$("[data-up]", el).forEach(x => x.onclick = () => addToShelf(x.dataset.up)); }
 
 /* ============ THE ADD BUTTON ============ */
-function openAdd() {
+function openAdd(only) {
+  /* opened from one medium's empty archive: search that medium first (the chips can widen it) */
+  if (only && KINDS[only]) P.kinds = [only];
   const shelf = candidates().slice(0, 8);
   const recent = myEntries.slice(0, 4);
   openSheet(`<h3>What are you up to?</h3><p class="sub">Search it, or take one off the shelf.
@@ -10464,7 +10478,7 @@ function downloadJSON(obj, name) {
 }
 
 /* a small hook so the card renderers can be exercised by the test harness */
-window.__rooms = { blank, playMatch, coach, logoCheer, logoHere, openYearStory, storyYear, openWelcome, openOnboarding, openImport, pullRefresh, openFind, setFollow, isFollowing, get follows(){return follows}, openNotes, noteList, noteRow, markNotesSeen, noteCount, newHands, noteSeen, get unseen(){return unseen}, nowVerb, openAdd, RINGS, MARK_RING, ringFromMarks, ringCache, myRing, spanOf, reelIndexNow, memories, dueReview, memForget, MEM_MIN, MEM_DAYS, whoseWord, wordPending, HAND_FLOOR, loadHand, handTo, answerHand, reachable, cameFrom, openHand, get handIn(){return handIn}, get handOut(){return handOut}, get handAll(){return handAll}, reelTo, markReel, REEL, reelCopies, get reelAt(){return reelAt}, facesFor, faceEl, faceMap, FACE_IMG, paintLog, wireLog, openWholeLog, openLog, likeLine, knownName, AV_SHAPES, AV_EYES, AV_COLS, avSVG, avFor, get me(){return me}, get entries(){return myEntries}, get works(){return works}, get rooms(){return rooms},
+window.__rooms = { blank, kindBlank, playMatch, coach, logoCheer, logoHere, openYearStory, storyYear, openWelcome, openOnboarding, openImport, pullRefresh, openFind, setFollow, isFollowing, get follows(){return follows}, openNotes, noteList, noteRow, markNotesSeen, noteCount, newHands, noteSeen, get unseen(){return unseen}, nowVerb, openAdd, RINGS, MARK_RING, ringFromMarks, ringCache, myRing, spanOf, reelIndexNow, memories, dueReview, memForget, MEM_MIN, MEM_DAYS, whoseWord, wordPending, HAND_FLOOR, loadHand, handTo, answerHand, reachable, cameFrom, openHand, get handIn(){return handIn}, get handOut(){return handOut}, get handAll(){return handAll}, reelTo, markReel, REEL, reelCopies, get reelAt(){return reelAt}, facesFor, faceEl, faceMap, FACE_IMG, paintLog, wireLog, openWholeLog, openLog, likeLine, knownName, AV_SHAPES, AV_EYES, AV_COLS, avSVG, avFor, get me(){return me}, get entries(){return myEntries}, get works(){return works}, get rooms(){return rooms},
   CUTS, openCuts, spanData, tasteOf, reviewData, yearOf, roomPalmares, tagStats, agreement, activeRoom, q, sb: () => sb, remember,
   joinRoomChannel, leaveRoomChannel, paintHere, onLiveEntry, paintDay, get hereNow(){return hereNow},
   say, oops, markLive, takeInvite, dropInvite, inviteLink, useInvite, exportEverything,
