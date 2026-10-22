@@ -1911,7 +1911,7 @@ nav button .dot{top:0;right:calc(50% - 24px)}
 .sn-rr{display:grid;grid-template-columns:minmax(0,30%) 1fr auto;align-items:center;gap:12px;padding:12px 0;cursor:pointer}
 .sn-rr b{width:auto}
 .sn-rr b em{display:block;font-style:normal;font-family:var(--body);font-weight:700;font-size:10px;color:var(--good);letter-spacing:.02em}
-.sn-lane{position:relative;height:6px;border-radius:3px;background:var(--cream2);margin-right:14px}
+.sn-lane{position:relative;height:6px;border-radius:3px;background:var(--cream2);margin:0 14px}
 .sn-lane .fill{position:absolute;left:0;top:0;bottom:0;border-radius:3px;background:var(--ink);opacity:.25}
 .sn-rr.me .sn-lane .fill{background:var(--apricot);opacity:1}
 .sn-lane .runner{position:absolute;top:50%;transform:translate(-50%,-50%)}
@@ -1920,8 +1920,8 @@ nav button .dot{top:0;right:calc(50% - 24px)}
 /* Friend clubs */
 .clubchips{margin-top:2px;margin-bottom:12px}
 .clubposters{display:flex;gap:5px;margin:10px 0 4px;align-items:center}
-.cp{width:30px;aspect-ratio:2/3;border-radius:6px;overflow:hidden;position:relative;background:var(--cream2);flex:none;opacity:.35;transition:opacity .3s}
-.cp.done{opacity:1}
+.cp{width:30px;aspect-ratio:2/3;border-radius:6px;overflow:hidden;position:relative;background:var(--cream2);flex:none;opacity:.55;filter:saturate(.25) brightness(.92);transition:opacity .3s,filter .3s}
+.cp.done{opacity:1;filter:none}
 .cp .cpi{width:100%;height:100%;object-fit:cover;display:block}
 .cp.done::after{content:"";position:absolute;right:2px;bottom:2px;width:9px;height:9px;border-radius:50%;background:var(--good);box-shadow:0 0 0 1.5px var(--card)}
 .cpmore{font-size:11px;font-weight:700;color:var(--mute);margin-left:2px}
@@ -1987,6 +1987,14 @@ html[data-theme="dark"] .slip,html[data-theme="dark"] .club,html[data-theme="dar
 #add{box-shadow:0 10px 22px -10px rgba(21,19,32,.55),inset 0 -4px 0 rgba(0,0,0,.24),inset 0 2px 0 rgba(255,255,255,.14)}
 .po:not(:has(img.ok))::before{content:"";position:absolute;left:0;right:0;top:0;height:16%;background:rgba(255,255,255,.2);pointer-events:none}
 .po:not(:has(img.ok))::after{content:"";position:absolute;top:0;bottom:0;right:0;width:12%;background:rgba(21,19,32,.1);pointer-events:none}
+
+/* the light scroll rise: a few pixels and a soft fade, no more */
+.lite{opacity:.35;translate:0 8px}
+.lite.lite-in{opacity:1;translate:0 0;transition:opacity .28s cubic-bezier(.2,.8,.2,1),translate .32s cubic-bezier(.2,.8,.2,1)}
+/* and the older top-level rise, brought down to match */
+.reveal{opacity:.35;transform:translateY(8px);transition:opacity .28s var(--m-ease),transform .32s var(--m-ease)}
+
+@media (prefers-reduced-motion:reduce){.av .eyes,.logo .mark .eyes,.season-ghost .eyes,.season-object .eyes,.emptydoor .eyes,.pgmark .eyes{animation:none!important}}
 </style>
 </head>
 <body>
@@ -3472,6 +3480,26 @@ function revealIn(root) {
   setTimeout(sweep, 60); keepSweeping();
   setTimeout(() => { for (const el of [...watching]) { el.classList.add("in"); revealObs?.unobserve(el); watching.delete(el); } }, 6000);
 }
+
+/* ---------- a light rise as you scroll ----------
+   Anything in a feed that arrives below the fold (a post, a log line, a card, a poster)
+   waits a few pixels low and a little faded, and settles as it scrolls into view. Very
+   light: eight pixels and a quarter of a second, once per thing. Things already on
+   screen are left alone, and so is anybody who has asked for less motion. */
+const LITE_SEL = ".slip,.logline,.card,.club,.archcard,.sn-tile,.sn-late,.cell,.twin,.moment-row";
+const liteObs = !REDUCED && "IntersectionObserver" in window ? new IntersectionObserver(es => es.forEach(en => {
+    if (!en.isIntersecting) return; const el = en.target; liteObs.unobserve(el);
+    el.classList.add("lite-in"); setTimeout(() => el.classList.remove("lite", "lite-in"), 420); }), { rootMargin:"0px 0px -4% 0px" }) : null;
+function liteWatch(root) { if (!liteObs) return;
+  const fold = innerHeight * .96;
+  const els = [...(root.matches?.(LITE_SEL) ? [root] : []), ...root.querySelectorAll(LITE_SEL)];
+  for (const el of els) { if (el.dataset.lite || el.classList.contains("reveal")) continue; el.dataset.lite = "1";
+    if (el.parentElement?.closest(LITE_SEL)) continue;                 /* only the outermost of a nest */
+    if (el.closest("#sheet") || el.offsetParent === null) continue;
+    if (el.getBoundingClientRect().top < fold) continue;               /* already in view: leave it be */
+    el.classList.add("lite"); liteObs.observe(el); } }
+if (liteObs) new MutationObserver(ms => { for (const m of ms) for (const n of m.addedNodes) if (n.nodeType === 1) liteWatch(n); })
+  .observe(document.querySelector("main"), { childList:true, subtree:true });
 
 /* ---------- an invite you can tap ----------
    the code still works, but a link is what people actually send each other. The code
@@ -8172,7 +8200,7 @@ function tasteMiniHTML(t) {
       <small>See the whole picture ›</small></div></div>`; }
 const COG = `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.6 1.6 0 0 0 .32 1.77l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.6 1.6 0 0 0-1.77-.32 1.6 1.6 0 0 0-1 1.47V21a2 2 0 1 1-4 0v-.11a1.6 1.6 0 0 0-1.05-1.47 1.6 1.6 0 0 0-1.77.32l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.6 1.6 0 0 0 .32-1.77 1.6 1.6 0 0 0-1.47-1H3a2 2 0 1 1 0-4h.11a1.6 1.6 0 0 0 1.47-1.05 1.6 1.6 0 0 0-.32-1.77l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.6 1.6 0 0 0 1.77.32H9a1.6 1.6 0 0 0 1-1.47V3a2 2 0 1 1 4 0v.11a1.6 1.6 0 0 0 1 1.47 1.6 1.6 0 0 0 1.77-.32l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.6 1.6 0 0 0-.32 1.77V9a1.6 1.6 0 0 0 1.47 1H21a2 2 0 1 1 0 4h-.11a1.6 1.6 0 0 0-1.47 1z"/></svg>`;
 async function renderTaste() { const body = $("#tasteBody"); const t = tasteOf(myEntries);
-  body.innerHTML = `<div class="pagehead"><button class="tasteme" id="tasteMe" aria-label="Open your profile">${avatar(me)}<div><h2 style="margin:0" data-pagetitle="${esc(me.handle)}">${esc(me.handle)}</h2>${me.bio?`<p class="sub" style="margin-top:2px">${esc(me.bio)}</p>`:""}</div></button>
+  body.innerHTML = `<div class="pagehead"><button class="tasteme" id="tasteMe" aria-label="Open your profile">${avatar(me)}<div><h2 style="margin:0">${esc(me.handle)}</h2>${me.bio?`<p class="sub" style="margin-top:2px">${esc(me.bio)}</p>`:""}</div></button>
     <button class="iconbtn cog" id="tasteCog" aria-label="Settings">${COG}</button></div>
     ${myEntries.length ? `<button class="card tastemini" id="tasteMore" aria-label="See your whole taste">${tasteMiniHTML(t)}</button>
     <div id="podium"></div>
