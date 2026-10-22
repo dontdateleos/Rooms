@@ -640,6 +640,7 @@ header:has(#meBtn:not([hidden])) .logoword{display:none}
 .av svg{width:100%;height:100%;display:block}
 .av.big{width:84px;height:84px}
 .picker{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:8px}
+#avShapes{grid-template-columns:repeat(5,1fr);gap:8px}   /* nine shapes since the ghost: five and four, not four, four and one */
 .picker button{background:var(--card);border:2px solid var(--line);border-radius:16px;padding:6px;cursor:pointer;transition:transform .15s}
 .picker button svg{width:100%;height:auto;display:block}
 .picker button.on{border-color:var(--ink);background:var(--cream2)}
@@ -882,6 +883,7 @@ header:has(#meBtn:not([hidden])) .logoword{display:none}
 .av:not(#meAv) svg[data-shape="cube"]{animation-name:avSettle;animation-duration:6.8s}
 .av:not(#meAv) svg[data-shape="can"]{animation-name:avSway;animation-duration:5.6s}
 .av:not(#meAv) svg[data-shape="cone"]{animation-name:avTeeter;animation-duration:3.9s}
+.av:not(#meAv) svg[data-shape="ghost"]{animation-name:avBob;animation-duration:4.6s}
 .av:not(#meAv) svg[data-shape="pill"]{animation-name:avBob;animation-duration:4.1s}
 .av:not(#meAv) svg[data-shape="arch"]{animation-name:avSway;animation-duration:7.4s}
 .av:not(#meAv) svg[data-shape="step"]{animation-name:avShift;animation-duration:6.1s;animation-timing-function:steps(2,end)}
@@ -1909,9 +1911,6 @@ nav button .dot{top:0;right:calc(50% - 24px)}
 .sn-bar i{display:block;height:100%;border-radius:3px;background:var(--ink);opacity:.75;transition:width .5s cubic-bezier(.2,.8,.2,1)}
 .sn-rr.me .sn-bar i{background:var(--apricot);opacity:1}
 .sn-rr .n{font-family:var(--head);font-weight:900;font-size:16px;min-width:20px;text-align:right}
-.sn-owl{margin-top:12px}
-.sn-owl b{font-family:var(--head);font-weight:800;font-size:15px}
-.sn-owl .sub{margin-top:3px}
 </style>
 </head>
 <body>
@@ -2017,11 +2016,18 @@ const AV_SHAPES = {
   arch: c => `<path d="M18 88V46a32 32 0 0 1 64 0v42z" fill="${c.base}"/>
     <path d="M50 14a32 32 0 0 1 32 32H18a32 32 0 0 1 32-32z" fill="${c.light}"/>
     <path d="M82 46v42H64V46a14 14 0 0 0-8-13 32 32 0 0 1 26 13z" fill="${c.dark}"/>`,
+  /* the season's ghost, kept for good: a dome with a wavy hem */
+  ghost: c => `<path d="M18 46a32 32 0 0 1 64 0v30q-8 10-16 0t-16 0t-16 0t-16 0z" fill="${c.base}"/>
+    <path d="M50 14a32 32 0 0 1 32 32H18a32 32 0 0 1 32-32z" fill="${c.light}"/>
+    <path d="M82 46v30q-8 10-16 0V46a14 14 0 0 0-8-13 32 32 0 0 1 24 13z" fill="${c.dark}"/>`,
   step: c => `<path d="M14 88V56h30V30h42v58z" fill="${c.base}"/>
     <path d="M44 30h42v10H44zM14 56h30v10H14z" fill="${c.light}"/>
     <path d="M86 30v58H62V30z" fill="${c.dark}"/>`
 };
 const AV_NAMES = Object.keys(AV_SHAPES);
+/* the shapes a face gets before anyone chooses one; the ghost came later, and adding it
+   here would quietly change everybody's default face */
+const AV_DEFAULT = AV_NAMES.filter(n => n !== "ghost");
 function avShade(hex, amt) { const n = parseInt(hex.slice(1), 16); let r = n >> 16, g = (n >> 8) & 255, b = n & 255;
   if (amt > 0) { r += (255-r)*amt; g += (255-g)*amt; b += (255-b)*amt; } else { r *= (1+amt); g *= (1+amt); b *= (1+amt); }
   return "#" + [r,g,b].map(v => Math.round(v).toString(16).padStart(2,"0")).join(""); }
@@ -2040,7 +2046,7 @@ function avFor(p) {
   if (a && AV_SHAPES[a.shape] && AV_COLS[a.col] !== undefined)
     return { shape:a.shape, col:a.col, eyes:AV_EYES[a.eyes] ? a.eyes : "pair", tilt:a.tilt ?? 0, founder, ring };
   const h = avHash(p?.handle);
-  return { shape:AV_NAMES[h % AV_NAMES.length], col:(h >> 3) % AV_COLS.length,
+  return { shape:AV_DEFAULT[h % AV_DEFAULT.length], col:(h >> 3) % AV_COLS.length,
     eyes:AV_EYE_NAMES[(h >> 11) % AV_EYE_NAMES.length], tilt:((h >> 7) % 9) - 4, founder, ring }; }
 /* the same capsule, arranged four ways — nothing changes but the spacing and the height */
 const AV_EYES = {
@@ -9096,16 +9102,14 @@ async function renderClubs() {
         <span class="sn-steps" aria-label="${m ? m.name + " earned" : "no medal yet"}">${SEASON_MEDALS.map(x => `<i class="${n >= x.at ? "on " + x.tier : ""}"></i>`).join("")}</span>
         <small>${m ? `${m.name}${SEASON_MEDALS.find(x => x.at > n) ? ` · ${SEASON_MEDALS.find(x => x.at > n).name} at ${SEASON_MEDALS.find(x => x.at > n).at}` : " · all done"}` : `${esc(c.copy)}`}</small></button>`).join("")}</div>
     <div id="snRace"></div>
-    <div class="card sn-owl"><b>Night Owl</b><p class="sub" id="seasonRank">${phase.key === "upcoming" ? "The top 10% mark opens with the season. Log at least three that count to be in it." : "Checking the current top 10%…"}</p></div>`;
+`;
   $$('[data-season-challenge]', out).forEach(row => row.onclick = () => openSeasonChallenge(season.challenges.find(c => c.id === row.dataset.seasonChallenge)));
   if (ended && ended !== season) fillSeasonRecap(ended);
   paintSeasonMonth(season, mine, null);
   revealIn(out);
   /* the room's half arrives after: their nights on the calendar, and the race */
   seasonRoom(season).then(room => { if (!$("#snCal")) return; paintSeasonMonth(season, mine, room); paintSeasonRace(season, room, total); }).catch(() => {});
-  if (phase.key !== "upcoming") { const rank = await seasonRank(season), box = $("#seasonRank"); if (box) box.innerHTML = rank?.people
-    ? (rank.inTop ? `You're in the top 10% right now. Hold it until ${when(season.ends)} and the mark is yours.` : `The top 10% of ${rank.people} taking part. The line is ${rank.cut} right now${rank.mine ? `; you're on ${rank.mine}` : ""}, and you need at least three.`)
-    : "Be one of the first to log one that counts. The top 10% mark starts once people are taking part."; }
+  /* Night Owl (the top-10% mark) is off for now; seasonRank still works if it comes back */
 }
 /* ---------- the season, by night ----------
    One month at a time (a season can run two); the arrows step between them. A night you
