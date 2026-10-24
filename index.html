@@ -1995,6 +1995,9 @@ html[data-theme="dark"] .slip,html[data-theme="dark"] .club,html[data-theme="dar
 .reveal{opacity:.35;transform:translateY(8px);transition:opacity .28s var(--m-ease),transform .32s var(--m-ease)}
 
 @media (prefers-reduced-motion:reduce){.av .eyes,.logo .mark .eyes,.season-ghost .eyes,.season-object .eyes,.emptydoor .eyes,.pgmark .eyes{animation:none!important}}
+
+/* the page beside you while you swipe: shown, and placed by the swipe itself */
+section.swipenext{display:block}
 </style>
 </head>
 <body>
@@ -4257,10 +4260,14 @@ function switchTab(n, how = {}) { shelfEdit = false;
   $$("main section").forEach(s => { const on = s.id === "tab-"+n; s.classList.toggle("on", on); s.classList.remove("leaving", "arrived");
     });
   paintLib(n, !(LIB.includes(cur) && LIB.includes(n)));
-  requestAnimationFrame(() => { movePill(); watchTitle(); if (was !== now) riseIn($("#tab-" + n)); }); scrollTo(0,0);
+  const swiped = how.swiped && !!$("#tab-" + n)?.textContent.trim();
+  requestAnimationFrame(() => { movePill(); watchTitle(); if (was !== now && !swiped) riseIn($("#tab-" + n)); });
+  scrollTo(0, swiped ? (n === cur ? 0 : (tabScroll[n] || 0)) : 0);
   /* drawn once, now, as it arrives — never again a moment later, which made it jump. The
      room feed drawn in the last minute only needs its live connection back. */
-  if (n === "doors" && was !== now && Date.now() - (drawnAt.doors || 0) < 60000 && $("#doorsBody")?.children.length) {
+  if (swiped && Date.now() - (drawnAt[n] || 0) < 300000) {
+    if (n === "doors" && feedNow() === "room" && activeRoom()) joinRoomChannel(activeRoom()); }
+  else if (n === "doors" && was !== now && Date.now() - (drawnAt.doors || 0) < 60000 && $("#doorsBody")?.children.length) {
     if (feedNow() === "room" && activeRoom()) joinRoomChannel(activeRoom()); }
   else { RENDER[n]?.(); drawnAt[n] = Date.now(); }
   /* some tabs draw after a fetch, so the old position may not exist yet on the first try:
@@ -4271,7 +4278,15 @@ function switchTab(n, how = {}) { shelfEdit = false;
     const back = () => { if (!mine) return; scrollTo(0, target);
       if (Math.abs(scrollY - target) > 4 && ++k < 12) setTimeout(back, 90); };
     requestAnimationFrame(back); }
-  if (n === "doors") setTimeout(markSeen, 1200); else paintDot(); }
+  if (n === "doors") setTimeout(markSeen, 1200); else paintDot();
+  warmBeside(); }
+/* the pages either side of this one, drawn while nothing's happening, so a swipe always
+   has something beside it (and the page you land on is already there) */
+function warmBeside() { clearTimeout(warmBeside.t);
+  warmBeside.t = setTimeout(() => { const go = () => { const i = TAB_ORDER.indexOf(currentTab()); if (i < 0) return;
+      for (const t of [TAB_ORDER[i - 1], TAB_ORDER[i + 1]]) { const sec = t && $("#tab-" + t);
+        if (sec && !sec.textContent.trim()) { try { RENDER[t]?.(); drawnAt[t] = Date.now(); } catch {} } } };
+    "requestIdleCallback" in window ? requestIdleCallback(go, { timeout:1500 }) : go(); }, 900); }
 $$("nav button[data-tab]").forEach(b => b.onclick = () => { if (b.dataset.held) { delete b.dataset.held; return; } switchTab(b.dataset.tab); });
 $$("#libBar [data-lib]").forEach(b => b.onclick = () => { if (currentTab() !== b.dataset.lib) switchTab(b.dataset.lib); });
 /* Holding a tab does the thing you'd go there to do: hold Library and the shelf is dealt
@@ -4298,35 +4313,91 @@ let tabDrag = false;
     if (n.matches?.("input,textarea,select,[contenteditable],.pager,.wheelwrap,.grid.editing,.rate,.seg,.swdeck")) return true;
     if (n.scrollWidth > n.clientWidth + 2 && /auto|scroll/.test(getComputedStyle(n).overflowX)) return true; }
     return false; };
+  /* Like Instagram: the page beside this one is already there, just off the edge, and
+     both follow your finger one to one. Let go past a third of the way, or flick, and
+     they glide the rest of the way; otherwise they slide back. At either end there's
+     nothing beside you, so the page only gives a little and springs back. Queue's title
+     and its two tabs travel with Queue, and stay put between Up next and Finished. */
   let s = null;
-  const page = () => $("#tab-" + currentTab());
-  const reach = x => 56 * (1 - 1 / (Math.abs(x) / 90 + 1)) * Math.sign(x);   /* follows, then resists */
-  const clear = el => { if (el) { el.style.transform = ""; el.style.opacity = ""; el.style.transition = ""; } };
+  const libBar = $("#libBar"), root = document.documentElement;
+  const reach = x => 56 * (1 - 1 / (Math.abs(x) / 90 + 1)) * Math.sign(x);
+  const W = () => innerWidth;
+  const groupOf = (tab, other) => { const sec = $("#tab-" + tab); if (!sec) return [];
+    return LIB.includes(tab) && !LIB.includes(other) && libBar ? [libBar, sec] : [sec]; };
+  const setX = (els, x, t) => els.forEach(el => { el.style.transition = t || "none"; el.style.transform = x ? `translate3d(${x}px,0,0)` : ""; });
+  const unfix = els => els.forEach(el => { el.classList.remove("swipenext"); for (const k of ["position", "top", "left", "width", "zIndex", "transform", "transition"]) el.style[k] = ""; });
+  function prepare(d) {
+    d.cur = currentTab(); d.to = TAB_ORDER[TAB_ORDER.indexOf(d.cur) + d.dir] || null;
+    d.curEls = groupOf(d.cur, d.to); d.nbEls = [];
+    if (!d.to || REDUCED) return;
+    const sec = $("#tab-" + d.to); if (!sec) { d.to = null; return; }
+    /* never drawn, or drawn a while ago: draw it now, once, so what's beside you is what
+       you'll land on — landing then doesn't draw it again */
+    if (!sec.textContent.trim() || Date.now() - (drawnAt[d.to] || 0) > 300000) { RENDER[d.to]?.(); drawnAt[d.to] = Date.now(); }
+    const both = LIB.includes(d.cur) && LIB.includes(d.to);
+    d.nbEls = groupOf(d.to, d.cur);
+    if (d.nbEls[0] === libBar) paintLib(d.to, true);
+    const r = d.curEls[0].getBoundingClientRect(), mr = main.getBoundingClientRect();
+    /* it sits where it'll be once you're there: at the top of the page, scrolled to wherever
+       you left it (between Queue's two sides, wherever you are now, just under its tabs) */
+    d.target = both ? scrollY : (tabScroll[d.to] || 0);
+    /* measured from under the header, which never moves: where the page itself starts
+       shifts with whatever margin its first block has */
+    /* the header is sticky, so its height is where the page starts; it shrinks to a compact
+       bar once you scroll, but the page underneath still starts under the full one */
+    const hd = $("header"); let under = mr.top + scrollY;
+    if (hd) { const bar = $(".wrap", hd);       /* the page starts under the full 58px bar, compact or not */
+      under = hd.offsetHeight - (bar ? bar.offsetHeight : 0) + 58; }
+    let top = both ? libBar.getBoundingClientRect().bottom : under - d.target;
+    for (const el of d.nbEls) { el.classList.add("swipenext");
+      Object.assign(el.style, { position:"fixed", top:top + "px", left:r.left + "px", width:r.width + "px", zIndex:"1" });
+      top += el.getBoundingClientRect().height; }
+    setX(d.nbEls, d.dir * W()); }
+  function unprepare(d) { setX(d.curEls, 0); unfix(d.nbEls);
+    if (d.nbEls[0] === libBar && !LIB.includes(d.cur)) libBar.hidden = true;
+    if (LIB.includes(d.cur)) paintLib(d.cur, true);
+    d.nbEls = []; }
   main.addEventListener("touchstart", e => { if (s) return;
     if (e.touches.length !== 1 || !me || shelfEdit || $("#sheet")?.classList.contains("on")) return;
     if (!TAB_ORDER.includes(currentTab()) || owns(e.target)) return;
-    const t = e.touches[0]; s = { x0:t.clientX, y0:t.clientY, lock:null, x:0, hist:[[t.clientX, performance.now()]] }; }, { passive:true });
-  main.addEventListener("touchmove", e => { if (!s || s.lock === "y") return;
+    const t = e.touches[0]; s = { x0:t.clientX, y0:t.clientY, lock:null, x:0, dir:0, hist:[[t.clientX, performance.now()]] }; }, { passive:true });
+  main.addEventListener("touchmove", e => { if (!s || s.lock === "y" || s.done) return;
     const t = e.touches[0], dx = t.clientX - s.x0, dy = t.clientY - s.y0;
     if (!s.lock) { if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
       if (Math.abs(dy) > Math.abs(dx) * .8) { s = null; return; }
-      s.lock = "x"; tabDrag = true; }
+      s.lock = "x"; tabDrag = true; root.classList.add("tabdrag"); }
     e.preventDefault();
     s.x = dx; s.hist.push([t.clientX, performance.now()]); if (s.hist.length > 6) s.hist.shift();
-    if (REDUCED || s.raf) return;
-    s.raf = requestAnimationFrame(() => { if (!s) return; s.raf = 0;
-      const to = TAB_ORDER[TAB_ORDER.indexOf(currentTab()) + (s.x < 0 ? 1 : -1)], el = page(); if (!el) return;
-      el.style.transition = "none"; el.style.transform = `translateX(${reach(s.x) * (to ? 1 : .5)}px)`;
-      el.style.opacity = to ? String(1 - Math.min(.3, Math.abs(s.x) / 700)) : ""; }); }, { passive:false });
-  const end = () => { if (!s) return; const d = s; s = null; tabDrag = false;
-    if (d.lock !== "x") return;
+    if (s.raf) return;
+    s.raf = requestAnimationFrame(() => { if (!s || s.done) return; s.raf = 0;
+      const dir = s.x < 0 ? 1 : -1;
+      if (dir !== s.dir) { if (s.dir) unprepare(s); s.dir = dir; prepare(s); }
+      if (!s.to || REDUCED) { setX(s.curEls, REDUCED ? 0 : reach(s.x) * .5); return; }
+      setX(s.curEls, s.x); setX(s.nbEls, s.dir * W() + s.x); }); }, { passive:false });
+  const end = () => { if (!s || s.done) return; const d = s; d.done = true; tabDrag = false;
+    cancelAnimationFrame(d.raf);
+    /* a flick so quick it ended before the first frame drew: line the page up now */
+    if (d.lock === "x" && !d.dir && Math.abs(d.x) > 24) { d.dir = d.x < 0 ? 1 : -1; prepare(d); }
+    if (d.lock !== "x" || !d.dir) { root.classList.remove("tabdrag"); s = null; return; }
     const h = d.hist, a = h[0], b = h[h.length - 1], v = b[1] - a[1] > 0 ? (b[0] - a[0]) / (b[1] - a[1]) : 0;
-    const to = TAB_ORDER[TAB_ORDER.indexOf(currentTab()) + (d.x < 0 ? 1 : -1)], el = page();
-    const go = to && (Math.abs(d.x) > Math.min(120, (main.clientWidth || innerWidth) * .28) || (Math.abs(v) > .5 && Math.sign(v) === Math.sign(d.x) && Math.abs(d.x) > 30));
-    if (go) { clear(el); if (navigator.vibrate) navigator.vibrate(6); switchTab(to); return; }
-    if (!el || REDUCED) { clear(el); return; }
-    el.style.transition = "transform .22s cubic-bezier(.2,.8,.2,1), opacity .22s"; el.style.transform = ""; el.style.opacity = "";
-    setTimeout(() => clear(el), 260); };
+    const go = d.to && (Math.abs(d.x) > W() * .33 || (Math.abs(v) > .45 && Math.sign(v) === Math.sign(d.x) && Math.abs(d.x) > 24));
+    const finish = () => { root.classList.remove("tabdrag"); s = null; };
+    if (go && !REDUCED) {
+      /* the rest of the way at the speed you were going, within reason */
+      const left = W() - Math.abs(d.x), ms = Math.round(Math.max(150, Math.min(300, left / Math.max(Math.abs(v), 1.4))));
+      const ease = `transform ${ms}ms cubic-bezier(.2,.8,.2,1)`;
+      setX(d.curEls, -d.dir * W(), ease); setX(d.nbEls, 0, ease);
+      if (navigator.vibrate) navigator.vibrate(6);
+      setTimeout(() => {
+        if (LIB.includes(d.cur) && LIB.includes(d.to)) tabScroll[d.to] = d.target;
+        /* in the same moment: the new page takes its place in the page, the old one goes,
+           and the stand-in styles come off — so there's no frame in between */
+        switchTab(d.to, { swiped:true }); unfix(d.nbEls); setX(d.curEls, 0); finish(); }, ms + 16);
+      return; }
+    if (go) { unprepare(d); switchTab(d.to); finish(); return; }
+    const ease = "transform .24s cubic-bezier(.2,.8,.2,1)";
+    setX(d.curEls, 0, ease); if (d.nbEls.length) setX(d.nbEls, d.dir * W(), ease);
+    setTimeout(() => { unprepare(d); finish(); }, 260); };
   main.addEventListener("touchend", end, { passive:true });
   main.addEventListener("touchcancel", end, { passive:true }); })();
 const HOLDS = { library: () => openWheel(), doors: () => { if (currentTab() !== "doors") switchTab("doors"); openFeedPick(); } };
@@ -4640,7 +4711,7 @@ async function loadMe() { const { data:{ session } } = await sb.auth.getSession(
   me = rows[0] || null; pendingUser = me ? null : session.user.id; return me; }
 async function enter() {
   $("#meBtn").hidden = false; $("#meName").textContent = me.handle; paintMeAv();
-  $("#nav").classList.add("on"); $("#add").classList.add("live"); setTimeout(logoWake, 250);
+  $("#nav").classList.add("on"); $("#add").classList.add("live"); setTimeout(logoWake, 250); warmBeside();
   $("#bellBtn").hidden = false; $("#findBtn").hidden = false;
   await Promise.all([despite("Up next", loadLists()), despite("your log", loadMine()),
     despite("your rooms", loadRooms()), despite("who you follow", loadFollows()),
