@@ -1998,6 +1998,24 @@ html[data-theme="dark"] .slip,html[data-theme="dark"] .club,html[data-theme="dar
 
 /* the page beside you while you swipe: shown, and placed by the swipe itself */
 section.swipenext{display:block}
+
+/* ---------- in the hand ----------
+   Taps press with the scale property (from script, so the release can spring), so the
+   old pressed-in transforms come off wherever that's running — one press, not two. */
+.springs :is(.tile,.club,.slip,.sn-tile,.archcard,.sn-late,.linkrow,.ans,.vsit,.tastemini,.pgarrow,.bell,.find):active,
+.springs nav button:active,.springs #add:active,.springs .btn.quiet:active,.springs .btn.ghost:active{transform:none}
+.springs .po:active{transform:none}
+/* the tab you're on, tapped again at the top: its icon gives a little turn while it fetches */
+nav button.again .ni-f{animation:tabAgain .6s cubic-bezier(.2,1.2,.4,1)}
+@keyframes tabAgain{0%{transform:rotate(0) scale(1)}35%{transform:rotate(-14deg) scale(.86)}70%{transform:rotate(6deg) scale(1.08)}100%{transform:none}}
+/* a sheet up: the page behind steps back and dims a touch, and comes forward as you pull
+   the sheet down */
+@media (prefers-reduced-motion:no-preference){
+  header,main,#nav{transition:scale .42s cubic-bezier(.2,.8,.2,1),background-color 90s linear,border-color 90s linear}
+  html.sheeted :is(header,main,#nav){scale:calc(.955 + .045 * var(--pull,0))}
+  html.sheetdrag :is(header,main,#nav){transition:background-color 90s linear,border-color 90s linear}
+}
+.flyer{will-change:transform}
 </style>
 </head>
 <body>
@@ -3492,9 +3510,9 @@ function revealIn(root) {
 const LITE_SEL = ".slip,.logline,.card,.club,.archcard,.sn-tile,.sn-late,.cell,.twin,.moment-row";
 const liteObs = !REDUCED && "IntersectionObserver" in window ? new IntersectionObserver(es => es.forEach(en => {
     if (!en.isIntersecting) return; const el = en.target; liteObs.unobserve(el);
-    el.classList.add("lite-in"); setTimeout(() => el.classList.remove("lite", "lite-in"), 420); }), { rootMargin:"0px 0px -4% 0px" }) : null;
+    el.classList.add("lite-in"); setTimeout(() => el.classList.remove("lite", "lite-in"), 420); })) : null;
 function liteWatch(root) { if (!liteObs) return;
-  const fold = innerHeight * .96;
+  const fold = innerHeight;
   const els = [...(root.matches?.(LITE_SEL) ? [root] : []), ...root.querySelectorAll(LITE_SEL)];
   for (const el of els) { if (el.dataset.lite || el.classList.contains("reveal")) continue; el.dataset.lite = "1";
     if (el.parentElement?.closest(LITE_SEL)) continue;                 /* only the outermost of a nest */
@@ -3818,24 +3836,9 @@ async function dropInSlip(row, anchorSel) {
   setTimeout(() => slip.classList.remove("warm"), 2600);
   return true;
 }
-/* the cover travels from the grid to where the sheet is about to put it. The sheet has
-   not been drawn yet, so it aims at where the sheet's cover lands rather than measuring it,
-   and gives up quietly if the sheet never arrives. */
-function openCover(from) {
-  if (REDUCED || !from) return;
-  const a = from.getBoundingClientRect(); if (!a.width) return;
-  const f = from.cloneNode(true); f.className = "flyer";
-  f.style.cssText = `position:fixed;z-index:30;left:${a.left}px;top:${a.top}px;width:${a.width}px;height:${a.height}px;border-radius:14px;overflow:hidden`;
-  document.body.appendChild(f);
-  requestAnimationFrame(() => {
-    const to = $(".panel .head .co") || $(".panel .head");
-    if (!to) { f.remove(); return; }
-    const b = to.getBoundingClientRect();
-    f.animate([{ transform:"none", opacity:1 },
-      { transform:`translate(${b.left - a.left}px,${b.top - a.top}px) scale(${b.width / a.width})`,
-        opacity:0 }],
-      { duration:420, easing:"cubic-bezier(.16,1,.3,1)" }).onfinish = () => f.remove();
-    setTimeout(() => f.remove(), 600); }); }
+/* the shelf names the poster it opened; everywhere else the finger already said */
+function openCover(from) { const img = from?.matches?.("img") ? from : from?.querySelector?.("img:not(.face)");
+  if (img) coverTap = { img, at:Date.now() }; }
 
 /* taste twins is the best idea in here and it was a list with a number on the end. The
    two of you start apart and are pulled together by exactly as much as you share, so how
@@ -4261,7 +4264,9 @@ function switchTab(n, how = {}) { shelfEdit = false;
     });
   paintLib(n, !(LIB.includes(cur) && LIB.includes(n)));
   const swiped = how.swiped && !!$("#tab-" + n)?.textContent.trim();
-  requestAnimationFrame(() => { movePill(); watchTitle(); if (was !== now && !swiped) riseIn($("#tab-" + n)); });
+  requestAnimationFrame(() => { movePill(); watchTitle(); if (was !== now && !swiped) riseIn($("#tab-" + n));
+    /* a row of tabs drawn while its page was hidden had no width to measure its underline by */
+    if (swiped) $$(".seg.glide", $("#tab-" + n)).forEach(g => glideSeg(g, true)); });
   scrollTo(0, swiped ? (n === cur ? 0 : (tabScroll[n] || 0)) : 0);
   /* drawn once, now, as it arrives — never again a moment later, which made it jump. The
      room feed drawn in the last minute only needs its live connection back. */
@@ -4287,7 +4292,16 @@ function warmBeside() { clearTimeout(warmBeside.t);
       for (const t of [TAB_ORDER[i - 1], TAB_ORDER[i + 1]]) { const sec = t && $("#tab-" + t);
         if (sec && !sec.textContent.trim()) { try { RENDER[t]?.(); drawnAt[t] = Date.now(); } catch {} } } };
     "requestIdleCallback" in window ? requestIdleCallback(go, { timeout:1500 }) : go(); }, 900); }
-$$("nav button[data-tab]").forEach(b => b.onclick = () => { if (b.dataset.held) { delete b.dataset.held; return; } switchTab(b.dataset.tab); });
+$$("nav button[data-tab]").forEach(b => b.onclick = () => { if (b.dataset.held) { delete b.dataset.held; return; }
+  if (me && navOf(currentTab()) === b.dataset.tab) return retap(b);
+  switchTab(b.dataset.tab); });
+/* the tab you're already on: the first tap goes back to the top, the way every big app
+   does it, and a tap at the top fetches what's new */
+function retap(b) { buzz(6);
+  if (scrollY > 24) { scrollTo({ top:0, behavior:REDUCED ? "auto" : "smooth" }); return; }
+  if (scrollY) scrollTo({ top:0, behavior:"auto" });
+  b.classList.remove("again"); void b.offsetWidth; b.classList.add("again"); setTimeout(() => b.classList.remove("again"), 700);
+  pullRefresh().then(ok => { if (!ok) refresh(); }).catch(() => refresh()); }
 $$("#libBar [data-lib]").forEach(b => b.onclick = () => { if (currentTab() !== b.dataset.lib) switchTab(b.dataset.lib); });
 /* Holding a tab does the thing you'd go there to do: hold Library and the shelf is dealt
    onto the wheel, hold Rooms and you get the list of everywhere to go. A hold that fires
@@ -4324,10 +4338,12 @@ let tabDrag = false;
   const W = () => innerWidth;
   const groupOf = (tab, other) => { const sec = $("#tab-" + tab); if (!sec) return [];
     return LIB.includes(tab) && !LIB.includes(other) && libBar ? [libBar, sec] : [sec]; };
-  const setX = (els, x, t) => els.forEach(el => { el.style.transition = t || "none"; el.style.transform = x ? `translate3d(${x}px,0,0)` : ""; });
+  const setX = (els, x, t) => els.forEach(el => { el.style.transition = t || (x ? "none" : ""); el.style.transform = x ? `translate3d(${x}px,0,0)` : ""; });
   const unfix = els => els.forEach(el => { el.classList.remove("swipenext"); for (const k of ["position", "top", "left", "width", "zIndex", "transform", "transition"]) el.style[k] = ""; });
   function prepare(d) {
     d.cur = currentTab(); d.to = TAB_ORDER[TAB_ORDER.indexOf(d.cur) + d.dir] || null;
+    /* into Queue from outside, you arrive on whichever side you last left it on */
+    if (d.to && LIB.includes(d.to) && !LIB.includes(d.cur) && LIB.includes(P.libSide)) d.to = P.libSide;
     d.curEls = groupOf(d.cur, d.to); d.nbEls = [];
     if (!d.to || REDUCED) return;
     const sec = $("#tab-" + d.to); if (!sec) { d.to = null; return; }
@@ -4352,7 +4368,8 @@ let tabDrag = false;
     for (const el of d.nbEls) { el.classList.add("swipenext");
       Object.assign(el.style, { position:"fixed", top:top + "px", left:r.left + "px", width:r.width + "px", zIndex:"1" });
       top += el.getBoundingClientRect().height; }
-    setX(d.nbEls, d.dir * W()); }
+    setX(d.nbEls, d.dir * W());
+    $$(".seg.glide", sec).forEach(g => glideSeg(g, true)); }
   function unprepare(d) { setX(d.curEls, 0); unfix(d.nbEls);
     if (d.nbEls[0] === libBar && !LIB.includes(d.cur)) libBar.hidden = true;
     if (LIB.includes(d.cur)) paintLib(d.cur, true);
@@ -4387,8 +4404,9 @@ let tabDrag = false;
       const left = W() - Math.abs(d.x), ms = Math.round(Math.max(150, Math.min(300, left / Math.max(Math.abs(v), 1.4))));
       const ease = `transform ${ms}ms cubic-bezier(.2,.8,.2,1)`;
       setX(d.curEls, -d.dir * W(), ease); setX(d.nbEls, 0, ease);
-      if (navigator.vibrate) navigator.vibrate(6);
+      buzz(6);
       setTimeout(() => {
+        if (currentTab() !== d.cur) { unfix(d.nbEls); setX(d.curEls, 0); finish(); return; }
         if (LIB.includes(d.cur) && LIB.includes(d.to)) tabScroll[d.to] = d.target;
         /* in the same moment: the new page takes its place in the page, the old one goes,
            and the stand-in styles come off — so there's no frame in between */
@@ -4397,19 +4415,22 @@ let tabDrag = false;
     if (go) { unprepare(d); switchTab(d.to); finish(); return; }
     const ease = "transform .24s cubic-bezier(.2,.8,.2,1)";
     setX(d.curEls, 0, ease); if (d.nbEls.length) setX(d.nbEls, d.dir * W(), ease);
-    setTimeout(() => { unprepare(d); finish(); }, 260); };
+    setTimeout(() => { if (currentTab() !== d.cur) { unfix(d.nbEls); setX(d.curEls, 0); } else unprepare(d); finish(); }, 260); };
   main.addEventListener("touchend", end, { passive:true });
   main.addEventListener("touchcancel", end, { passive:true }); })();
 const HOLDS = { library: () => openWheel(), doors: () => { if (currentTab() !== "doors") switchTab("doors"); openFeedPick(); } };
 $$("nav button[data-tab]").forEach(b => { const act = HOLDS[b.dataset.tab]; if (!act) return; let t = null;
   const stop = () => { clearTimeout(t); t = null; };
   b.addEventListener("pointerdown", e => { delete b.dataset.held; if (e.button || !me) return; stop();
-    t = setTimeout(() => { t = null; b.dataset.held = "1"; if (navigator.vibrate) navigator.vibrate(12); act(); }, 480); });
+    t = setTimeout(() => { t = null; b.dataset.held = "1"; buzz(12); act(); }, 480); });
   ["pointerup", "pointercancel", "pointerleave"].forEach(ev => b.addEventListener(ev, stop));
   b.addEventListener("contextmenu", e => e.preventDefault()); });
 markLive();
 const currentTab = () => $$("main section").find(s => s.classList.contains("on"))?.id.replace("tab-","");
-const refresh = () => { const t = currentTab(); RENDER[t]?.(); drawnAt[t] = Date.now(); };
+/* what changed shows everywhere: the tab you're on redraws now, and the ones beside it
+   are marked stale so a swipe draws them fresh instead of showing how they were */
+const refresh = () => { const t = currentTab(); staleAll(); RENDER[t]?.(); drawnAt[t] = Date.now(); };
+function staleAll() { for (const k in drawnAt) drawnAt[k] = 0; for (const k in snRoomCache) delete snRoomCache[k]; }
 /* ---------- pulling the page down ----------
    refresh() only redraws what is already in memory, which is the wrong thing to do when
    somebody asks for new. This fetches first. It is deliberately the shared things rather
@@ -4538,9 +4559,11 @@ function openSheet(html) { clearTimeout(sheetGoing); sheetGoing = null; markBack
   $("#sheet").setAttribute("aria-hidden", "false");
   $("#sheetBody").innerHTML = `<div class="grab"></div>` + html;
   { const h = $("#sheetBody h3, #sheetBody h2"); $("#sheet").setAttribute("aria-label", (h?.textContent || "Rooms").trim().slice(0, 80)); }
-  $("#sheet").classList.remove("out"); $("#sheet").classList.add("on"); $(".panel").scrollTop = 0; }
+  $("#sheet").classList.remove("out"); $("#sheet").classList.add("on"); $(".panel").scrollTop = 0; recede(true); landCover(); }
+let addKeep = null;
 function closeSheet() { const sh = $("#sheet"); if (!sh.classList.contains("on")) return;
-  sh.setAttribute("aria-hidden", "true");
+  if (addKeep) { P.kinds = addKeep; addKeep = null; }
+  sh.setAttribute("aria-hidden", "true"); recede(false);
   if (REDUCED) { sh.classList.remove("on", "out"); return; }
   sh.classList.add("out"); clearTimeout(sheetGoing);
   sheetGoing = setTimeout(() => { sh.classList.remove("on", "out"); sheetGoing = null; }, 200); }
@@ -4560,9 +4583,13 @@ addEventListener("keydown", e => { if (e.key !== "Escape") return;
     y0 = e.clientY; d = 0; panel.classList.remove("springing"); panel.classList.add("dragging"); });
   panel.addEventListener("pointermove", e => { if (y0 === null) return;
     d = Math.max(0, e.clientY - y0);
-    panel.style.transform = `translateY(${d}px)`; });
+    panel.style.transform = `translateY(${d}px)`;
+    /* the page behind comes forward as the sheet goes down, so it's one movement */
+    const root = document.documentElement; root.classList.add("sheetdrag");
+    root.style.setProperty("--pull", Math.min(1, d / Math.max(1, panel.offsetHeight)).toFixed(3)); });
   const let_go = () => { if (y0 === null) return; y0 = null;
     panel.classList.remove("dragging");
+    document.documentElement.classList.remove("sheetdrag"); document.documentElement.style.removeProperty("--pull");
     const h = panel.getBoundingClientRect().height;
     panel.classList.add("springing");
     if (d > h * 0.4 || d > 220) { panel.style.transform = ""; panel.classList.remove("springing"); closeSheet(); }
@@ -4570,6 +4597,73 @@ addEventListener("keydown", e => { if (e.key !== "Escape") return;
       setTimeout(() => { panel.classList.remove("springing"); panel.style.transform = ""; }, 360); } };
   ["pointerup","pointercancel","pointerleave"].forEach(t => panel.addEventListener(t, let_go));
 })();
+
+/* ============ how it feels in the hand ============
+   Borrowed from the apps that feel best to use. A tap presses in at once and springs back
+   when you let go. The page behind a sheet steps back a little, like a card under a card.
+   A poster you tap travels up into the sheet that opens for it, so you can see where it
+   went. And on a phone that can, the moments that matter give a small tick. */
+/* haptics: Android has vibrate; an iPhone ticks when a switch is flipped, so flip one
+   nobody can see */
+function buzz(p) { try {
+  if (navigator.vibrate) { navigator.vibrate(p); return; }
+  if (!/iP(hone|od|ad)/.test(navigator.userAgent)) return;
+  const l = buzz.l || (buzz.l = (() => { const l = document.createElement("label"), i = document.createElement("input");
+    i.type = "checkbox"; i.setAttribute("switch", ""); l.append(i); l.style.display = "none"; l.ariaHidden = "true"; document.head.append(l); return l; })());
+  l.click(); if (Array.isArray(p) && p.length > 2) setTimeout(() => l.click(), p[0] + p[1]); } catch {} }
+/* the page steps back while a sheet is up; each part scales about the middle of the
+   screen, so they move as one picture */
+function recede(on) { const root = document.documentElement;
+  if (on && !REDUCED) for (const el of [$("header"), $("main"), $("#nav")]) { if (!el) continue;
+    const r = el.getBoundingClientRect(); el.style.transformOrigin = `${innerWidth / 2 - r.left}px ${innerHeight / 2 - r.top}px`; }
+  root.classList.toggle("sheeted", !!on && !REDUCED); }
+/* the poster under your finger, remembered for a moment in case it opens a sheet */
+let coverTap = null;
+addEventListener("pointerdown", e => {
+  const host = e.target.closest?.(".po,.snc,.cell,.tok,.co");
+  const img = host && (host.matches("img") ? host : host.querySelector("img.co,img.snci,img:not(.face)"));
+  coverTap = img ? { img, at:Date.now() } : null; }, { capture:true, passive:true });
+/* the tapped poster rises into the sheet's cover. It's measured where the sheet will
+   settle (the sheet is still sliding up), and both ends hide while it's in the air so
+   there is only ever one of it. */
+function landCover() { const t = coverTap; coverTap = null;
+  if (REDUCED || !t || Date.now() - t.at > 1500 || !t.img.isConnected || !t.img.naturalWidth) return;
+  const to = $("#sheetBody .head img.co"); if (!to) return;
+  const a = t.img.getBoundingClientRect();
+  if (!a.width || a.bottom < 0 || a.top > innerHeight) return;
+  const f = new Image(); f.src = t.img.currentSrc || t.img.src; f.alt = ""; f.className = "flyer";
+  f.style.cssText = `position:fixed;z-index:30;left:${a.left}px;top:${a.top}px;width:${a.width}px;height:${a.height}px;object-fit:cover;border-radius:${[t.img, t.img.parentElement].map(n => parseFloat(getComputedStyle(n).borderTopLeftRadius) || 0).find(r => r) || 12}px;transform-origin:0 0;pointer-events:none;box-shadow:0 18px 40px -14px rgba(0,0,0,.5)`;
+  document.body.append(f); to.style.opacity = "0"; t.img.style.visibility = "hidden";
+  const done = () => { f.remove(); to.style.opacity = ""; t.img.style.visibility = ""; };
+  requestAnimationFrame(() => { if (!to.isConnected) return done();
+    const m = new DOMMatrixReadOnly(getComputedStyle($(".panel")).transform), b = to.getBoundingClientRect();
+    const x = b.left - m.e - a.left, y = b.top - m.f - a.top;
+    const an = f.animate([{ transform:"none" }, { transform:`translate(${x}px,${y}px) scale(${b.width / a.width},${b.height / a.height})` }],
+      { duration:380, easing:"cubic-bezier(.2,.9,.25,1)", fill:"forwards" });
+    an.onfinish = done; setTimeout(done, 700); }); }
+/* press and release. Down is quick and small, up has a little give, like something
+   sprung. A touch that turns into a scroll lets go without a sound. */
+(() => { if (REDUCED || !Element.prototype.animate) return;
+  document.documentElement.classList.add("springs");
+  const SEL = ".btn,.chip,.pchip,.feedpick,.slip,.club,.po,.tile,.sn-tile,.sn-late,.archcard,.linkrow,.card.look,.ans,.vsit,.tastemini,.twin,nav button,#add,.bell,.find,.pgarrow,.cog";
+  const depth = el => el.matches(".slip,.card,.club,.archcard,.sn-tile,.twin,.tastemini,.linkrow") ? .982 : el.matches("nav button,#add,.bell,.find,.cog,.pgarrow") ? .9 : .955;
+  let el = null, t = null, x0 = 0, y0 = 0, down = false;
+  const stop = n => n.getAnimations().forEach(a => a.id === "press" && a.cancel());
+  const press = () => { t = null; if (!el) return; down = true; stop(el);
+    const a = el.animate([{ scale:1 }, { scale:depth(el) }], { duration:110, easing:"cubic-bezier(.3,0,.5,1)", fill:"forwards" }); a.id = "press"; };
+  const release = tapped => { const n = el, was = down; clearTimeout(t); t = null; el = null; down = false; if (!n) return;
+    if (!was && !tapped) return;
+    const d = depth(n); stop(n);
+    const a = n.animate(was ? [{ scale:d }, { scale:1.012, offset:.45 }, { scale:1 }] : [{ scale:1 }, { scale:d, offset:.3 }, { scale:1.01, offset:.65 }, { scale:1 }],
+      { duration:was ? 420 : 360, easing:"cubic-bezier(.2,.7,.3,1)" }); a.id = "press"; };
+  addEventListener("pointerdown", e => { if (e.button) return;
+    const hit = e.target.closest?.(SEL);
+    if (!hit || hit.disabled || hit.closest(".grid.editing,.swdeck,.rate,#sheet .panel.dragging")) return;
+    release(); el = hit; x0 = e.clientX; y0 = e.clientY; t = setTimeout(press, e.pointerType === "mouse" ? 0 : 70); }, { capture:true, passive:true });
+  addEventListener("pointermove", e => { if (el && Math.hypot(e.clientX - x0, e.clientY - y0) > 9) { clearTimeout(t); t = null; if (down) release(); else el = null; } }, { passive:true });
+  addEventListener("pointerup", () => release(true), { passive:true });
+  addEventListener("pointercancel", () => release(), { passive:true });
+  addEventListener("scroll", () => { if (el) { clearTimeout(t); t = null; if (down) release(); else el = null; } }, { passive:true }); })();
 
 /* ============ auth ============ */
 function renderAuth() {
@@ -5110,7 +5204,7 @@ async function renderDoors() {
   feedTurn = 0;
   /* the dot existed and nothing ever cleared it: markSeen was written and never called,
      so every visit counted the same three days of entries again */
-  markSeen();
+  if (currentTab() === "doors") markSeen();
   if (feedNow() === "room") return renderRoomFeed(fb, R);
   leaveRoomChannel();
   if (feedNow() === "following") return renderFollowingFeed(fb);
@@ -5209,7 +5303,9 @@ function wirePager(pg, places, curKey, go) {
   const settle = () => { const h = hl(); if (!h || !h.style.transform) return;
     h.animate([{ transform:h.style.transform, opacity:h.style.opacity || 1 }, { transform:"none", opacity:1 }], { duration:260, easing:"cubic-bezier(.2,1.3,.4,1)" });
     h.style.transform = ""; h.style.opacity = ""; };
-  if (chips) { $(".pchip.on", pg)?.scrollIntoView({ block:"nearest", inline:"nearest" }); return; }
+  if (chips) { const on = $(".pchip.on", pg), row = on?.parentElement;
+    if (on && row && row.scrollWidth > row.clientWidth) row.scrollLeft = Math.max(0, on.offsetLeft - row.offsetLeft - 16);
+    return; }
   pg.addEventListener("touchstart", e => { if (e.touches.length !== 1) { x0 = null; return; }
     x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; dx = 0; side = null; }, { passive:true });
   pg.addEventListener("touchmove", e => { if (x0 == null) return;
@@ -5683,7 +5779,7 @@ async function renderRoomFeed(fb, R) {
       </div></div>`; })() : ""}
     `;
   endLine($('[data-rsec="talk"]', fb), es, 60);
-  if (!P.holdTip && myEntries.length >= 3) { P.holdTip = 1; saveP(); setTimeout(() => coach("Hold any poster to rate it, shelve it or pass it on"), 1600); }
+  if (!P.holdTip && myEntries.length >= 3 && currentTab() === "doors") { P.holdTip = 1; saveP(); setTimeout(() => coach("Hold any poster to rate it, shelve it or pass it on"), 1600); }
   $("#roomMenu", fb).onclick = () => openRoomMenu(R); wireTonight(); if (R.members.length > 1) paintAsks(R);
   const segEl = $(".roomsecs", fb); glideSeg(segEl, true);
   if (window.ResizeObserver && segEl) new ResizeObserver(() => glideSeg(segEl, true)).observe(segEl);
@@ -5712,7 +5808,7 @@ async function renderRoomFeed(fb, R) {
     $$(".chip[data-prof]", seats).slice(was).forEach((c, i) => {
       c.style.animationDelay = (i * 90) + "ms"; c.classList.add("seat");
       setTimeout(() => { c.classList.remove("seat"); c.style.animationDelay = ""; }, 700 + i * 90); }); })();
-  wireSlips(fb, es); revealIn(fb); joinRoomChannel(R);
+  wireSlips(fb, es); revealIn(fb); if (currentTab() === "doors") joinRoomChannel(R);
   /* presence says who is here; this says what they are actually in the middle of */
   paintRoomNow(R);
   ["talkAdd","compAdd"].forEach(id => { const el = $("#"+id); if (el) el.onclick = openAdd; });
@@ -5950,7 +6046,7 @@ const LENS = `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11
 function renderCabinet() {
   const body = $("#archiveBody"); if (!body) return;
   const counts = cabinetCounts(), kinds = CAB_ORDER.filter(k => counts[k]);
-  if (P.cabKind && !CAB_ORDER.includes(P.cabKind)) P.cabKind = "";
+  if (P.cabKind && !CAB_ORDER.includes(P.cabKind) || !logCount()) P.cabKind = "";
   /* everything first, then all four mediums, each in its colour — always all four, so a
      medium you haven't finished anything in yet is still there to find, with a word on
      how it fills up, rather than missing as if the app didn't do TV */
@@ -6639,7 +6735,7 @@ function spin() { const n = wheelItems.length; if (!n || spinning) return;
     reelAt = t; markReel();
     P.picked = wheelItems[t].id; saveP();
     const ww = $(".wheelwrap"); if (ww) { ww.classList.remove("landed"); void ww.offsetWidth; ww.classList.add("landed"); }
-    if (navigator.vibrate) navigator.vibrate([12, 40, 18]);
+    buzz([12, 40, 18]);
     showResult(wheelItems[t]);
     const r = $(".result"); if (r) { r.classList.remove("landed"); void r.offsetWidth; r.classList.add("landed"); } };
   g.addEventListener("transitionend", done);
@@ -7164,7 +7260,7 @@ function wireShelf() { const grid = $("#shelfGrid"); if (!grid) return;
   let timer = null, drag = null, moved = false, x0 = 0, y0 = 0;
   const stop = () => { if (timer) { clearTimeout(timer); timer = null; } };
   const pickUp = cell => { if (!shelfEdit) { shelfEdit = true; paintEdit(); }
-    drag = cell; moved = false; cell.classList.add("dragging"); navigator.vibrate?.(8); };
+    drag = cell; moved = false; cell.classList.add("dragging"); buzz(8); };
 
   grid.addEventListener("contextmenu", e => { if (shelfEdit || timer) e.preventDefault(); });
   /* the pick-up follows a still finger, so this first move is what stops the scroll */
@@ -7226,7 +7322,8 @@ async function renderWaiting() { const el = $("#waitBody"); if (!el) return;
 /* ============ THE ADD BUTTON ============ */
 function openAdd(only) {
   /* opened from one medium's empty archive: search that medium first (the chips can widen it) */
-  if (only && KINDS[only]) P.kinds = [only];
+  /* only for this once: the next + opens on whatever you search normally */
+  addKeep = null; if (only && KINDS[only]) { addKeep = P.kinds; P.kinds = [only]; }
   const shelf = candidates().slice(0, 8);
   const recent = myEntries.slice(0, 4);
   openSheet(`<h3>What are you up to?</h3><p class="sub">Search it, or pick one from Up next.
@@ -7242,7 +7339,7 @@ function openAdd(only) {
     ${logBlock("addLog", { label:`Your log · ${logCount()}` })}
     <div class="stack"><button class="btn quiet" id="aClose">Not now</button></div>`);
   $("#aClose").onclick = closeSheet;
-  $$("[data-ak]").forEach(b => b.onclick = () => { const k = b.dataset.ak; if (P.kinds.includes(k)) { if (P.kinds.length > 1) P.kinds = P.kinds.filter(x => x !== k); } else P.kinds = [...P.kinds, k]; saveP(); b.classList.toggle("on"); });
+  $$("[data-ak]").forEach(b => b.onclick = () => { addKeep = null; const k = b.dataset.ak; if (P.kinds.includes(k)) { if (P.kinds.length > 1) P.kinds = P.kinds.filter(x => x !== k); } else P.kinds = [...P.kinds, k]; saveP(); b.classList.toggle("on"); });
   $$("[data-aw]").forEach(x => x.onclick = () => openLog(works[x.dataset.aw]));
   wireLog("addLog", 6);
   setTimeout(() => $("#aSearch")?.focus(), 350);
@@ -7260,7 +7357,7 @@ function openAdd(only) {
     }, $("#aResults"), $("#aMsg"), null,
       [["log","Log"],["shelf","Up next"],["now", h => nowVerb(h.kind)]]), 400); };
 }
-$("#add").onclick = () => { const b = $("#add"); b.classList.remove("busy"); void b.offsetWidth; b.classList.add("busy"); if (navigator.vibrate) navigator.vibrate(8); openAdd(); };
+$("#add").onclick = () => { const b = $("#add"); b.classList.remove("busy"); void b.offsetWidth; b.classList.add("busy"); buzz(8); openAdd(); };
 
 /* ============ TASTE (your profile) ============ */
 /* a slice is sized by how much of what you love it accounts for, relative to the five
@@ -7823,7 +7920,7 @@ async function openScan() {
     await new Promise(r => setTimeout(r, 250)); if (done || !v.isConnected) break;
     let codes = []; try { codes = await det.detect(v); } catch {}
     const isbn = codes.map(c => c.rawValue).find(c => /^97[89]\d{10}$/.test(c)); if (!isbn) continue;
-    stop(); navigator.vibrate?.(15); $("#scanMsg").textContent = "Got it — looking it up…";
+    stop(); buzz(15); $("#scanMsg").textContent = "Got it — looking it up…";
     try { const d = await ol(`/isbn/${isbn}.json`); const wk = d.works?.[0]?.key?.replace("/works/", "");
       if (!wk) throw new Error("not found");
       openHold({ hit:{ id:"book:" + wk, kind:"book", title:d.title, year:(String(d.publish_date || "").match(/\d{4}/) || [""])[0], cover:`https://covers.openlibrary.org/b/isbn/${isbn}-M.jpg` } }); }
@@ -7867,7 +7964,7 @@ async function openHold(found) {
     const t = e.target.closest?.(".co, .tn-main, .aska, .swm, .ll-w, .nopt"); if (!t || !me) return;
     const found = workAt(t); if (!found) return;
     start = [e.clientX, e.clientY];
-    timer = setTimeout(() => { timer = null; fired = true; navigator.vibrate?.(12); openHold(found); }, 480); }, { passive:true });
+    timer = setTimeout(() => { timer = null; fired = true; buzz(12); openHold(found); }, 480); }, { passive:true });
   document.addEventListener("pointermove", e => { if (timer && start && Math.hypot(e.clientX - start[0], e.clientY - start[1]) > 10) cancel(); }, { passive:true });
   for (const ev of ["pointerup", "pointercancel", "scroll"]) document.addEventListener(ev, cancel, { passive:true, capture:true });
   /* the tap that ends a hold isn't also a tap */
@@ -8180,7 +8277,7 @@ function playMatch(w, line = "") {
   h.animate([{ transform:"scale(.4) rotate(-8deg)", opacity:0 }, { transform:"scale(1.12) rotate(2deg)", opacity:1, offset:.6 }, { transform:"none", opacity:1 }], { duration:560, delay:120, easing:"cubic-bezier(.2,1.2,.4,1)", fill:"both" });
   p.animate([{ transform:"translateY(60px) rotate(-14deg) scale(.7)", opacity:0 }, { transform:"translateY(-6px) rotate(3deg) scale(1.04)", opacity:1, offset:.65 }, { transform:"none", opacity:1 }], { duration:700, delay:220, easing:"cubic-bezier(.2,1.1,.4,1)", fill:"both" });
   sparkBurst(p, 34, [90, 200], 620); roomBurst(fx, 30, 560); roomBurst(fx, 22, 900);
-  navigator.vibrate?.([12, 60, 18]);
+  buzz([12, 60, 18]);
   const go = () => { fx.animate([{ opacity:1 }, { opacity:0 }], { duration:220, fill:"both" }).onfinish = () => fx.remove(); };
   fx.onclick = go; setTimeout(() => fx.isConnected && go(), 2600); }
 function playChampion(el) {
@@ -9250,7 +9347,8 @@ async function renderClubs() {
   const total = mine.length;
   const earned = season.challenges.map(c => { const n = seasonEntries(c, myEntries, season).length; return { c, n, m:seasonMedal(n) }; });
   const span = Math.max(1, dayNo(season.ends) - dayNo(season.starts) + 1);
-  const left = Math.max(0, dayNo(season.ends) - dayNo(today()));
+  /* tonight counts: on the last day there's one night left, not none */
+  const left = Math.max(1, dayNo(season.ends) - dayNo(today()) + 1);
   const gone = phase.key === "live" ? Math.min(span, dayNo(today()) - dayNo(season.starts) + 1) : phase.key === "finished" ? span : 0;
   const R = 26, C = 2 * Math.PI * R;
   const ringNum = phase.key === "upcoming" ? Math.max(0, dayNo(season.starts) - dayNo(today())) : phase.key === "finished" ? total : left;
@@ -9266,12 +9364,12 @@ async function renderClubs() {
       <div class="sn-prog">
         <div class="sn-ring" role="img" aria-label="${ringNum} ${ringWord}"><svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="${R}" class="tk"/><circle cx="32" cy="32" r="${R}" class="fl" stroke-dasharray="${(C * (phase.key === "finished" ? 1 : gone / span)).toFixed(1)} ${C.toFixed(1)}"/></svg>
           <b>${ringNum}</b><small>${ringWord}</small></div>
-        <div class="sn-sum"><b>${total ? `${total} logged` : phase.key === "upcoming" ? "Starts " + esc(when(season.starts)) : "Nothing logged yet"}</b>
-          <p>${best.length ? best.map(x => `${x.m.name} in ${esc(x.c.name)}`).slice(0, 2).join(" · ") : phase.key === "upcoming" ? esc(season.pitch) : "Log one that counts and your first medal lands."}${next && phase.key === "live" ? `<br>${next.to.at - next.n} more ${SN_NOUN[next.c.kind][next.to.at - next.n === 1 ? 0 : 1]} for ${next.to.name}.` : ""}</p></div>
+        <div class="sn-sum"><b>${total ? `${total} logged` : phase.key === "upcoming" ? "Starts " + esc(when(season.starts)) : phase.key === "finished" ? "You sat this one out" : "Nothing logged yet"}</b>
+          <p>${best.length ? best.map(x => `${x.m.name} in ${esc(x.c.name)}`).slice(0, 2).join(" · ") : phase.key === "upcoming" ? esc(season.pitch) : phase.key === "finished" ? "The next season's on its way." : "Log one that counts and your first medal lands."}${next && phase.key === "live" ? `<br>${next.to.at - next.n} more ${SN_NOUN[next.c.kind][next.to.at - next.n === 1 ? 0 : 1]} for ${next.to.name}.` : ""}</p></div>
       </div></div>
     <div class="lbl">Four ways in</div>
     <div class="sn-tiles">${earned.map(({ c, n, m }) => `<button class="sn-tile" type="button" data-season-challenge="${c.id}">
-        <span class="top"><span class="tag" style="background:${K(c.kind).colour}">${K(c.kind).label}</span><small>${n ? `${n} logged` : "not started"}</small></span>
+        <span class="top"><span class="tag" style="background:${K(c.kind).colour}">${K(c.kind).label}</span><small>${n ? `${n} logged` : phase.key === "finished" ? "none logged" : "not started"}</small></span>
         <b>${esc(c.name)}</b>
         ${n ? `<span class="sn-covers">${seasonEntries(c, myEntries, season).slice(0, 4).map(e => `<span class="snc">${cover(works[e.work_id] || e.works, "snci")}</span>`).join("")}</span>` : ""}
         <span class="sn-steps" aria-label="${m ? m.name + " earned" : "no medal yet"}">${SEASON_MEDALS.map(x => `<i class="${n >= x.at ? "on " + x.tier : ""}"></i>`).join("")}</span>
@@ -9319,7 +9417,7 @@ function paintSeasonRace(S, room, myTotal) {
   const el = $("#snRace"); if (!el || !room) return;
   const rows = room.members.map(p => ({ p, n:p.id === me.id ? myTotal : room.count[p.id] || 0 })).sort((a, b) => b.n - a.n || (a.p.id === me.id ? -1 : 1));
   const lead = rows[0], meAt = rows.findIndex(r => r.p.id === me.id);
-  const line = !lead.n ? "Nobody's on the board yet." : lead.p.id === me.id ? "You're out in front." : meAt === -1 ? "" : `${esc(lead.p.handle)}'s ahead${rows[meAt].n < lead.n ? ` by ${lead.n - rows[meAt].n}` : ""}.`;
+  const line = !lead.n ? "Nobody's on the board yet." : lead.p.id === me.id ? (rows[1]?.n === lead.n ? `You're level with ${esc(rows[1].p.handle)}.` : "You're out in front.") : meAt === -1 ? "" : `${esc(lead.p.handle)}'s ahead${rows[meAt].n < lead.n ? ` by ${lead.n - rows[meAt].n}` : ""}.`;
   el.innerHTML = `<div class="lbl">The room's race<small>${line}</small></div>
     <div class="card sn-race">${rows.slice(0, 8).map((r, i) => { const pct = lead.n ? Math.round(r.n / lead.n * 100) : 0;
       return `<div class="sn-rr${r.p.id === me.id ? " me" : ""}${i === 0 && r.n ? " lead" : ""}" data-prof="${esc(r.p.id)}">
@@ -9443,7 +9541,7 @@ async function openBallot(club) {
     $("#ballotSave").disabled = !picks.length;
     $$("[data-bp]").forEach(x => x.onclick = () => { const id = x.dataset.bp, at = picks.indexOf(id);
       if (at >= 0) picks.splice(at, 1); else if (picks.length < 5) picks.push(id); else return;
-      if (navigator.vibrate) navigator.vibrate(5); draw(); }); };
+      buzz(5); draw(); }); };
   openSheet(`<h3>Your ballot</h3><p class="sub">${esc(club.name)} — rank up to five, best first.
     Sealed until the club closes${isSeason(club) ? " " + when(club.due) : ""}, then everyone's ballots make its best-of.</p>
     <div class="card ballot" id="ballotBody"></div><p class="msg" id="ballotMsg"></p>
@@ -9937,7 +10035,7 @@ function openEpTalk(ep, list, after, justOpened = false) { if (!ep) return;
       try { await tickEpisode(ep, true); } catch { say("Couldn't tick it off"); $("#epOpen").disabled = false; return; }
       after?.();
       const lk = $(".eplock");
-      if (lk && !REDUCED) { lk.classList.add("opening"); navigator.vibrate?.(10); await new Promise(r => setTimeout(r, 520)); }
+      if (lk && !REDUCED) { lk.classList.add("opening"); buzz(10); await new Promise(r => setTimeout(r, 520)); }
       openEpTalk(ep, list, after, true); };
     return; }
   openSheet(`${head}<p class="sub">What your people said.</p>
@@ -10116,7 +10214,7 @@ function openLog(w, edit = null, preset = 0) { const cfg = K(w.kind); const love
       + ((mine.length || extras.length) ? `<div class="lbl">Your own</div><div class="chips">${[...extras, ...mine].map(t => chip(t,t)).join("")}</div>` : "")
       + `<div class="custom"><input id="lvNew" maxlength="28" placeholder="Add your own" autocapitalize="none"><button id="lvAdd">Add</button></div>`;
     $$("[data-lv]", el).forEach(b => b.onclick = () => { const k = b.dataset.lv, i = loved.indexOf(k); if (i >= 0) loved.splice(i,1); else loved.push(k); b.classList.toggle("on");
-      b.classList.remove("bump"); void b.offsetWidth; b.classList.add("bump"); if (navigator.vibrate) navigator.vibrate(5); });
+      b.classList.remove("bump"); void b.offsetWidth; b.classList.add("bump"); buzz(5); });
     const add = () => { const t = lc($("#lvNew").value.trim()).replace(/\s+/g," "); if (!t || t.length < 2) return; if (!loved.includes(t)) loved.push(t); $("#lvNew").value = ""; paintLoved(); }; $("#lvAdd").onclick = add; $("#lvNew").onkeydown = e => { if (e.key === "Enter") { e.preventDefault(); add(); } }; };
   const drawLoved = () => { const el = $("#lovedWrap"); if (!score) { el.innerHTML = ""; return; } if (el.dataset.drawn) return; el.dataset.drawn = "1"; paintLoved();
     tagStats(w.id).then(s => { stats = s; if ($("#lovedWrap")?.dataset.drawn) paintLoved(); }).catch(()=>{});
@@ -10154,13 +10252,13 @@ function openLog(w, edit = null, preset = 0) { const cfg = K(w.kind); const love
     const paint = v => { $$("#rateWrap button svg", row).forEach((sv, i) =>
       sv.innerHTML = starPath(Math.max(0, Math.min(1, v / 2 - i)))); };
     row.addEventListener("pointerdown", e => { e.preventDefault(); row.setPointerCapture(e.pointerId);
-      row.classList.add("holding"); live = at(e); paint(live); if (navigator.vibrate) navigator.vibrate(3); });
+      row.classList.add("holding"); live = at(e); paint(live); buzz(3); });
     row.addEventListener("pointermove", e => { if (!(e.buttons & 1)) return;
-      const v = at(e); if (v !== live) { live = v; paint(v); if (navigator.vibrate) navigator.vibrate(3); } });
+      const v = at(e); if (v !== live) { live = v; paint(v); buzz(3); } });
     row.addEventListener("pointerup", () => { row.classList.remove("holding"); if (live === score) return;
       score = live; $("#rateWrap").innerHTML = starRow(); dragStars();
       $$("#rateWrap button").slice(0, Math.ceil(score/2)).forEach((sb2, n) => setTimeout(() => { sb2.classList.add("pop"); setTimeout(() => sb2.classList.remove("pop"), 340); }, n*45));
-      $("#wSave").disabled = false; if (!edit) $("#wSave").textContent = "Save the entry"; if (navigator.vibrate) navigator.vibrate(8); drawLoved(); });
+      $("#wSave").disabled = false; if (!edit) $("#wSave").textContent = "Save the entry"; buzz(8); drawLoved(); });
     row.addEventListener("pointercancel", () => { row.classList.remove("holding"); paint(score); });
     row.addEventListener("contextmenu", e => e.preventDefault()); };
   dragStars(); drawLoved(); $("#wCancel").onclick = closeSheet;
