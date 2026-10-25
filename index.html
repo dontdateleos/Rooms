@@ -2065,6 +2065,89 @@ html[data-theme="dark"]{--good-t:#35C08C;--bad-t:#FF7AAA}
 }
 @keyframes blinkOnce{0%,100%{transform:scaleY(1)}50%{transform:scaleY(.08)}}
 @keyframes lookOnce{0%,100%{translate:0 0}14%,42%{translate:22% 0}56%,86%{translate:-16% 0}}
+
+/* ---------- a title's page ---------- */
+#sheetBody{position:relative;isolation:isolate}
+#sheetBody:has(> .whero){overflow-x:visible}
+.whero{position:absolute;left:-30px;right:-30px;top:-40px;height:330px;z-index:-1;pointer-events:none;
+  background:radial-gradient(90% 80% at 25% 30%,var(--wk) 0%,transparent 75%) center/cover no-repeat;
+  filter:blur(38px) saturate(1.25);opacity:.42;
+  -webkit-mask-image:linear-gradient(#000 35%,transparent);mask-image:linear-gradient(#000 35%,transparent)}
+html[data-theme="dark"] .whero{opacity:.5}
+.whead{align-items:flex-end;gap:16px;padding-top:4px}
+.whead .co{width:104px;height:154px;border-radius:14px;box-shadow:0 22px 34px -16px rgba(21,19,32,.6),0 0 0 1px rgba(255,255,255,.06)}
+.whead h3{font-size:26px;line-height:1.05;letter-spacing:-.03em;text-wrap:balance}
+.whead .hh{padding-bottom:4px;min-width:0}
+.wnums div:first-child{background:color-mix(in srgb,var(--wk) 26%,var(--card))}
+.wnums div:first-child span{color:var(--ink);opacity:.75}
+@media (prefers-reduced-motion:no-preference){
+  .sheet.on .whero{animation:wGlow .9s cubic-bezier(.2,.8,.2,1) both}
+  .sheet.on .wnums div{animation:numIn .42s cubic-bezier(.2,.9,.25,1) both}
+  .sheet.on .wnums div:nth-child(2){animation-delay:.05s}.sheet.on .wnums div:nth-child(3){animation-delay:.1s}.sheet.on .wnums div:nth-child(4){animation-delay:.15s}
+}
+@keyframes wGlow{from{opacity:0;transform:scale(1.15)}}
+@keyframes numIn{from{opacity:0;transform:translateY(8px) scale(.96)}}
+
+/* ---------- your numbers ---------- */
+.ynk{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:12px}
+.ynk div{border-radius:14px;padding:10px 6px 9px;text-align:center;background:color-mix(in srgb,var(--k) 22%,var(--card))}
+.ynk b{display:block;font:900 24px/1 var(--head);letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.ynk span{display:block;margin-top:4px;font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;opacity:.72}
+.ysum{margin:10px 0 0;font-size:13.5px;color:var(--mute);line-height:1.45}
+.ylbl{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-top:16px}
+.ylbl small{font-size:11.5px;font-weight:600;letter-spacing:0;text-transform:none;color:var(--mute)}
+.spread{display:grid;grid-template-columns:repeat(10,1fr);gap:4px;align-items:end;height:64px;margin-top:8px}
+.spread i{display:block;height:var(--h);border-radius:5px 5px 2px 2px;background:color-mix(in srgb,var(--ink) 22%,transparent);transform-origin:bottom}
+.spread i.peak{background:var(--apricot)}
+.spreadax{display:flex;justify-content:space-between;font-size:11px;color:var(--mute);margin-top:5px;letter-spacing:.08em}
+@media (prefers-reduced-motion:no-preference){
+  .ynum.grow .spread i{animation:barUp .6s cubic-bezier(.2,.9,.25,1) var(--d) both}
+}
+@keyframes barUp{from{transform:scaleY(0)}}
+
+/* ---------- toasts ---------- */
+.toast{border-radius:999px;padding:11px 18px;display:flex;align-items:center;gap:9px;
+  transform:translateX(-50%) translateY(14px) scale(.9);transition:opacity .2s ease,transform .45s cubic-bezier(.2,1.35,.4,1)}
+.toast.on{transform:translateX(-50%) translateY(0) scale(1);pointer-events:auto;touch-action:none}
+.toast .ti{flex:none;display:grid;place-items:center;width:20px;height:20px;border-radius:50%;background:rgba(255,255,255,.22);
+  font-style:normal;font-weight:900;font-size:12px;line-height:1}
+
+/* a long handle never pushes search and the bell off a small phone */
+#meName{max-width:26vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media (max-width:359px){#meName{max-width:18vw}}
+
+.noroom{display:flex;gap:14px;align-items:flex-start;margin-top:12px}
+.noroom .nr-mark{flex:none;width:52px;height:52px}
+.noroom .nr-mark svg{width:100%;height:100%}
+.noroom b{font-family:var(--head);font-weight:900;font-size:17px;letter-spacing:-.02em;display:block}
+.noroom .sub{margin-top:4px}
+.noroom .roomactions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.noroom .roomactions .btn{width:auto;flex:1 1 auto;margin:0}
+
+/* ---------- the first one ---------- */
+.firstone{text-align:center;padding-top:6px}
+.firstone h3{font-size:26px;letter-spacing:-.03em;margin-top:6px}
+.firstone .sub{max-width:34ch;margin:8px auto 0}
+.fo-stage{position:relative;width:120px;height:170px;margin:4px auto 10px}
+.fo-stage .co{width:110px;height:162px;border-radius:14px;position:absolute;left:5px;top:4px;object-fit:cover;
+  box-shadow:0 22px 34px -16px rgba(21,19,32,.55)}
+.fo-stage i{position:absolute;width:10px;height:10px;border-radius:3px;background:var(--k);left:50%;top:45%;opacity:0}
+@media (prefers-reduced-motion:no-preference){
+  .sheet.on .fo-stage .co{animation:foDrop .7s cubic-bezier(.2,1.4,.4,1) .05s both}
+  .sheet.on .fo-stage i{animation:foBurst .9s cubic-bezier(.2,.8,.2,1) .35s both}
+  .fo-stage i:nth-child(1){--x:-78px;--y:-50px;--r:-40deg}.fo-stage i:nth-child(2){--x:80px;--y:-40px;--r:30deg;background:var(--butter)}
+  .fo-stage i:nth-child(3){--x:-90px;--y:30px;--r:60deg;background:var(--mint)}.fo-stage i:nth-child(4){--x:92px;--y:40px;--r:-20deg;background:var(--lilac)}
+  .fo-stage i:nth-child(5){--x:-40px;--y:-92px;--r:15deg;background:var(--sky)}.fo-stage i:nth-child(6){--x:46px;--y:-88px;--r:-55deg;background:var(--pink)}
+}
+@keyframes foDrop{from{opacity:0;transform:translateY(-30px) rotate(-6deg) scale(.85)}}
+@keyframes foBurst{0%{opacity:0;transform:translate(-50%,-50%) scale(.4)}25%{opacity:1}100%{opacity:0;transform:translate(calc(-50% + var(--x)),calc(-50% + var(--y))) rotate(var(--r)) scale(1)}}
+
+/* the search tiles are pastel in both themes, so their words stay dark in both */
+.tiles .tile{color:#151320}
+
+/* with a sheet up, its buttons are where a toast would sit, so the toast drops in from the top */
+html.sheetup .toast{bottom:auto;top:calc(14px + env(safe-area-inset-top));transform:translateX(-50%) translateY(-14px) scale(.9)}
+html.sheetup .toast.on,html.sheetup .toast.undo{transform:translateX(-50%) translateY(0) scale(1)}
 </style>
 </head>
 <body>
@@ -2863,9 +2946,18 @@ function say(msg, kind = "") {
   const el = document.getElementById("toast"); if (!el) return;
   clearTimeout(toastT);
   if (!msg) { el.className = "toast"; return; }
-  el.textContent = msg; el.className = "toast on " + kind;
+  el.textContent = msg; el.className = "toast on " + kind; el.style.translate = "";
+  if (kind === "good" || kind === "bad") { const i = document.createElement("i"); i.className = "ti"; i.setAttribute("aria-hidden", "true");
+    i.textContent = kind === "good" ? "\u2713" : "!"; el.prepend(i); }
   toastT = setTimeout(() => { el.className = "toast"; }, kind === "bad" ? 5200 : 3000);
 }
+/* a toast can be flicked down out of the way, like a notification */
+(() => { const el = document.getElementById("toast"); if (!el) return; let y0 = null, dy = 0;
+  el.addEventListener("pointerdown", e => { if (!el.classList.contains("on") || el.classList.contains("undo")) return; y0 = e.clientY; dy = 0; el.style.transition = "none"; });
+  el.addEventListener("pointermove", e => { if (y0 === null) return; dy = Math.max(0, e.clientY - y0); el.style.translate = `0 ${dy}px`; el.style.opacity = String(1 - Math.min(.8, dy / 80)); });
+  const up = () => { if (y0 === null) return; y0 = null; el.style.transition = ""; el.style.opacity = "";
+    if (dy > 28) { clearTimeout(toastT); el.className = "toast"; setTimeout(() => { el.style.translate = ""; }, 300); } else el.style.translate = ""; };
+  el.addEventListener("pointerup", up); el.addEventListener("pointercancel", up); })();
 /* what the user was trying to do, then why it didn't happen */
 function oops(e, what) {
   const why = e?.message ? String(e.message).replace(/^(JSON object|Error:)\s*/i, "") : "";
@@ -3194,6 +3286,10 @@ async function loadBlocks() {
 const isApart = id => !!id && blocked.has(id);
 /* every list of other people's things passes through here */
 const notApart = rows => rows.filter(r => !isApart(r.user_id ?? r.follower ?? r.followee ?? r.id));
+/* the three things you told it you loved when you joined are your taste, not news: they
+   never turn up in a feed, a week's count, a season or a year as if you'd just watched them */
+const isBefore = e => !!e?.context?.before;
+const feedRows = rows => notApart(rows).filter(r => !isBefore(r));
 
 async function blockThem(id) {
   if (!id || id === me.id) return;
@@ -3510,7 +3606,12 @@ function sortEntries(es, how, myTaste) {
 /* ---------- reveal cards as they scroll in ---------- */
 const REDUCED = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 /* whatever is actually scrolling — the window, or a frame that wraps us */
-function scroller() {
+/* worked out once (it walks the page reading styles, which made every tab switch stall),
+   and again only if the window changes size */
+let scrollerKnown;
+addEventListener("resize", () => { scrollerKnown = undefined; });
+function scroller() { if (scrollerKnown !== undefined) return scrollerKnown; return (scrollerKnown = findScroller()); }
+function findScroller() {
   let el = document.scrollingElement || document.documentElement;
   if (el.scrollHeight > el.clientHeight + 4) return null;   // window scrolls: observer default root
   for (let n = document.body; n; n = n.parentElement) { const st = getComputedStyle(n);
@@ -3557,17 +3658,23 @@ function revealIn(root) {
    light: eight pixels and a quarter of a second, once per thing. Things already on
    screen are left alone, and so is anybody who has asked for less motion. */
 const LITE_SEL = ".slip,.logline,.card,.club,.archcard,.sn-tile,.sn-late,.cell,.twin,.moment-row";
-const liteObs = !REDUCED && "IntersectionObserver" in window ? new IntersectionObserver(es => es.forEach(en => {
-    if (!en.isIntersecting) return; const el = en.target; liteObs.unobserve(el);
+/* Nothing is measured here (that made every tab switch stutter). The observer's first
+   report says where a thing is: on screen or above it, it's left alone; on a page not
+   showing yet, it's looked at again when that page opens; below, it waits low and faded
+   until it scrolls up into view. */
+const liteObs = !REDUCED && "IntersectionObserver" in window ? new IntersectionObserver(es => es.forEach(en => { const el = en.target;
+    if (!el.classList.contains("lite")) {
+      if (en.isIntersecting || en.boundingClientRect.bottom < 0) { liteObs.unobserve(el); return; }
+      if (!en.boundingClientRect.height) { liteObs.unobserve(el); delete el.dataset.lite; return; }
+      el.classList.add("lite"); return; }
+    if (!en.isIntersecting) return; liteObs.unobserve(el);
     el.classList.add("lite-in"); setTimeout(() => el.classList.remove("lite", "lite-in"), 420); })) : null;
-function liteWatch(root) { if (!liteObs) return;
-  const fold = innerHeight;
+function liteWatch(root) { if (!liteObs || !root?.querySelectorAll) return;
   const els = [...(root.matches?.(LITE_SEL) ? [root] : []), ...root.querySelectorAll(LITE_SEL)];
   for (const el of els) { if (el.dataset.lite || el.classList.contains("reveal")) continue; el.dataset.lite = "1";
     if (el.parentElement?.closest(LITE_SEL)) continue;                 /* only the outermost of a nest */
-    if (el.closest("#sheet") || el.offsetParent === null) continue;
-    if (el.getBoundingClientRect().top < fold) continue;               /* already in view: leave it be */
-    el.classList.add("lite"); liteObs.observe(el); } }
+    if (el.closest("#sheet")) continue;
+    liteObs.observe(el); } }
 /* every couple of seconds a few of the faces you can see blink, and now and then one
    looks to the side — about one blink each per ten seconds, like the loops were */
 (function blinkLoop() { if (REDUCED) return;
@@ -3976,7 +4083,7 @@ function rollLine(el, text) {
    on it, and so must these, or the one path into the feed that is not a query becomes
    the one that floods it. */
 const onLiveEntry = (row, memberIds) =>
-  row && !row.part && !isApart(row.user_id) && memberIds.has(row.user_id) ? dropInSlip(row, "#talkTop") : Promise.resolve(false);
+  row && !row.part && !isBefore(row) && !isApart(row.user_id) && memberIds.has(row.user_id) ? dropInSlip(row, "#talkTop") : Promise.resolve(false);
 
 /* ---------- the channel that is about you rather than a room ----------
    A room channel dies when you leave the room, which is right for presence and wrong
@@ -4054,7 +4161,7 @@ async function checkNew() {
   if (R) { try { const ids = R.members.map(m => m.id).filter(i => i !== me.id);
     /* limit(100) with no order is an arbitrary hundred rows, so in a busy room the
        newest entries were the ones it could silently fail to count */
-    if (ids.length) { const es = notApart(await wholeEntries(f => { let x = sb.from("entries").select("id,user_id,created_at,work_id,profiles!entries_user_id_fkey(handle)");
+    if (ids.length) { const es = feedRows(await wholeEntries(f => { let x = sb.from("entries").select("id,user_id,created_at,work_id,context,profiles!entries_user_id_fkey(handle)");
         if (f) x = x.eq("part", false);
         return x.in("user_id", ids).order("created_at",{ascending:false}).limit(100); }));
       unseen.entries = es.filter(e => String(e.created_at) > since); } } catch {} }
@@ -4256,12 +4363,19 @@ const RENDER = { doors:renderDoors, archive:renderCabinet, shelf:renderShelf, ta
    it is re-read whenever its own box could have changed. */
 /* the same move for a row of tabs inside a page: one pill under them that slides to
    whichever is on, rather than each button lighting up in place */
+/* a tab's place in its row doesn't change once it's drawn, so it's measured once and
+   remembered (until the window or the fonts change) — measuring on every switch forced
+   the whole page to lay out mid-switch */
+let glideGen = 0;
+addEventListener("resize", () => glideGen++);
+document.fonts?.ready.then(() => glideGen++);
 function glideSeg(seg, instant) {
   const on = seg && $("button.on", seg), pill = seg && $(".segglide", seg);
-  if (!on || !pill || !on.offsetWidth) return;
+  if (!on || !pill) return;
+  if (!on._glide || on._glide[0] !== glideGen) { if (!on.offsetWidth) return; on._glide = [glideGen, on.offsetLeft, on.offsetWidth]; }
   if (instant || REDUCED) pill.style.transition = "none";
-  pill.style.left = on.offsetLeft + "px"; pill.style.width = on.offsetWidth + "px"; pill.style.opacity = 1;
-  if (instant || REDUCED) { void pill.offsetWidth; pill.style.transition = ""; } }
+  pill.style.left = on._glide[1] + "px"; pill.style.width = on._glide[2] + "px"; pill.style.opacity = 1;
+  if (instant || REDUCED) requestAnimationFrame(() => requestAnimationFrame(() => { pill.style.transition = ""; })); }
 function movePill(instant) { const p = $("#navPill"), on = $("nav button[data-tab].on");
   /* nothing lit (signing in, say): the pill tucks away rather than sitting on a stale tab */
   if (p && !on) { p.classList.remove("set"); return; }
@@ -4296,17 +4410,20 @@ function paintLib(n, instant) { const bar = $("#libBar"); if (!bar) return;
 /* The collapsing title. Each page marks its own name with data-pagetitle; once that
    scrolls up under the header, the header says it instead (beside the mark), and when
    you scroll back it hands it back. Re-pointed whenever the page underneath changes. */
-let titleEl = null, titleQ = 0, titleW = 0;
-function titleCheck() { const hdr = $("header"); if (!hdr) return;
-  const on = !!titleEl?.isConnected && titleEl.offsetParent !== null
-    && titleEl.getBoundingClientRect().bottom < hdr.getBoundingClientRect().bottom - 2;
-  hdr.classList.toggle("titled", on); }
+let titleEl = null, titleW = 0, titleIO = null;
+/* the page's name has gone under the header: told by an observer, so nothing is measured
+   while a tab is drawing or the page is scrolling */
 function watchTitle() { titleW = 0; const slot = $("#hdrTitle"); if (!slot) return;
   const lib = $("#libBar"), inLib = lib && !lib.hidden;
-  titleEl = (inLib ? $("[data-pagetitle]", lib) : null) || $("main > section.on [data-pagetitle]");
-  const t = titleEl?.dataset.pagetitle || ""; if (slot.textContent !== t) slot.textContent = t;
-  titleCheck(); }
-addEventListener("scroll", () => { if (!titleQ) titleQ = requestAnimationFrame(() => { titleQ = 0; titleCheck(); }); }, { passive:true });
+  const el = (inLib ? lib.querySelector("[data-pagetitle]") : null) || document.querySelector("main > section.on")?.querySelector("[data-pagetitle]") || null;
+  if (el === titleEl && titleIO) return;
+  titleEl = el; const t = el?.dataset.pagetitle || ""; if (slot.textContent !== t) slot.textContent = t;
+  titleIO?.disconnect(); titleIO = null; const hdr = $("header"); if (!hdr) return;
+  if (!el || !("IntersectionObserver" in window)) { hdr.classList.remove("titled"); return; }
+  titleIO = new IntersectionObserver(([en]) => hdr.classList.toggle("titled", !en.isIntersecting
+      && en.boundingClientRect.height > 0 && en.boundingClientRect.bottom <= (en.rootBounds?.top ?? 0) + 2),
+    { rootMargin:`-${hdr.offsetHeight}px 0px 0px 0px` });
+  titleIO.observe(el); }
 new MutationObserver(() => { if (!titleW) titleW = requestAnimationFrame(watchTitle); })
   .observe(document.querySelector("main"), { childList:true, subtree:true, attributes:true, attributeFilter:["hidden"] });
 /* A tab opening: the blocks you can see rise a few pixels into place, a beat apart —
@@ -4336,7 +4453,8 @@ function switchTab(n, how = {}) { shelfEdit = false; $("#editDock")?.remove();
   const swiped = how.swiped && !!$("#tab-" + n)?.textContent.trim();
   requestAnimationFrame(() => { movePill(); watchTitle(); if (was !== now && !swiped) riseIn($("#tab-" + n));
     /* a row of tabs drawn while its page was hidden had no width to measure its underline by */
-    if (swiped) $$(".seg.glide", $("#tab-" + n)).forEach(g => glideSeg(g, true)); });
+    if (swiped) $$(".seg.glide", $("#tab-" + n)).forEach(g => glideSeg(g, true));
+    liteWatch($("#tab-" + n)); });
   scrollTo(0, swiped ? (n === cur ? 0 : (tabScroll[n] || 0)) : 0);
   /* drawn once, now, as it arrives — never again a moment later, which made it jump. The
      room feed drawn in the last minute only needs its live connection back. */
@@ -4696,7 +4814,7 @@ function buzz(p) { try {
 function recede(on) { const root = document.documentElement;
   if (on && !REDUCED) for (const el of [$("header"), $("main"), $("#nav")]) { if (!el) continue;
     const r = el.getBoundingClientRect(); el.style.transformOrigin = `${innerWidth / 2 - r.left}px ${innerHeight / 2 - r.top}px`; }
-  root.classList.toggle("sheeted", !!on && !REDUCED); }
+  root.classList.toggle("sheeted", !!on && !REDUCED); root.classList.toggle("sheetup", !!on); }
 /* the poster under your finger, remembered for a moment in case it opens a sheet */
 let coverTap = null;
 addEventListener("pointerdown", e => {
@@ -4767,7 +4885,7 @@ function renderAuth() {
     ${invited ? `<p class="note" id="invNote"><b>Someone’s put you on the list.</b> Make an account and you'll go straight into their room — the invite waits for you.</p>` : ""}
     <div class="lbl">Email</div><input id="email" type="email" inputmode="email" autocapitalize="none" autocorrect="off" placeholder="you@somewhere">
     <div class="lbl">Password</div><input id="pw" type="password" autocomplete="current-password" placeholder="at least eight characters">
-    <div class="stack"><button class="btn blue" id="signIn">Sign in</button><button class="btn ghost" id="signUp">Make an account</button></div>
+    <div class="stack"><button class="btn blue" id="signUp">Make an account</button><button class="btn ghost" id="signIn">I already have one · Sign in</button></div>
     <div class="stack"><button class="btn quiet" id="send">Email me a code instead</button></div>
     <div id="codeStep"></div><p class="msg" id="authMsg"></p>`;
 
@@ -4961,7 +5079,7 @@ async function openYearStory(year = storyYear() || String(new Date().getFullYear
   show(0);
   /* the room's slide fills in once the room's year has loaded */
   if (R && R.members.length > 1) { try {
-      const res = notApart(await wholeEntries(f => { let x = sb.from("entries").select(ENTRY_SEL); if (f) x = x.eq("part", false);
+      const res = feedRows(await wholeEntries(f => { let x = sb.from("entries").select(ENTRY_SEL); if (f) x = x.eq("part", false);
         return x.in("user_id", R.members.map(m => m.id)).gte("rated_on", year + "-01-01").lte("rated_on", year + "-12-31").limit(2000); }));
       res.forEach(e => remember(e.works)); pal = roomPalmares(res);
       const box = $("#stRoom", el); if (!box) return;
@@ -4991,7 +5109,8 @@ function openWelcome() {
       <button class="btn quiet" id="welLater">Look around first</button></div>
     <p class="sub" style="margin-top:10px;font-size:12px;text-align:center">Takes about a minute. You can change all of it later.</p></div>`);
   $("#welStart").onclick = () => openOnboarding();
-  $("#welImport").onclick = () => { P.onboarded = true; saveP(); closeSheet(); setTimeout(openImport, 250); };
+  /* not "onboarded" yet: an import abandoned halfway brings the welcome back next time */
+  $("#welImport").onclick = () => { closeSheet(); setTimeout(openImport, 250); };
   $("#welLater").onclick = () => { P.onboarded = true; saveP(); closeSheet(); }; }
 function openOnboarding() {
   const picks = [];
@@ -5030,7 +5149,7 @@ function openOnboarding() {
     const L = activeList();
     for (let i = 0; i < picks.length; i++) { const w = picks[i];
       const mine = words.filter(x => K(w.kind).craft.includes(x));
-      try { await q(sb.from("entries").insert({ user_id:me.id, work_id:w.id, rated_on:today(), score:10, note:null, loved:mine.length?mine:null, context:null, breakdown:null }));
+      try { await q(sb.from("entries").insert({ user_id:me.id, work_id:w.id, rated_on:today(), score:10, note:null, loved:mine.length?mine:null, context:{ before:true }, breakdown:null }));
         if (L && !L.items.includes(w.id)) { await q(sb.from("list_items").insert({ list_id:L.id, work_id:w.id })); L.items.push(w.id); } } catch {}
       $("#onbProg").style.width = (20 + 60*(i+1)/picks.length) + "%"; $("#onbStat").textContent = `${w.title} · done`; }
     /* their ten starts as these three */
@@ -5042,7 +5161,7 @@ function openOnboarding() {
     if (!rooms.length) { $("#onbStat").textContent = "Opening a room for you";
       try { const r = await q(sb.rpc("create_room", { p_name:`${me.handle}'s room` }));
         await loadRooms(); if (r?.id) { P.activeRoom = r.id; P.feed = "room"; P.feedPicked = true; saveP(); } } catch {} }
-    await loadMine(); $("#onbProg").style.width = "100%";
+    await loadMine(); refresh(); $("#onbProg").style.width = "100%";
     const t = tasteOf(myEntries); const top3 = t.craft.slice(0,3).map(c => c[0]);
     P.onboarded = true; saveP();
     setTimeout(() => { openSheet(`<div class="onb"><h3>You're in.</h3>
@@ -5169,7 +5288,7 @@ const WEEK_KEY = () => { const d = new Date(); d.setDate(d.getDate() - ((d.getDa
 function weekPast() {
   const from = new Date(); from.setDate(from.getDate() - 7);
   const since = from.toISOString().slice(0, 10);
-  const es = myEntries.filter(e => String(e.rated_on) >= since);
+  const es = myEntries.filter(e => String(e.rated_on) >= since && !isBefore(e));
   if (es.length < 2) return null;
   const kinds = {}; es.forEach(e => { const k = kindOf(e.work_id); kinds[k] = (kinds[k] || 0) + 1; });
   const best = es.slice().sort((a, b) => b.score - a.score)[0];
@@ -5740,7 +5859,7 @@ const showcase = () => `<div class="demo" aria-hidden="true">
   <div class="demoh"><span>In competition</span><span class="tag dim">example</span></div>
   ${SHOWCASE.map((r, i) => `<div class="row"><span class="rk">${i+1}</span><div class="t"><b>${esc(r.title)}</b>
     <small>${tag(r.kind)} <span class="${r.agree >= 70 ? "good" : "bad"}">${r.agree}% agree</span> · ${r.n} of you · ${esc(r.said)}</small></div>
-    <span class="n">${r.avg.toFixed(1)}<small>of five</small></span></div>`).join("")}
+    <span class="n">${(r.avg / 2).toFixed(1)}<small>of five</small></span></div>`).join("")}
   <p class="demofoot">Not real — this is what yours looks like once somebody joins.</p></div>`;
 
 function compRows(rows, onOpen) { return rows.map((f,i) => { const w = works[f.id] || {};
@@ -5759,7 +5878,7 @@ function inviteText(R) {
 }
 function openInvite(R) {
   openSheet(`<h3>Bring someone in</h3>
-    <p class="sub">Five to twenty of you. Anybody with the link or the code is in.</p>
+    <p class="sub">You and a few friends. Anybody with the link or the code is in.</p>
     <div class="card" style="margin-top:14px;text-align:center">
       <div class="lbl" style="margin-top:0">The code</div>
       <div class="bigcode" id="bigCode">${esc(R.code)}</div>
@@ -5788,13 +5907,13 @@ function openInvite(R) {
 }
 
 async function renderRoomFeed(fb, R) {
-  if (!R) { leaveRoomChannel(); fb.innerHTML = `<p class="empty">A room is five to twenty friends and a six-character code. It shows what everyone rated, how much you agree, and what each of you said about it. ${sb.__local ? "Rooms need the hosted setup — everything else works now." : ""}</p>
+  if (!R) { leaveRoomChannel(); fb.innerHTML = `<p class="empty">A room is you, a few friends and a six-character code. It shows what everyone rated, how much you agree, and what each of you said about it. ${sb.__local ? "Rooms need the hosted setup — everything else works now." : ""}</p>
       <div class="roomactions"><button class="btn blue" id="newRoom">Open a room</button><button class="btn ghost" id="joinRoom">Join with a code</button>
         ${/* both of the above need somebody else. This one does not, and on a first day
               it is the only one of the three that answers the question. */""}
         <button class="btn quiet" id="goEveryone">See what everyone's watching</button></div>${DEMO ? `<p class="demoHint">Demo mode: room changes are preview-only.</p>` : ""}<p class="msg" id="roomMsg"></p>`; wireRoomButtons(); return; }
   const ids = R.members.map(m => m.id); let es = [];
-  try { es = notApart(await wholeEntries(f => { let x = sb.from("entries").select(ENTRY_SEL);
+  try { es = feedRows(await wholeEntries(f => { let x = sb.from("entries").select(ENTRY_SEL);
     if (f) x = x.eq("part", false);
     return x.in("user_id", ids).order("created_at",{ascending:false}).limit(60); })); } catch (e) { fb.innerHTML = `<p class="empty">${esc(e.message)}</p>`; return; }
   es.sort(newestFirst);
@@ -5852,7 +5971,7 @@ async function renderRoomFeed(fb, R) {
     <div id="rankMeet"></div>
     </div>
     ${hasYear ? (() => { const t = id => esc(works[id]?.title || "");
-      return `<div data-rsec="year"${sec === "year" ? "" : " hidden"}><div class="card"><div class="h"><span>The room's year</span><span class="tag dim">${pal.n} entries</span></div>
+      return `<div data-rsec="year"${sec === "year" ? "" : " hidden"}><div class="card"><div class="h"><span>The room's year</span><span class="tag dim">${pal.n} ${pal.n === 1 ? "entry" : "entries"}</span></div>
         <div class="ywall">${competition(es, 200).slice(0, 6).map((f, i) => { const w = works[f.id] || {};
           return `<button class="yw ${i ? "" : "first"}" data-cw="${esc(f.id)}">${cover(w)}<span class="yrk">${i + 1}</span><b>${esc(w.title || "")}</b><small>${(f.avg/2).toFixed(1)} · ${f.n} of you</small></button>`; }).join("")}</div>
         <button class="linkrow" id="roomYearMore"><span>The rest · best by medium, the agreement, the fight</span><b>›</b></button>
@@ -5924,7 +6043,7 @@ function wireRoomButtons() { const nr = $("#newRoom"), jr = $("#joinRoom");
   }
   if (nr) nr.onclick = async () => {
     if (rooms.length >= ROOM_LIMIT) return;
-    const name = await askText({ title:"Name the room", sub:"Something the five of you will recognise. You can change it later.", label:"Name", placeholder:"The Pit", ok:"Open it", max:40 });
+    const name = await askText({ title:"Name the room", sub:"Something your friends will recognise. You can change it later.", label:"Name", placeholder:"The Pit", ok:"Open it", max:40 });
     if (!name) return;
     if (willNotName(name)) { $("#roomMsg").textContent = NAME_NO; return; }
     try { const r = await q(sb.rpc("create_room", { p_name:name })); await loadRooms(); if (r?.id) P.activeRoom = r.id; P.feed = "room"; P.feedPicked = true; saveP(); closeSheet(); await loadClubs(); renderDoors(); } catch (e) { $("#roomMsg").textContent = e.message; } };
@@ -5936,7 +6055,7 @@ function wireRoomButtons() { const nr = $("#newRoom"), jr = $("#joinRoom");
     try { const r = await q(sb.rpc("join_room", { p_code:code })); const wasIn = rooms.some(x => x.id === r?.id); await loadRooms(); if (r?.id && !wasIn) notify({ room:r.id, title:`${me.handle} came into ${r.name || "your room"}`, body:"Say hello — or hand them something to watch.", tag:"join-" + r.id }); if (r?.id) P.activeRoom = r.id; P.feed = "room"; P.feedPicked = true; saveP(); closeSheet(); await loadClubs(); renderDoors(); } catch (e) { $("#roomMsg").textContent = e.message; } }; }
 async function renderFollowingFeed(fb) {
   const ids = follows.map(f => f.followee); let es = [];
-  if (ids.length) { try { es = notApart(await wholeEntries(f => { let x = sb.from("entries").select(ENTRY_SEL);
+  if (ids.length) { try { es = feedRows(await wholeEntries(f => { let x = sb.from("entries").select(ENTRY_SEL);
     if (f) x = x.eq("part", false);
     return x.in("user_id", ids).order("created_at",{ascending:false}).limit(60); })); }
     catch (err) { oops(err, "Couldn't load the following feed"); } }
@@ -6027,25 +6146,34 @@ function chartHTML(rows) { return rows.map((f, i) => { const w = works[f.id] || 
       w.year ? " \u00b7 " : ""}${f.n === 1 ? "one person" : f.n + " people"}</small></div>
     <span class="n">${(f.avg/2).toFixed(1)}<small>of five</small></span></div>`; }).join(""); }
 
+/* With no room yet, the way in stays in sight: skipping the welcome shouldn't leave the
+   one thing the app is for hidden behind a title you have to know to tap. */
+const noRoomCard = () => rooms.length ? "" : `<div class="card noroom">
+    <span class="nr-mark" aria-hidden="true">${placeMark({ mk:"room", tone:"pink" })}</span>
+    <div><b>Rooms is better with your people in it</b><p class="sub">Open a room for you and a few friends, or join theirs with a code. Then you'll see what each of you rated and how much you agree.</p>
+    <div class="roomactions"><button class="btn blue" id="newRoom">Open a room</button><button class="btn ghost" id="joinRoom">Join with a code</button></div>
+    </div></div>`;
 async function renderEveryoneFeed(fb) {
-  let es = []; try { es = notApart(await wholeEntries(f => { let x = sb.from("entries").select(ENTRY_SEL);
+  let es = []; try { es = feedRows(await wholeEntries(f => { let x = sb.from("entries").select(ENTRY_SEL);
     if (f) x = x.eq("part", false);
     return x.order("created_at",{ascending:false}).limit(300); })); } catch (e) { fb.innerHTML = `<p class="empty">${esc(e.message)}</p>`; return; }
   es.forEach(e => remember(e.works));
-  if (!es.length) { fb.innerHTML = ``  +
-    blank("var(--sky)","◎","Nothing here yet","The hall fills up as people log things — everyone's scores, how much they agree, and what they loved. Be the first.",[["hallAdd","Log something"]]);
-    $("#hallAdd").onclick = openAdd; return; }
+  if (!es.length) { fb.innerHTML = noRoomCard() +
+    blank("var(--sky)","◎","Nothing here yet", myEntries.length && !rooms.length
+      ? "Everyone's public logs land here. Yours are just yours for now — they'll reach your friends once you're in a room together."
+      : "Everyone's logs land here — their scores, how much they agree, and what they loved. Be the first.",[["hallAdd","Log something"]]);
+    $("#hallAdd").onclick = openAdd; if (!rooms.length) wireRoomButtons(); return; }
   let shown = [];
   const weekAgo = new Date(Date.now() - 7*864e5).toISOString().slice(0,10); const recent = es.filter(e => e.rated_on >= weekAgo);
   /* divisive stays worked out from what is here: it is about the argument, not the
      ranking, and the rows it needs are the ones on this screen anyway */
   const divisive = competition(recent.length >= 5 ? recent : es, 40)
     .filter(f => f.n >= 2).sort((a,b) => (a.agree ?? 100) - (b.agree ?? 100)).slice(0, 5);
-  fb.innerHTML = `<p class="sub" style="text-align:center;margin-top:8px">What people are saying \u00b7 ${es.length} entries \u00b7 ${recent.length} this week</p>
+  fb.innerHTML = `${noRoomCard()}<p class="sub" style="text-align:center;margin-top:8px">What people are saying \u00b7 ${es.length} ${es.length === 1 ? "entry" : "entries"} \u00b7 ${recent.length} this week</p>
     ${divisive.length ? `<div class="card"><div class="h"><span>Most divisive</span><span class="tag dim">bring these into a room</span></div>${compRows(divisive)}</div>` : ""}
     <div class="lbl">What people said</div>${(() => { const f = feedSort(es);
       shown = f.rows.slice(0, 20); return f.html + shown.map(e => slipHTML(e)).join(""); })()}`;
-  endLine(fb, shown, 20);
+  endLine(fb, shown, 20); if (!rooms.length) wireRoomButtons();
   wireSlips(fb, es); revealIn(fb); wireFeedSort(fb, renderDoors); $$("[data-cw]", fb).forEach(x => x.onclick = () => openWork(x.dataset.cw));
 }
 
@@ -6293,7 +6421,7 @@ function paintTrays() {
     : P.cabKind ? kindBlank(P.cabKind)
     : blank("var(--mint)", "\u25af", "Nothing finished yet",
         "Log something and it stands here, with its own cover on it. Up next is what you mean to get to; this is what you've finished.",
-        [["cabShelf", "Back to Up next", "soft"]]);
+        [["cabShelf", "Log something you've finished", "soft"]]);
   $$(".archcard[data-work]", el).forEach(r => r.onclick = () => openWork(r.dataset.work));
   /* only when it's the same cards in a new order — a filter or a search changes which
      cards there are, and sliding those around would just be noise */
@@ -6376,7 +6504,7 @@ function wireCabinet() {
   const ls = $("#cabList"); if (ls) ls.onclick = () => openWholeLog();
 }
 function wireTokens() {
-  const bk = $("#cabShelf"); if (bk) bk.onclick = () => switchTab("shelf");
+  const bk = $("#cabShelf"); if (bk) bk.onclick = () => openAdd();
   const lk = $("#cabLogKind"); if (lk) lk.onclick = () => openAdd(P.cabKind);
 }
 /* medium and "when" used to sit as two more chip rows on the shelf, on top of the view
@@ -6431,7 +6559,7 @@ function renderShelf() {
           ${soon ? `<span class="soon-tag">${when(w.release)}</span>` : `<button class="tick ${logged(w.id)?"done":""}" data-t="${esc(w.id)}" aria-label="log it"></button>`}</div>
           <div class="cap"><span>${soon ? "Coming" : n ? nowLine(n) : (() => { const f = cameFrom(w.id);
             return f ? `from ${esc(f.sender_p?.handle || "a friend")}` : esc(w.year||""); })()}</span><span>${!soon && !n && w.length ? w.length+K(w.kind).unit : ""}</span></div></div>`; }).join("")}</div>`
-      : `<div class="tiles" style="margin-top:16px">${Object.keys(KINDS).map((k,i) => `<div class="tile" style="background:${K(k).colour};--r:${[-2,1.5,1,-1.5][i]}deg" data-kt="${k}"><small>Search</small><b>${K(k).plural}</b></div>`).join("")}</div>${blank("var(--mint)","+","Nothing up next","Everything you meant to get to, in one place — out now or still coming. Pick a medium above, or search.",[["shelfFocus","Search for something"]])}${pickBar}`}
+      : `<div class="tiles" style="margin-top:16px">${Object.keys(KINDS).map((k,i) => `<div class="tile" style="background:${K(k).colour};--r:${[-2,1.5,1,-1.5][i]}deg" data-kt="${k}"><small>Search</small><b>${K(k).plural}</b></div>`).join("")}</div>${blank("var(--mint)","+","Nothing up next","Everything you meant to get to, in one place — out now or still coming. Tap a medium above, or search for it.",[])}${pickBar}`}
     ${(() => { const q = handIn.map(h => [h, h.works || works[h.work_id]]).filter(([, w]) => w);
       if (!q.length) return "";
       return `<div class="lbl">Handed to you</div><div class="card" style="margin-top:0">${q.map(([h, w]) =>
@@ -8356,7 +8484,7 @@ function openPlanNight(R, onDone) {
       closeSheet(); say(`Put to ${R.name}`); onDone();
       notify({ room:R.id, title:`${me.handle} planned ${/^To(night|morrow)$/.test(nightLabel(at)) ? nightLabel(at).toLowerCase() : nightLabel(at)} in ${R.name}`,
         body:`${picks.map(w => w.title).join(", ").replace(/, ([^,]*)$/, " or $1")}? Vote on what you're watching.`, tag:"night-" + R.id, sec:"play" }); }
-    catch (e) { $("#npErr").textContent = /room_nights/.test(e.message) ? "Watch nights need the latest database update — run schema.sql in Supabase once." : e.message; b.disabled = false; } }; }
+    catch (e) { $("#npErr").textContent = /room_nights/.test(e.message) ? "Watch nights aren't switched on yet. Try again in a little while." : e.message; b.disabled = false; } }; }
 /* ---------- the games, moving ----------
    Three moments are worth a little theatre, and each happens once per person: the
    names coming out on the prompt, a new round of the bracket opening, and the month's
@@ -8439,7 +8567,7 @@ async function paintGames(R, es) {
   const el = $("#roomGames"); if (!el) return;
   const g = await loadGames(R);
   if ($("#roomGames") !== el) return;
-  if (!g.ok) { el.innerHTML = `<div class="card game"><div class="h"><span>Play</span></div><p class="sub gline">The games need the latest database update — run schema.sql in Supabase once and they switch on for every room.</p></div>`; return; }
+  if (!g.ok) { el.innerHTML = `<div class="card game"><div class="h"><span>Play</span></div><p class="sub gline">The room's games aren't switched on yet. They'll turn up here on their own.</p></div>`; return; }
   const br = await ensureBracket(R, g, es).catch(() => null);
   if ($("#roomGames") !== el) return;
   const nights = await loadNights(R);
@@ -8511,10 +8639,40 @@ function tasteMiniHTML(t) {
       <div class="tm-say">You go for ${parts.length > 1 ? parts.slice(0, -1).join(", ") + " and " + parts[parts.length - 1] : parts[0]}.</div>
       <small>See the whole picture ›</small></div></div>`; }
 const COG = `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.6 1.6 0 0 0 .32 1.77l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.6 1.6 0 0 0-1.77-.32 1.6 1.6 0 0 0-1 1.47V21a2 2 0 1 1-4 0v-.11a1.6 1.6 0 0 0-1.05-1.47 1.6 1.6 0 0 0-1.77.32l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.6 1.6 0 0 0 .32-1.77 1.6 1.6 0 0 0-1.47-1H3a2 2 0 1 1 0-4h.11a1.6 1.6 0 0 0 1.47-1.05 1.6 1.6 0 0 0-.32-1.77l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.6 1.6 0 0 0 1.77.32H9a1.6 1.6 0 0 0 1-1.47V3a2 2 0 1 1 4 0v.11a1.6 1.6 0 0 0 1 1.47 1.6 1.6 0 0 0 1.77-.32l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.6 1.6 0 0 0-.32 1.77V9a1.6 1.6 0 0 0 1.47 1H21a2 2 0 1 1 0 4h-.11a1.6 1.6 0 0 0-1.47 1z"/></svg>`;
+/* ---------- your numbers ----------
+   This year so far (or all time, early on): how many of each, what that came to in
+   hours and pages, and how you hand out stars — the shape of it says whether you're a
+   generous rater or a hard one. Your latest word on each thing counts once. */
+function yourNumbers() {
+  const latest = {}; for (const e of myEntries) { if (isPart(e.work_id) || isBefore(e)) continue;
+    const cur = latest[e.work_id]; if (!cur || String(e.rated_on || "") > String(cur.rated_on || "")) latest[e.work_id] = e; }
+  const all = Object.values(latest), yr = String(new Date().getFullYear());
+  const thisYear = all.filter(e => String(e.rated_on || e.created_at || "").startsWith(yr));
+  const pool = thisYear.length >= 3 ? thisYear : all;
+  const by = k => pool.filter(e => kindOf(e.work_id) === k);
+  const sum = k => by(k).reduce((a, e) => a + (+works[e.work_id]?.length || 0), 0);
+  const spread = Array.from({ length:10 }, (_, i) => all.filter(e => Math.round(e.score) === i + 1).length);
+  return { year:pool === thisYear ? yr : "", n:pool.length, kinds:CAB_ORDER.map(k => [k, by(k).length]),
+    filmH:Math.round(sum("film") / 60), pages:sum("book"), gameH:sum("game"), spread, avg:all.length ? all.reduce((a, e) => a + e.score, 0) / all.length / 2 : 0 }; }
+function yourNumbersHTML() { const y = yourNumbers(); if (y.n < 2) return "";
+  const top = Math.max(...y.spread, 1), peak = y.spread.indexOf(Math.max(...y.spread));
+  const bits = [y.filmH && `${y.filmH} hours of film`, y.pages && `${y.pages.toLocaleString()} pages`, y.gameH && `${y.gameH} hours played`].filter(Boolean);
+  const how = y.avg >= 4 ? "You're a generous one" : y.avg >= 3.2 ? "Fair, mostly" : "A hard marker";
+  return `<div class="card ynum" id="yNum"><div class="h"><span>${y.year ? `Your ${y.year} so far` : "Your numbers"}</span><span class="tag dim">${y.n} logged</span></div>
+    <div class="ynk">${y.kinds.map(([k, n]) => `<div style="--k:${K(k).colour}"><b data-to="${n}">${n}</b><span>${esc(K(k).plural)}</span></div>`).join("")}</div>
+    ${bits.length ? `<p class="ysum">That's ${bits.join(", ").replace(/, ([^,]*)$/, " and $1")}.</p>` : ""}
+    <div class="lbl ylbl"><span>How you rate</span><small>${how} · ${y.avg.toFixed(1)} on average</small></div>
+    <div class="spread" role="img" aria-label="${y.spread.map((n, i) => `${(i + 1) / 2} stars: ${n}`).join(", ")}">${y.spread.map((n, i) =>
+      `<i class="${i === peak ? "peak" : ""}" style="--h:${Math.max(n ? 8 : 3, Math.round(n / top * 100))}%;--d:${i * 35}ms"></i>`).join("")}</div>
+    <div class="spreadax" aria-hidden="true"><span>½</span><span>★★★★★</span></div></div>`; }
+function playNumbers() { const el = $("#yNum"); if (!el || REDUCED) return;
+  $$(".ynk b", el).forEach(b => { const to = +b.dataset.to; b.textContent = "0"; setTimeout(() => tickTo(b, to), 120); });
+  el.classList.add("grow"); }
 async function renderTaste() { const body = $("#tasteBody"); const t = tasteOf(myEntries);
   body.innerHTML = `<div class="pagehead"><button class="tasteme" id="tasteMe" aria-label="Open your profile">${avatar(me)}<div><h2 style="margin:0">${esc(me.handle)}</h2>${me.bio?`<p class="sub" style="margin-top:2px">${esc(me.bio)}</p>`:""}</div></button>
     <button class="iconbtn cog" id="tasteCog" aria-label="Settings">${COG}</button></div>
     ${myEntries.length ? `<button class="card tastemini" id="tasteMore" aria-label="See your whole taste">${tasteMiniHTML(t)}</button>
+    ${yourNumbersHTML()}
     <div id="podium"></div>
     <div class="card" id="recCard"><div class="h"><span>You might like</span><span class="tag dim">from what you loved</span></div><div id="recBody">${skeleton(1)}</div></div>
     ${storyYear() ? `<button class="linkrow yearrow" id="tasteStory"><span>Your ${storyYear()} is ready</span><b>›</b></button>` : ""}
@@ -8526,7 +8684,7 @@ async function renderTaste() { const body = $("#tasteBody"); const t = tasteOf(m
   $("#tasteMe").onclick = () => openProfile(me.id);
   $("#tasteCog").onclick = () => openYou();
   const ts = $("#tasteStory"); if (ts) ts.onclick = () => openYearStory();
-  paintPodium();
+  paintPodium(); playNumbers();
   [$("#tasteMore"), $("#tasteAll")].forEach(b => { if (b) b.onclick = openTasteDetail; });
   const rb = $("#recBody"); if (!rb) return;
   /* a card that loads forever is worse than no card: if nothing comes back in a few
@@ -9380,7 +9538,7 @@ function seasonChallengeFor(e, season = currentSeason()) {
 function seasonEntries(challenge, rows = myEntries, season = challengeSeason(challenge.id)) {
   /* A title is a single notch no matter how many times someone edits or rewatches it. */
   const seen = new Set();
-  return rows.filter(e => { if (seasonChallengeFor(e, season)?.id !== challenge.id || seen.has(e.work_id)) return false;
+  return rows.filter(e => { if (isBefore(e) || seasonChallengeFor(e, season)?.id !== challenge.id || seen.has(e.work_id)) return false;
     seen.add(e.work_id); return true; });
 }
 function seasonMedal(n) { return [...SEASON_MEDALS].reverse().find(m => n >= m.at) || null; }
@@ -9419,12 +9577,12 @@ async function seasonRank(season = currentSeason()) {
        happened to hand rows back. A season is a month long, so bound the fetch to the
        month it's asking about: smaller, and an ordered slice is at least a consistent one
        if a very large season ever does hit the limit. */
-    const rows = await q(sb.from("entries").select("user_id,work_id,created_at,rated_on,works(kind,meta,length)")
+    const rows = await q(sb.from("entries").select("user_id,work_id,created_at,rated_on,context,works(kind,meta,length)")
       .gte("created_at", season.starts + "T00:00:00.000Z").lte("created_at", season.ends + "T23:59:59.999Z")
       .order("created_at").limit(10000));
     const by = new Map();
     for (const e of rows) {
-      if (!seasonChallengeFor(e, season)) continue;
+      if (isBefore(e) || !seasonChallengeFor(e, season)) continue;
       const mine = by.get(e.user_id) || new Set(); mine.add(e.work_id); by.set(e.user_id, mine);
     }
     const scores = [...by.entries()].map(([id, ids]) => ({ id, n:ids.size })).filter(x => x.n > 0).sort((a,b) => b.n-a.n);
@@ -9447,9 +9605,9 @@ function seasonRecapHTML(S) {
     <p class="sub gline" id="seasonRecapRoom"></p></div>`; }
 async function fillSeasonRecap(S) {
   const el = $("#seasonRecapRoom"), R = activeRoom(); if (!el || !R || R.members.length < 2) return;
-  try { const es = await q(sb.from("entries").select("user_id,work_id,created_at,rated_on,works(kind,meta,length)")
+  try { const es = await q(sb.from("entries").select("user_id,work_id,created_at,rated_on,context,works(kind,meta,length)")
       .in("user_id", R.members.map(m => m.id)).gte("created_at", S.starts + "T00:00:00.000Z").lte("created_at", S.ends + "T23:59:59.999Z").limit(2000));
-    const by = {}; for (const e of es) if (seasonChallengeFor(e, S)) (by[e.user_id] ||= new Set()).add(e.work_id);
+    const by = {}; for (const e of es) if (!isBefore(e) && seasonChallengeFor(e, S)) (by[e.user_id] ||= new Set()).add(e.work_id);
     const top = Object.entries(by).sort((a, b) => b[1].size - a[1].size)[0];
     if ($("#seasonRecapRoom") === el && top) el.innerHTML = `<b>${esc(R.name)}</b> · ${esc(who(R, top[0]))} went furthest, with ${top[1].size}.`; } catch {} }
 /* the first three picks of each challenge, as covers: looked up once, then remembered */
@@ -9531,10 +9689,10 @@ const snRoomCache = {};
 async function seasonRoom(S) {
   const R = activeRoom(); if (!R || R.members.length < 2) return null;
   const key = S.id + ":" + R.id; if (snRoomCache[key]) return snRoomCache[key];
-  const rows = await q(sb.from("entries").select("user_id,work_id,created_at,rated_on,works(kind,meta,length,year,title,cover)")
+  const rows = await q(sb.from("entries").select("user_id,work_id,created_at,rated_on,context,works(kind,meta,length,year,title,cover)")
     .in("user_id", R.members.map(m => m.id)).gte("created_at", S.starts + "T00:00:00.000Z").lte("created_at", S.ends + "T23:59:59.999Z").limit(4000));
   const count = {}, seen = {}, recent = [];
-  for (const e of rows) { if (!seasonChallengeFor(e, S)) continue;
+  for (const e of rows) { if (isBefore(e) || !seasonChallengeFor(e, S)) continue;
     const u = e.user_id, k = u + ":" + e.work_id; if (seen[k]) continue; seen[k] = 1;
     count[u] = (count[u] || 0) + 1; if (e.works?.id) remember(e.works); recent.push(e); }
   recent.sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
@@ -9757,9 +9915,12 @@ function countUp(el, to, suffix = "", ms = 600) {
 /* ============ WORK PAGE ============ */
 async function openWork(id) { let w = works[id]; if (!w) { try { const rows = await q(sb.from("works").select("*").eq("id", id).limit(1)); w = remember(rows[0]); } catch {} } if (!w) return;
   const cfg = K(w.kind);
-  openSheet(`<div class="head">${cover(w)}<div class="hh"><h3>${esc(w.title)}</h3><p class="sub">${tag(w.kind)} ${esc(w.year||"")}${w.creator?" · "+esc(w.creator):""}${w.length?` · ${w.length}${cfg.unit}`:""}</p>${(w.meta?.genres || []).length ? `<div class="wgenres">${(w.meta.genres).slice(0, 4).map(g =>
+  /* the top of a title's page is lit by its own poster, blurred, the way a streaming app
+     sets a title in its own colour; with no poster, its medium's colour does it */
+  openSheet(`<div class="whero" aria-hidden="true" style="--wk:${cfg.colour}${w.cover ? `;background-image:url('${esc(blurSrc(w.cover))}')` : ""}"></div>
+    <div class="head whead" style="--wk:${cfg.colour}">${cover(w)}<div class="hh"><h3>${esc(w.title)}</h3><p class="sub">${tag(w.kind)} ${esc(w.year||"")}${w.creator?" · "+esc(w.creator):""}${w.length?` · ${w.length}${cfg.unit}`:""}</p>${(w.meta?.genres || []).length ? `<div class="wgenres">${(w.meta.genres).slice(0, 4).map(g =>
       `<button class="wgenre" data-wgenre="${esc(g)}" aria-label="Your favourite ${esc(g)} in Finished">${esc(g)}</button>`).join("")}</div>` : ""}</div></div>
-    <div class="numbers" id="wNumbers"><div><b>—</b><span>You</span></div><div><b>—</b><span>Your room</span></div><div><b>—</b><span>Following</span></div><div><b>—</b><span>Everyone</span></div></div>
+    <div class="numbers wnums" id="wNumbers" style="--wk:${cfg.colour}"><div><b>—</b><span>You</span></div><div><b>—</b><span>Your room</span></div><div><b>—</b><span>Following</span></div><div><b>—</b><span>Everyone</span></div></div>
     <div id="wFriends"></div>
     <p class="sumup mine" id="wAgain" hidden></p>
     ${w.kind === "film" || w.kind === "tv" ? `<div id="wWatch"></div>` : ""}
@@ -10336,7 +10497,9 @@ function openLog(w, edit = null, preset = 0) { const cfg = K(w.kind); const love
      remembered as your usual; a private one is a choice you make each time. */
   const wasPrivate = !!edit && !!(edit.private ?? myEntries.find(x => x.id === edit.id)?.private);
   let who = edit ? (wasPrivate ? "me" : edit.room_only ? "room" : "all")
-    : P.postTo === "all" || !rooms.length ? "all" : "room";
+    /* the front door promises a private room, so with no room yet it starts as yours alone,
+       until you say otherwise (choosing Everyone is remembered) */
+    : P.postTo === "all" ? "all" : rooms.length ? "room" : "me";
   let roomOnly = who !== "all";
   const paintWho = () => { const n = $("#whoNote"); if (!n) return;
     n.textContent = who === "me" ? "Only you. It counts in your stats and your year, and never shows to anybody — not even your rooms."
@@ -10409,7 +10572,24 @@ function openLog(w, edit = null, preset = 0) { const cfg = K(w.kind); const love
       if (saved.id) sayUndo(where, async () => {
         try { await q(sb.from("entries").delete().eq("id", saved.id)); await loadMine(); unrankIfGone(w.id); refresh();
           say("Taken back"); } catch (err) { oops(err, "Couldn't take that back"); } }, 6);
-    } catch (err) { $("#wMsg").textContent = /private/.test(err.message) ? "“Just me” needs the latest database update — run schema.sql in Supabase once." : err.message; $("#wSave").disabled = false; } }; }
+      if (myEntries.filter(x => !isBefore(x)).length === 1) setTimeout(() => firstOne(w), 700);
+    } catch (err) { $("#wMsg").textContent = /private/.test(err.message) ? "“Just me” isn't switched on yet. Save it for everyone or the room for now." : err.message; $("#wSave").disabled = false; } }; }
+
+/* the very first thing anybody logs gets a moment of its own: where it went, and the
+   one next step that makes the app worth having — your people, or two more for a taste */
+function firstOne(w) { if ($("#sheet").classList.contains("on")) return;
+  const R = activeRoom(), alone = !R || R.members.length < 2;
+  openSheet(`<div class="firstone" style="--k:${K(w.kind).colour}">
+    <div class="fo-stage" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i>${cover(w)}</div>
+    <h3>Your first one's in</h3>
+    <p class="sub"><b>${esc(w.title)}</b> is on your Finished shelf, and your taste starts from it.${alone ? " Rooms comes alive with your people in it." : ""}</p>
+    <div class="stack">${alone ? `<button class="btn blue" id="foRoom">${R ? `Bring somebody into ${esc(R.name)}` : "Open a room for your friends"}</button>` : ""}
+      <button class="btn ${alone ? "ghost" : "blue"}" id="foMore">Log another</button><button class="btn quiet" id="foDone">Done</button></div></div>`);
+  buzz([10, 50, 16]);
+  $("#foDone").onclick = closeSheet;
+  $("#foMore").onclick = () => { closeSheet(); setTimeout(openAdd, 260); };
+  const fr = $("#foRoom"); if (fr) fr.onclick = () => { closeSheet(); switchTab("doors");
+    setTimeout(() => { if (R) openInvite(R); else $("#newRoom")?.click(); }, 450); }; }
 
 /* ============ ENTRY PAGE ============ */
 /* ---------- reporting and blocking ----------
@@ -10455,7 +10635,7 @@ function openBlock(id, who = "") {
 
 function openEntry(e, justSaved = false) { const w = works[e.work_id] || e.works || {}; const cfg = K(w.kind || kindOf(e.work_id)); const mine = e.user_id === me.id;
   openSheet(`${justSaved?`<span class="tag savedchip" style="background:var(--mint)">Saved</span>`:""}<div class="head" style="margin-top:10px">${cover(w)}<div class="hh"><h3>${esc(w.title)}</h3><p class="sub">${tag(w.kind)} ${esc(w.year||"")} · ${esc(mine?"you":e.profiles?.handle||"")} ${cfg.verb} ${when(e.rated_on)}${mine && e.room_only ? ` · <span class="tag dim">room only</span>` : ""}</p><div style="margin-top:10px">${stars(e.score,"big")}</div></div></div>
-    ${e.context ? `<div class="ticks">${Object.entries(e.context).filter(([k,v]) => v).map(([k,v]) => `<span class="tk on">${k==="with"?"With "+esc(v):esc(v)}</span>`).join("")}</div>` : ""}
+    ${e.context && Object.keys(e.context).some(k => k !== "before") ? `<div class="ticks">${Object.entries(e.context).filter(([k,v]) => v && k !== "before").map(([k,v]) => `<span class="tk on">${k==="with"?"With "+esc(v):esc(v)}</span>`).join("")}</div>` : ""}
     ${e.loved?.length?`<div class="chips" style="margin-top:12px">${e.loved.map(k => `<span class="chip ${k.startsWith("person:")?"who on":"on"}">${esc(k.startsWith("person:")?lc(k.slice(7)):k)}</span>`).join("")}</div>`:""}
     ${e.note?`<div class="card"><div class="say" style="font-size:19px;margin:0">“${noteHTML(e.note)}”</div></div>`:""}
     <div class="stack"><button class="btn soft" id="eCard">Save the card</button><button class="btn ghost" id="eWork">Open ${esc(w.title)}</button>${mine && e.id?`<button class="btn quiet" id="eEdit">Edit</button><button class="btn quiet" id="eDel">Delete</button>`:""}<button class="btn quiet" id="eClose">Close</button></div>
