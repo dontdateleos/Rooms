@@ -1587,3 +1587,7 @@ language sql security definer stable set search_path = public as $$
 $$;
 revoke all on function push_targets_season(date) from public, anon, authenticated;
 grant execute on function push_targets_season(date) to service_role;
+
+-- v32: a goal for the year ("40 this year"), kept on the profile so the room can see how
+-- everyone's doing. One number per year: { "2026": 40 }.
+alter table profiles add column if not exists goals jsonb;

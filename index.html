@@ -2222,6 +2222,27 @@ header,nav{-webkit-backdrop-filter:blur(20px) saturate(1.4);backdrop-filter:blur
 .grid.editing .po .mate{display:none}
 @media (prefers-reduced-motion:no-preference){.po .mate{animation:mateIn .4s cubic-bezier(.2,1.3,.4,1) both}}
 @keyframes mateIn{from{opacity:0;transform:scale(.6)}}
+
+/* ---------- a goal for the year ---------- */
+.goalcard{display:flex;align-items:center;gap:16px;width:100%;text-align:left;border:0;color:var(--ink);font:inherit;cursor:pointer}
+.gring{--p:0;flex:none;width:76px;height:76px;border-radius:50%;display:grid;place-content:center;text-align:center;
+  background:radial-gradient(closest-side,var(--card) 76%,transparent 78% 100%),conic-gradient(var(--apricot) calc(var(--p) * 1%),color-mix(in srgb,var(--ink) 12%,transparent) 0)}
+.gring b{font:900 24px/1 var(--head);letter-spacing:-.03em}
+.gring small{font-size:10.5px;font-weight:800;color:var(--mute);margin-top:2px}
+.gt{flex:1;min-width:0}
+.gt > b{display:block;font:900 17px/1.2 var(--head);letter-spacing:-.02em}
+.gt small{display:block;font-size:13px;color:var(--mute);margin-top:3px}
+.goalcard .pbar,.goalsroom .pbar{position:relative;height:6px;margin-top:9px;overflow:visible}
+.goalcard .pbar i,.goalsroom .pbar i{border-radius:3px}
+.pbar em{position:absolute;top:-3px;width:2px;height:12px;border-radius:1px;background:var(--ink);opacity:.45;margin-left:-1px}
+.goalset{margin-top:12px}
+.goalsroom .grow2{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--line)}
+.goalsroom .grow2:last-of-type{border-bottom:0}
+.goalsroom .gn{flex:1;min-width:0}
+.goalsroom .gn b{font:800 15px/1.2 var(--head)}
+.goalsroom .gn small{display:block;font-size:12.5px;color:var(--mute);margin-top:2px}
+@media (prefers-reduced-motion:no-preference){.goalcard .pbar i,.goalsroom .pbar i{animation:barGrow .8s cubic-bezier(.2,.8,.2,1) both}}
+@keyframes barGrow{from{width:0}}
 </style>
 </head>
 <body>
@@ -5097,9 +5118,12 @@ function renderClaim() { const b = $("#authBody");
   $("#handle").onkeydown = e => { if (e.key === "Enter") claim(); }; }
 
 async function loadMe() { const { data:{ session } } = await sb.auth.getSession(); if (!session) { me = null; pendingUser = null; return null; }
-  if (sb.__local) { me = { id:sb.__db.profile.id, handle:sb.__db.profile.handle, bio:sb.__db.profile.bio||"", avatar:sb.__db.profile.avatar||null }; return me; }
+  if (sb.__local) { me = { id:sb.__db.profile.id, handle:sb.__db.profile.handle, bio:sb.__db.profile.bio||"", avatar:sb.__db.profile.avatar||null, goals:sb.__db.profile.goals||null }; return me; }
   const rows = await q(sb.from("profiles").select("id,handle,bio,avatar").eq("id", session.user.id).limit(1));
-  me = rows[0] || null; pendingUser = me ? null : session.user.id; return me; }
+  me = rows[0] || null; pendingUser = me ? null : session.user.id;
+  /* asked for on its own, so a database without v32 just has no goals rather than no you */
+  if (me) try { const [g] = await q(sb.from("profiles").select("goals").eq("id", me.id).limit(1)); me.goals = g?.goals || null; } catch {}
+  return me; }
 async function enter() {
   $("#meBtn").hidden = false; $("#meName").textContent = me.handle; paintMeAv();
   $("#nav").classList.add("on"); $("#add").classList.add("live"); setTimeout(logoWake, 250); warmBeside();
@@ -6051,7 +6075,8 @@ async function renderRoomFeed(fb, R) {
   const pick = P.picked && !logged(P.picked) && works[P.picked];
   /* one long scroll used to hold the conversation, the charts and the year end to end;
      now they're three places you switch between, and the room remembers which you were in */
-  const pal = roomPalmares(es), hasYear = !!pal && pal.n >= 6;
+  const yearEs = es.filter(e => String(e.rated_on || "").startsWith(goalYear()));
+  const pal = roomPalmares(es), hasYear = R.members.length > 1 && (!!pal || yearEs.length > 0);
   const sec = P.roomSec === "charts" || P.roomSec === "play" || (P.roomSec === "year" && hasYear) ? P.roomSec : "talk";
   const secs = [["talk", "Talk"], ["play", "Play"], ["charts", "Charts"], ...(hasYear ? [["year", "Year"]] : [])];
   fb.innerHTML = `<div class="roomline"><div class="rl-l"><div class="here" id="hereRow" aria-live="polite"><small>Nobody else in here right now</small></div>${roomStreak(es)}</div>
@@ -6093,13 +6118,15 @@ async function renderRoomFeed(fb, R) {
     <div id="rankMeet"></div>
     </div>
     ${hasYear ? (() => { const t = id => esc(works[id]?.title || "");
-      return `<div data-rsec="year"${sec === "year" ? "" : " hidden"}><div class="card"><div class="h"><span>The room's year</span><span class="tag dim">${pal.n} ${pal.n === 1 ? "entry" : "entries"}</span></div>
-        <div class="ywall">${competition(es, 200).slice(0, 6).map((f, i) => { const w = works[f.id] || {};
+      const best = competition(yearEs, 200);
+      return `<div data-rsec="year"${sec === "year" ? "" : " hidden"}><div id="roomGoals"></div>${best.length ? `<div class="card"><div class="h"><span>The room's ${goalYear()}</span><span class="tag dim">${yearEs.length} ${yearEs.length === 1 ? "entry" : "entries"}</span></div>
+        <div class="ywall">${best.slice(0, 6).map((f, i) => { const w = works[f.id] || {};
           return `<button class="yw ${i ? "" : "first"}" data-cw="${esc(f.id)}">${cover(w)}<span class="yrk">${i + 1}</span><b>${esc(w.title || "")}</b><small>${(f.avg/2).toFixed(1)} · ${f.n} of you</small></button>`; }).join("")}</div>
         <button class="linkrow" id="roomYearMore"><span>The rest · best by medium, the agreement, the fight</span><b>›</b></button>
-      </div></div>`; })() : ""}
+      </div>` : ""}</div>`; })() : ""}
     `;
   endLine($('[data-rsec="talk"]', fb), es, 60);
+  paintRoomGoals(R, es);
   if (!P.holdTip && myEntries.length >= 3 && currentTab() === "doors") { P.holdTip = 1; saveP(); setTimeout(() => coach("Hold any poster to rate it, shelve it or pass it on"), 1600); }
   $("#roomMenu", fb).onclick = () => openRoomMenu(R); wireTonight(); if (R.members.length > 1) paintAsks(R);
   const segEl = $(".roomsecs", fb); glideSeg(segEl, true);
@@ -7228,6 +7255,21 @@ function showResult(w) { const el = resultEl(); if (!el) return;
 /* the pick follows you back to the shelf and into the room */
 let searchT; function wireSearch() { const el = $("#search"); if (!el) return; el.oninput = e => { clearTimeout(searchT); const v = e.target.value.trim(); if (!v) { $("#results").innerHTML = ""; $("#msg").textContent = "";
       if (shelfStale) { shelfStale = false; if (currentTab() === "shelf") renderShelf(); } return; } searchT = setTimeout(() => doSearch(v, r => addToShelf(r.dataset.add), $("#results"), $("#msg"), el), 400); }; }
+/* everyone's goal for the year, side by side: who's ahead, who's catching up */
+async function paintRoomGoals(R, es) { const el = $("#roomGoals"); if (!el) return;
+  let rows = []; try { rows = await q(sb.from("profiles").select("id,handle,avatar,goals").in("id", R.members.map(m => m.id))); } catch { return; }
+  if ($("#roomGoals") !== el) return;
+  const yr = goalYear(), withGoal = rows.map(p => ({ p, goal:+((p.id === me.id ? myGoal() : (p.goals || {})[yr]) || 0) })).filter(x => x.goal);
+  if (!withGoal.length) { el.innerHTML = myGoal() ? "" : `<button class="linkrow goalset" id="roomGoalSet"><span>Set a goal for ${yr} and the room can see how you're doing</span><b>›</b></button>`;
+    const b = $("#roomGoalSet", el); if (b) b.onclick = setGoal; return; }
+  const list = withGoal.map(x => { const n = x.p.id === me.id ? goalCount(myEntries) : goalCount(es, x.p.id); return { ...x, n, pace:goalPace(n, x.goal) }; })
+    .sort((a, b) => (b.n / b.goal) - (a.n / a.goal));
+  el.innerHTML = `<div class="card goalsroom"><div class="h"><span>Goals for ${yr}</span><span class="tag dim">${list.length} of ${R.members.length} in</span></div>
+    ${list.map(x => { const pct = Math.min(100, Math.round(x.n / x.goal * 100));
+      return `<div class="grow2">${avatar(x.p, "av")}<span class="gn"><b>${x.p.id === me.id ? "you" : esc(x.p.handle)}</b><small>${x.n} of ${x.goal} · ${x.pace.word}</small>
+        <span class="pbar"><i style="width:${Math.max(2, pct)}%"></i><em style="left:${Math.min(100, Math.round(x.pace.due / x.goal * 100))}%"></em></span></span></div>`; }).join("")}
+    ${myGoal() ? "" : `<button class="linkrow goalset" id="roomGoalSet" style="margin-top:8px"><span>Set yours</span><b>›</b></button>`}</div>`;
+  const b = $("#roomGoalSet", el); if (b) b.onclick = setGoal; }
 async function paintRoomNow(R) {
   const el = $("#roomNow"); if (!el || !R) return;
   const rows = await nowFor(R.members.map(m => m.id));
@@ -8868,6 +8910,38 @@ function yourNumbersHTML() { const y = yourNumbers(); if (y.n < 2) return "";
     <div class="spread" role="img" aria-label="${y.spread.map((n, i) => `${(i + 1) / 2} stars: ${n}`).join(", ")}">${y.spread.map((n, i) =>
       `<i class="${i === peak ? "peak" : ""}" style="--h:${Math.max(n ? 8 : 3, Math.round(n / top * 100))}%;--d:${i * 35}ms"></i>`).join("")}</div>
     <div class="spreadax" aria-hidden="true"><span>½</span><span>★★★★★</span></div></div>`; }
+/* ---------- a goal for the year ----------
+   One number: how many things you mean to finish this year. Counted as logs (a rewatch
+   is another evening spent on it), never the welcome picks or a single episode. Pace is
+   where you'd be today if the year went evenly. */
+const goalYear = () => String(new Date().getFullYear());
+const myGoal = () => +((me?.goals || {})[goalYear()] ?? (P.goals || {})[goalYear()] ?? 0) || 0;
+const goalCount = (es, uid) => es.filter(e => (!uid || e.user_id === uid) && !isPart(e.work_id) && !isBefore(e) && String(e.rated_on || "").startsWith(goalYear())).length;
+function goalPace(n, goal) { const now = new Date(), y = now.getFullYear();
+  const day = (Date.UTC(y, now.getMonth(), now.getDate()) - Date.UTC(y, 0, 1)) / 864e5 + 1, len = (y % 4 === 0 && (y % 100 !== 0 || y % 400 === 0)) ? 366 : 365;
+  const due = Math.floor(goal * day / len), d = n - due;
+  return { due, d, word:n >= goal ? "done" : d > 0 ? `${d} ahead` : d === 0 ? "right on pace" : `${-d} behind` }; }
+function goalHTML() { const goal = myGoal(), yr = goalYear();
+  if (!goal) return `<button class="linkrow goalset" id="goalSet"><span>Set a goal for ${yr}</span><b>›</b></button>`;
+  const n = goalCount(myEntries), pace = goalPace(n, goal), pct = Math.min(100, Math.round(n / goal * 100));
+  return `<button class="card goalcard" id="goalSet" aria-label="Your ${yr} goal: ${n} of ${goal}, ${pace.word}. Change it">
+    <span class="gring" style="--p:${pct}"><b>${n}</b><small>of ${goal}</small></span>
+    <span class="gt"><b>${n >= goal ? `${yr}'s goal, done` : `Your ${yr} goal`}</b>
+      <small>${n >= goal ? `${n - goal ? `${n - goal} past it. ` : ""}Anything else is a bonus.` : `${pace.word === "right on pace" ? "Right on pace" : pace.word.replace(/^./, c => c.toUpperCase())} · ${goal - n} to go`}</small>
+      <span class="pbar"><i style="width:${Math.max(2, pct)}%"></i><em style="left:${Math.min(100, Math.round(pace.due / goal * 100))}%"></em></span></span></button>`; }
+async function setGoal() { const yr = goalYear(), cur = myGoal();
+  const v = await openAsk(`<h3>Your goal for ${yr}</h3><p class="sub">How many things do you mean to finish this year? Films, shows, books and games all count.</p>
+    <div class="chips" style="margin-top:12px">${[12, 24, 52, 100].map(n => `<button class="chip ${cur === n ? "on" : ""}" data-goal="${n}">${n}</button>`).join("")}</div>
+    <input id="goalN" type="number" inputmode="numeric" min="1" max="999" placeholder="Or any number" value="${cur && ![12,24,52,100].includes(cur) ? cur : ""}" style="margin-top:10px">
+    <div class="stack"><button class="btn" id="goalOk">Set it</button>${cur ? `<button class="btn quiet" id="goalOff">No goal this year</button>` : ""}<button class="btn quiet" id="goalNo">Not now</button></div>`,
+    done => { $$("[data-goal]").forEach(b => b.onclick = () => done(+b.dataset.goal));
+      $("#goalOk").onclick = () => done(+$("#goalN").value || 0); $("#goalNo").onclick = () => done(null);
+      const off = $("#goalOff"); if (off) off.onclick = () => done(0); });
+  if (v == null || !(v >= 0) || v > 999) return;
+  const goals = { ...(me.goals || {}), [yr]:v || null }; me.goals = goals; P.goals = { ...(P.goals || {}), [yr]:v || null }; saveP();
+  if (sb.__local) { if (sb.__db.profile) { sb.__db.profile.goals = goals; sb.__save?.(); } }
+  else try { await q(sb.from("profiles").update({ goals }).eq("id", me.id)); } catch {}
+  buzz(8); say(v ? `${v} this year. You're on ${goalCount(myEntries)}.` : "No goal this year", "good"); renderTaste(); }
 function playNumbers() { const el = $("#yNum"); if (!el || REDUCED) return;
   $$(".ynk b", el).forEach(b => { const to = +b.dataset.to; b.textContent = "0"; setTimeout(() => tickTo(b, to), 120); });
   el.classList.add("grow"); }
@@ -8875,6 +8949,7 @@ async function renderTaste() { const body = $("#tasteBody"); const t = tasteOf(m
   body.innerHTML = `<div class="pagehead"><button class="tasteme" id="tasteMe" aria-label="Open your profile">${avatar(me)}<div><h2 style="margin:0">${esc(me.handle)}</h2>${me.bio?`<p class="sub" style="margin-top:2px">${esc(me.bio)}</p>`:""}</div></button>
     <button class="iconbtn cog" id="tasteCog" aria-label="Settings">${COG}</button></div>
     ${myEntries.length ? `<button class="card tastemini" id="tasteMore" aria-label="See your whole taste">${tasteMiniHTML(t)}</button>
+    ${goalHTML()}
     ${yourNumbersHTML()}
     <div id="podium"></div>
     <div class="card" id="recCard"><div class="h"><span>You might like</span><span class="tag dim">from what you loved</span></div><div id="recBody">${skeleton(1)}</div></div>
@@ -8888,6 +8963,7 @@ async function renderTaste() { const body = $("#tasteBody"); const t = tasteOf(m
   $("#tasteCog").onclick = () => openYou();
   const ts = $("#tasteStory"); if (ts) ts.onclick = () => openYearStory();
   paintPodium(); playNumbers();
+  const gs = $("#goalSet"); if (gs) gs.onclick = setGoal;
   [$("#tasteMore"), $("#tasteAll")].forEach(b => { if (b) b.onclick = openTasteDetail; });
   const rb = $("#recBody"); if (!rb) return;
   /* a card that loads forever is worse than no card: if nothing comes back in a few
