@@ -2212,6 +2212,16 @@ header,nav{-webkit-backdrop-filter:blur(20px) saturate(1.4);backdrop-filter:blur
 .pslide input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:50%;background:var(--card);border:2px solid var(--apricot)}
 .pslide span{font-size:13px;font-weight:700;color:var(--mute);font-variant-numeric:tabular-nums}
 .nownext{margin:8px 0 0}
+
+/* someone in your rooms has finished this one */
+.po .mate{position:absolute;right:5px;bottom:5px;z-index:2;display:flex;align-items:center;gap:3px;padding:2px 7px 2px 2px;border-radius:999px;
+  background:rgba(21,19,32,.72);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);color:#fff;font:800 11px/1 var(--head)}
+.po .mate .av{width:18px;height:18px}
+.po .mate .av svg{width:18px;height:18px}
+.po .mate i{font-style:normal;opacity:.7;font-weight:700}
+.grid.editing .po .mate{display:none}
+@media (prefers-reduced-motion:no-preference){.po .mate{animation:mateIn .4s cubic-bezier(.2,1.3,.4,1) both}}
+@keyframes mateIn{from{opacity:0;transform:scale(.6)}}
 </style>
 </head>
 <body>
@@ -4216,7 +4226,7 @@ function onFollowEntry(row) {
    to you,
    each of which you might want to do something about. The first belongs on the tab
    that holds the feed. The second needs somewhere of its own, so it got the bell. */
-let unseen = { entries:[], followers:[], likes:[], games:[] };
+let unseen = { entries:[], followers:[], likes:[], games:[], upNext:[] };
 const lastSeen = () => P.lastSeen || new Date(Date.now() - 3*864e5).toISOString();
 /* The bell's own mark. Unlike the feed's, this one starts at the moment you first
    arrive rather than three days back: opening a new bell to a pile of history you have
@@ -4233,10 +4243,13 @@ async function checkNew() {
   if (R) { try { const ids = R.members.map(m => m.id).filter(i => i !== me.id);
     /* limit(100) with no order is an arbitrary hundred rows, so in a busy room the
        newest entries were the ones it could silently fail to count */
-    if (ids.length) { const es = feedRows(await wholeEntries(f => { let x = sb.from("entries").select("id,user_id,created_at,work_id,context,profiles!entries_user_id_fkey(handle)");
+    if (ids.length) { const es = feedRows(await wholeEntries(f => { let x = sb.from("entries").select("id,user_id,created_at,work_id,score,context,profiles!entries_user_id_fkey(id,handle,avatar)");
         if (f) x = x.eq("part", false);
         return x.in("user_id", ids).order("created_at",{ascending:false}).limit(100); }));
-      unseen.entries = es.filter(e => String(e.created_at) > since); } } catch {} }
+      unseen.entries = es.filter(e => String(e.created_at) > since);
+      /* somebody finished a thing you've been meaning to get to: that's for you */
+      const mine = new Set(activeList()?.items || []);
+      unseen.upNext = es.filter(e => mine.has(e.work_id) && String(e.created_at) > mark && !logged(e.work_id)); } } catch {} }
   /* a count could only ever say "somebody". Keeping who lets the row say their name
      and offer the one thing anybody wants to do about it. */
   try { const fol = await q(sb.from("follows")
@@ -4277,7 +4290,7 @@ async function gameNotes() {
       else if (st.current?.matches.some(mt => !mt.mine)) add(`b:${g.bracket.month}:${st.current.r}`, `${esc(st.current.name)} ${st.current.name === "The final" ? "is" : "are"} open in the bracket`); } }
   return out; }
 const gameFresh = n => !(P.gameNoteSeen || []).includes(n.id);
-const noteCount = () => unseen.followers.length + unseen.likes.length + newHands().length + unseen.games.filter(gameFresh).length;
+const noteCount = () => unseen.followers.length + unseen.likes.length + newHands().length + unseen.games.filter(gameFresh).length + unseen.upNext.length;
 function paintDot() {
   const btn = $("nav button[data-tab='doors']");
   if (btn) { const n = unseen.entries.length;
@@ -4296,7 +4309,7 @@ function markSeen() { P.lastSeen = new Date().toISOString(); saveP();
   unseen.entries = []; paintDot(); }
 function markNotesSeen() { P.noteSeen = new Date().toISOString();
   P.gameNoteSeen = [...new Set([...(P.gameNoteSeen || []), ...unseen.games.map(n => n.id)])].slice(-80); saveP();
-  unseen.followers = []; unseen.likes = []; paintDot(); }
+  unseen.followers = []; unseen.likes = []; unseen.upNext = []; paintDot(); }
 
 /* ---------- the bell ----------
    Everything here is somebody doing something to you, and every row offers the thing
@@ -4309,6 +4322,8 @@ function noteList() {
   for (const r of unseen.likes) { const p = r.profiles; if (!p) continue;
     out.push({ kind:"like", at:r.created_at, p, id:"l" + r.entry_id + r.user_id,
       entry:myEntries.find(e => e.id === r.entry_id) }); }
+  for (const e of unseen.upNext) out.push({ kind:"upnext", at:e.created_at, p:e.profiles || { id:e.user_id }, id:"u" + e.id,
+    work:works[e.work_id], score:e.score });
   const fresh = noteSeen();
   for (const h of handIn) out.push({ kind:"hand", at:h.created_at, p:h.sender_p, id:"h" + h.id,
     hand:h, work:works[h.work_id] || h.works, stale:!(String(h.created_at || "") > fresh) });
@@ -4337,6 +4352,7 @@ function noteRow(n) {
   const t = n.work?.title || n.entry?.works?.title || works[n.entry?.work_id]?.title || "";
   const line = n.kind === "follow" ? "started following you"
     : n.kind === "like" ? (t ? `liked what you said about <b>${esc(t)}</b>` : "liked something you wrote")
+    : n.kind === "upnext" ? `finished <b>${esc(t)}</b>, which is on your Up next · ${(n.score / 2).toFixed(1)}\u2605`
     : (t ? `handed you <b>${esc(t)}</b>` : "handed you something");
   const acts = n.kind === "follow"
       ? `<button class="chip ${isFollowing(n.p.id) ? "on" : ""}" data-back="${esc(n.p.id)}">${isFollowing(n.p.id) ? "Following" : "Follow back"}</button>`
@@ -6767,6 +6783,7 @@ function renderShelf() {
   }
   justDealt = justSwept = null;
   wireShelf(); if (shelfEdit) paintEdit();
+  paintMates();
   wireSearch();
   if (P.picked && !logged(P.picked) && works[P.picked]) showResult(works[P.picked]); renderWaiting(); }
 /* openLibraryFilters is gone: it moved both filter rows behind a "Filters" button and
@@ -7688,6 +7705,27 @@ function paintEdit() { const grid = $("#shelfGrid"); if (!grid) return;
     $("button", d).onclick = endShelfEdit; document.body.append(d); buzz(10); } }
 function endShelfEdit() { if (!shelfEdit && !$("#editDock")) return; shelfEdit = false; $("#editDock")?.remove(); renderShelf(); }
 
+/* ---------- your people on your list ----------
+   A poster on your Up next that somebody in your rooms has already finished carries
+   their face and what they gave it, so the list says which ones are worth it. Looked
+   up once every few minutes, then drawn onto whatever's there. */
+let matesAt = 0, matesFor = "", matesRows = [];
+async function paintMates() { const grid = $("#shelfGrid"), L = activeList(); if (!grid || !L?.items.length) return;
+  const people = [...new Set(rooms.flatMap(R => R.members.map(m => m.id)))].filter(id => id !== me.id);
+  if (!people.length) return;
+  const key = L.items.join(",");
+  if (key !== matesFor || Date.now() - matesAt > 300000) {
+    try { matesRows = feedRows(await q(sb.from("entries").select("user_id,work_id,score,rated_on,context,profiles!entries_user_id_fkey(id,handle,avatar)")
+      .in("work_id", L.items).in("user_id", people).limit(500))); matesAt = Date.now(); matesFor = key; } catch { return; } }
+  if ($("#shelfGrid") !== grid) return;
+  const by = {}; for (const e of matesRows) { const cur = (by[e.work_id] ||= {}); if (!cur[e.user_id] || e.rated_on > cur[e.user_id].rated_on) cur[e.user_id] = e; }
+  $$("[data-cell]", grid).forEach(c => { const po = $(".po", c), list = Object.values(by[c.dataset.cell] || {}); if (!po || !list.length || $(".mate", po)) return;
+    list.sort((a, b) => b.score - a.score); const top = list[0];
+    const tag = document.createElement("span"); tag.className = "mate";
+    tag.innerHTML = `${avatar(top.profiles || { id:top.user_id }, "av")}<span class="ms">${(top.score / 2).toFixed(1)}\u2605</span>${list.length > 1 ? `<i>+${list.length - 1}</i>` : ""}`;
+    tag.title = list.map(e => `${e.profiles?.handle || "someone"} ${(e.score / 2).toFixed(1)}`).join(", ");
+    po.setAttribute("aria-description", `${tag.title} in your rooms`);
+    po.appendChild(tag); }); }
 function wireShelf() { const grid = $("#shelfGrid"); if (!grid) return;
   let timer = null, drag = null, moved = false, x0 = 0, y0 = 0;
   const stop = () => { if (timer) { clearTimeout(timer); timer = null; } };
