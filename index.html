@@ -1299,16 +1299,6 @@ section.on > div > *:nth-child(n+6){animation-delay:200ms}
 @media (prefers-reduced-motion:no-preference){.demo{transition:opacity .3s}}
 @keyframes cometTurn{to{transform:rotate(360deg)}}
 svg .comet{transform-box:fill-box;transform-origin:center;animation:cometTurn 4.2s linear infinite}
-.tier{border:1.5px solid var(--line);border-radius:22px;padding:16px 18px;margin-top:12px}
-.tier.paid{background:var(--ink);color:var(--cream);border-color:var(--ink)}
-.tier .h{font-family:var(--head);font-weight:900;font-size:16px;letter-spacing:-.02em}
-.tier.paid .h{color:var(--cream)}
-.tier .price{font-family:var(--head);font-weight:900;font-size:30px;letter-spacing:-.04em;display:block;margin-top:4px}
-.tier ul{margin:12px 0 0 17px;font-size:13px;line-height:1.75;color:var(--mute)}
-.tier.paid ul{color:#D9D2E4}
-.tier .note{font-size:11.5px;line-height:1.5;color:var(--mute);margin-top:12px;padding-top:10px;
-  border-top:1px solid var(--line)}
-.tier.paid .note{color:#B9B1C9;border-color:#332C42}
 /* the deck: the top card square on, the next two peeking behind it */
 .deck{position:relative;height:266px;display:flex;align-items:center;justify-content:center;margin-top:16px}
 .dk{position:absolute;width:172px;aspect-ratio:2/3;border-radius:16px;overflow:hidden;
@@ -8700,25 +8690,24 @@ const cardDark = () => P.cardTheme === "night" || (P.cardTheme !== "day" &&
 /* ---------- what a card is wearing ----------
    A theme changes the ground, the ink that has to sit on it, and the few colours that
    answer to the ground — the footer rule, and the stars, which would otherwise be butter
-   on a butter card. It never touches a number, a layout or a word. That is the whole rule
-   the paid tier is written to: nothing here changes what anyone sees of your taste.
-   Rooms is free, keeps its day-to-night switch, and stays the default. */
+   on a butter card. It never touches a number, a layout or a word: nothing here changes
+   what anyone sees of your taste. Rooms keeps its day-to-night switch and stays the default. */
 const CARD_THEMES = {
-  rooms:  { name:"Rooms",  paid:false, dim:true,  day:CARD.blue, night:CARD.night,
+  rooms:  { name:"Rooms",  dim:true,  day:CARD.blue, night:CARD.night,
             on:"#fff", pale:CARD.pale, paleNight:CARD.palen,
             soft:"rgba(255,255,255,.14)", softNight:"rgba(255,255,255,.10)",
             rule:"rgba(255,255,255,.25)", star:"#FFE86A", empty:"rgba(255,255,255,.28)",
             accent:"#FFE86A", good:"#9EF0C9", warn:"#FFB36B", ranks:["#FFE86A","#9EF0C9","#8FD3FF"] },
-  paper:  { name:"Paper",  paid:true,  dim:false, day:CARD.cream, on:CARD.ink, pale:"#7A7590",
+  paper:  { name:"Paper",  dim:false, day:CARD.cream, on:CARD.ink, pale:"#7A7590",
             soft:"rgba(21,19,32,.09)", rule:"rgba(21,19,32,.18)", star:CARD.blue, empty:"rgba(21,19,32,.14)",
             accent:CARD.blue, good:"#12805A", warn:"#A24A08", ranks:[CARD.blue,"#12805A","#6B3FC4"] },
-  butter: { name:"Butter", paid:true,  dim:false, day:"#FFE86A", on:CARD.ink, pale:"#7A6A16",
+  butter: { name:"Butter", dim:false, day:"#FFE86A", on:CARD.ink, pale:"#7A6A16",
             soft:"rgba(21,19,32,.11)", rule:"rgba(21,19,32,.22)", star:CARD.ink, empty:"rgba(21,19,32,.17)",
             accent:CARD.ink, good:"#12805A", warn:"#8A3D06", ranks:[CARD.ink,"#12805A",CARD.blue] },
-  carbon: { name:"Carbon", paid:true,  dim:true,  day:"#0D0C14", on:"#fff", pale:"#8E88A3",
+  carbon: { name:"Carbon", dim:true,  day:"#0D0C14", on:"#fff", pale:"#8E88A3",
             soft:"rgba(255,255,255,.09)", rule:"rgba(255,255,255,.20)", star:"#FFE86A", empty:"rgba(255,255,255,.22)",
             accent:"#FFE86A", good:"#9EF0C9", warn:"#FFB36B", ranks:["#FFE86A","#9EF0C9","#8FD3FF"] },
-  orchid: { name:"Orchid", paid:true,  dim:true,  day:"#38265F", on:"#fff", pale:"#C6B6E8",
+  orchid: { name:"Orchid", dim:true,  day:"#38265F", on:"#fff", pale:"#C6B6E8",
             soft:"rgba(255,255,255,.12)", rule:"rgba(255,255,255,.24)", star:"#FFE86A", empty:"rgba(255,255,255,.26)",
             accent:"#FFE86A", good:"#9EF0C9", warn:"#FFB36B", ranks:["#FFE86A","#9EF0C9","#8FD3FF"] },
 };
@@ -9091,8 +9080,7 @@ async function openCuts(kind, data, title) {
     <div class="skins" id="skinRow">${Object.entries(CARD_THEMES).map(([k,t]) =>
       `<button data-skin="${esc(k)}" class="${(P.cardSkin||"rooms")===k?"on":""}" aria-label="${esc(t.name)}">
         <span class="sw" style="background:${t.day};${t.dim?"":"box-shadow:inset 0 0 0 1px rgba(21,19,32,.14)"}"></span>
-        <b>${esc(t.name)}</b>${t.paid ? `<i>paid</i>` : ""}</button>`).join("")}</div>
-    <p class="sub skinnote" id="skinNote" hidden></p>
+        <b>${esc(t.name)}</b></button>`).join("")}</div>
     <div class="stack"><button class="btn blue" id="cutSave">Save it</button><button class="btn quiet" id="cutClose">Not now</button></div>
     <p class="msg" id="cutMsg"></p>`);
   /* draw each cut small; the skin picker redraws them, so the choice is seen not described */
@@ -9101,19 +9089,14 @@ async function openCuts(kind, data, title) {
       try { const c = await draw(data); const t = $("#cut-" + i); if (!t) continue;
         const tx = t.getContext("2d"); tx.clearRect(0,0,t.width,t.height); tx.drawImage(c, 0, 0, t.width, t.height); }
       catch (err) { console.warn("cut", i, err); } } };
-  /* nothing takes money yet, so a paid skin works and says what it will be rather than
-     dangling a lock over something that cannot be bought */
-  const paidNote = () => { const el = $("#skinNote"); if (!el) return;
-    const t = cardTheme(); el.hidden = !t.paid;
-    el.textContent = t.paid ? `${t.name} is part of Rooms paid. Free while that's still being made.` : ""; };
   /* an export appeared finished. It assembles once, before the Save button matters. */
   if (!REDUCED) $$("#cutRow button").forEach(b => b.classList.add("drawing"));
-  await drawAll(); paidNote();
+  await drawAll();
   if (!REDUCED) $$("#cutRow button").forEach((b, i) => {
     b.classList.remove("drawing"); b.style.animationDelay = (i * 140) + "ms"; b.classList.add("drawn");
     setTimeout(() => { b.classList.remove("drawn"); b.style.animationDelay = ""; }, 900 + i * 140); });
   $$("[data-skin]").forEach(b => b.onclick = async () => { P.cardSkin = b.dataset.skin; saveP();
-    $$("[data-skin]").forEach(x2 => x2.classList.toggle("on", x2 === b)); paidNote(); await drawAll(); });
+    $$("[data-skin]").forEach(x2 => x2.classList.toggle("on", x2 === b)); await drawAll(); });
   $$("[data-cut]").forEach(b => b.onclick = () => { chosen = +b.dataset.cut;
     $$("[data-cut]").forEach(x2 => x2.classList.toggle("on", x2 === b)); });
   $("#cutClose").onclick = closeSheet;
@@ -9917,38 +9900,6 @@ async function openWork(id) { let w = works[id]; if (!w) { try { const rows = aw
     $$("[data-es]", el).forEach(b => b.onclick = () => { P.entrySort = b.dataset.es; saveP(); paint(); }); };
   paint(); }
 
-/* ---------- what paying would get you ----------
-   A preview, not a till. Nothing here takes money and nothing is gated yet — it exists
-   so the shape can be argued with before any of it is built. The line it draws:
-   everything a friend of yours needs stays free, because a social app with a paywalled
-   half is a broken app. Marks are never in here — those are earned. */
-const TIERS = [
-  { name:"Everyone", price:"Free", paid:false,
-    has:["Logging, rating, tagging","Rooms, agreement, Up next","Who's here and live arrivals",
-         "Every earned mark","Download everything"],
-    note:"Everything that makes the app work for somebody else lives here. This is not a trial, it is the app." },
-  { name:"Rooms, paid", price:"£2/mo", paid:true,
-    has:["Slip skins and card themes","Ring colours — never ring shapes, those are earned",
-         "More than one Up next list","Full history and stats","A look for the room, if the room pays"],
-    note:"Cosmetic and personal. Nothing here changes what anyone sees of your taste, only what it's wearing." },
-];
-function openPaid() {
-  openSheet(`<h3>What paying would get you</h3>
-    <p class="sub">Nothing here is built yet and nothing takes money. It's the shape, written down
-    early so it's easy to keep to.</p>
-    ${TIERS.map(t => `<div class="tier ${t.paid ? "paid" : ""}">
-      <div class="h"><span>${t.name}</span></div>
-      <b class="price">${t.price}</b>
-      <ul>${t.has.map(x => `<li>${esc(x)}</li>`).join("")}</ul>
-      <p class="note">${esc(t.note)}</p></div>`).join("")}
-    <div class="tier"><div class="h"><span>Never</span></div>
-      <ul><li>Buying a mark somebody earned</li><li>Capping how much you can log</li>
-        <li>Paywalling agreement or rooms</li><li>Ads, or selling what people rate</li>
-        <li>Locking your own data behind it</li></ul>
-      <p class="note">Each of these would make money and cost the thing being built.</p></div>
-    <div class="stack"><button class="btn quiet" id="paidClose">Close</button></div>`);
-  $("#paidClose").onclick = closeSheet;
-}
 
 /* ---------- marks ----------
    Records, not achievements: every one of these describes something that already
@@ -10870,8 +10821,7 @@ async function openYou() { let top = { items:[] }; try { top = await ensureMyTop
       <div class="lbl" style="margin-top:0">Set one, and you can sign in without waiting for an email</div>
       <input id="newPw" type="password" autocomplete="new-password" placeholder="at least eight characters">
       <div class="stack"><button class="btn" id="savePw">Save the password</button></div><p class="msg" id="pwMsg"></p></div>`}
-    <div class="stack"><button class="btn ghost" id="paidBtn">What paying would get you</button>
-      <button class="btn ghost" id="importBtn">Import from Letterboxd, Goodreads, Steam</button>
+    <div class="stack"><button class="btn ghost" id="importBtn">Import from Letterboxd, Goodreads, Steam</button>
       <button class="btn ghost" id="bringBtn">Bring another log into this one</button>
       ${sb.__local?``:`<button class="btn ghost" id="takeout">Download everything</button>`}${sb.__local?`<button class="btn ghost" id="backup">Back up the log</button><button class="btn quiet" id="restore">Restore from a backup</button><input type="file" id="restoreFile" accept="application/json" hidden>`:""}<button class="btn quiet" id="signOut">${sb.__local?"Close the log":"Sign out"}</button><button class="btn quiet" id="sClose">Done</button></div><p class="msg" id="sMsg"></p>
     ${blocked.size ? `<details class="fold" id="blockFold"><summary>Blocked \u00b7 ${blocked.size}</summary>
@@ -10979,7 +10929,6 @@ async function openYou() { let top = { items:[] }; try { top = await ensureMyTop
     pk.textContent = shown ? "Show" : "Hide"; pk.setAttribute("aria-label", shown ? "Show the key" : "Hide the key"); };
   $("#importBtn").onclick = openImport;
   const bb2 = $("#bringBtn"); if (bb2) bb2.onclick = openBringOver;
-  const pb = $("#paidBtn"); if (pb) pb.onclick = openPaid;
   $("#sClose").onclick = closeSheet; $("#signOut").onclick = async () => { await pushOff().catch(() => {}); await sb.auth.signOut(); location.reload(); };
   const tk = $("#takeout"); if (tk) tk.onclick = async () => { tk.disabled = true; const was = tk.textContent; tk.textContent = "Gathering…";
     try { const all = await exportEverything();
@@ -11076,7 +11025,7 @@ window.__rooms = { blank, kindBlank, playMatch, coach, logoCheer, logoHere, open
   get meCh(){return meCh}, secondThoughts, againLine, apart, shelfAge, waited, openProfile, openWork,
   setSkin:k => { P.cardSkin = k; saveP(); }, get deckItems(){return deckItems},
   addToShelf, __isSoon:isSoon, __list:activeList,
-  marksFor, openPaid, COMET, loadFounders, get founderIds(){return founderIds},
+  marksFor, COMET, loadFounders, get founderIds(){return founderIds},
   CAB_SORTS, CAB_ORDER, cabinetRows, cabSort, CHART_WINDOWS, chartSince, chartWin, chartFor, competition,
   findPeople, handleMatch, handleDistance, deleteReview, seasonRank, seasonPhase, seasonEntries,
   isSeasonHorror, seasonChallengeFor, renderClubs, renderFriendClubs };
