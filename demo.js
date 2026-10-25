@@ -233,6 +233,12 @@ export function demoSeed() {
     works,
     entries,
     seen:[{ user_id:"me", work_id:"tv:1:s1e1" }, { user_id:"me", work_id:"tv:1:s1e2" }],
+    /* what people are partway through, so the room's "on now" strip has bars and a next episode */
+    nows:[
+      { user_id:"u-ali", work_id:"book:2", started_on:day(12), at:"p. 310 of 496", updated_at:ago(.2) },
+      { user_id:"u-mo", work_id:"tv:2", started_on:day(5), at:"S2 E4", updated_at:ago(.5) },
+      { user_id:"u-cass", work_id:"game:2", started_on:day(9), at:"40%", updated_at:ago(1) },
+    ],
 
     lists:[{ id:"L1", owner:"me", name:"the shelf", created_at:ago(400) }],
     list_items:["film:2","film:4","tv:2","book:3","game:2","film:20","game:20"]

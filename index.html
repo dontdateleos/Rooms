@@ -2197,6 +2197,21 @@ header,nav{-webkit-backdrop-filter:blur(20px) saturate(1.4);backdrop-filter:blur
 .drow .dt small{display:flex;align-items:center;gap:6px;margin-top:4px;font-size:12px;color:var(--mute);flex-wrap:wrap}
 .drow .again{font-weight:800;color:var(--ink);opacity:.7}
 .drow .stars{flex:none}
+
+/* ---------- how far through ---------- */
+.pbar{display:block;height:4px;border-radius:2px;background:color-mix(in srgb,var(--ink) 14%,transparent);overflow:hidden;margin-top:5px;min-width:60px}
+.pbar i{display:block;height:100%;border-radius:2px;background:var(--apricot)}
+.nowpill{position:relative}
+.nowpill .pbar{position:absolute;left:10px;right:10px;bottom:3px;height:3px;margin:0}
+.pslide{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+.pslide input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:28px;padding:0;border:0;background:none;border-radius:0}
+.pslide input[type=range]::-webkit-slider-runnable-track{height:8px;border-radius:4px;background:linear-gradient(90deg,var(--apricot) var(--fill,0%),color-mix(in srgb,var(--ink) 14%,transparent) var(--fill,0%))}
+.pslide input[type=range]::-moz-range-track{height:8px;border-radius:4px;background:color-mix(in srgb,var(--ink) 14%,transparent)}
+.pslide input[type=range]::-moz-range-progress{height:8px;border-radius:4px;background:var(--apricot)}
+.pslide input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;border-radius:50%;background:var(--card);margin-top:-8px;box-shadow:0 2px 6px rgba(21,19,32,.3),inset 0 0 0 2px var(--apricot)}
+.pslide input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:50%;background:var(--card);border:2px solid var(--apricot)}
+.pslide span{font-size:13px;font-weight:700;color:var(--mute);font-variant-numeric:tabular-nums}
+.nownext{margin:8px 0 0}
 </style>
 </head>
 <body>
@@ -2447,10 +2462,10 @@ const KINDS = {
     ticks:[["first","First watch","Rewatch"],["where","At the cinema","At home"]] },
   tv: { label:"TV", room:"TV", plural:"TV", colour:"var(--tv)", verb:"watched", creatorLabel:"Made by", lengthLabel:"Episodes", unit:" eps",
     craft:["the writing","the acting","the look","the season","the cast","the music","the ending","the world","the pacing","the dialogue"],
-    ticks:[["first","First watch","Rewatch"],["where","Finished it","Part way"]] },
+    ticks:[["first","First watch","Rewatch"],["where","Finished it","Didn't finish"]] },
   book: { label:"Book", room:"Books", plural:"Books", colour:"var(--book)", verb:"read", creatorLabel:"Written by", lengthLabel:"Pages", unit:" pp",
     craft:["the writing","the structure","the characters","the ideas","the voice","the world","the ending","the pacing","the dialogue"],
-    ticks:[["first","First read","Reread"],["where","Paper","Audio"]] },
+    ticks:[["first","First read","Reread"],["where","Paper","Audio"],["done","Finished it","Didn't finish"]] },
   game: { label:"Game", room:"Games", plural:"Games", colour:"var(--game)", verb:"played", creatorLabel:"Made by", lengthLabel:"Hours", unit:" h",
     craft:["how it plays","the controls","the art","the sound","the story","the world","the levels","the ending","the pacing"],
     ticks:[["first","First play","Replay"],["where","Finished it","Dropped it"]] }
@@ -5398,7 +5413,8 @@ function tonightCard() {
   const w = nw || next; if (!w) return "";
   const verb = K(w.kind).verb.replace(/^./, c => c.toUpperCase());
   return `<div class="tonight" id="tonight">
-    <button class="tn-main" data-w="${esc(w.id)}">${cover(w)}<span><small>${nw ? "Tonight · you're on" : "Tonight · up next"}</small><b>${esc(w.title)}</b></span></button>
+    <button class="tn-main" data-w="${esc(w.id)}">${cover(w)}<span><small>${nw ? (() => { const pr = progressOf(n, nw);
+        return pr?.next ? `Tonight · next is ${esc(pr.next)}` : pr?.pct != null ? `Tonight · ${pr.pct}% through` : "Tonight · you're on"; })() : "Tonight · up next"}</small><b>${esc(w.title)}</b>${nw ? progressBar(progressOf(n, nw)) : ""}</span></button>
     <button class="tn-log" id="tonightLog" data-log="${esc(w.id)}">${nw ? "Done it" : `${verb} it`}</button>
     <button class="tn-spin" id="tonightSpin" aria-label="Can't decide? Spin the wheel"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="4"/><circle cx="9" cy="9" r="1.4"/><circle cx="15" cy="15" r="1.4"/><circle cx="15" cy="9" r="1.4"/><circle cx="9" cy="15" r="1.4"/></svg></button></div>`; }
 function wireTonight() { const c = $("#tonight"); if (!c) return;
@@ -7205,7 +7221,7 @@ async function paintRoomNow(R) {
   el.innerHTML = pick.map(r => { const w = r.works || works[r.work_id]; if (!w) return "";
     const who = r.user_id === me.id ? "You" : (r.profiles?.handle || "");
     return `<span class="nowpill" data-w="${esc(r.work_id)}">${avatar({ id:r.user_id, handle:who,
-      avatar:r.profiles?.avatar }, "av")}<b>${esc(who)}</b><span>${esc(w.title)} · ${nowLine(r)}</span></span>`;
+      avatar:r.profiles?.avatar }, "av")}<b>${esc(who)}</b><span>${esc(w.title)} · ${nowLine(r)}</span>${progressBar(progressOf(r, w))}</span>`;
   }).join("");
   $$("[data-w]", el).forEach(x => x.onclick = () => openWork(x.dataset.w)); }
 
@@ -7438,6 +7454,18 @@ async function nowFor(ids) {
    plain dates now, so what it says never depends on what time you happen to look. */
 const dayNo = s => { const [y,m,d] = String(s || "").split("-").map(Number);
   return y ? Date.UTC(y, m - 1, d) / 864e5 : NaN; };
+/* ---------- how far through ----------
+   Kept in the same "where you're up to" words people already type, so nothing new has
+   to be stored: "p. 120 of 412", "40%", "S2 E5". From those come a bar for a book
+   and the next episode for a show. */
+function progressOf(n, w = n?.works || works[n?.work_id]) {
+  const at = String(n?.at || "").trim(), len = +w?.length || 0; let m;
+  if ((m = /S\s*(\d+)\s*E\s*(\d+)/i.exec(at))) return { ep:[+m[1], +m[2]], next:`S${m[1]} E${+m[2] + 1}` };
+  if ((m = /(\d{1,3})\s*%/.exec(at))) return { pct:Math.min(100, +m[1]) };
+  if ((m = /(\d+)\s*(?:of|\/)\s*(\d+)/i.exec(at)) && +m[2]) return { pct:Math.min(100, Math.round(m[1] / m[2] * 100)), page:+m[1], of:+m[2] };
+  if (w?.kind === "book" && len && (m = /^(?:p(?:age|g|\.)?\s*)?(\d+)$/i.exec(at))) return { pct:Math.min(100, Math.round(m[1] / len * 100)), page:+m[1], of:len };
+  return null; }
+const progressBar = pr => pr?.pct != null ? `<span class="pbar" role="img" aria-label="${pr.pct}% through"><i style="width:${Math.max(3, pr.pct)}%"></i></span>` : "";
 function nowLine(n) {
   const at = (n.at || "").trim();
   if (at) return esc(at);
@@ -10142,9 +10170,13 @@ async function openWork(id) { let w = works[id]; if (!w) { try { const rows = aw
   /* the middle state: neither meaning to, nor done with */
   const paintNow = () => { const el = $("#wNow"); if (!el) return;
     const n = nowOf(w.id);
+    const pr = n ? progressOf(n, w) : null, pages = w.kind === "book" ? (+w.length || pr?.of || 0) : 0;
     el.innerHTML = isSoon(w) ? "" : n
-      ? `<div class="card nowcard"><div class="h"><span>${nowVerb(w.kind)} now</span><span class="tag dim">${nowLine(n)}</span></div>
-          <input id="nowAt" maxlength="40" placeholder="Where are you up to?" value="${esc(n.at || "")}">
+      ? `<div class="card nowcard"><div class="h"><span>${nowVerb(w.kind)} now</span><span class="tag dim" id="nowTag">${nowLine(n)}</span></div>
+          ${w.kind === "book" ? `<div class="pslide"><input type="range" id="nowPage" min="0" max="${pages || 100}" value="${pr?.page ?? (pr?.pct != null ? Math.round(pr.pct * (pages || 100) / 100) : 0)}" aria-label="How far through">
+            <span id="nowPageSay">${pr?.pct != null ? (pages ? `p. ${pr.page ?? Math.round(pr.pct * pages / 100)} of ${pages} · ${pr.pct}%` : `${pr.pct}%`) : "Slide to where you are"}</span></div>` : ""}
+          ${w.kind === "tv" && pr?.next ? `<p class="sub nownext">Next up: <b>${esc(pr.next)}</b></p>` : ""}
+          <input id="nowAt" maxlength="40" placeholder="${w.kind === "tv" ? "Where are you up to? S2 E5" : w.kind === "book" ? "Or say it: p. 120, or 40%" : "Where are you up to?"}" value="${esc(n.at || "")}">
           <div class="stack"><button class="btn quiet" id="nowStop">Put it down</button></div></div>`
       : `<div class="stack"><button class="btn ghost" id="nowStart">${nowVerb(w.kind)} it</button></div>`;
     const go = $("#nowStart"); if (go) go.onclick = async () => { go.disabled = true;
@@ -10152,7 +10184,13 @@ async function openWork(id) { let w = works[id]; if (!w) { try { const rows = aw
     const stop = $("#nowStop"); if (stop) stop.onclick = async () => { stop.disabled = true;
       if (await stopNow(w.id)) { paintNow(); if (currentTab() === "shelf") renderShelf(); } else stop.disabled = false; };
     const at = $("#nowAt"); if (at) { let t;
-      at.oninput = () => { clearTimeout(t); t = setTimeout(() => startNow(w.id, at.value.trim() || null), 600); }; } };
+      at.oninput = () => { clearTimeout(t); t = setTimeout(() => startNow(w.id, at.value.trim() || null), 600); }; }
+    const sl = $("#nowPage"); if (sl) { let t2;
+      sl.style.setProperty("--fill", (+sl.value / +sl.max * 100) + "%");
+      sl.oninput = () => { const v = +sl.value, max = +sl.max, pct = Math.round(v / max * 100); sl.style.setProperty("--fill", pct + "%");
+        const words = pages ? `p. ${v} of ${pages}` : `${pct}%`;
+        $("#nowPageSay").textContent = pages ? `${words} · ${pct}%` : words; if (at) at.value = words;
+        clearTimeout(t2); t2 = setTimeout(async () => { await startNow(w.id, words); const tg = $("#nowTag"); if (tg) tg.innerHTML = nowLine(nowOf(w.id)); }, 500); }; } };
   paintNow();
   const hb = $("#wHand"); if (hb) hb.onclick = () => openHand(w);
   /* a club is a list with a deadline, so putting something in one belongs on the title
@@ -10367,7 +10405,12 @@ async function loadSeen() {
 }
 async function tickEpisode(w, on) {
   await ensurePart(w);
-  if (on) { mySeen.add(w.id); try { await q(sb.from("seen").upsert({ user_id:me.id, work_id:w.id })); } catch { mySeen.delete(w.id); throw 0; } }
+  if (on) { mySeen.add(w.id); try { await q(sb.from("seen").upsert({ user_id:me.id, work_id:w.id })); } catch { mySeen.delete(w.id); throw 0; }
+    /* ticking an episode is saying where you're up to: the show goes into what you're on,
+       at the furthest episode you've ticked, and the room sees it */
+    const p = partOf(w.id), show = showOf(w.id);
+    if (p?.episode != null && !logged(show)) { const cur = progressOf(nowOf(show), works[show])?.ep;
+      if (!cur || p.season > cur[0] || (p.season === cur[0] && p.episode > cur[1])) startNow(show, `S${p.season} E${p.episode}`).catch(() => {}); } }
   else { mySeen.delete(w.id); try { await q(sb.from("seen").delete().eq("user_id", me.id).eq("work_id", w.id)); } catch { mySeen.add(w.id); throw 0; } }
 }
 /* your latest word on one part, which is what its row shows */
