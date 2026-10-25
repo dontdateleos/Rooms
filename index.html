@@ -2180,6 +2180,23 @@ html[data-theme="dark"] .swatches button{box-shadow:inset 0 0 0 2px rgba(255,255
 .askans:has(> .askw:only-child) .aska small{font-size:13px;-webkit-line-clamp:5;align-self:start}
 /* header and bar: properly frosted, so what's underneath is a colour, not words */
 header,nav{-webkit-backdrop-filter:blur(20px) saturate(1.4);backdrop-filter:blur(20px) saturate(1.4)}
+
+/* ---------- the diary ---------- */
+.cabdiary.on{background:var(--ink);color:var(--cream);border-color:var(--ink)}
+.dmonth{display:flex;align-items:baseline;justify-content:space-between;margin:18px 2px 8px;font-family:var(--head);font-weight:900;font-size:18px;letter-spacing:-.02em}
+.dmonth em{font-style:normal;font-size:12px;font-weight:800;color:var(--mute)}
+.dlist{padding:4px 14px;margin-top:0}
+.drow{display:flex;align-items:center;gap:12px;width:100%;background:none;border:0;border-bottom:1px solid var(--line);padding:10px 0;color:var(--ink);text-align:left;font:inherit;cursor:pointer}
+.drow:last-child{border-bottom:0}
+.dday{flex:none;width:30px;text-align:center;line-height:1}
+.dday b{display:block;font:900 20px/1 var(--head);letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.dday small{display:block;font-size:10px;font-weight:800;color:var(--mute);text-transform:uppercase;letter-spacing:.06em;margin-top:3px}
+.drow .co{width:34px;height:50px;border-radius:7px;flex:none;object-fit:cover}
+.drow .dt{flex:1;min-width:0}
+.drow .dt b{display:block;font:800 15px/1.2 var(--head);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.drow .dt small{display:flex;align-items:center;gap:6px;margin-top:4px;font-size:12px;color:var(--mute);flex-wrap:wrap}
+.drow .again{font-weight:800;color:var(--ink);opacity:.7}
+.drow .stars{flex:none}
 </style>
 </head>
 <body>
@@ -3788,17 +3805,19 @@ async function pushKeepUp() { try {
   if (had && had !== key) { await sub.unsubscribe(); sub = await (await navigator.serviceWorker.ready).pushManager.subscribe({ userVisibleOnly:true, applicationServerKey:keyBytes(key) }); }
   await pushSave(sub); } catch {} }
 /* tell a room, or one person. Never in the way: if it doesn't go, nothing else stops. */
-async function notify({ room = null, to = null, title, body = "", tag = "", sec = "" }) {
+async function notify({ room = null, to = null, title, body = "", tag = "", sec = "", kind = room ? "activity" : null }) {
   if (DEMO || sb.__local || (!room && !to)) return;
   try { const { data } = await sb.auth.getSession(); const tok = data?.session?.access_token; if (!tok) return;
     const url = `${location.origin}${location.pathname}${room ? `#room=${room}${sec ? "&sec=" + sec : ""}` : ""}`;
     fetch(`${proxy()}/push/send`, { method:"POST", headers:{ "Content-Type":"application/json", Authorization:`Bearer ${tok}` },
-      body:JSON.stringify({ room, to, title, body, url, tag }) }).catch(() => {}); } catch {} }
+      body:JSON.stringify({ room, to, title, body, url, tag, kind }) }).catch(() => {}); } catch {} }
 /* opened from a notification: go to the room it was about */
 function takeRoomLink() { const m = /[#&]room=([\w-]{8,40})(?:&sec=(\w+))?/.exec(location.hash); if (!m) return;
   history.replaceState(null, "", location.pathname + location.search);
   if (rooms.some(r => r.id === m[1])) { P.activeRoom = m[1]; P.feed = "room"; P.feedPicked = true; if (m[2]) P.roomSec = m[2]; saveP(); } }
-addEventListener("hashchange", () => { if (/[#&]room=/.test(location.hash) && me?.id) { takeRoomLink(); switchTab("doors"); } });
+addEventListener("hashchange", () => { if (!me?.id) return;
+  if (/[#&]room=/.test(location.hash)) { takeRoomLink(); switchTab("doors"); }
+  else if (/^#seasons\b/.test(location.hash)) { history.replaceState(null, "", location.pathname + location.search); P.clubTab = "season"; switchTab("clubs"); } });
 /* the switch, wherever it's shown */
 async function pushSwitchHTML() {
   if (pushNeedsHome()) return `<p class="sub">To get notifications on an iPhone, add Rooms to your Home Screen first: Share → Add to Home Screen, then open it from there.</p>`;
@@ -5064,7 +5083,9 @@ async function enter() {
   await despite("your invite", useInvite());
   takeRoomLink(); pushKeepUp(); takeShare();
   booting = true;
-  switchTab("doors"); movePill(true); checkNew(); joinMeChannel();
+  /* a "season ends in three nights" notification opens on the season */
+  const toSeasons = /^#seasons\b/.test(location.hash); if (toSeasons) { history.replaceState(null, "", location.pathname + location.search); P.clubTab = "season"; }
+  switchTab(toSeasons ? "clubs" : "doors"); movePill(true); checkNew(); joinMeChannel();
   if (!P.onboarded && !myEntries.length) setTimeout(openWelcome, 400);
 }
 function paintMeAv() { const el = $("#meAv"); if (el) el.innerHTML = avSVG(avFor(me)); }
@@ -5637,6 +5658,22 @@ function openFeedPick() {
   wireRoomButtons();
   $$("[data-fp]").forEach(b => b.onclick = () => { closeSheet();
     pagerFrom = { id:"pager", key:placeNow(), mark:$("#pager .pgcur")?.innerHTML || "" }; goPlace(b.dataset.fp); }); }
+/* how loud this room is on your phone. Everything: when someone finishes something, the
+   week's question, voting, watch nights. Just for me: only what's addressed to you —
+   replies, likes, hand-overs, answers to your asks. Nothing: the room keeps quiet. */
+const ROOM_NOTE_SAY = { all:"Who finished what, this week's question, voting and watch nights — and anything for you.",
+  me:"Only what's for you: replies, likes, things handed to you, answers to your asks.", off:"Nothing from this room reaches your phone." };
+async function wireRoomNote(R) { const seg = $("#roomNote"); if (!seg) return;
+  let cur = "all";
+  const paint = () => { $$("[data-rn]", seg).forEach(b => b.classList.toggle("on", b.dataset.rn === cur)); const t = $("#roomNoteSay"); if (t) t.textContent = ROOM_NOTE_SAY[cur]; };
+  paint();
+  try { const [row] = await q(sb.from("room_notification_preferences").select("muted,activity,reminders").eq("room_id", R.id).eq("user_id", me.id).limit(1));
+    if (row) cur = row.muted ? "off" : (!row.activity && !row.reminders) ? "me" : "all"; paint(); } catch {}
+  $$("[data-rn]", seg).forEach(b => b.onclick = async () => { const was = cur; cur = b.dataset.rn; paint(); buzz(5);
+    if (DEMO) return;
+    try { await q(sb.from("room_notification_preferences").upsert({ room_id:R.id, user_id:me.id, muted:cur === "off",
+        activity:cur === "all", reminders:cur === "all", mentions:cur !== "off", updated_at:new Date().toISOString() }));
+    } catch (e) { cur = was; paint(); oops(e, "Couldn't change that"); } }); }
 /* everything about the room that isn't the room itself: who's in it, the code, the way out */
 function openRoomMenu(R) {
   openSheet(`<h3>${esc(R.name)}</h3>
@@ -5644,12 +5681,16 @@ function openRoomMenu(R) {
     <div class="lbl" style="margin-top:14px">The room's colour</div>
     <div class="swatches">${ROOM_COLOURS.map(c => `<button class="${roomColour(R) === c ? "on" : ""}" data-rcol="${c}" style="background:var(--${c})" aria-label="${c}"></button>`).join("")}</div>
     <div class="chips" id="roomSeats" style="margin-top:12px">${R.members.map(m => `<span class="chip ${m.id===me.id?"on":""}" data-prof="${esc(m.id)}">${esc(m.handle)}</span>`).join("")}<button class="chip" id="invite">+ bring someone in</button></div>
+    ${pushCan() ? `<div class="lbl" style="margin-top:16px">Notifications from here</div>
+    <div class="seg" id="roomNote">${[["all","Everything"],["me","Just for me"],["off","Nothing"]].map(([k, l]) => `<button data-rn="${k}">${l}</button>`).join("")}</div>
+    <p class="sub" id="roomNoteSay" style="margin-top:6px"></p>` : ""}
     <div class="stack">
       <button class="btn soft" id="roomCode">Copy the code · ${esc(R.code)}</button>
       <div class="room-manage-actions"><button class="btn ghost" id="newRoom">Open another room</button><button class="btn ghost" id="joinRoom">Join with a code</button></div>
       <button class="btn quiet" id="leaveRoom">Leave this room</button></div>
     ${DEMO ? `<p class="demoHint">Demo mode: room changes are preview-only.</p>` : ""}<p class="msg" id="roomMsg"></p>`);
   wireRoomButtons();
+  wireRoomNote(R);
   $$("#roomSeats [data-prof]").forEach(x => x.onclick = () => { closeSheet(); openProfile(x.dataset.prof); });
   $("#invite").onclick = () => openInvite(R);
   $$("[data-rcol]").forEach(b => b.onclick = async () => { const c = b.dataset.rcol;
@@ -6335,7 +6376,8 @@ function renderCabinet() {
   body.innerHTML = `${pagerHTML(places, P.cabKind || "", { id:"cabPager", mode:"chips", allLabel:"All" })}
     ${logCount() ? `<div class="cabbar">
         <p class="sub" id="cabSub"></p>
-        <button class="cabsort" id="cabSortBtn" aria-label="Sort what you've finished">${CAB_SORTS[cabSort()]}${CHEV}</button>
+        <button class="cabsort cabdiary ${P.cabView === "diary" ? "on" : ""}" id="cabDiaryBtn" aria-pressed="${P.cabView === "diary"}">Diary</button>
+        ${P.cabView === "diary" ? "" : `<button class="cabsort" id="cabSortBtn" aria-label="Sort what you've finished">${CAB_SORTS[cabSort()]}${CHEV}</button>`}
         <button class="cabfind ${cabQ ? "on" : ""}" id="cabFindBtn" aria-label="Search what you've finished" aria-expanded="${cabQ ? "true" : "false"}">${LENS}</button>
       </div>
       <input id="cabQ" class="searchlog" type="search" placeholder="Find something in here" autocomplete="off" value="${esc(cabQ)}"${cabQ ? "" : " hidden"}>
@@ -6449,6 +6491,7 @@ function kindBlank(k) {
   return blank(`var(--${KIND_TONE[k]})`, "+", k === "tv" ? "No shows yet" : `No ${noun} yet`, body, [["cabLogKind", k === "tv" ? "Log a show" : `Log ${k === "book" ? "a book" : k === "game" ? "a game" : "a film"}`, "soft"]]); }
 function paintTrays() {
   const el = $("#cabTrays"); if (!el) return;
+  if (P.cabView === "diary") return paintDiary(el);
   const rows = cabinetRows();
   const by = {}; rows.forEach(r => (by[r.w.kind] ||= []).push(r));
   const kinds = CAB_ORDER.filter(k => by[k]?.length);
@@ -6537,7 +6580,45 @@ function paintFacets() { const el = $("#cabFacets"); if (!el) return;
     $("#facetQ")?.addEventListener("input", e => { const q = lc(e.target.value).trim();
       $$("#sheetBody [data-fv]").forEach(x => x.hidden = !!q && !lc(x.dataset.fv.slice(2)).includes(q)); }); });
 }
+/* ---------- the diary ----------
+   Finished is a shelf: one card per thing, in an order. The diary is the other way of
+   looking: every time you finished something, by date, a month at a time, with a mark
+   on the second time round. The same filters (medium, favourites-by, search) narrow it. */
+let diaryShown = 120;
+function diaryRows() {
+  const qtext = lc(cabQ).trim();
+  return myEntries.filter(e => !isPart(e.work_id) && !isBefore(e) && works[e.work_id])
+    .filter(e => !P.cabKind || kindOf(e.work_id) === P.cabKind)
+    .filter(e => !cabFacet || cabFacetsOf(works[e.work_id]).includes(cabFacet))
+    .filter(e => { if (!qtext) return true; const w = works[e.work_id]; return lc([w.title, w.creator, w.year].filter(Boolean).join(" ")).includes(qtext); })
+    .sort((a, b) => String(b.rated_on || "").localeCompare(String(a.rated_on || "")) || String(b.created_at || "").localeCompare(String(a.created_at || ""))); }
+function paintDiary(el) {
+  const rows = diaryRows(), sub = $("#cabSub");
+  if (sub) sub.innerHTML = rows.length ? `${rows.length} ${rows.length === 1 ? "log" : "logs"}${cabFacet ? ` ${esc(facetPhrase(cabFacet))}` : ""}` : "Nothing in the diary yet";
+  if (!rows.length) { el.innerHTML = cabQ ? `<p class="empty">Nothing in here matches \u201c${esc(cabQ)}\u201d.</p>`
+      : blank("var(--sky)", "\u25ef", "Nothing in the diary yet", "Every time you finish something it goes here, under the day you finished it.", [["cabShelf", "Log something you've finished", "soft"]]);
+    const bk = $("#cabShelf"); if (bk) bk.onclick = () => openAdd(); return; }
+  /* which logs were a second time round: anything with an earlier log of the same thing */
+  const firsts = {}; myEntries.slice().sort((a, b) => String(a.rated_on || "").localeCompare(String(b.rated_on || ""))).forEach(e => { if (!(e.work_id in firsts)) firsts[e.work_id] = e.id; });
+  const show = rows.slice(0, diaryShown); let month = "", html = "";
+  for (const e of show) { const w = works[e.work_id], d = new Date(String(e.rated_on || e.created_at).slice(0, 10) + "T12:00:00");
+    const m = d.toLocaleDateString(undefined, { month:"long", year:"numeric" });
+    if (m !== month) { if (month) html += `</div>`; month = m;
+      const n = rows.filter(x => { const y = new Date(String(x.rated_on || x.created_at).slice(0, 10) + "T12:00:00"); return y.getMonth() === d.getMonth() && y.getFullYear() === d.getFullYear(); }).length;
+      html += `<div class="dmonth"><span>${esc(m)}</span><em>${n}</em></div><div class="card dlist">`; }
+    const again = firsts[e.work_id] && firsts[e.work_id] !== e.id;
+    html += `<button class="drow" data-work="${esc(w.id)}" type="button">
+      <span class="dday"><b>${d.getDate()}</b><small>${esc(d.toLocaleDateString(undefined, { weekday:"short" }))}</small></span>
+      ${cover(w)}
+      <span class="dt"><b>${esc(w.title)}</b><small>${tag(w.kind)} ${esc(w.year || "")}${again ? ` <span class="again" title="Again">\u21bb again</span>` : ""}${e.private ? ` <span class="tag dim">just me</span>` : ""}</small></span>
+      ${stars(e.score, "sm")}</button>`; }
+  html += `</div>`;
+  if (rows.length > show.length) html += `<div class="stack"><button class="btn quiet" id="diaryMore">Show more · ${rows.length - show.length} earlier</button></div>`;
+  el.innerHTML = html;
+  $$(".drow", el).forEach(r => r.onclick = () => openWork(r.dataset.work));
+  const more = $("#diaryMore"); if (more) more.onclick = () => { diaryShown += 200; paintDiary(el); }; }
 function wireCabinet() {
+  const db = $("#cabDiaryBtn"); if (db) db.onclick = () => { P.cabView = P.cabView === "diary" ? "" : "diary"; diaryShown = 120; saveP(); buzz(5); renderCabinet(); };
   const sb2 = $("#cabSortBtn"); if (sb2) sb2.onclick = async () => {
     const v = await openAsk(`<h3>Sort what you've finished</h3><div class="stack">${Object.entries(CAB_SORTS).map(([k, l]) =>
       `<button class="btn ${cabSort() === k ? "" : "quiet"}" data-sortpick="${k}">${l}</button>`).join("")}</div>
@@ -10632,6 +10713,13 @@ function openLog(w, edit = null, preset = 0) { const cfg = K(w.kind); const love
         try { await q(sb.from("entries").delete().eq("id", saved.id)); await loadMine(); unrankIfGone(w.id); refresh();
           say("Taken back"); } catch (err) { oops(err, "Couldn't take that back"); } }, 6);
       if (myEntries.filter(x => !isBefore(x)).length === 1) setTimeout(() => firstOne(w), 700);
+      /* your rooms hear about it — one line each, and the next one replaces it rather than
+         stacking, so a busy evening of logging is one notification, not five */
+      if (!edit?.id && who !== "me" && !isPart(w.id)) { const st = saved.score / 2, stars = "★".repeat(Math.floor(st)) + (st % 1 ? "½" : "");
+        const nt = noteText(saved.note || "").replace(/\|\|/g, "").slice(0, 90);
+        for (const R of rooms) if (R.members.length > 1) notify({ room:R.id, kind:"activity", tag:"log-" + R.id,
+          title:`${me.handle} ${K(w.kind).verb === "read" ? "read" : K(w.kind).verb === "played" ? "played" : "watched"} ${w.title}`,
+          body:`${stars}${nt ? ` · “${nt}”` : ""}` }); }
     } catch (err) { $("#wMsg").textContent = /private/.test(err.message) ? "“Just me” isn't switched on yet. Save it for everyone or the room for now." : err.message; $("#wSave").disabled = false; } }; }
 
 /* the very first thing anybody logs gets a moment of its own: where it went, and the
@@ -11063,7 +11151,7 @@ async function openYou() { let top = { items:[] }; try { top = await ensureMyTop
       <div class="stack"><button class="btn" id="savePw">Save the password</button></div><p class="msg" id="pwMsg"></p></div>`}
     <div class="stack"><button class="btn ghost" id="importBtn">Import a log from another app</button>
       <button class="btn ghost" id="bringBtn">Bring another log into this one</button>
-      ${sb.__local?``:`<button class="btn ghost" id="takeout">Download everything</button>`}${sb.__local?`<button class="btn ghost" id="backup">Back up the log</button><button class="btn quiet" id="restore">Restore from a backup</button><input type="file" id="restoreFile" accept="application/json" hidden>`:""}<button class="btn quiet" id="signOut">${sb.__local?"Close the log":"Sign out"}</button><button class="btn quiet" id="sClose">Done</button></div><p class="msg" id="sMsg"></p>
+      ${sb.__local?``:`<button class="btn ghost" id="takeout">Download everything</button><button class="btn quiet" id="takeoutCsv">Download your diary as a spreadsheet</button>`}${sb.__local?`<button class="btn ghost" id="backup">Back up the log</button><button class="btn quiet" id="restore">Restore from a backup</button><input type="file" id="restoreFile" accept="application/json" hidden>`:""}<button class="btn quiet" id="signOut">${sb.__local?"Close the log":"Sign out"}</button><button class="btn quiet" id="sClose">Done</button></div><p class="msg" id="sMsg"></p>
     ${blocked.size ? `<details class="fold" id="blockFold"><summary>Blocked \u00b7 ${blocked.size}</summary>
       <p class="sub">Neither of you sees the other. Letting somebody back in does not put
         back the following that blocking undid.</p>
@@ -11170,6 +11258,17 @@ async function openYou() { let top = { items:[] }; try { top = await ensureMyTop
   $("#importBtn").onclick = openImport;
   const bb2 = $("#bringBtn"); if (bb2) bb2.onclick = openBringOver;
   $("#sClose").onclick = closeSheet; $("#signOut").onclick = async () => { await pushOff().catch(() => {}); await sb.auth.signOut(); location.reload(); };
+  /* a CSV Letterboxd can import as it is (films come back with their TMDB ids), with every
+     other medium alongside in the same columns */
+  const tc = $("#takeoutCsv"); if (tc) tc.onclick = () => { const cell = v => { const t = String(v ?? ""); return /[",\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t; };
+    const firsts = {}; myEntries.slice().sort((a, b) => String(a.rated_on || "").localeCompare(String(b.rated_on || ""))).forEach(e => { if (!(e.work_id in firsts)) firsts[e.work_id] = e.id; });
+    const rows = myEntries.filter(e => !isPart(e.work_id) && works[e.work_id]).map(e => { const w = works[e.work_id];
+      return [w.kind === "film" ? w.id.split(":")[1] : "", w.title, w.year || "", w.creator || "", (e.score / 2).toFixed(1).replace(/\.0$/, ""), isBefore(e) ? "" : e.rated_on || "",
+        firsts[e.work_id] !== e.id, (e.loved || []).join(", "), noteText(e.note || ""), K(w.kind).label]; });
+    const csv = [["tmdbID", "Title", "Year", "Directors", "Rating", "WatchedDate", "Rewatch", "Tags", "Review", "Medium"], ...rows].map(r => r.map(cell).join(",")).join("\n");
+    const url = URL.createObjectURL(new Blob([csv], { type:"text/csv" })), a = document.createElement("a");
+    a.href = url; a.download = `rooms-diary-${me.handle}-${today()}.csv`; a.click(); setTimeout(() => URL.revokeObjectURL(url), 4000);
+    say(`${rows.length} ${rows.length === 1 ? "log" : "logs"} downloaded`, "good"); };
   const tk = $("#takeout"); if (tk) tk.onclick = async () => { tk.disabled = true; const was = tk.textContent; tk.textContent = "Gathering…";
     try { const all = await exportEverything();
       downloadJSON(all, `rooms-${me.handle}-${today()}.json`);

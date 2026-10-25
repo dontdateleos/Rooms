@@ -15,6 +15,10 @@
  *   /i/<code>/<app path> → an invite page with the room's name for chat previews,
  *                     which then sends people on to the app
  *
+ * and once an hour, on its own (the [triggers] cron in wrangler.toml), the room's
+ * reminders: this week's question is up, voting's open, watch night tonight, a season
+ * about to end. Times are the rooms' local time — TZ, default Australia/Sydney.
+ *
  * notifications also need (once — tools/push-keys.mjs sets the first two for you):
  *   wrangler secret put VAPID_PUBLIC
  *   wrangler secret put VAPID_PRIVATE
@@ -27,6 +31,7 @@
 const CACHE = { tmdb: 60 * 60 * 24, ol: 60 * 60 * 24, igdb: 60 * 60 * 12 };
 
 export default {
+  async scheduled(event, env, ctx) { ctx.waitUntil(runSchedule(env).catch(() => {})); },
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
@@ -263,17 +268,79 @@ async function pushSend(request, env, ctx, cors) {
   const svc = env.SUPABASE_SERVICE_KEY;
   const rpc = (fn, args) => fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, { method:"POST",
     headers:{ "Content-Type":"application/json", apikey:svc, Authorization:`Bearer ${svc}` }, body:JSON.stringify(args) });
-  const r = await rpc("push_targets_for", { p_sender:sender, p_room:b.room || null, p_user:b.to || null });
+  /* "activity" (somebody finished something) and "reminders" can be turned off per room;
+     anything else is about the person themselves */
+  const kind = b.kind === "activity" || b.kind === "reminders" ? b.kind : null;
+  const r = await rpc("push_targets_for", { p_sender:sender, p_room:b.room || null, p_user:b.to || null, p_kind:kind });
   if (!r.ok) return json({ error:"couldn't check who to tell" }, 502, cors);
-  const PUSH_HOSTS = /^https:\/\/(fcm\.googleapis\.com|updates\.push\.services\.mozilla\.com|web\.push\.apple\.com|[a-z0-9.-]+\.push\.apple\.com|[a-z0-9.-]+\.notify\.windows\.com)\//;
-  const subs = (await r.json()).filter(s => PUSH_HOSTS.test(s.endpoint)).slice(0, 50);
+  const out = await deliver(env, await r.json(), note, ctx);
+  return json(out, 200, cors);
+}
+const PUSH_HOSTS = /^https:\/\/(fcm\.googleapis\.com|updates\.push\.services\.mozilla\.com|web\.push\.apple\.com|[a-z0-9.-]+\.push\.apple\.com|[a-z0-9.-]+\.notify\.windows\.com)\//;
+const svcRpc = (env, fn, args) => fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, { method:"POST",
+  headers:{ "Content-Type":"application/json", apikey:env.SUPABASE_SERVICE_KEY, Authorization:`Bearer ${env.SUPABASE_SERVICE_KEY}` }, body:JSON.stringify(args) });
+async function deliver(env, targets, note, ctx) {
+  const subs = (targets || []).filter(s => PUSH_HOSTS.test(s.endpoint)).slice(0, 200);
   const payload = JSON.stringify(note);
   const results = await Promise.all(subs.map(async s => {
     try { const res = await fetch(s.endpoint, { method:"POST", body:await encryptFor(s, payload), headers:{
         "Content-Encoding":"aes128gcm", "Content-Type":"application/octet-stream", TTL:"86400", Urgency:"normal",
         ...(note.tag ? { Topic:note.tag.replace(/[^\w-]/g, "").slice(0, 32) } : {}),
         Authorization:`vapid t=${await vapidJWT(env, s.endpoint)}, k=${env.VAPID_PUBLIC}` } });
-      if (res.status === 404 || res.status === 410) ctx.waitUntil(rpc("push_gone", { p_endpoint:s.endpoint }).catch(() => {}));
+      if (res.status === 404 || res.status === 410) { const gone = svcRpc(env, "push_gone", { p_endpoint:s.endpoint }).catch(() => {}); if (ctx) ctx.waitUntil(gone); else await gone; }
       return res.ok; } catch { return false; } }));
-  return json({ sent:results.filter(Boolean).length, of:subs.length }, 200, cors);
+  return { sent:results.filter(Boolean).length, of:subs.length };
+}
+
+/* ---------- the room's own schedule ----------
+   Run every hour; each reminder belongs to one local hour, so it goes out once. The
+   question each room gets is worked out exactly as the app works it out (same list,
+   same hash of room and week), so the notification and the room always agree. */
+const PROMPTS = [
+  "Something you'd show someone to make them cry", "The one you'd defend to the death",
+  "A perfect thing to put on when you're ill", "Something with an ending that ruined your week",
+  "Better the second time", "The best thing you've finished that nobody else has heard of",
+  "Something to give a stranger on a train", "A guilty pleasure, minus the guilt",
+  "Something that made you want to go somewhere", "The scariest thing you've finished",
+  "Safe to put on with your parents", "Your comfort pick",
+  "Something that changed your mind about a whole genre", "Far too long, and you'd still do it again",
+  "Something you finished in one sitting", "The one that proves you have taste",
+  "Better than its reputation", "The best opening ten minutes",
+  "Something that made you laugh out loud", "The one you'd save from a burning house",
+  "A first-date pick", "Something you'd recommend to exactly one person in this room",
+  "The most beautiful thing you've finished", "Something you think about more than you'd admit",
+  "Everyone should be made to finish this once" ];
+function avHash(s) { let h = 2166136261; for (const ch of String(s || "?")) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return Math.abs(h); }
+/* the seasons, as the app has them — only the end matters here */
+const SEASON_ENDS = [["31 Nights In", "2026-10-01", "2026-10-31"], ["Long Nights", "2026-11-01", "2026-12-31"], ["The Catch-Up", "2027-01-01", "2027-02-28"]];
+function localNow(tz) {
+  const parts = Object.fromEntries(new Intl.DateTimeFormat("en-AU", { timeZone:tz, year:"numeric", month:"2-digit", day:"2-digit",
+    hour:"2-digit", hourCycle:"h23", weekday:"short" }).formatToParts(new Date()).map(p => [p.type, p.value]));
+  const ymd = `${parts.year}-${parts.month}-${parts.day}`;
+  const wd = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].indexOf(parts.weekday);   /* Monday is 0, as in the app */
+  const d = new Date(ymd + "T12:00:00Z"); d.setUTCDate(d.getUTCDate() - wd);
+  return { ymd, hour:+parts.hour, wd, week:d.toISOString().slice(0, 10) }; }
+const days = (a, b) => Math.round((Date.parse(b + "T12:00:00Z") - Date.parse(a + "T12:00:00Z")) / 864e5);
+async function runSchedule(env, at = localNow(env.TZ || "Australia/Sydney")) {
+  if (!env.VAPID_PUBLIC || !env.VAPID_PRIVATE || !env.SUPABASE_SERVICE_KEY) return { skipped:"not set up" };
+  const { ymd, hour, wd, week } = at, sent = [];
+  const toRoom = async (room, note) => { const r = await svcRpc(env, "push_targets_room", { p_room:room, p_kind:"reminders" });
+    if (r.ok) sent.push(await deliver(env, await r.json(), note)); };
+  const want = (wd === 0 && hour === 9) || (wd === 4 && hour === 18) || hour === 17;
+  if (want) {
+    const r = await svcRpc(env, "push_schedule", { p_week:week, p_today:ymd });
+    const rooms = r.ok ? await r.json() : [];
+    for (const R of rooms) { const link = `./#room=${R.room_id}&sec=play`;
+      if (wd === 0 && hour === 9) await toRoom(R.room_id, { title:`${R.name}: this week's question`,
+        body:`“${PROMPTS[avHash(R.room_id + ":" + week) % PROMPTS.length]}” — answer from your log.`, url:link, tag:`prompt-${R.room_id}`.slice(0, 60) });
+      if (wd === 4 && hour === 18 && R.answers >= 2) await toRoom(R.room_id, { title:`Voting's open in ${R.name}`,
+        body:`${R.answers} answers to this week's question. Pick your favourite before Sunday.`, url:link, tag:`prompt-${R.room_id}`.slice(0, 60) });
+      if (hour === 17 && R.night) await toRoom(R.room_id, { title:`Watch night tonight in ${R.name}`,
+        body:"Vote on what you're watching before it starts.", url:link, tag:`night-${R.room_id}`.slice(0, 60) }); } }
+  /* three nights before a season ends, everybody who's been logging hears about it once */
+  if (hour === 18) for (const [name, starts, ends] of SEASON_ENDS) if (days(ymd, ends) === 2) {
+    const r = await svcRpc(env, "push_targets_season", { p_since:starts });
+    if (r.ok) sent.push(await deliver(env, await r.json(), { title:`${name} ends in three nights`,
+      body:"Three nights left to get your medals. Seasons has where you're up to.", url:"./#seasons", tag:"season-end" })); }
+  return { at, sent };
 }

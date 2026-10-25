@@ -14,3 +14,9 @@
 name = "rooms"
 main = "worker.js"
 compatibility_date = "2026-09-01"
+
+# once an hour the worker sends the rooms' reminders (each belongs to one local hour, so
+# it goes out once): this week's question, voting open, watch night, a season ending.
+# Local time is TZ (default Australia/Sydney):  wrangler secret put TZ  — or [vars] TZ = "..."
+[triggers]
+crons = ["0 * * * *"]

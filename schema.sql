@@ -1510,3 +1510,80 @@ drop policy if exists room_ask_answers_own on room_ask_answers;
 create policy room_ask_answers_own on room_ask_answers for update to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
 drop policy if exists room_ask_answers_drop on room_ask_answers;
 create policy room_ask_answers_drop on room_ask_answers for delete to authenticated using (user_id = auth.uid());
+
+-- ---------------------------------------------------------------------------
+-- v31: notifications that come to you, and a say over them per room.
+-- Two new kinds of message: "activity" (somebody in the room finished something) and
+-- "reminders" (the worker's own schedule: this week's question is up, voting's open,
+-- watch night tonight, a season about to end). Each person decides per room:
+-- everything, just the things for them (muted activity and reminders), or nothing.
+alter table room_notification_preferences add column if not exists reminders boolean not null default true;
+
+-- what the sender's device asks for now carries a kind, so a room you've quietened
+-- stays quiet. Messages without a kind are about you (a reply, a hand-over) and only
+-- "nothing" stops those.
+drop function if exists push_targets_for(uuid, uuid, uuid);
+create or replace function push_targets_for(p_sender uuid, p_room uuid default null, p_user uuid default null, p_kind text default null)
+returns table (endpoint text, p256dh text, auth text)
+language sql security definer stable set search_path = public as $$
+  select s.endpoint, s.p256dh, s.auth from push_subs s
+  where s.user_id <> p_sender
+    and not exists (select 1 from blocks b where (b.blocker = p_sender and b.blocked = s.user_id)
+                                            or (b.blocker = s.user_id and b.blocked = p_sender))
+    and (p_room is null or not exists (select 1 from room_notification_preferences np
+          where np.room_id = p_room and np.user_id = s.user_id
+            and (np.muted or (p_kind = 'activity' and not np.activity) or (p_kind = 'reminders' and not np.reminders))))
+    and ((p_room is not null
+          and exists (select 1 from room_members m where m.room_id = p_room and m.user_id = p_sender)
+          and s.user_id in (select user_id from room_members where room_id = p_room))
+      or (p_user is not null and s.user_id = p_user
+          and (exists (select 1 from room_members a join room_members b on b.room_id = a.room_id
+                        where a.user_id = p_sender and b.user_id = p_user)
+            or exists (select 1 from follows f where f.follower = p_user and f.followee = p_sender))));
+$$;
+revoke all on function push_targets_for(uuid, uuid, uuid, text) from public, anon, authenticated;
+grant execute on function push_targets_for(uuid, uuid, uuid, text) to service_role;
+
+-- the worker's schedule: every room with two or more people in it, with what it needs to
+-- word the message (this week's answers so far, tonight's watch night)
+create or replace function push_schedule(p_week text, p_today date)
+returns table (room_id uuid, name text, members int, answers int, night boolean)
+language sql security definer stable set search_path = public as $$
+  select r.id, r.name,
+    (select count(*) from room_members m where m.room_id = r.id)::int,
+    (select count(*) from room_answers a where a.room_id = r.id and a.week = p_week)::int,
+    exists (select 1 from room_nights n where n.room_id = r.id and n.at = p_today)
+  from rooms r
+  where (select count(*) from room_members m where m.room_id = r.id) >= 2;
+$$;
+revoke all on function push_schedule(text, date) from public, anon, authenticated;
+grant execute on function push_schedule(text, date) to service_role;
+
+-- who to tell in a room on the worker's behalf (no sender): everyone in it with a phone
+-- signed up, except anyone who's turned that room's reminders off
+create or replace function push_targets_room(p_room uuid, p_kind text default 'reminders')
+returns table (endpoint text, p256dh text, auth text)
+language sql security definer stable set search_path = public as $$
+  select s.endpoint, s.p256dh, s.auth from push_subs s
+  where s.user_id in (select user_id from room_members where room_id = p_room)
+    and not exists (select 1 from room_notification_preferences np
+          where np.room_id = p_room and np.user_id = s.user_id
+            and (np.muted or (p_kind = 'activity' and not np.activity) or (p_kind = 'reminders' and not np.reminders)));
+$$;
+revoke all on function push_targets_room(uuid, text) from public, anon, authenticated;
+grant execute on function push_targets_room(uuid, text) to service_role;
+
+-- a season ending is news for anybody who took part in it: everyone with a phone signed
+-- up who logged something since it started, unless every room of theirs is quiet
+create or replace function push_targets_season(p_since date)
+returns table (endpoint text, p256dh text, auth text)
+language sql security definer stable set search_path = public as $$
+  select s.endpoint, s.p256dh, s.auth from push_subs s
+  where exists (select 1 from entries e where e.user_id = s.user_id and e.created_at >= p_since)
+    and (not exists (select 1 from room_members m where m.user_id = s.user_id)
+      or exists (select 1 from room_members m where m.user_id = s.user_id
+                  and not exists (select 1 from room_notification_preferences np
+                    where np.room_id = m.room_id and np.user_id = s.user_id and (np.muted or not np.reminders))));
+$$;
+revoke all on function push_targets_season(date) from public, anon, authenticated;
+grant execute on function push_targets_season(date) to service_role;
