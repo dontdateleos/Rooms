@@ -2148,6 +2148,8 @@ html[data-theme="dark"] .whero{opacity:.5}
 /* with a sheet up, its buttons are where a toast would sit, so the toast drops in from the top */
 html.sheetup .toast{bottom:auto;top:calc(14px + env(safe-area-inset-top));transform:translateX(-50%) translateY(-14px) scale(.9)}
 html.sheetup .toast.on,html.sheetup .toast.undo{transform:translateX(-50%) translateY(0) scale(1)}
+
+#weekCard[hidden]{display:none}
 </style>
 </head>
 <body>
@@ -3289,7 +3291,10 @@ const notApart = rows => rows.filter(r => !isApart(r.user_id ?? r.follower ?? r.
 /* the three things you told it you loved when you joined are your taste, not news: they
    never turn up in a feed, a week's count, a season or a year as if you'd just watched them */
 const isBefore = e => !!e?.context?.before;
-const feedRows = rows => notApart(rows).filter(r => !isBefore(r));
+/* and anything brought in from another app is your history, not this week's news: it
+   counts in your year and your taste, but never in a feed, a week, a race or a season */
+const isQuiet = e => isBefore(e) || !!e?.context?.imported;
+const feedRows = rows => notApart(rows).filter(r => !isQuiet(r));
 
 async function blockThem(id) {
   if (!id || id === me.id) return;
@@ -4083,7 +4088,7 @@ function rollLine(el, text) {
    on it, and so must these, or the one path into the feed that is not a query becomes
    the one that floods it. */
 const onLiveEntry = (row, memberIds) =>
-  row && !row.part && !isBefore(row) && !isApart(row.user_id) && memberIds.has(row.user_id) ? dropInSlip(row, "#talkTop") : Promise.resolve(false);
+  row && !row.part && !isQuiet(row) && !isApart(row.user_id) && memberIds.has(row.user_id) ? dropInSlip(row, "#talkTop") : Promise.resolve(false);
 
 /* ---------- the channel that is about you rather than a room ----------
    A room channel dies when you leave the room, which is right for presence and wrong
@@ -5288,7 +5293,7 @@ const WEEK_KEY = () => { const d = new Date(); d.setDate(d.getDate() - ((d.getDa
 function weekPast() {
   const from = new Date(); from.setDate(from.getDate() - 7);
   const since = from.toISOString().slice(0, 10);
-  const es = myEntries.filter(e => String(e.rated_on) >= since && !isBefore(e));
+  const es = myEntries.filter(e => String(e.rated_on) >= since && !isQuiet(e));
   if (es.length < 2) return null;
   const kinds = {}; es.forEach(e => { const k = kindOf(e.work_id); kinds[k] = (kinds[k] || 0) + 1; });
   const best = es.slice().sort((a, b) => b.score - a.score)[0];
@@ -5981,6 +5986,7 @@ async function renderRoomFeed(fb, R) {
   if (!P.holdTip && myEntries.length >= 3 && currentTab() === "doors") { P.holdTip = 1; saveP(); setTimeout(() => coach("Hold any poster to rate it, shelve it or pass it on"), 1600); }
   $("#roomMenu", fb).onclick = () => openRoomMenu(R); wireTonight(); if (R.members.length > 1) paintAsks(R);
   const segEl = $(".roomsecs", fb); glideSeg(segEl, true);
+  { const wk = $("#weekCard"); if (wk) wk.hidden = (P.roomSec || "talk") !== "talk"; }
   if (window.ResizeObserver && segEl) new ResizeObserver(() => glideSeg(segEl, true)).observe(segEl);
   $$("[data-rsecbtn]", fb).forEach(b => b.onclick = () => { const k = b.dataset.rsecbtn;
     const order = secs.map(x => x[0]), dir = order.indexOf(k) - order.indexOf(P.roomSec || "talk");
@@ -5991,6 +5997,8 @@ async function renderRoomFeed(fb, R) {
       setTimeout(() => into.classList.remove("feedIn"), 420); }
     $$("[data-rsecbtn]", fb).forEach(x => x.classList.toggle("on", x === b)); glideSeg(segEl);
     $$("[data-rsec]", fb).forEach(s => s.hidden = s.dataset.rsec !== k);
+    /* the week's card belongs with the talk, not under every section */
+    const wk = $("#weekCard"); if (wk) wk.hidden = k !== "talk";
     if (k === "play") paintGames(R, es);
     /* switching from far down the page lands you at the top of the new section, not
        somewhere in the middle of it */
@@ -7221,7 +7229,7 @@ function dueReview() {
     if (yearOf(myEntries, y).length >= 5) return { kind:"year", year:y, head:`Your ${y}, so far` }; }
   if (D <= 7) { const pm = M === 1 ? 12 : M - 1, py = M === 1 ? Y - 1 : Y;
     const pre = `${py}-${String(pm).padStart(2,"0")}`;
-    const es = myEntries.filter(e => String(e.rated_on).startsWith(pre));
+    const es = myEntries.filter(e => !isBefore(e) && String(e.rated_on).startsWith(pre));
     if (es.length >= 3) return { kind:"month", pre, entries:es,
       head:`${new Date(py, pm-1, 1).toLocaleString("en-GB",{month:"long"})}, in one card` }; }
   return null; }
@@ -8813,7 +8821,7 @@ function openTopEditor(top) { const draw = () => { $("#topEdit").innerHTML = top
   $("#topSave").onclick = async () => { try { await q(sb.from("top_list_items").delete().eq("top_list_id", top.id)); if (top.items.length) await q(sb.from("top_list_items").insert(top.items.map((id,i) => ({ top_list_id:top.id, work_id:id, rank:i+1 })))); closeSheet(); renderTaste(); } catch (e) { $("#topMsg").textContent = e.message; } }; }
 
 /* ---------- the year ---------- */
-function yearOf(entries, year) { return entries.filter(e => String(e.rated_on).startsWith(year)); }
+function yearOf(entries, year) { return entries.filter(e => !isBefore(e) && String(e.rated_on).startsWith(year)); }
 function reviewData(entries) {
   const kinds = {}; entries.forEach(e => { const k = kindOf(e.work_id); kinds[k] = (kinds[k]||0)+1; });
   const t = tasteOf(entries);
@@ -9538,7 +9546,7 @@ function seasonChallengeFor(e, season = currentSeason()) {
 function seasonEntries(challenge, rows = myEntries, season = challengeSeason(challenge.id)) {
   /* A title is a single notch no matter how many times someone edits or rewatches it. */
   const seen = new Set();
-  return rows.filter(e => { if (isBefore(e) || seasonChallengeFor(e, season)?.id !== challenge.id || seen.has(e.work_id)) return false;
+  return rows.filter(e => { if (isQuiet(e) || seasonChallengeFor(e, season)?.id !== challenge.id || seen.has(e.work_id)) return false;
     seen.add(e.work_id); return true; });
 }
 function seasonMedal(n) { return [...SEASON_MEDALS].reverse().find(m => n >= m.at) || null; }
@@ -9582,7 +9590,7 @@ async function seasonRank(season = currentSeason()) {
       .order("created_at").limit(10000));
     const by = new Map();
     for (const e of rows) {
-      if (isBefore(e) || !seasonChallengeFor(e, season)) continue;
+      if (isQuiet(e) || !seasonChallengeFor(e, season)) continue;
       const mine = by.get(e.user_id) || new Set(); mine.add(e.work_id); by.set(e.user_id, mine);
     }
     const scores = [...by.entries()].map(([id, ids]) => ({ id, n:ids.size })).filter(x => x.n > 0).sort((a,b) => b.n-a.n);
@@ -9607,7 +9615,7 @@ async function fillSeasonRecap(S) {
   const el = $("#seasonRecapRoom"), R = activeRoom(); if (!el || !R || R.members.length < 2) return;
   try { const es = await q(sb.from("entries").select("user_id,work_id,created_at,rated_on,context,works(kind,meta,length)")
       .in("user_id", R.members.map(m => m.id)).gte("created_at", S.starts + "T00:00:00.000Z").lte("created_at", S.ends + "T23:59:59.999Z").limit(2000));
-    const by = {}; for (const e of es) if (!isBefore(e) && seasonChallengeFor(e, S)) (by[e.user_id] ||= new Set()).add(e.work_id);
+    const by = {}; for (const e of es) if (!isQuiet(e) && seasonChallengeFor(e, S)) (by[e.user_id] ||= new Set()).add(e.work_id);
     const top = Object.entries(by).sort((a, b) => b[1].size - a[1].size)[0];
     if ($("#seasonRecapRoom") === el && top) el.innerHTML = `<b>${esc(R.name)}</b> · ${esc(who(R, top[0]))} went furthest, with ${top[1].size}.`; } catch {} }
 /* the first three picks of each challenge, as covers: looked up once, then remembered */
@@ -9692,7 +9700,7 @@ async function seasonRoom(S) {
   const rows = await q(sb.from("entries").select("user_id,work_id,created_at,rated_on,context,works(kind,meta,length,year,title,cover)")
     .in("user_id", R.members.map(m => m.id)).gte("created_at", S.starts + "T00:00:00.000Z").lte("created_at", S.ends + "T23:59:59.999Z").limit(4000));
   const count = {}, seen = {}, recent = [];
-  for (const e of rows) { if (isBefore(e) || !seasonChallengeFor(e, S)) continue;
+  for (const e of rows) { if (isQuiet(e) || !seasonChallengeFor(e, S)) continue;
     const u = e.user_id, k = u + ":" + e.work_id; if (seen[k]) continue; seen[k] = 1;
     count[u] = (count[u] || 0) + 1; if (e.works?.id) remember(e.works); recent.push(e); }
   recent.sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
@@ -10635,7 +10643,7 @@ function openBlock(id, who = "") {
 
 function openEntry(e, justSaved = false) { const w = works[e.work_id] || e.works || {}; const cfg = K(w.kind || kindOf(e.work_id)); const mine = e.user_id === me.id;
   openSheet(`${justSaved?`<span class="tag savedchip" style="background:var(--mint)">Saved</span>`:""}<div class="head" style="margin-top:10px">${cover(w)}<div class="hh"><h3>${esc(w.title)}</h3><p class="sub">${tag(w.kind)} ${esc(w.year||"")} · ${esc(mine?"you":e.profiles?.handle||"")} ${cfg.verb} ${when(e.rated_on)}${mine && e.room_only ? ` · <span class="tag dim">room only</span>` : ""}</p><div style="margin-top:10px">${stars(e.score,"big")}</div></div></div>
-    ${e.context && Object.keys(e.context).some(k => k !== "before") ? `<div class="ticks">${Object.entries(e.context).filter(([k,v]) => v && k !== "before").map(([k,v]) => `<span class="tk on">${k==="with"?"With "+esc(v):esc(v)}</span>`).join("")}</div>` : ""}
+    ${e.context && Object.keys(e.context).some(k => k !== "before" && k !== "imported") ? `<div class="ticks">${Object.entries(e.context).filter(([k,v]) => v && k !== "before" && k !== "imported").map(([k,v]) => `<span class="tk on">${k==="with"?"With "+esc(v):esc(v)}</span>`).join("")}</div>` : ""}
     ${e.loved?.length?`<div class="chips" style="margin-top:12px">${e.loved.map(k => `<span class="chip ${k.startsWith("person:")?"who on":"on"}">${esc(k.startsWith("person:")?lc(k.slice(7)):k)}</span>`).join("")}</div>`:""}
     ${e.note?`<div class="card"><div class="say" style="font-size:19px;margin:0">“${noteHTML(e.note)}”</div></div>`:""}
     <div class="stack"><button class="btn soft" id="eCard">Save the card</button><button class="btn ghost" id="eWork">Open ${esc(w.title)}</button>${mine && e.id?`<button class="btn quiet" id="eEdit">Edit</button><button class="btn quiet" id="eDel">Delete</button>`:""}<button class="btn quiet" id="eClose">Close</button></div>
@@ -10771,7 +10779,7 @@ async function bringOver(b, say = () => {}) {
     && Number.isFinite(+e.score) && !had.has(e.work_id + "|" + e.rated_on))
     .map(e => ({ user_id:me.id, work_id:e.work_id, rated_on:e.rated_on || today(),
       score:Math.max(1, Math.min(10, Math.round(+e.score))), note:e.note || null,
-      loved:e.loved?.length ? e.loved : null, context:e.context || null,
+      loved:e.loved?.length ? e.loved : null, context:{ ...(e.context || {}), imported:true, ...(e.rated_on ? {} : { before:true }) },
       breakdown:e.breakdown || null, room_only:!!e.room_only }));
   out.skipped = b.entries.length - fresh.length;
   for (const c of inChunks(fresh)) { await q(sb.from("entries").insert(c)); out.entries += c.length;
@@ -10929,7 +10937,8 @@ function openImport() {
         /* TV Time tracks episodes, not verdicts: a show comes in as one you're watching */
         if (!score && x.now) { if (!nowOf(w.id)) await startNow(w.id); added++; continue; }
         if (score) loggedIds.add(w.id);
-        if (score) await q(sb.from("entries").insert({ user_id:me.id, work_id:w.id, rated_on:/^\d{4}-\d{2}-\d{2}$/.test(x.date) ? x.date : today(), score, note:null, loved:null, context:null, breakdown:null }));
+        if (score) await q(sb.from("entries").insert({ user_id:me.id, work_id:w.id, rated_on:/^\d{4}-\d{2}-\d{2}$/.test(x.date) ? x.date : today(), score, note:null, loved:null,
+          context:/^\d{4}-\d{2}-\d{2}$/.test(x.date) ? { imported:true } : { imported:true, before:true }, breakdown:null }));
         else if (L && !L.items.includes(w.id)) { await q(sb.from("list_items").insert({ list_id:L.id, work_id:w.id })); L.items.push(w.id); }
         added++;
       } catch (e) { missed.push(x.title); }
