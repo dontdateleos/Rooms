@@ -79,11 +79,30 @@ const ABOUT = {
   "film:20":"A lonely Frankenstein asks a pioneering scientist to build him a companion in 1930s Chicago, and what she brings back to life has plans of her own.",
   "game:20":"An open-world samurai story set in the far north of Japan around 1603, following a lone warrior hunting the gang that destroyed her family.",
 };
+/* who's in them, so Finished can show your favourites with a given actor */
+const CAST = {
+  "film:1":"Al Pacino, Robert De Niro, Val Kilmer, Tom Sizemore",
+  "film:2":"James Caan, Tuesday Weld, Willie Nelson, Jim Belushi",
+  "film:3":"Tom Cruise, Jamie Foxx, Jada Pinkett Smith, Mark Ruffalo",
+  "film:4":"Al Pacino, Russell Crowe, Christopher Plummer, Diane Venora",
+  "film:5":"Ray Winstone, Ben Kingsley, Ian McShane, Amanda Redman",
+  "film:6":"Christian Friedel, Sandra Hüller",
+  "film:7":"Greta Lee, Teo Yoo, John Magaro",
+  "film:8":"Paul Mescal, Frankie Corio, Celia Rowlson-Hall",
+  "film:9":"George Clooney, Tilda Swinton, Tom Wilkinson, Sydney Pollack",
+  "film:30":"Kurt Russell, Wilford Brimley, Keith David",
+  "film:31":"Toni Collette, Alex Wolff, Milly Shapiro, Gabriel Byrne",
+  "film:32":"Anya Taylor-Joy, Ralph Ineson, Kate Dickie",
+  "tv:1":"Dominic West, Idris Elba, Wendell Pierce, Lance Reddick",
+  "tv:2":"Justin Theroux, Carrie Coon, Christopher Eccleston, Amy Brenneman",
+  "tv:3":"Gary Oldman, Jack Lowden, Kristin Scott Thomas, Saskia Reeves",
+  "tv:30":"Carla Gugino, Michiel Huisman, Elizabeth Reaser, Victoria Pedretti",
+};
 const works = {};
 for (const [id,kind,title,year,creator,length,a,b,release] of [...WORKS, ...COMING]) {
   works[id] = { id, kind, title, year, creator, length, cover:poster(title, a, b),
     meta:{ genres:GENRES[id] || [], ...(ABOUT[id] ? { overview:ABOUT[id] } : {}) },
-    credits:{ director:creator }, ...(release ? { release } : {}) };
+    credits:{ director:creator, ...(CAST[id] ? { cast:CAST[id] } : {}) }, ...(release ? { release } : {}) };
 }
 
 const PEOPLE = [
