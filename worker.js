@@ -344,6 +344,6 @@ async function runSchedule(env, at = localNow(env.TZ || "Australia/Sydney")) {
   if (hour === 18) for (const [name, starts, ends] of SEASON_ENDS) if (days(ymd, ends) === 2) {
     const r = await svcRpc(env, "push_targets_season", { p_since:starts });
     if (r.ok) sent.push(await deliver(env, await r.json(), { title:`${name} ends in three nights`,
-      body:"Three nights left to get your medals. Seasons has where you're up to.", url:"./#seasons", tag:"season-end" })); }
+      body:"Three nights left to get your medals. Challenges has where you're up to.", url:"./#seasons", tag:"season-end" })); }
   return { at, sent };
 }

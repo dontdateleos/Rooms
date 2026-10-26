@@ -2254,6 +2254,14 @@ header,nav{-webkit-backdrop-filter:blur(20px) saturate(1.4);backdrop-filter:blur
 .pflow li.on i{background:var(--apricot);color:#151320}
 .pflow li.done i{background:var(--mint);color:#151320}
 .pickown{display:block;margin:12px auto 0;font-size:12.5px}
+
+/* ---------- Challenges: the goal heads the page ---------- */
+.chgoal{margin:12px 0 14px}
+.chgoal .goalcard{margin:0}
+.chgoal .goalset{margin:0}
+
+/* the smallest phones: the header's right side tucks in so the bell stays on screen */
+@media (max-width:359px){.hr{gap:5px}.bell,.find{width:38px;height:38px}.me{padding:6px 9px;gap:5px}}
 </style>
 </head>
 <body>
@@ -2282,7 +2290,7 @@ header,nav{-webkit-backdrop-filter:blur(20px) saturate(1.4);backdrop-filter:blur
   <button data-tab="doors"><svg class="ni ni-o" viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><rect x="3.5" y="3.5" width="7.5" height="7.5" rx="2.4"/><rect x="13" y="3.5" width="7.5" height="7.5" rx="2.4"/><rect x="3.5" y="13" width="7.5" height="7.5" rx="2.4"/><rect x="13" y="13" width="7.5" height="7.5" rx="2.4"/></g></svg><svg class="ni ni-f" viewBox="0 0 24 24" aria-hidden="true"><g fill="currentColor"><rect x="3" y="3" width="8.5" height="8.5" rx="2.6" opacity=".45"/><rect x="12.5" y="3" width="8.5" height="8.5" rx="2.6" opacity=".45"/><rect x="3" y="12.5" width="8.5" height="8.5" rx="2.6" opacity=".45"/><rect x="12.5" y="12.5" width="8.5" height="8.5" rx="2.6"/></g></svg><span>Rooms</span></button>
   <button data-tab="library"><svg class="ni ni-o" viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><path d="M7 3.5h10"/><path d="M5.5 7h13"/><rect x="4" y="10.5" width="16" height="10" rx="2.8"/></g></svg><svg class="ni ni-f" viewBox="0 0 24 24" aria-hidden="true"><g fill="currentColor"><rect x="6.5" y="2.5" width="11" height="2.4" rx="1.2" opacity=".45"/><rect x="5" y="6" width="14" height="2.6" rx="1.3" opacity=".7"/><rect x="3.5" y="10" width="17" height="11" rx="3"/></g></svg><span>Queue</span></button>
   <button id="add" aria-label="Log something"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
-  <button data-tab="clubs"><svg class="ni ni-o" viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><rect x="4" y="5.5" width="16" height="14.5" rx="3.5"/><path d="M8 3.5v4M16 3.5v4M4 10h16"/><path d="M12 12.6l.9 1.9 2 .3-1.5 1.4.4 2-1.8-1-1.8 1 .4-2-1.5-1.4 2-.3z" fill="currentColor" stroke-width="1"/></g></svg><svg class="ni ni-f" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="3.8" fill="currentColor"/><path d="M8 3.5v4M16 3.5v4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M3.5 10h17" stroke="var(--cream)" stroke-width="1.6"/><path d="M12 12.4l1 2 2.2.3-1.6 1.5.4 2.2-2-1.1-2 1.1.4-2.2-1.6-1.5 2.2-.3z" fill="var(--cream)"/></svg><span>Seasons</span></button>
+  <button data-tab="clubs"><svg class="ni ni-o" viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><path d="M7.5 4h9v5.5a4.5 4.5 0 0 1-9 0z"/><path d="M7.5 6H5a3 3 0 0 0 3 4.2M16.5 6H19a3 3 0 0 1-3 4.2M12 14v3.5M8.5 20h7"/></g></svg><svg class="ni ni-f" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3.5h10v6a5 5 0 0 1-10 0z" fill="currentColor"/><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 6H5a3 3 0 0 0 3 4.2M16.5 6H19a3 3 0 0 1-3 4.2M12 14v3.5M8.5 20h7"/></g><path d="M12 6.4l.8 1.6 1.7.25-1.25 1.2.3 1.7-1.55-.8-1.55.8.3-1.7-1.25-1.2 1.7-.25z" fill="var(--cream)"/></svg><span>Challenges</span></button>
   <button data-tab="taste"><svg class="ni ni-o" viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><rect x="4" y="4" width="16" height="16" rx="5.5"/></g><g fill="currentColor"><rect x="9" y="9.6" width="1.9" height="4.4" rx=".95"/><rect x="13.1" y="10" width="1.9" height="4.6" rx=".95"/></g></svg><svg class="ni ni-f" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="6" fill="currentColor"/><g fill="var(--cream)"><rect x="9" y="9.6" width="1.9" height="4.4" rx=".95"/><rect x="13.1" y="10" width="1.9" height="4.6" rx=".95"/></g></svg><span>You</span></button>
 </div></nav>
 <div class="demobar" id="demobar" role="region" aria-label="Demo" hidden>Demo &middot; invented people &middot; nothing is saved</div>
@@ -5610,7 +5618,7 @@ function pagerHTML(places, curKey, o = {}) {
   if (o.mode === "chips") return `<div class="pager pchips"${id}>${many ? `<div class="chiprow" role="tablist">${places.map((p, i) =>
       `<button class="chip pchip ${p === cur ? "on" : ""}" data-place="${esc(p.key)}" role="tab" aria-selected="${p === cur}">${p.key ? `<i style="background:${p.col}"></i>` : ""}${esc(i === 0 && o.allLabel ? o.allLabel : p.name)}</button>`).join("")}</div>` : ""}</div>`;
   /* a few places side by side (the season, your clubs): the page's name, then labelled tabs */
-  if (o.mode === "tabs") return `<div class="pager ptabs"${id}>${o.title ? `<h2 class="pagetitle" data-pagetitle="${esc(o.title)}">${esc(o.title)}</h2>` : ""}
+  if (o.mode === "tabs") return `<div class="pager ptabs"${id}>${o.title ? `<h2 class="pagetitle" data-pagetitle="${esc(o.title)}">${esc(o.title)}</h2>` : ""}${o.under || ""}
       <div class="seg glide ul" role="tablist"><span class="segglide" aria-hidden="true"></span>${places.map(p =>
       `<button class="${p === cur ? "on" : ""}" data-place="${esc(p.key)}" role="tab" aria-selected="${p === cur}">${esc(p.name)}</button>`).join("")}</div></div>`;
   /* which room you're in: its name is the title, and tapping it lists everywhere you can go */
@@ -8963,7 +8971,7 @@ async function setGoal() { const yr = goalYear(), cur = myGoal();
   const goals = { ...(me.goals || {}), [yr]:v || null }; me.goals = goals; P.goals = { ...(P.goals || {}), [yr]:v || null }; saveP();
   if (sb.__local) { if (sb.__db.profile) { sb.__db.profile.goals = goals; sb.__save?.(); } }
   else try { await q(sb.from("profiles").update({ goals }).eq("id", me.id)); } catch {}
-  buzz(8); say(v ? `${v} this year. You're on ${goalCount(myEntries)}.` : "No goal this year", "good"); renderTaste(); }
+  buzz(8); say(v ? `${v} this year. You're on ${goalCount(myEntries)}.` : "No goal this year", "good"); refresh(); }
 function playNumbers() { const el = $("#yNum"); if (!el || REDUCED) return;
   $$(".ynk b", el).forEach(b => { const to = +b.dataset.to; b.textContent = "0"; setTimeout(() => tickTo(b, to), 120); });
   el.classList.add("grow"); }
@@ -8971,7 +8979,6 @@ async function renderTaste() { const body = $("#tasteBody"); const t = tasteOf(m
   body.innerHTML = `<div class="pagehead"><button class="tasteme" id="tasteMe" aria-label="Open your profile">${avatar(me)}<div><h2 style="margin:0">${esc(me.handle)}</h2>${me.bio?`<p class="sub" style="margin-top:2px">${esc(me.bio)}</p>`:""}</div></button>
     <button class="iconbtn cog" id="tasteCog" aria-label="Settings">${COG}</button></div>
     ${myEntries.length ? `<button class="card tastemini" id="tasteMore" aria-label="See your whole taste">${tasteMiniHTML(t)}</button>
-    ${goalHTML()}
     ${yourNumbersHTML()}
     <div id="podium"></div>
     <div class="card" id="recCard"><div class="h"><span>You might like</span><span class="tag dim">from what you loved</span></div><div id="recBody">${skeleton(1)}</div></div>
@@ -8985,7 +8992,6 @@ async function renderTaste() { const body = $("#tasteBody"); const t = tasteOf(m
   $("#tasteCog").onclick = () => openYou();
   const ts = $("#tasteStory"); if (ts) ts.onclick = () => openYearStory();
   paintPodium(); playNumbers();
-  const gs = $("#goalSet"); if (gs) gs.onclick = setGoal;
   [$("#tasteMore"), $("#tasteAll")].forEach(b => { if (b) b.onclick = openTasteDetail; });
   const rb = $("#recBody"); if (!rb) return;
   /* a card that loads forever is worse than no card: if nothing comes back in a few
@@ -9932,10 +9938,13 @@ async function renderClubs() {
   const season = currentSeason(), phase = seasonPhase(season), ended = recentlyEnded();
   const nClubs = clubs.length + openClubs.length;
   const places = [place("season", season.label, season.tone, season.mk), place("clubs", "Friend clubs", "lilac", "clubs")];
-  body.innerHTML = `${pagerHTML(places, P.clubTab, { id:"seasonPager", mode:"tabs", title:"Seasons" })}
+  /* everything with a finish line in one place: your goal for the year heads the page,
+     then the public season and your room's clubs */
+  body.innerHTML = `${pagerHTML(places, P.clubTab, { id:"seasonPager", mode:"tabs", title:"Challenges", under:`<div class="chgoal">${goalHTML()}</div>` })}
     <p class="sub seasonsub">${P.clubTab === "season" ? (phase.key === "upcoming" ? `Next up · ${esc(season.pitch)}` : esc(season.pitch)) : "A list with a deadline, done together. Yours stay in your room; open ones anyone can join."}</p>
     <div id="seasonContent"></div>`;
   wirePager($("#seasonPager", body), places, P.clubTab, (k, d) => { P.clubTab = k; saveP(); seasonTurn = d; renderClubs(); });
+  { const gs = $("#goalSet", body); if (gs) gs.onclick = setGoal; }
   pagerArrive(seasonTurn, $("#seasonPager", body), $("#seasonContent", body)); seasonTurn = 0;
   const out = $("#seasonContent");
   if (P.clubTab === "clubs") { await renderFriendClubs(out); return; }

@@ -93,7 +93,7 @@ The service-role key must never go near this repo.
 
 ## Layout
 
-Four tabs — **Rooms** · **Queue** · **Seasons** · **You** — with a floating **+** for logging.
+Four tabs — **Rooms** · **Queue** · **Challenges** · **You** — with a floating **+** for logging.
 Queue is **Up next** (the shelf) and **Finished** (the archive) as two sides of one tab, with a toggle at the top; it
 opens on whichever side you left it. Drag sideways anywhere on a page and it comes with your finger, the next tab sliding in beside it; the blocks on each page trail behind like jelly and the bar's pill stretches like taffy. Let go past a third of the way, or flick, and it carries on and lands with a little bounce.
 Hold **Queue** to spin the shelf; hold **Rooms** for the list of everywhere to go.
