@@ -2354,7 +2354,6 @@ html[data-day="night"] .endguy .ge{scale:1 .45;transform-box:fill-box;transform-
 @keyframes workBob{50%{transform:translateY(-6%) rotate(-3deg)}}
 .ptitle .tdot.faced{width:20px;height:20px;border-radius:6px;margin-top:0;display:grid;place-items:center;transition:width .3s,height .3s}
 .ptitle .tdot.faced svg{width:100%;height:100%;display:block}
-#avMoods{grid-template-columns:repeat(4,1fr);gap:8px}
 html.tilt .av .eyes{translate:calc(var(--tx,0) * 6px) calc(var(--ty,0) * 4px);transition:translate .25s ease-out}
 html.tilt .logo .mark .eyes{translate:calc(var(--tx,0) * 2.4px) calc(var(--ty,0) * 2px);transition:translate .25s ease-out}
 @media (prefers-reduced-motion:reduce){.skelface svg,.skelface .eyes,.buddy.working svg{animation:none!important}}
@@ -2498,7 +2497,7 @@ function avFor(p) {
   const founder = !!p?.founder || founderIds.has(p?.id);
   const ring = ringCache[p?.id] || null;
   if (a && AV_SHAPES[a.shape] && AV_COLS[a.col] !== undefined)
-    return { shape:a.shape, col:a.col, eyes:AV_EYES[a.eyes] ? a.eyes : "pair", tilt:a.tilt ?? 0, mood:["happy", "sleepy", "meh"].includes(a.mood) ? a.mood : null, founder, ring };
+    return { shape:a.shape, col:a.col, eyes:AV_EYES[a.eyes] ? a.eyes : "pair", tilt:a.tilt ?? 0, founder, ring };
   const h = avHash(p?.handle);
   return { shape:AV_DEFAULT[h % AV_DEFAULT.length], col:(h >> 3) % AV_COLS.length,
     eyes:AV_EYE_NAMES[(h >> 11) % AV_EYE_NAMES.length], tilt:((h >> 7) % 9) - 4, founder, ring }; }
@@ -2596,8 +2595,7 @@ function avSVG(a) {
   const base = AV_COLS[a.col] || AV_COLS[0], dark = base === "#151320";
   const c = { base, light: dark ? "#3A3650" : avShade(base, .30), dark: dark ? "#0B0A12" : avShade(base, -.18) };
   const ink = dark ? "#FFF7EC" : "#151320";
-  /* the look you chose to rest in, if you chose one, is what everyone sees */
-  const eyes = a.mood && MOOD_EYES[a.mood] ? MOOD_EYES[a.mood](ink) : AV_EYES[a.eyes] || AV_EYES.pair;
+  const eyes = AV_EYES[a.eyes] || AV_EYES.pair;
   return `<svg viewBox="0 0 100 100" data-shape="${a.shape}" aria-hidden="true"><g transform="rotate(${a.tilt||0} 50 54)">${AV_SHAPES[a.shape](c)}
     <g class="eyes" fill="${ink}">${eyes}</g></g>${
       a.founder ? COMET : (a.ring || "")}</svg>`; }
@@ -2622,17 +2620,15 @@ const MOOD_EYES = {
   love:  c => `<path d="M37 59 q5.5 -10 11 0 M54 59 q5.5 -10 11 0" stroke="${c}" stroke-width="5.5" stroke-linecap="round" fill="none"/>
     <circle cx="33" cy="68" r="5" fill="#FF7FA8" fill-opacity=".75"/><circle cx="69" cy="68" r="5" fill="#FF7FA8" fill-opacity=".75"/>`,
 };
-MOOD_EYES.sleepy = c => `<path d="M37 56 q5.5 7 11 0 M54 56 q5.5 7 11 0" stroke="${c}" stroke-width="5" stroke-linecap="round" fill="none"/>`;
 const moodOf = v => !(v > 0) ? "ok" : v <= 2 ? "sad" : v <= 5 ? "meh" : v <= 7 ? "ok" : v <= 9 ? "happy" : "love";
 /* ---------- where the little guys are allowed ----------
-   The faces react, dress up and feel things only in a few chosen places, so it stays a
+   The faces react and feel things only in a few chosen places, so it stays a
    wink rather than a theme park:
      your week  your face in the corner only
      room mood  the room's square by its name, and only when the room's been loving or
                 hating things — an ordinary week shows nothing
      thinking   the room feed's first load and search; never every placeholder
      tilt       off until you switch it on in your settings */
-const RESTING = ["happy", "sleepy", "meh"];
 /* put a mood on a face (the .av or anything holding its svg); "ok" gives it its own eyes back */
 function faceMood(el, m) {
   const g = el && $(".eyes", el); if (!g) return false;
@@ -5514,7 +5510,7 @@ async function enter() {
 function paintMeAv() { const el = $("#meAv"); if (!el) return; el.innerHTML = avSVG(avFor(me));
   /* your week shows on your face in the corner, and only there: a run of low scores and
      nothing loved makes it unimpressed until you love something again */
-  if (!me.avatar?.mood) { const wk = weekMood(); if (wk !== "ok") { const g = $(".eyes", el); g.dataset.orig = g.innerHTML; g.dataset.mood = wk;
+  { const wk = weekMood(); if (wk !== "ok") { const g = $(".eyes", el); g.dataset.orig = g.innerHTML; g.dataset.mood = wk;
     g.innerHTML = MOOD_EYES[wk](g.getAttribute("fill")); el.title = "Rough week? It cheers up when you love something."; } else el.title = ""; } }
 function weekMood() { const since = new Date(Date.now() - 7 * 864e5).toISOString().slice(0, 10);
   const wk = myEntries.filter(e => !e.part && !isBefore(e) && String(e.rated_on || "") >= since);
@@ -11816,7 +11812,6 @@ async function openYou() { let top = { items:[] }; try { top = await ensureMyTop
     <div class="picker" id="avShapes"></div>
     <div class="lbl">Eyes</div><div class="picker" id="avEyes"></div>
     <div class="lbl">Colour</div><div class="swatches" id="avCols"></div>
-    <div class="lbl">Resting look</div><div class="picker" id="avMoods"></div>
     <div class="stack"><button class="btn ghost" id="avReset">Back to the one my handle made</button></div>
     <div class="lbl">Handle</div><input id="yHandle" maxlength="24" autocapitalize="none" value="${esc(me.handle)}"><div class="lbl">A line under your name</div><input id="yBio" maxlength="80" placeholder="watches too much, sleeps too little" value="${esc(me.bio||"")}">
     ${top.items.length ? `<div class="lbl">Your four · from your ten</div>${fourHTML(top.items)}` : ""}
@@ -11894,9 +11889,6 @@ async function openYou() { let top = { items:[] }; try { top = await ensureMyTop
       `<button class="${n === av.shape ? "on" : ""}" data-avs="${n}">${avSVG({ shape:n, col:av.col, eyes:av.eyes, tilt:0 })}</button>`).join("");
     $("#avEyes").innerHTML = AV_EYE_NAMES.map(n =>
       `<button class="${n === av.eyes ? "on" : ""}" data-ave="${n}">${avSVG({ shape:av.shape, col:av.col, eyes:n, tilt:0 })}</button>`).join("");
-    $("#avMoods").innerHTML = ["", ...RESTING].map(m =>
-      `<button class="${(av.mood || "") === m ? "on" : ""}" data-avm="${m}" aria-label="${m || "usual"}">${avSVG({ shape:av.shape, col:av.col, eyes:av.eyes, tilt:0, mood:m || null })}</button>`).join("");
-    $$("[data-avm]").forEach(b => b.onclick = () => { av.mood = b.dataset.avm || null; paintAv(); });
     $("#avCols").innerHTML = AV_COLS.map((c,i) =>
       `<button class="sw ${i === av.col ? "on" : ""}" data-avc="${i}" style="background:${c}"></button>`).join("");
     $$("[data-avs]").forEach(b => b.onclick = () => { av.shape = b.dataset.avs; paintAv(); });

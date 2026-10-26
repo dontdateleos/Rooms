@@ -219,7 +219,6 @@ straight to a vote on your own picks.
 - **Your week:** your corner face shows how your week's been going.
 - **The room:** the room's square gets a face only when the last fortnight was loved (8+) or hated (≤4.5).
 - **Anniversary:** confetti on the anniversary of joining.
-- **Resting look:** stored as `avatar.mood`, so others see it; no schema change.
 - **Tilt-to-look:** opt-in, off by default.
 
 **Imports are history, not news.** Entries brought in from another app carry
