@@ -2307,6 +2307,23 @@ header,nav{-webkit-backdrop-filter:blur(20px) saturate(1.4);backdrop-filter:blur
 .wf.done::after{content:"\2713";position:absolute;right:-3px;bottom:-3px;width:13px;height:13px;border-radius:50%;
   background:var(--mint);color:#16131c;font:900 8.5px/13px var(--head);text-align:center}
 @media (prefers-reduced-motion:reduce){.here .face .typing b,.heartup svg{animation:none}.nowpill .pbar i{transition:none}}
+
+/* ---------- little guys ---------- */
+.raterow{display:flex;align-items:center;gap:14px}
+.raterow #rateWrap{min-width:0}
+.buddy{width:50px;height:50px;flex:none;margin-left:auto;margin-right:4px}
+.buddy svg{width:100%;height:100%;display:block;transform-origin:50% 88%;animation:none!important}
+.minih{position:fixed;z-index:70;pointer-events:none;color:#FF6F9F;width:14px;height:14px;line-height:0}
+.minih svg{width:100%;height:100%;display:block}
+.endguy{display:block;width:52px;height:32px;margin:0 auto 4px;overflow:hidden;border-bottom:2px solid var(--line)}
+.endguy svg{width:52px;height:40px;display:block;transform:translateY(100%)}
+.endguy.hi svg{animation:guyUp .7s cubic-bezier(.3,1.4,.5,1) forwards}
+.endguy.hi .arm{transform-box:fill-box;transform-origin:0% 50%;animation:guyWave .5s ease-in-out .7s 3 alternate}
+.endguy.hi .ge{transform-box:fill-box;transform-origin:50% 50%;animation:blinkOnce .3s ease-in-out 2.4s}
+.endguy.still svg{transform:translateY(-4%);animation:none}
+@keyframes guyUp{to{transform:translateY(-4%)}}
+@keyframes guyWave{from{transform:rotate(10deg)}to{transform:rotate(-40deg)}}
+@media (prefers-reduced-motion:reduce){.endguy svg{transform:translateY(-4%)!important;animation:none!important}.endguy .arm,.endguy .ge{animation:none!important}}
 </style>
 </head>
 <body>
@@ -2556,6 +2573,44 @@ const avatar = (p, cls = "") => { const who = String(p?.id || p?.handle || "");
   const fresh = who && !metFaces.has(who); if (fresh) metFaces.add(who);
   const n = avSeed(who);
   return `<span class="av ${cls}${fresh ? " new" : ""}"${p?.id ? ` data-u="${esc(p.id)}"` : ""} style="--bd:${(n % 61) / 10}s;--id:${(n % 37) / 10}s">${avSVG(avFor(p))}</span>`; };
+
+/* ---------- faces that feel things ----------
+   Every face in the app has had one expression. These are the others it can pull: drawn
+   in the same 100-unit box as the capsule eyes, in the eyes' own colour, so any shape and
+   any colour can wear them. */
+const MOOD_EYES = {
+  sad:   c => `<rect x="39" y="55" width="8" height="10" rx="4"/><rect x="55" y="55" width="8" height="10" rx="4"/>
+    <path d="M35 50 L46 45 M56 45 L67 50" stroke="${c}" stroke-width="4" stroke-linecap="round" fill="none"/>`,
+  meh:   () => `<rect x="37" y="54" width="11" height="5" rx="2.5"/><rect x="54" y="54" width="11" height="5" rx="2.5"/>`,
+  happy: c => `<path d="M37 59 q5.5 -10 11 0 M54 59 q5.5 -10 11 0" stroke="${c}" stroke-width="5.5" stroke-linecap="round" fill="none"/>`,
+  love:  c => `<path d="M37 59 q5.5 -10 11 0 M54 59 q5.5 -10 11 0" stroke="${c}" stroke-width="5.5" stroke-linecap="round" fill="none"/>
+    <circle cx="33" cy="68" r="5" fill="#FF7FA8" fill-opacity=".75"/><circle cx="69" cy="68" r="5" fill="#FF7FA8" fill-opacity=".75"/>`,
+};
+const moodOf = v => !(v > 0) ? "ok" : v <= 2 ? "sad" : v <= 5 ? "meh" : v <= 7 ? "ok" : v <= 9 ? "happy" : "love";
+/* put a mood on a face (the .av or anything holding its svg); "ok" gives it its own eyes back */
+function faceMood(el, m) {
+  const g = el && $(".eyes", el); if (!g) return false;
+  if (g.dataset.orig == null) g.dataset.orig = g.innerHTML;
+  if ((g.dataset.mood || "ok") === m) return false;
+  g.dataset.mood = m;
+  g.innerHTML = m === "ok" ? g.dataset.orig : MOOD_EYES[m](g.getAttribute("fill") || "#151320");
+  return true; }
+/* little hearts thrown up out of something, for a like or a five-star face */
+function heartBurst(el, n = 5) {
+  if (REDUCED || !el) return; const r = el.getBoundingClientRect(); if (!r.width) return;
+  for (let i = 0; i < n; i++) { const h = document.createElement("i"); h.className = "minih"; h.innerHTML = heartSVG(true);
+    h.style.left = r.left + r.width / 2 + "px"; h.style.top = r.top + r.height / 2 + "px"; document.body.appendChild(h);
+    const a = -Math.PI / 2 + (i - (n - 1) / 2) * .5 + (Math.random() - .5) * .3, d = 28 + Math.random() * 22, sc = .55 + Math.random() * .4;
+    h.animate([{ transform:"translate(-50%,-50%) scale(.2)", opacity:0 },
+      { transform:`translate(calc(-50% + ${Math.cos(a) * d * .6}px), calc(-50% + ${Math.sin(a) * d * .6}px)) scale(${sc + .25})`, opacity:1, offset:.35 },
+      { transform:`translate(calc(-50% + ${Math.cos(a) * d}px), calc(-50% + ${Math.sin(a) * d - 16}px)) scale(${sc})`, opacity:0 }],
+      { duration:720 + Math.random() * 220, easing:"cubic-bezier(.2,.8,.3,1)", fill:"both" }).onfinish = () => h.remove(); } }
+/* the logo's confetti, thrown from wherever something just happened */
+function burstAt(el, n = 28, delay = 0) {
+  if (REDUCED || !el) return; const r = el.getBoundingClientRect(); if (!r.width) return;
+  const fx = document.createElement("div");
+  fx.style.cssText = `position:fixed;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;pointer-events:none;z-index:70`;
+  document.body.appendChild(fx); roomBurst(fx, n, delay); setTimeout(() => fx.remove(), 3400 + delay); }
 
 /* ============ the four rooms ============ */
 const KINDS = {
@@ -3856,6 +3911,13 @@ function liteWatch(root) { if (!liteObs || !root?.querySelectorAll) return;
       setTimeout(() => { e.classList.add(how); e.addEventListener("animationend", () => e.classList.remove(how), { once:true });
         setTimeout(() => e.classList.remove(how), 2600); }, Math.random() * 1200); } };
   setTimeout(tick, 1500); })();
+/* a face you touch squishes and blinks, like something that noticed */
+document.addEventListener("pointerdown", e => { if (REDUCED) return;
+  const av = e.target.closest?.(".av"); if (!av || av.id === "rateBuddy") return;
+  const sv = $("svg", av); if (!sv) return; sv.style.transformOrigin = "50% 88%";
+  sv.animate([{ transform:"none" }, { transform:"scale(1.16,.82)", offset:.25 }, { transform:"scale(.9,1.12)", offset:.55 }, { transform:"scale(1.04,.97)", offset:.8 }, { transform:"none" }],
+    { duration:440, easing:"ease-out" });
+  const ey = $(".eyes", av); if (ey && !ey.classList.contains("blink")) { ey.classList.add("blink"); setTimeout(() => ey.classList.remove("blink"), 340); } }, { passive:true });
 /* the idle life (blinks, glances, floating covers) only runs where you can see it */
 const SLEEP_SEL = ".av,.co,.slip,.sn-late .po,.season-ghost,.season-object,.emptydoor";
 const sleepObs = !REDUCED && "IntersectionObserver" in window
@@ -4129,6 +4191,22 @@ function logoRun(order, step, hold) {
 function logoWake() { let woke = false; try { woke = sessionStorage.getItem("rooms.woke"); sessionStorage.setItem("rooms.woke", "1"); } catch {}
   if (!woke) logoRun([0, 1, 2, 3], 130, 650); }
 /* you logged something: everyone's light comes on, and the mark gives a little hop */
+/* your face in the corner felt the same as the face in the sheet did, for a moment */
+function meReact(v) {
+  const el = $("#meAv"), m = moodOf(v); if (!el || m === "ok" || REDUCED) return;
+  setTimeout(() => { if (!faceMood(el, m)) return; const sv = $("svg", el);
+    sv?.animate(m === "sad" ? [{ transform:"none" }, { transform:"translateY(8%) rotate(-6deg)" }, { transform:"none" }]
+      : [{ transform:"none" }, { transform:"translateY(-26%) scale(1.1)", offset:.4 }, { transform:"none" }], { duration:m === "sad" ? 900 : 560, easing:"cubic-bezier(.3,1.4,.5,1)" });
+    if (m === "love") heartBurst(el, 3);
+    setTimeout(() => faceMood(el, "ok"), 1600); }, 420); }
+/* tap the logo and the four rooms hop in turn; five quick taps and they throw a party */
+(() => { const mk = $(".logo .mark"); if (!mk) return; mk.style.cursor = "pointer"; let taps = [];
+  mk.addEventListener("click", () => { const now = Date.now(); taps = [...taps.filter(t => now - t < 2500), now];
+    logoRun([0, 1, 3, 2], 70, 700); buzz(4);
+    if (!REDUCED) { const rs = $$(".rm", mk), es = $$(".eyes", mk);
+      [0, 1, 3, 2].forEach((i, k) => [rs[i], es[i]].forEach(el => el?.animate([{ transform:"none" }, { transform:"translateY(-9px)", offset:.45 }, { transform:"translateY(1px)", offset:.8 }, { transform:"none" }],
+        { duration:380, delay:k * 70, easing:"cubic-bezier(.3,1.4,.5,1)" }))); }
+    if (taps.length >= 5) { taps = []; burstAt(mk, 30); buzz([10, 50, 14]); say("The rooms say hi"); } }); })();
 function logoCheer() { logoRun([3, 0, 1, 2], 70, 900);
   if (!REDUCED) $(".logo .mark")?.animate([{ transform:"none" }, { transform:"translateY(-3px) scale(1.12)" }, { transform:"none" }],
     { duration:420, delay:300, easing:"cubic-bezier(.2,1.3,.4,1)" }); }
@@ -4276,8 +4354,15 @@ function endLine(fb, es, limit) {
   if (!fb || !es.length || es.length >= limit) return;
   const last = es[es.length - 1];
   const d = String(last.rated_on || "").slice(0, 10);
+  const col = ["#F5A3C7", "#FFB36B", "#B9A6FF", "#8FD3FF"][es.length % 4];
   fb.insertAdjacentHTML("beforeend",
-    `<div class="endline">That's everything${d ? " since " + esc(stampDate(d)) : ""}</div>`); }
+    `<div class="endline"><span class="endguy" aria-hidden="true"><svg viewBox="0 0 44 34"><g class="gb"><rect class="arm" x="30" y="17" width="9" height="5.5" rx="2.75" fill="${col}"/><rect x="8" y="5" width="26" height="36" rx="10" fill="${col}"/>
+      <g class="ge" fill="#151320"><rect x="15" y="13" width="3.6" height="8" rx="1.8"/><rect x="22.6" y="13.6" width="3.6" height="8.6" rx="1.8"/></g></g></svg></span>That's everything${d ? " since " + esc(stampDate(d)) : ""}</div>`);
+  /* he only comes up to say so once you've actually got to the bottom */
+  const guy = fb.lastElementChild?.querySelector(".endguy");
+  if (guy && "IntersectionObserver" in window && !REDUCED) { const io = new IntersectionObserver(xs => { if (!xs.some(x => x.isIntersecting)) return;
+      guy.classList.add("hi"); io.disconnect(); }, { threshold:1 }); io.observe(guy); }
+  else guy?.classList.add("hi", "still"); }
 
 /* a sentence somebody wrote, arriving a few words at a time. Only where slowing you down
    is the point — a memory, a year — never in a feed, where it would be a gimmick. */
@@ -6159,7 +6244,7 @@ function wireSlips(el, es) { const by = Object.fromEntries(es.map(e => [e.id, e]
       const line = el.querySelector(`[data-likes="${CSS.escape(e.id)}"]`) || document.querySelector(`[data-likes="${CSS.escape(e.id)}"]`);
       if (line) rollLine(line, likeLine(e));
       if (!has && !REDUCED) requestAnimationFrame(() => { const nb = $(`[data-like="${CSS.escape(e.id)}"]`);
-        if (nb) { nb.classList.add("popped"); setTimeout(() => nb.classList.remove("popped"), 520); } });
+        if (nb) { nb.classList.add("popped"); heartBurst(nb); setTimeout(() => nb.classList.remove("popped"), 520); } });
     } catch (err) { oops(err, has ? "Couldn't take that back" : "Couldn't like that"); }
     finally { b.disabled = false; } });
   }
@@ -10236,6 +10321,13 @@ async function renderClubs() {
   const places = [place("season", season.label, season.tone, season.mk), place("clubs", "Friend clubs", "lilac", "clubs")];
   /* everything with a finish line in one place: your goal for the year heads the page,
      then the public season and your room's clubs */
+  /* the first time you see your year's goal met, it gets the confetti */
+  { const yr = goalYear(), goal = myGoal();
+    if (goal && goalCount(myEntries) >= goal && !(P.goalParty || []).includes(yr) && currentTab() === "clubs") {
+      P.goalParty = [...(P.goalParty || []), yr]; saveP();
+      setTimeout(() => { const ring = $(".goalcard .gring"); if (!ring) return; burstAt(ring, 34); buzz([12, 60, 18]);
+        if (!REDUCED) ring.animate([{ transform:"scale(.8)" }, { transform:"scale(1.12)", offset:.5 }, { transform:"none" }], { duration:600, easing:"cubic-bezier(.3,1.4,.5,1)" });
+        say(`${yr}'s goal, done`, "good"); }, 500); } }
   body.innerHTML = `${pagerHTML(places, P.clubTab, { id:"seasonPager", mode:"tabs", title:"Challenges", under:`<div class="chgoal">${goalHTML()}</div>` })}
     <p class="sub seasonsub">${P.clubTab === "season" ? (phase.key === "upcoming" ? `Next up · ${esc(season.pitch)}` : esc(season.pitch)) : "A list with a deadline, done together. Yours stay in your room; open ones anyone can join."}</p>
     <div id="seasonContent"></div>`;
@@ -11067,7 +11159,7 @@ function openLog(w, edit = null, preset = 0) { setDoing("logging"); const cfg = 
           logging something you put down a fortnight ago. So it offers what it knows. */""}
     ${(() => { const n = !edit && nowOf(w.id); if (!n) return "";
       const d = dayNo(today()) - dayNo(n.started_on); if (!(d > 0)) return "";
-      return `<div class="chips" style="margin-top:8px"><button class="chip" id="useStart" type="button">Started ${when(n.started_on)} \u00b7 ${waited(d)}</button></div>`; })()}<div class="lbl">Your rating</div><div id="rateWrap">${starRow()}</div><div class="ticks" id="tickRow"></div><div id="lovedWrap"></div>
+      return `<div class="chips" style="margin-top:8px"><button class="chip" id="useStart" type="button">Started ${when(n.started_on)} \u00b7 ${waited(d)}</button></div>`; })()}<div class="lbl">Your rating</div><div class="raterow"><div id="rateWrap">${starRow()}</div><span class="buddy av" id="rateBuddy" aria-hidden="true">${avSVG(avFor(me))}</span></div><div class="ticks" id="tickRow"></div><div id="lovedWrap"></div>
     <div class="lbl">Add a note</div><textarea id="wNote" placeholder="One line, if you want">${edit ? esc(edit.note || "") : esc((P.drafts || {})[w.id]?.note || "")}</textarea>
     <div class="spoilrow"><button type="button" class="chip" id="wSpoil">Hide a spoiler</button><small>Select the part that gives it away, or tap to hide the whole note.</small></div>
     ${/* room_only has been in the schema since v13 and nothing ever set it, so every
@@ -11145,7 +11237,7 @@ function openLog(w, edit = null, preset = 0) { setDoing("logging"); const cfg = 
       const x = e.clientX - r.left;
       return Math.max(1, Math.min(10, Math.ceil((x / r.width) * 10))); };
     const paint = v => { $$("#rateWrap button svg", row).forEach((sv, i) =>
-      sv.innerHTML = starPath(Math.max(0, Math.min(1, v / 2 - i)))); };
+      sv.innerHTML = starPath(Math.max(0, Math.min(1, v / 2 - i)))); buddy(v); };
     row.addEventListener("pointerdown", e => { e.preventDefault(); row.setPointerCapture(e.pointerId);
       row.classList.add("holding"); live = at(e); paint(live); buzz(3); });
     row.addEventListener("pointermove", e => { if (!(e.buttons & 1)) return;
@@ -11156,6 +11248,14 @@ function openLog(w, edit = null, preset = 0) { setDoing("logging"); const cfg = 
       $("#wSave").disabled = false; if (!edit) $("#wSave").textContent = "Save the entry"; buzz(8); drawLoved(); });
     row.addEventListener("pointercancel", () => { row.classList.remove("holding"); paint(score); });
     row.addEventListener("contextmenu", e => e.preventDefault()); };
+  /* your own face sits beside the stars and takes the score to heart as you drag */
+  const buddy = v => { const b = $("#rateBuddy"), m = moodOf(v); if (!faceMood(b, m) || REDUCED) return;
+    const sv = $("svg", b); sv.getAnimations().forEach(a => a.cancel());
+    if (m === "love") { sv.animate([{ transform:"none" }, { transform:"translateY(-22%) scale(1.08,.94)", offset:.4 }, { transform:"translateY(0) scale(1.1,.88)", offset:.75 }, { transform:"none" }],
+      { duration:520, easing:"cubic-bezier(.3,1.4,.5,1)" }); heartBurst(b, 4); buzz([6, 40, 8]); }
+    else if (m === "sad") sv.animate([{ transform:"none" }, { transform:"translateY(6%) scale(1.04,.92)" }, { transform:"translateY(3%) scale(1.02,.96)" }], { duration:420, easing:"ease-out", fill:"forwards" });
+    else sv.animate([{ transform:"scale(1)" }, { transform:"scale(1.1,.9)", offset:.4 }, { transform:"scale(1)" }], { duration:300, easing:"cubic-bezier(.3,1.5,.5,1)", fill:"forwards" }); };
+  buddy(score);
   dragStars(); drawLoved(); $("#wCancel").onclick = closeSheet;
   /* wraps what's selected in || ||; with nothing selected, the whole note. Tapped again on
      a note that's all spoiler, it takes the marks back off. */
@@ -11175,7 +11275,7 @@ function openLog(w, edit = null, preset = 0) { setDoing("logging"); const cfg = 
       /* a rewatch doesn't ask again — only the first time this work stands in the archive */
       const firstTime = who !== "me" && myEntries.filter(x => x.work_id === w.id && !x.private).length === 1
         && (!edit?.id || wasPrivate) && !(await ensureRankCache([w.kind]).then(() => (rankCache[w.kind] || []).includes(w.id)).catch(() => false));
-      justSwept = w.id; inkWash(w.kind); logoCheer(); setDoing(null); recs = null; delete tagCache[w.id]; if (P.picked === w.id) { P.picked = null; saveP(); }
+      justSwept = w.id; inkWash(w.kind); logoCheer(); setDoing(null); meReact(score); recs = null; delete tagCache[w.id]; if (P.picked === w.id) { P.picked = null; saveP(); }
       const saved = (edit ? myEntries.find(x => x.id === edit.id) : myEntries.find(x => x.work_id === w.id)) || e;
       /* rate it, place it, done: the placing happens in this sheet, and the end is a toast
          saying where it landed rather than a second sheet to close */
