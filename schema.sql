@@ -1591,3 +1591,27 @@ grant execute on function push_targets_season(date) to service_role;
 -- v32: a goal for the year ("40 this year"), kept on the profile so the room can see how
 -- everyone's doing. One number per year: { "2026": 40 }.
 alter table profiles add column if not exists goals jsonb;
+
+-- v33: an invite link shows something of the room — the covers of the last few public
+-- things logged in it. Still not a word anybody wrote; a cover is the title's own art.
+drop function if exists peek_room(text);
+create or replace function peek_room(p_code text)
+returns table (name text, members int, logged bigint, handles text[], covers text[])
+language sql security definer stable set search_path = public as $$
+  select r.name,
+         (select count(*)::int from room_members m where m.room_id = r.id),
+         (select count(*) from entries e
+            where e.user_id in (select m.user_id from room_members m where m.room_id = r.id)
+              and not e.part and not e.private),
+         (select coalesce(array_agg(p.handle order by p.handle), '{}')
+            from room_members m join profiles p on p.id = m.user_id where m.room_id = r.id),
+         (select coalesce(array_agg(c.cover), '{}') from (
+            select w.cover from entries e join works w on w.id = e.work_id
+            where e.user_id in (select m.user_id from room_members m where m.room_id = r.id)
+              and not e.part and not e.private and coalesce(e.room_only, false) = false
+              and w.cover like 'https://%'
+            order by e.created_at desc limit 3) c)
+  from rooms r where upper(r.code) = upper(trim(p_code)) limit 1
+$$;
+revoke all on function peek_room(text) from public;
+grant execute on function peek_room(text) to anon, authenticated;

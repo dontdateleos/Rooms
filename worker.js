@@ -194,12 +194,15 @@ async function invitePage(request, url, env) {
   const names = room ? (room.handles || []).slice(0, 3) : [];
   const desc = room ? `${names.length ? names.join(", ") + (room.members > names.length ? ` and ${room.members - names.length} more` : "") + (room.members === 1 ? " is" : " are") + " in here" : "A small room"}, logging what they watch, read and play. Tap to come in.`
     : "A small room of friends logging what they watch, read and play. Tap to come in.";
-  const img = `${home}${path.replace(/[^/]*$/, "")}icons/og.png`;
+  /* the room's latest cover when it has one — a poster says "these people are into
+     things" better than a logo does — and the app's own card when it doesn't */
+  const cover = (room?.covers || []).find(c => /^https:\/\/(image\.tmdb\.org|images\.igdb\.com|covers\.openlibrary\.org)\//.test(c));
+  const img = cover ? cover.replace("/t/p/w342/", "/t/p/w780/") : `${home}${path.replace(/[^/]*$/, "")}icons/og.png`;
   const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${escHTML(title)} · Rooms</title>
 <meta property="og:type" content="website"><meta property="og:site_name" content="Rooms">
 <meta property="og:title" content="${escHTML(title)}"><meta property="og:description" content="${escHTML(desc)}">
-<meta property="og:image" content="${escHTML(img)}"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta property="og:image" content="${escHTML(img)}">${cover ? "" : `<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">`}
 <meta name="twitter:card" content="summary_large_image"><meta name="theme-color" content="#16131C">
 <meta http-equiv="refresh" content="0;url=${escHTML(to)}">
 <style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#16131C;color:#F4EDE2;font:600 16px system-ui,sans-serif;text-align:center;padding:24px}a{color:#FFE066}</style>
