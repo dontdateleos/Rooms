@@ -314,8 +314,11 @@ const PROMPTS = [
   "The most beautiful thing you've finished", "Something you think about more than you'd admit",
   "Everyone should be made to finish this once" ];
 function avHash(s) { let h = 2166136261; for (const ch of String(s || "?")) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return Math.abs(h); }
-/* the seasons, as the app has them — only the end matters here */
-const SEASON_ENDS = [["31 Nights In", "2026-10-01", "2026-10-31"], ["Long Nights", "2026-11-01", "2026-12-31"], ["The Catch-Up", "2027-01-01", "2027-02-28"]];
+/* the seasons, as the app has them: the same calendar every year — only the dates matter here */
+const SEASON_CAL = [["The Catch-Up", 1, 2], ["Short Ones", 3, 3], ["Old Masters", 4, 4], ["Laugh Lines", 5, 5], ["Whodunnit", 6, 6],
+  ["Far, Far Away", 7, 8], ["Second Time Round", 9, 9], ["31 Nights In", 10, 10], ["Long Nights", 11, 12]];
+const seasonDates = y => SEASON_CAL.map(([name, a, b]) => [name, `${y}-${String(a).padStart(2, "0")}-01`,
+  new Date(Date.UTC(y, b, 0)).toISOString().slice(0, 10)]);
 function localNow(tz) {
   const parts = Object.fromEntries(new Intl.DateTimeFormat("en-AU", { timeZone:tz, year:"numeric", month:"2-digit", day:"2-digit",
     hour:"2-digit", hourCycle:"h23", weekday:"short" }).formatToParts(new Date()).map(p => [p.type, p.value]));
@@ -341,7 +344,7 @@ async function runSchedule(env, at = localNow(env.TZ || "Australia/Sydney")) {
       if (hour === 17 && R.night) await toRoom(R.room_id, { title:`Watch night tonight in ${R.name}`,
         body:"Vote on what you're watching before it starts.", url:link, tag:`night-${R.room_id}`.slice(0, 60) }); } }
   /* three nights before a season ends, everybody who's been logging hears about it once */
-  if (hour === 18) for (const [name, starts, ends] of SEASON_ENDS) if (days(ymd, ends) === 2) {
+  if (hour === 18) for (const [name, starts, ends] of seasonDates(+ymd.slice(0, 4))) if (days(ymd, ends) === 2) {
     const r = await svcRpc(env, "push_targets_season", { p_since:starts });
     if (r.ok) sent.push(await deliver(env, await r.json(), { title:`${name} ends in three nights`,
       body:"Three nights left to get your medals. Challenges has where you're up to.", url:"./#seasons", tag:"season-end" })); }

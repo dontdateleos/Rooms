@@ -186,8 +186,14 @@ next episode, and the room's "on now" strip has progress bars. No schema change.
 **Your people on your Up next.** A poster someone in your rooms has finished carries
 their face and score; the bell tells you when it happens.
 
-**A goal for the year (v32).** `profiles.goals` (`{ "2026": 40 }`). Set on You; the
-room's Year section shows everyone's, with pace.
+**A goal for the year (v32).** `profiles.goals` (`{ "2026": 40 }` or
+`{ "2026": { "total": 40, "film": 20, "book": 12 } }`) — a total, a number per medium,
+or both. Set at the top of Challenges; the room's Year section shows everyone's, with pace.
+
+**A season all year.** Catch-Up (Jan–Feb), Short Ones (Mar), Old Masters (Apr), Laugh
+Lines (May), Whodunnit (Jun), Far, Far Away (Jul–Aug), Second Time Round (Sep), 31
+Nights In (Oct), Long Nights (Nov–Dec), each with four ways in. Generated per year in
+`seasonsOf()`; the worker's `SEASON_CAL` mirrors the dates for the ending reminder.
 
 **Invite previews (v33).** `peek_room` returns the room's latest public covers and the
 invite page uses one as its preview image.

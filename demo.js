@@ -106,7 +106,7 @@ for (const [id,kind,title,year,creator,length,a,b,release] of [...WORKS, ...COMI
 }
 
 const PEOPLE = [
-  { id:"u-mo",   handle:"mo",   bio:"Watches everything twice.", goals:{ "2026":18 } },
+  { id:"u-mo",   handle:"mo",   bio:"Watches everything twice.", goals:{ "2026":{ film:12, tv:6 } } },
   { id:"u-ali",  handle:"ali",  bio:"Books mostly. Films under duress.", goals:{ "2026":8 } },
   { id:"u-cass", handle:"cass", bio:"", goals:{ "2026":9 } },
   { id:"u-rue",  handle:"rue",  bio:"Here for the arguments." },
@@ -226,7 +226,7 @@ const roomVotes = [
 
 export function demoSeed() {
   return {
-    profile:{ id:"me", handle:"jord", bio:"Four mediums, one shelf.", avatar:null, goals:{ "2026":20 },
+    profile:{ id:"me", handle:"jord", bio:"Four mediums, one shelf.", avatar:null, goals:{ "2026":{ total:20, film:10, book:4 } },
       created_at:ago(1180) },
     signedOut:false,
     profiles:PEOPLE.map(p => ({ ...p, avatar:null, created_at:ago(900) })),

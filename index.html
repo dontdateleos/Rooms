@@ -2262,6 +2262,19 @@ header,nav{-webkit-backdrop-filter:blur(20px) saturate(1.4);backdrop-filter:blur
 
 /* the smallest phones: the header's right side tucks in so the bell stays on screen */
 @media (max-width:359px){.hr{gap:5px}.bell,.find{width:38px;height:38px}.me{padding:6px 9px;gap:5px}}
+
+/* goals by medium */
+.gkinds{display:grid;grid-template-columns:1fr 1fr;gap:8px 12px;margin-top:10px}
+.gk{display:grid;grid-template-columns:auto 1fr;align-items:baseline;gap:0 6px;font-size:12px}
+.gk b{font:800 12px/1.2 var(--head)}
+.gk em{font-style:normal;color:var(--mute);text-align:right;font-variant-numeric:tabular-nums}
+.gk .pbar{grid-column:1 / -1;height:4px;margin-top:4px}
+.gk .pbar i{background:var(--k)}
+.goalsplit{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.goalsplit label{display:flex;align-items:center;gap:8px;background:var(--cream2);border-radius:14px;padding:6px 6px 6px 12px;font:800 13px/1 var(--head)}
+.goalsplit label::before{content:"";width:9px;height:9px;border-radius:50%;background:var(--k);flex:none}
+.goalsplit span{flex:1}
+.goalsplit input{width:64px;padding:8px 10px;text-align:center;font-size:16px}
 </style>
 </head>
 <body>
@@ -7278,7 +7291,7 @@ let searchT; function wireSearch() { const el = $("#search"); if (!el) return; e
 async function paintRoomGoals(R, es) { const el = $("#roomGoals"); if (!el) return;
   let rows = []; try { rows = await q(sb.from("profiles").select("id,handle,avatar,goals").in("id", R.members.map(m => m.id))); } catch { return; }
   if ($("#roomGoals") !== el) return;
-  const yr = goalYear(), withGoal = rows.map(p => ({ p, goal:+((p.id === me.id ? myGoal() : (p.goals || {})[yr]) || 0) })).filter(x => x.goal);
+  const yr = goalYear(), withGoal = rows.map(p => { const g = p.id === me.id ? myGoals() : goalsOf(p); return { p, g, goal:g?.total || 0 }; }).filter(x => x.goal);
   if (!withGoal.length) { el.innerHTML = myGoal() ? "" : `<button class="linkrow goalset" id="roomGoalSet"><span>Set a goal for ${yr} and the room can see how you're doing</span><b>›</b></button>`;
     const b = $("#roomGoalSet", el); if (b) b.onclick = setGoal; return; }
   const list = withGoal.map(x => { const n = x.p.id === me.id ? goalCount(myEntries) : goalCount(es, x.p.id); return { ...x, n, pace:goalPace(n, x.goal) }; })
@@ -7286,7 +7299,8 @@ async function paintRoomGoals(R, es) { const el = $("#roomGoals"); if (!el) retu
   el.innerHTML = `<div class="card goalsroom"><div class="h"><span>Goals for ${yr}</span><span class="tag dim">${list.length} of ${R.members.length} in</span></div>
     ${list.map(x => { const pct = Math.min(100, Math.round(x.n / x.goal * 100));
       return `<div class="grow2">${avatar(x.p, "av")}<span class="gn"><b>${x.p.id === me.id ? "you" : esc(x.p.handle)}</b><small>${x.n} of ${x.goal} · ${x.pace.word}</small>
-        <span class="pbar"><i style="width:${Math.max(2, pct)}%"></i><em style="left:${Math.min(100, Math.round(x.pace.due / x.goal * 100))}%"></em></span></span></div>`; }).join("")}
+        <span class="pbar"><i style="width:${Math.max(2, pct)}%"></i><em style="left:${Math.min(100, Math.round(x.pace.due / x.goal * 100))}%"></em></span>
+        ${goalKindsHTML(x.g, k => x.p.id === me.id ? goalCount(myEntries, null, k) : goalCount(es, x.p.id, k))}</span></div>`; }).join("")}
     ${myGoal() ? "" : `<button class="linkrow goalset" id="roomGoalSet" style="margin-top:8px"><span>Set yours</span><b>›</b></button>`}</div>`;
   const b = $("#roomGoalSet", el); if (b) b.onclick = setGoal; }
 async function paintRoomNow(R) {
@@ -8945,8 +8959,20 @@ function yourNumbersHTML() { const y = yourNumbers(); if (y.n < 2) return "";
    is another evening spent on it), never the welcome picks or a single episode. Pace is
    where you'd be today if the year went evenly. */
 const goalYear = () => String(new Date().getFullYear());
-const myGoal = () => +((me?.goals || {})[goalYear()] ?? (P.goals || {})[goalYear()] ?? 0) || 0;
-const goalCount = (es, uid) => es.filter(e => (!uid || e.user_id === uid) && !isPart(e.work_id) && !isBefore(e) && String(e.rated_on || "").startsWith(goalYear())).length;
+/* A year's goal is a total, or a number per medium, or both: { total:40, film:20, book:12 }.
+   A plain number (how it used to be kept) is a total. Per medium with no total adds up. */
+const goalsFrom = v => { if (!v) return null; if (typeof v === "number") return v > 0 ? { total:v } : null;
+  const g = {}; for (const k of ["total", ...CAB_ORDER]) if (+v[k] > 0) g[k] = +v[k];
+  if (!g.total) { const sum = CAB_ORDER.reduce((t, k) => t + (g[k] || 0), 0); if (sum) g.total = sum; }
+  return g.total ? g : null; };
+const goalsOf = p => goalsFrom((p?.goals || {})[goalYear()]);
+const myGoals = () => goalsOf(me) || goalsFrom((P.goals || {})[goalYear()]);
+const myGoal = () => myGoals()?.total || 0;
+const goalCount = (es, uid, kind) => es.filter(e => (!uid || e.user_id === uid) && (!kind || kindOf(e.work_id) === kind) && !isPart(e.work_id) && !isBefore(e) && String(e.rated_on || "").startsWith(goalYear())).length;
+/* the medium rows under a goal: "Films 12 of 20" with a bar each, only for the ones set */
+const goalKindsHTML = (g, count) => { const ks = CAB_ORDER.filter(k => g?.[k]); if (!ks.length) return "";
+  return `<span class="gkinds">${ks.map(k => { const n = count(k), pct = Math.min(100, Math.round(n / g[k] * 100));
+    return `<span class="gk" style="--k:${K(k).colour}"><b>${esc(K(k).plural)}</b><em>${n} of ${g[k]}</em><span class="pbar"><i style="width:${Math.max(2, pct)}%"></i></span></span>`; }).join("")}</span>`; };
 function goalPace(n, goal) { const now = new Date(), y = now.getFullYear();
   const day = (Date.UTC(y, now.getMonth(), now.getDate()) - Date.UTC(y, 0, 1)) / 864e5 + 1, len = (y % 4 === 0 && (y % 100 !== 0 || y % 400 === 0)) ? 366 : 365;
   const due = Math.floor(goal * day / len), d = n - due;
@@ -8958,20 +8984,28 @@ function goalHTML() { const goal = myGoal(), yr = goalYear();
     <span class="gring" style="--p:${pct}"><b>${n}</b><small>of ${goal}</small></span>
     <span class="gt"><b>${n >= goal ? `${yr}'s goal, done` : `Your ${yr} goal`}</b>
       <small>${n >= goal ? `${n - goal ? `${n - goal} past it. ` : ""}Anything else is a bonus.` : `${pace.word === "right on pace" ? "Right on pace" : pace.word.replace(/^./, c => c.toUpperCase())} · ${goal - n} to go`}</small>
-      <span class="pbar"><i style="width:${Math.max(2, pct)}%"></i><em style="left:${Math.min(100, Math.round(pace.due / goal * 100))}%"></em></span></span></button>`; }
-async function setGoal() { const yr = goalYear(), cur = myGoal();
-  const v = await openAsk(`<h3>Your goal for ${yr}</h3><p class="sub">How many things do you mean to finish this year? Films, shows, books and games all count.</p>
-    <div class="chips" style="margin-top:12px">${[12, 24, 52, 100].map(n => `<button class="chip ${cur === n ? "on" : ""}" data-goal="${n}">${n}</button>`).join("")}</div>
-    <input id="goalN" type="number" inputmode="numeric" min="1" max="999" placeholder="Or any number" value="${cur && ![12,24,52,100].includes(cur) ? cur : ""}" style="margin-top:10px">
-    <div class="stack"><button class="btn" id="goalOk">Set it</button>${cur ? `<button class="btn quiet" id="goalOff">No goal this year</button>` : ""}<button class="btn quiet" id="goalNo">Not now</button></div>`,
-    done => { $$("[data-goal]").forEach(b => b.onclick = () => done(+b.dataset.goal));
-      $("#goalOk").onclick = () => done(+$("#goalN").value || 0); $("#goalNo").onclick = () => done(null);
-      const off = $("#goalOff"); if (off) off.onclick = () => done(0); });
-  if (v == null || !(v >= 0) || v > 999) return;
-  const goals = { ...(me.goals || {}), [yr]:v || null }; me.goals = goals; P.goals = { ...(P.goals || {}), [yr]:v || null }; saveP();
+      <span class="pbar"><i style="width:${Math.max(2, pct)}%"></i><em style="left:${Math.min(100, Math.round(pace.due / goal * 100))}%"></em></span>
+      ${goalKindsHTML(myGoals(), k => goalCount(myEntries, null, k))}</span></button>`; }
+async function setGoal() { const yr = goalYear(), cur = myGoals() || {};
+  const split = CAB_ORDER.some(k => cur[k]);
+  const v = await openAsk(`<h3>Your goals for ${yr}</h3><p class="sub">How many things do you mean to finish this year? Set a total, or a number for each, or both.</p>
+    <div class="lbl" style="margin-top:12px">Everything</div>
+    <div class="chips">${[12, 24, 52, 100].map(n => `<button class="chip ${cur.total === n && !split ? "on" : ""}" data-goal="${n}">${n}</button>`).join("")}</div>
+    <input id="goalN" type="number" inputmode="numeric" min="1" max="999" placeholder="Or any number" value="${cur.total && (split || ![12,24,52,100].includes(cur.total)) ? cur.total : ""}" style="margin-top:10px">
+    <div class="lbl" style="margin-top:14px">Or by medium</div>
+    <div class="goalsplit">${CAB_ORDER.map(k => `<label style="--k:${K(k).colour}"><span>${esc(K(k).plural)}</span><input type="number" inputmode="numeric" min="0" max="999" data-gk="${k}" value="${cur[k] || ""}" placeholder="–"></label>`).join("")}</div>
+    <p class="sub" style="margin-top:6px;font-size:12px">Leave the total empty and it's the sum of these.</p>
+    <div class="stack"><button class="btn" id="goalOk">Set it</button>${cur.total ? `<button class="btn quiet" id="goalOff">No goals this year</button>` : ""}<button class="btn quiet" id="goalNo">Not now</button></div>`,
+    done => { $$("[data-goal]").forEach(b => b.onclick = () => { $("#goalN").value = b.dataset.goal; $$("[data-goal]").forEach(x => x.classList.toggle("on", x === b)); });
+      $("#goalOk").onclick = () => { const g = { total:+$("#goalN").value || 0 }; $$("[data-gk]").forEach(x => { if (+x.value > 0) g[x.dataset.gk] = Math.min(999, +x.value); }); done(g); };
+      $("#goalNo").onclick = () => done(null); const off = $("#goalOff"); if (off) off.onclick = () => done({}); });
+  if (v == null) return;
+  const g = goalsFrom(v);
+  if (g && g.total > 9999) return;
+  const goals = { ...(me.goals || {}), [yr]:g }; me.goals = goals; P.goals = { ...(P.goals || {}), [yr]:g }; saveP();
   if (sb.__local) { if (sb.__db.profile) { sb.__db.profile.goals = goals; sb.__save?.(); } }
   else try { await q(sb.from("profiles").update({ goals }).eq("id", me.id)); } catch {}
-  buzz(8); say(v ? `${v} this year. You're on ${goalCount(myEntries)}.` : "No goal this year", "good"); refresh(); }
+  buzz(8); say(g ? `${g.total} this year. You're on ${goalCount(myEntries)}.` : "No goals this year", "good"); refresh(); }
 function playNumbers() { const el = $("#yNum"); if (!el || REDUCED) return;
   $$(".ynk b", el).forEach(b => { const to = +b.dataset.to; b.textContent = "0"; setTimeout(() => tickTo(b, to), 120); });
   el.classList.add("grow"); }
@@ -9833,7 +9867,74 @@ const CATCH_UP_2027 = {
   ],
   picks:[]
 };
-const SEASONS = [HALLOWEEN_2026, LONG_NIGHTS_2026, CATCH_UP_2027];
+/* ---------- the rest of the year ----------
+   There's always a season on. After the three above, the calendar repeats every year:
+   the Catch-Up (Jan–Feb), Short Ones (Mar), Old Masters (Apr), Laugh Lines (May),
+   Whodunnit (Jun), Far, Far Away (Jul–Aug), Second Time Round (Sep), 31 Nights In (Oct)
+   and Long Nights (Nov–Dec). Each is worked out from what every title already carries —
+   its length, its year, its genres, or the rewatch tick — so nothing new is looked up. */
+const lastDay = (y, m) => new Date(Date.UTC(y, m, 0)).toISOString().slice(0, 10);   /* m is 1-12 */
+const hasGenre = (e, words) => seasonGenres(e).some(g => words.some(w => g.includes(w)));
+const SHORT_ENOUGH = { film:100, tv:10, book:200, game:8 };
+const fourWays = (slug, y, names, copies, mk) => ["film", "tv", "book", "game"].map((kind, i) => ({ id:`${slug}-${kind}-${y}`, kind,
+  icon:["◒", "▤", "✦", "◇"][i], name:names[i], copy:copies[i], mark:mk([-2, 2, -3, 3][i], AV_COLS[[0, 2, 3, 4][i]]) }));
+const picksOf = (kind, titles) => titles.map(t => [kind, t]);
+const SEASON_YEAR = [
+  { slug:"short-ones", m:[3, 3], name:"Short Ones", label:"Short Ones", tone:"sky", mk:"film",
+    rule:"Short ones only: films under 100 minutes, shows of 10 episodes or fewer, books under 200 pages, games under 8 hours.",
+    pitch:"Short and sweet, all March.", qualifies:e => { const n = seasonLength(e), max = SHORT_ENOUGH[seasonKind(e)]; return !!max && n > 0 && n <= max; },
+    names:["Under the Hour Hand", "One Weekend", "Pocket Books", "One Sitting"], copies:["Films under 100 minutes.", "Shows of ten episodes or fewer.", "Books under 200 pages.", "Games under eight hours."],
+    picks:[...picksOf("film", ["Run Lola Run", "Primer", "Cléo from 5 to 7", "Frances Ha", "Coherence", "Rope", "Palm Springs", "Moonrise Kingdom"]),
+      ...picksOf("tv", ["Chernobyl", "Baby Reindeer", "The Queen's Gambit", "Adolescence", "Station Eleven", "Beef", "Watchmen", "Mare of Easttown"]),
+      ...picksOf("book", ["Train Dreams", "Small Things Like These", "Of Mice and Men", "Convenience Store Woman", "Giovanni's Room", "Foster", "The Old Man and the Sea"]),
+      ...picksOf("game", ["Journey", "Inside", "What Remains of Edith Finch", "Gone Home", "Firewatch", "Portal", "A Short Hike"])] },
+  { slug:"old-masters", m:[4, 4], name:"Old Masters", label:"Old Masters", tone:"lilac", mk:"archive",
+    rule:"Anything first released before 1990.", pitch:"Before 1990, all April.", qualifies:e => { const y = +(e.works?.year || works[e.work_id]?.year || 0); return y > 0 && y < 1990; },
+    names:["Repertory", "Reruns", "The Old Shelf", "Cartridge"], copies:["Films from before 1990.", "Shows from before 1990.", "Books from before 1990.", "Games from before 1990."],
+    picks:[...picksOf("film", ["Seven Samurai", "Vertigo", "Chinatown", "The Apartment", "Stalker", "Jaws", "Tokyo Story", "Network"]),
+      ...picksOf("tv", ["Fawlty Towers", "I, Claudius", "The Prisoner", "Cheers", "Blackadder", "Tinker Tailor Soldier Spy"]),
+      ...picksOf("book", ["Middlemarch", "Rebecca", "Beloved", "The Remains of the Day", "Things Fall Apart", "Dune"]),
+      ...picksOf("game", ["Super Mario Bros. 3", "The Legend of Zelda", "Tetris", "Metroid", "Prince of Persia"])] },
+  { slug:"laugh-lines", m:[5, 5], name:"Laugh Lines", label:"Laugh Lines", tone:"butter", mk:"crowd",
+    rule:"Comedy-tagged logs only.", pitch:"Funny ones, all May.", qualifies:e => hasGenre(e, ["comed", "humor", "humour", "comic", "satire"]),
+    names:["Big Laughs", "Sitcom Club", "Funny Books", "Silly Games"], copies:["Comedies through May.", "Comedy shows through May.", "Funny books through May.", "Funny games through May."],
+    picks:[...picksOf("film", ["Groundhog Day", "Airplane!", "Some Like It Hot", "Paddington 2", "Hot Fuzz", "What We Do in the Shadows"]),
+      ...picksOf("tv", ["Fleabag", "Arrested Development", "Veep", "Schitt's Creek", "Detectorists", "The Office"]),
+      ...picksOf("book", ["Lucky Jim", "Three Men in a Boat", "Good Omens", "Catch-22", "Cold Comfort Farm"]),
+      ...picksOf("game", ["Untitled Goose Game", "Portal 2", "Psychonauts 2", "It Takes Two", "Hi-Fi Rush"])] },
+  { slug:"whodunnit", m:[6, 6], name:"Whodunnit", label:"Whodunnit", tone:"pink", mk:"ghost",
+    rule:"Mystery, crime and thriller logs only.", pitch:"Mysteries, all June.", qualifies:e => hasGenre(e, ["myster", "crime", "thriller", "detective", "suspense", "noir"]),
+    names:["The Usual Suspects", "Case Files", "Page Turners", "Detective Work"], copies:["Mystery and crime films.", "Mystery and crime shows.", "Mystery and crime books.", "Mystery and crime games."],
+    picks:[...picksOf("film", ["Knives Out", "Memories of Murder", "Zodiac", "Rear Window", "Gone Girl", "L.A. Confidential"]),
+      ...picksOf("tv", ["Twin Peaks", "Mare of Easttown", "Only Murders in the Building", "True Detective", "Broadchurch"]),
+      ...picksOf("book", ["The Secret History", "And Then There Were None", "The Big Sleep", "In the Woods", "Gone Girl"]),
+      ...picksOf("game", ["Return of the Obra Dinn", "Disco Elysium", "Her Story", "L.A. Noire", "The Case of the Golden Idol"])] },
+  { slug:"far-far-away", m:[7, 8], name:"Far, Far Away", label:"Far Away", tone:"mint", mk:"globe",
+    rule:"Science fiction and fantasy logs only.", pitch:"Other worlds, July and August.", qualifies:e => hasGenre(e, ["science fiction", "sci-fi", "fantasy", "space"]),
+    names:["Other Worlds", "Long Voyages", "Strange Shelves", "Elsewhere"], copies:["Sci-fi and fantasy films.", "Sci-fi and fantasy shows.", "Sci-fi and fantasy books.", "Sci-fi and fantasy games."],
+    picks:[...picksOf("film", ["Arrival", "Spirited Away", "Blade Runner", "The Fellowship of the Ring", "Children of Men", "Dune: Part Two"]),
+      ...picksOf("tv", ["Severance", "Andor", "The Expanse", "Arcane", "Battlestar Galactica"]),
+      ...picksOf("book", ["The Left Hand of Darkness", "Piranesi", "Project Hail Mary", "A Wizard of Earthsea", "Hyperion", "The Name of the Wind"]),
+      ...picksOf("game", ["Outer Wilds", "Mass Effect 2", "Hollow Knight", "Hades", "Chrono Trigger"])] },
+  { slug:"second-time-round", m:[9, 9], name:"Second Time Round", label:"Second Time", tone:"apricot", mk:"shelf",
+    rule:"Rewatches, rereads and replays only — tick it when you log.", pitch:"Old favourites, all September.", qualifies:e => /^(Rewatch|Reread|Replay)$/.test(e.context?.first || ""),
+    names:["Rewatch", "Back for More", "Reread", "One More Run"], copies:["Films you've seen before.", "Shows you've watched before.", "Books you've read before.", "Games you've played before."],
+    picks:[] },
+];
+const seasonsOf = y => [
+  /* the Catch-Up, the Halloween month and Long Nights come round again, with the year in
+     their challenge names so one year's notches never count towards another's */
+  ...(y > 2027 ? [{ ...CATCH_UP_2027, id:`catch-up-${y}`, starts:`${y}-01-01`, ends:lastDay(y, 2), rule:`Anything first released in ${y - 1}.`,
+    qualifies:e => String(e.works?.year || works[e.work_id]?.year || "") === String(y - 1),
+    challenges:CATCH_UP_2027.challenges.map(c => ({ ...c, id:`${c.id}-${y}`, copy:c.copy.replace("2026", String(y - 1)) })) }] : []),
+  ...(y >= 2027 ? SEASON_YEAR.map(t => ({ id:`${t.slug}-${y}`, name:t.name, label:t.label, tone:t.tone, mk:t.mk, rule:t.rule, pitch:t.pitch,
+    starts:`${y}-${String(t.m[0]).padStart(2, "0")}-01`, ends:lastDay(y, t.m[1]), qualifies:t.qualifies, picks:t.picks,
+    challenges:fourWays(t.slug, y, t.names, t.copies, t.mk === "ghost" ? ghostMark : longMark) })) : []),
+  ...(y > 2026 ? [{ ...HALLOWEEN_2026, id:`halloween-${y}`, starts:`${y}-10-01`, ends:`${y}-10-31`, challenges:HALLOWEEN_2026.challenges.map(c => ({ ...c, id:`${c.id}-${y}` })) },
+    { ...LONG_NIGHTS_2026, id:`long-nights-${y}`, starts:`${y}-11-01`, ends:`${y}-12-31`, challenges:LONG_NIGHTS_2026.challenges.map(c => ({ ...c, id:`${c.id}-${y}` })) }] : [])];
+const SEASONS = [HALLOWEEN_2026, LONG_NIGHTS_2026, CATCH_UP_2027,
+  ...Array.from({ length:Math.max(1, new Date().getFullYear() + 2 - 2027) }, (_, i) => seasonsOf(2027 + i)).flat()]
+  .sort((a, b) => a.starts.localeCompare(b.starts));
 /* The season the Seasons tab is about: the one running; between seasons, the next one
    (so the tab says what's coming, not what's over); after the last, the last. */
 function currentSeason(d = today()) {
