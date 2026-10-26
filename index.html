@@ -2389,6 +2389,70 @@ html.tilt .logo .mark .eyes{translate:calc(var(--tx,0) * 2.4px) calc(var(--ty,0)
 @keyframes plxBig{from{transform:scale(1.4) translateY(-9%)}to{transform:scale(1.4) translateY(9%)}}
 @keyframes plxSmall{from{translate:0 -4%}to{translate:0 4%}}
 @media (prefers-reduced-motion:reduce){#newPill{transition:none}.caughtup .ctick path{stroke-dashoffset:0}}
+
+/* ---------- faces as reactions ---------- */
+.lk .myreact{display:block;width:24px;height:24px;line-height:0}.lk .myreact svg{width:100%;height:100%}
+.likes .rf{display:inline-flex;vertical-align:-5px;margin-right:6px;font-style:normal}
+.likes .rf span{width:20px;height:20px;margin-right:-5px;line-height:0}.likes .rf span:last-child{margin-right:0}
+.likes .rf svg{width:100%;height:100%}
+.reacttray{position:fixed;z-index:80;display:flex;gap:4px;padding:6px;border-radius:20px;background:var(--card);
+  box-shadow:0 14px 34px -12px rgba(0,0,0,.5),0 0 0 1px var(--line);transform:translateY(8px) scale(.9);opacity:0;transform-origin:20% 100%;
+  transition:transform .26s cubic-bezier(.3,1.5,.5,1),opacity .15s}
+.reacttray.on{transform:none;opacity:1}
+.reacttray button{border:0;background:none;padding:4px 6px;border-radius:14px;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;color:var(--mute)}
+.reacttray button svg{width:36px;height:36px;transition:transform .2s cubic-bezier(.3,1.6,.5,1)}
+.reacttray button:hover svg,.reacttray button:focus-visible svg{transform:translateY(-4px) scale(1.12)}
+.reacttray button.on{background:var(--cream2)}
+.reacttray small{font:700 10px var(--head)}
+.reacttray.on button{animation:trayIn .3s cubic-bezier(.3,1.5,.5,1) both}
+.reacttray.on button:nth-child(2){animation-delay:.04s}.reacttray.on button:nth-child(3){animation-delay:.08s}.reacttray.on button:nth-child(4){animation-delay:.12s}
+@keyframes trayIn{from{transform:translateY(10px) scale(.6);opacity:0}}
+/* ---------- your people, star by star ---------- */
+.fr{position:relative}
+.pspread{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;align-items:end;padding:6px 4px 12px;margin-bottom:6px;border-bottom:1px solid var(--line)}
+.pspread .sb{display:flex;flex-direction:column;align-items:center;gap:4px}
+.pspread .sf{display:flex;justify-content:center;min-height:20px;align-items:center}
+.pspread .sf .av{width:20px;height:20px;margin-left:-6px}.pspread .sf .av:first-child{margin-left:0}
+.pspread .sf em{font:800 10px var(--head);color:var(--mute);font-style:normal;margin-left:3px}
+.pspread i{display:block;width:100%;max-width:38px;border-radius:7px 7px 3px 3px;background:var(--wk,var(--apricot));height:var(--h);transition:height .7s cubic-bezier(.2,1.1,.3,1)}
+.fr.pre .pspread i{height:3px}
+.pspread .sb:nth-child(2) i{transition-delay:.05s}.pspread .sb:nth-child(3) i{transition-delay:.1s}.pspread .sb:nth-child(4) i{transition-delay:.15s}.pspread .sb:nth-child(5) i{transition-delay:.2s}
+.pspread small{font:800 11px var(--head);color:var(--mute)}
+.fr.veiled{min-height:128px}
+.fr.veiled .pspread,.fr.veiled .frrows{filter:blur(8px);opacity:.7;pointer-events:none;user-select:none}
+.unveil{position:absolute;inset:0;border:0;background:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:16px;cursor:pointer;color:var(--ink);text-align:center}
+.unveil b{font:800 15px/1.25 var(--head);max-width:24ch}.unveil small{color:var(--mute);font-size:12.5px}
+/* ---------- what brings you together ---------- */
+.bond{display:flex;align-items:center;gap:10px;margin-top:12px;font-size:13.5px;color:var(--mute)}
+.bond b{color:var(--ink)}
+.bond .bf{display:flex;flex:none}.bond .bf .av{width:30px;height:30px}
+.bond .bf .av:first-child{animation:leanR .7s cubic-bezier(.3,1.3,.5,1) .2s both}
+.bond .bf .av:last-child{margin-left:-9px;animation:leanL .7s cubic-bezier(.3,1.3,.5,1) .2s both}
+@keyframes leanR{from{transform:translateX(-10px) rotate(-8deg)}to{transform:rotate(6deg)}}
+@keyframes leanL{from{transform:translateX(10px) rotate(8deg)}to{transform:rotate(-6deg)}}
+.ring b{font:inherit}
+/* ---------- last week in the room ---------- */
+.recap .h{display:flex;align-items:center}
+.rcx{margin-left:auto;border:0;background:none;color:var(--mute);font-size:14px;cursor:pointer;padding:4px 6px}
+.rstrip{display:flex;gap:6px;overflow:hidden;margin:4px -4px 10px;padding:2px 4px;-webkit-mask-image:linear-gradient(90deg,#000 85%,transparent)}
+.rstrip span{flex:none;animation:stripIn .55s cubic-bezier(.2,1,.3,1) calc(var(--i) * 70ms) both}
+.rstrip .co{width:46px;height:68px;border-radius:8px;object-fit:cover;display:block;background:var(--cream2)}
+@keyframes stripIn{from{transform:translateX(60px);opacity:0}}
+.rline{display:flex;align-items:center;gap:8px;margin:6px 0 0;font-size:13.5px;color:var(--mute)}
+.rline b{color:var(--ink)}.rline .av{width:22px;height:22px}
+.wstreak{color:var(--ink)}
+/* ---------- the tab icons each do their own thing once ---------- */
+nav button.on .ni-f :is(rect,path,g){transform-box:fill-box;transform-origin:50% 50%}
+nav button[data-tab="doors"].on .ni-f rect{animation:tiPop .42s cubic-bezier(.3,1.6,.5,1) both}
+nav button[data-tab="doors"].on .ni-f rect:nth-child(2){animation-delay:.05s}nav button[data-tab="doors"].on .ni-f rect:nth-child(4){animation-delay:.1s}nav button[data-tab="doors"].on .ni-f rect:nth-child(3){animation-delay:.15s}
+nav button[data-tab="library"].on .ni-f rect:nth-child(-n+2){animation:tiDeal .45s cubic-bezier(.3,1.4,.5,1) both}
+nav button[data-tab="library"].on .ni-f rect:nth-child(2){animation-delay:.07s}
+nav button[data-tab="clubs"].on .ni-f{transform-origin:50% 90%;animation:tabPop .28s cubic-bezier(.2,1.2,.4,1),tiWobble .6s ease-in-out .15s}
+nav button[data-tab="taste"].on .ni-f g{animation:blinkOnce .3s ease-in-out .25s}
+@keyframes tiPop{from{transform:scale(.3);opacity:.3}}
+@keyframes tiDeal{from{transform:translateY(-6px);opacity:0}}
+@keyframes tiWobble{25%{transform:rotate(-12deg)}55%{transform:rotate(8deg)}80%{transform:rotate(-3deg)}}
+@media (prefers-reduced-motion:reduce){nav button.on .ni-f,nav button.on .ni-f *,.rstrip span,.bond .bf .av,.reacttray,.reacttray button{animation:none!important;transition:none!important}.pspread i{transition:none}}
 </style>
 </head>
 <body>
@@ -2723,7 +2787,8 @@ const tag = k => `<span class="tag ${k}">${K(k).label}</span>`;
 /* a cover fades in the first time it loads; once it's been seen, a redraw (coming back
    to a tab, say) shows it straight away rather than fading every poster in again */
 const seenCovers = window.__seenCovers = new Set();
-const cover = (w, cls = "co") => w?.cover ? `<img class="${cls}${seenCovers.has(w.cover) ? " ok" : ""}" src="${esc(w.cover)}" alt="" onload="this.classList.add('ok');window.__seenCovers.add(this.getAttribute('src'))" onerror="this.remove()">` : `<div class="${cls}"></div>`;
+const coverBg = u => { if (seenCovers.has(u)) return ""; const t = blurSrc(u); return t && t !== u ? ` style="background:url('${esc(t)}') center/cover"` : ""; };
+const cover = (w, cls = "co") => w?.cover ? `<img class="${cls}${seenCovers.has(w.cover) ? " ok" : ""}" src="${esc(w.cover)}"${coverBg(w.cover)} alt="" onload="this.classList.add('ok');window.__seenCovers.add(this.getAttribute('src'))" onerror="this.remove()">` : `<div class="${cls}"></div>`;
 
 /* ============ prefs + sources ============ */
 const WORKER = "https://rooms.jordandf1.workers.dev";
@@ -2942,7 +3007,7 @@ function makeLocalSb(seed) {
     const p = db.profiles.find(x => x.id === id); return p ? { id:p.id, handle:p.handle, bio:p.bio||"", avatar:p.avatar||null } : null; };
   const expand = (t, r, sel = "") => { r = Object.assign({}, r);
     if (t === "entries") { r.works = db.works[r.work_id] || null; r.profiles = profOf(r.user_id);
-      r.reactions = db.reactions.filter(x => x.entry_id === r.id).map(x => ({ user_id:x.user_id }));
+      r.reactions = db.reactions.filter(x => x.entry_id === r.id).map(x => ({ user_id:x.user_id, kind:x.kind || null }));
       r.replies = db.replies.filter(x => x.entry_id === r.id).map(x => Object.assign({}, x, { profiles:profOf(x.user_id) })); }
     if (t === "lists") r.list_items = db.list_items.filter(x => x.list_id === r.id).map(x => Object.assign({}, x, { works:db.works[x.work_id]||null }));
     if (t === "rooms") r.room_members = db.room_members.filter(x => x.room_id === r.id).map(x => ({ user_id:x.user_id, profiles:profOf(x.user_id) }));
@@ -3418,7 +3483,7 @@ async function fillWorks(ids) { const need = [...new Set(ids)].filter(id => id &
   if (!need.length) return;
   try { (await q(sb.from("works").select("*").in("id", need))).forEach(remember); } catch {} }
 const logged = id => loggedIds.has(id);
-const ENTRY_SEL = "id,user_id,work_id,rated_on,score,note,loved,breakdown,context,created_at,room_only,profiles!entries_user_id_fkey(id,handle,bio,avatar),works(*),reactions(user_id),replies(id,user_id,body,created_at,profiles(id,handle,avatar))";
+const ENTRY_SEL = "id,user_id,work_id,rated_on,score,note,loved,breakdown,context,created_at,room_only,profiles!entries_user_id_fkey(id,handle,bio,avatar),works(*),reactions(*),replies(id,user_id,body,created_at,profiles(id,handle,avatar))";
 
 async function loadLists() { const rows = await q(sb.from("lists").select("id,name,created_at,list_items(work_id,added_at,position,works(*))").order("created_at"));
   /* a hand-placed item keeps its slot; anything never dragged falls in behind, oldest first */
@@ -4592,7 +4657,7 @@ let talkCh = null;
 function joinTalkChannel() {
   if (talkCh || !me || sb.__local || !sb.channel) return;
   try { const ch = sb.channel(`talk:${me.id}`);
-    ch.on("postgres_changes", { event:"INSERT", schema:"public", table:"reactions" }, p => onLiveTalk(p.new, "liked"));
+    ch.on("postgres_changes", { event:"INSERT", schema:"public", table:"reactions" }, p => onLiveTalk(p.new, REACTS[kindOfR(p.new)]));
     ch.on("postgres_changes", { event:"INSERT", schema:"public", table:"replies" }, p => onLiveTalk(p.new, "replied to"));
     talkCh = ch; ch.subscribe(); } catch {} }
 let talkQ = [], talkT = null;
@@ -4618,7 +4683,7 @@ async function refreshSlip(id, what) {
   if (!full) return; remember(full.works);
   for (const slip of $$(`[data-slip="${CSS.escape(id)}"]`)) {
     const lk = $("[data-likes]", slip);
-    if (lk && what === "like") { rollLine(lk, likeLine(full));
+    if (lk && what === "like") { paintLikes(lk, full);
       if (!REDUCED) { lk.insertAdjacentHTML("beforebegin", `<i class="heartup" aria-hidden="true">${heartSVG(true)}</i>`);
         const h = lk.previousElementSibling; setTimeout(() => h?.remove(), 1000); } }
     if (what === "reply") { const t = $("[data-thread]", slip); if (!t) continue;
@@ -4703,7 +4768,7 @@ async function checkNew() {
   /* v17 gave reactions a clock. Before it, this select throws on the unknown column and
      agreement simply does not appear — which is the right way to be out of date. */
   if (mineIds.size) { try { const rs = await q(sb.from("reactions")
-      .select("entry_id,user_id,created_at,profiles(id,handle,bio,avatar)")
+      .select("*,profiles(id,handle,bio,avatar)")
       .in("entry_id", [...mineIds].slice(0, 200)).neq("user_id", me.id).limit(200));
     unseen.likes = rs.filter(r => String(r.created_at || "") > mark); } catch { unseen.likes = []; } }
   try { unseen.games = await gameNotes(); } catch { unseen.games = []; }
@@ -4764,7 +4829,7 @@ function noteList() {
   for (const f of unseen.followers) { const p = f.profiles; if (!p) continue;
     out.push({ kind:"follow", at:f.created_at, p, id:"f" + p.id }); }
   for (const r of unseen.likes) { const p = r.profiles; if (!p) continue;
-    out.push({ kind:"like", at:r.created_at, p, id:"l" + r.entry_id + r.user_id,
+    out.push({ kind:"like", react:kindOfR(r), at:r.created_at, p, id:"l" + r.entry_id + r.user_id,
       entry:myEntries.find(e => e.id === r.entry_id) }); }
   for (const e of unseen.upNext) out.push({ kind:"upnext", at:e.created_at, p:e.profiles || { id:e.user_id }, id:"u" + e.id,
     work:works[e.work_id], score:e.score });
@@ -4795,7 +4860,7 @@ function noteRow(n) {
     <div class="t"><p>${n.line}</p><small>${esc(n.room.name)} · Play</small></div></div>`; }
   const t = n.work?.title || n.entry?.works?.title || works[n.entry?.work_id]?.title || "";
   const line = n.kind === "follow" ? "started following you"
-    : n.kind === "like" ? (t ? `liked what you said about <b>${esc(t)}</b>` : "liked something you wrote")
+    : n.kind === "like" ? (t ? `${REACTS[n.react || "like"]} what you said about <b>${esc(t)}</b>` : `${REACTS[n.react || "like"]} something you wrote`)
     : n.kind === "upnext" ? `finished <b>${esc(t)}</b>, which is on your Up next · ${(n.score / 2).toFixed(1)}\u2605`
     : (t ? `handed you <b>${esc(t)}</b>` : "handed you something");
   const acts = n.kind === "follow"
@@ -5797,7 +5862,48 @@ function roomMoments(entries) {
   }
   return out.sort((a,b) => String(b.at).localeCompare(String(a.at))).slice(0,4);
 }
-function roomStreak(entries) {
+/* ---------- last week in the room ----------
+   Monday to Wednesday, once a week, a small card: last week's posters running past like a
+   filmstrip, the room's top pick, and who logged the most. Dismissed, it's gone till next week. */
+function recapHTML(R, es) { const d = new Date().getDay(); if (!R || ![1, 2, 3].includes(d)) return "";
+  const thisWk = weekStart(new Date()), lastWk = weekStart(new Date(Date.now() - 7 * 864e5));
+  if ((P.recapSeen || {})[R.id] === thisWk) return "";
+  const wk = es.filter(e => !e.part && !isQuiet(e) && weekStart(String(e.created_at || e.rated_on).slice(0, 10) + "T12:00:00") === lastWk);
+  if (wk.length < 3) return "";
+  const byW = {}; wk.forEach(e => (byW[e.work_id] ||= []).push(e.score));
+  const top = Object.entries(byW).map(([id, ss]) => [id, ss.reduce((a, b) => a + b, 0) / ss.length, ss.length]).sort((a, b) => (b[2] > 1) - (a[2] > 1) || b[1] - a[1])[0];
+  const byU = {}; wk.forEach(e => byU[e.user_id] = (byU[e.user_id] || 0) + 1);
+  const [busy, bn] = Object.entries(byU).sort((a, b) => b[1] - a[1])[0];
+  const strip = [...new Set(wk.map(e => e.work_id))].slice(0, 8).map(id => works[id] || wk.find(e => e.work_id === id)?.works).filter(Boolean);
+  const tw = works[top[0]] || {};
+  return `<div class="card recap" id="recap"><div class="h"><span>Last week in ${esc(R.name)}</span><button class="rcx" id="recapX" aria-label="Hide until next week">✕</button></div>
+    <div class="rstrip">${strip.map((w, i) => `<span style="--i:${i}">${cover(w)}</span>`).join("")}</div>
+    <p class="rline"><span><b>${esc(tw.title || "")}</b> was the room's pick · ${(top[1] / 2).toFixed(1)}★${top[2] > 1 ? ` from ${said(top[2])} of you` : ""}</span></p>
+    <p class="rline">${avatar(profOfId(busy))}<span><b>${esc(busy === me.id ? "You" : profOfId(busy).handle || "Someone")}</b> logged the most · ${bn}</span></p></div>`; }
+function wireRecap(root, R) { const x = $("#recapX", root); if (!x) return;
+  x.onclick = () => { P.recapSeen = { ...(P.recapSeen || {}), [R.id]:weekStart(new Date()) }; saveP(); leaveOut($("#recap")); }; }
+/* ---------- the room's weekly streak ----------
+   Weekly, not daily, so it never nags: a week counts when everyone (most of a bigger
+   room) logged at least one thing in it. It only shows from two weeks up, and missing a
+   week just quietly ends it. This week counts too, once it's already made. */
+const weekStart = d => { const x = new Date(d); x.setHours(12, 0, 0, 0); x.setDate(x.getDate() - (x.getDay() + 6) % 7); return x.toISOString().slice(0, 10); };
+function weekStreak(R, es) { const n = R.members.length; if (n < 2) return 0;
+  const need = n <= 4 ? n : Math.ceil(n * .75), by = {};
+  for (const e of es) { if (e.part || isQuiet(e)) continue; const w = weekStart(String(e.created_at || e.rated_on).slice(0, 10) + "T12:00:00");
+    (by[w] ||= new Set()).add(e.user_id); }
+  const made = w => (by[w]?.size || 0) >= need;
+  let cur = new Date(), streak = 0; const thisWk = weekStart(cur);
+  if (made(thisWk)) streak++;
+  cur.setDate(cur.getDate() - 7);
+  for (let i = 0; i < 52; i++) { const w = weekStart(cur); if (!made(w)) break; streak++; cur.setDate(cur.getDate() - 7); }
+  return streak; }
+/* ---------- numbers that roll ----------
+   A number that changed since you last saw it turns over like an odometer instead of
+   snapping. Only on a change: a number you've seen before just sits there. */
+const lastRoll = {};
+function rollAll(root = document) { $$("[data-roll]", root).forEach(el => { const k = el.dataset.roll, v = el.textContent.trim();
+  if (lastRoll[k] !== undefined && lastRoll[k] !== v) odometer(el, v); lastRoll[k] = v; }); }
+function roomStreak(entries, R = null) {
   const since = new Date(); since.setDate(since.getDate() - 7);
   const cutoff = since.toISOString().slice(0,10), byDay = new Map(), people = new Set();
   for (const e of entries) { const day = String(e.created_at || e.rated_on || "").slice(0,10);
@@ -5805,7 +5911,8 @@ function roomStreak(entries) {
     const set = byDay.get(day) || new Set(); set.add(e.user_id); byDay.set(day, set); }
   const sharedDays = [...byDay.values()].filter(set => set.size >= 2).length;
   if (people.size < 2) return "";
-  return `<small class="room-streak" title="${sharedDays ? `${sharedDays} ${sharedDays===1?"day":"days"} more than one of you logged` : ""}">${people.size} logged this week</small>`;
+  const wk = R ? weekStreak(R, entries) : 0;
+  return `<small class="room-streak" title="${sharedDays ? `${sharedDays} ${sharedDays===1?"day":"days"} more than one of you logged` : ""}"><b class="rnum" data-roll="wk:${R?.id || ""}">${people.size}</b> logged this week${wk >= 2 ? ` · <span class="wstreak" title="Weeks in a row that ${R.members.length <= 4 ? "all of you" : "most of you"} logged something">${wk}-week streak</span>` : ""}</small>`;
 }
 function roomMomentsHTML(moments, fresh = new Set()) { if (!moments.length) return "";
   return `<div class="lbl">Room moments</div><div class="card" style="margin-top:0">${moments.map(m => { const w = works[m.workId] || {}, key = `${m.kind}:${m.workId}:${m.at}`;
@@ -6341,6 +6448,49 @@ function knownName(id) {
   const b = followsMe.get?.(id); if (b?.handle) return b.handle;
   return null; }
 const LIKE_NAMES = 2;
+/* ---------- faces instead of emoji ----------
+   A heart is a tap. Hold it and you can answer with your own face instead: laughing,
+   wowed, or moved. Same one-per-person row as a like, with a kind on it (v35); a
+   database without the column still takes the like. */
+const REACTS = { like:"liked", laugh:"laughed at", wow:"was wowed by", cry:"was moved by" };
+const REACT_NAMES = { like:"Love it", laugh:"Funny", wow:"Wow", cry:"Moved" };
+const REACT_EYES = {
+  like: c => MOOD_EYES.love(c),
+  laugh: c => `<path d="M35 49 l10 6 l-10 6 M67 49 l-10 6 l10 6" stroke="${c}" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M41 67 q9.5 12 19 0z" fill="${c}"/>`,
+  wow: c => `<circle cx="42" cy="53" r="6"/><circle cx="60" cy="53" r="6"/><ellipse cx="51" cy="71" rx="4.2" ry="5.2" fill="none" stroke="${c}" stroke-width="3.6"/>`,
+  cry: c => MOOD_EYES.sad(c) + `<path d="M42 67 q-4 7 0 9.5 q4 -2.5 0 -9.5z" fill="#8FD3FF"/>`,
+};
+const kindOfR = r => REACTS[r?.kind] ? r.kind : "like";
+/* your own face (or anyone's), pulling the reaction's expression */
+const reactFace = (p, k) => avSVG(avFor(p)).replace(/(<g class="eyes" fill="([^"]+)">)[\s\S]*?(<\/g><\/g>)/, (m, open, ink, close) => open + (REACT_EYES[k] || REACT_EYES.like)(ink) + close);
+const profOfId = id => id === me?.id ? me : rooms.flatMap(r => r.members || []).find(m => m.id === id) || follows.find(f => f.followee === id)?.profiles || { id };
+/* the faces of whoever answered with one, in front of the line of names */
+function rfHTML(e) { const rs = (e.reactions || []).filter(r => kindOfR(r) !== "like").slice(0, 3); if (!rs.length) return "";
+  return `<i class="rf" aria-hidden="true">${rs.map(r => `<span>${reactFace(profOfId(r.user_id), kindOfR(r))}</span>`).join("")}</i>`; }
+function paintLikes(line, e) { if (!line) return; rollLine(line, likeLine(e)); $(".rf", line)?.remove(); line.insertAdjacentHTML("afterbegin", rfHTML(e)); }
+function myReactHTML(e) { const r = (e.reactions || []).find(x => x.user_id === me.id);
+  return r && kindOfR(r) !== "like" ? `<span class="myreact">${reactFace(me, kindOfR(r))}</span>` : heartSVG(!!r); }
+let reactTray = null;
+function closeReactTray() { reactTray?.remove(); reactTray = null; }
+function openReactTray(b, e, after) { closeReactTray(); buzz(8);
+  const cur = (e.reactions || []).find(x => x.user_id === me.id), r = b.getBoundingClientRect();
+  const t = document.createElement("div"); t.className = "reacttray"; t.setAttribute("role", "menu");
+  t.innerHTML = Object.keys(REACTS).map(k => `<button role="menuitem" data-rk="${k}" class="${cur && kindOfR(cur) === k ? "on" : ""}" aria-label="${REACT_NAMES[k]}">${reactFace(me, k)}<small>${REACT_NAMES[k]}</small></button>`).join("");
+  document.body.appendChild(t); reactTray = t;
+  const w = t.offsetWidth; t.style.left = Math.max(10, Math.min(innerWidth - w - 10, r.left + r.width / 2 - 24)) + "px"; t.style.top = Math.max(10, r.top - t.offsetHeight - 8) + "px";
+  requestAnimationFrame(() => t.classList.add("on"));
+  $$("[data-rk]", t).forEach(x => x.onclick = async ev => { ev.stopPropagation(); closeReactTray(); await setReaction(e, x.dataset.rk); after(); });
+  setTimeout(() => addEventListener("pointerdown", function off(ev) { if (!t.contains(ev.target)) { closeReactTray(); removeEventListener("pointerdown", off, true); } }, true), 0); }
+async function setReaction(e, k) {
+  const cur = (e.reactions || []).find(x => x.user_id === me.id), off = cur && kindOfR(cur) === k;
+  try { if (cur) await q(sb.from("reactions").delete().eq("entry_id", e.id).eq("user_id", me.id));
+    if (!off) { try { await q(sb.from("reactions").insert(k === "like" ? { entry_id:e.id, user_id:me.id } : { entry_id:e.id, user_id:me.id, kind:k })); }
+      catch (err) { if (k === "like" || !/kind/i.test(err?.message || "")) throw err;
+        await q(sb.from("reactions").insert({ entry_id:e.id, user_id:me.id })); k = "like"; say("Faces need the latest update, so that went in as a like"); } }
+    e.reactions = (e.reactions || []).filter(x => x.user_id !== me.id); if (!off) e.reactions.push({ user_id:me.id, kind:k === "like" ? null : k });
+    if (!off && e.user_id && e.user_id !== me.id) notify({ to:e.user_id, title:`${me.handle} ${REACTS[k]} what you said`, body:`About ${works[e.work_id]?.title || "something you logged"}.`, tag:"like-" + e.id });
+    if (!off && !REDUCED) { const nb = $(`[data-like="${CSS.escape(e.id)}"]`); if (nb) { nb.classList.add("popped"); setTimeout(() => nb.classList.remove("popped"), 520); } }
+  } catch (err) { oops(err, "Couldn't react to that"); } }
 function likeLine(e) {
   const rs = e.reactions || []; if (!rs.length) return "";
   const names = [], ids = rs.map(r => r.user_id);
@@ -6348,10 +6498,12 @@ function likeLine(e) {
   if (ids.includes(me.id)) names.push("you");
   for (const id of ids) { if (id === me.id || names.length >= LIKE_NAMES) continue;
     const n = knownName(id); if (n && !names.includes(n)) names.push(n); }
-  const rest = rs.length - names.length;
-  if (!names.length) return `${said(rest)} ${rest === 1 ? "person" : "people"} liked this`;
-  if (!rest) return `${names.length === 1 ? names[0] : names.slice(0,-1).join(", ") + " and " + names[names.length-1]} liked this`;
-  return `${names.join(", ")} and ${said(rest)} other${rest === 1 ? "" : "s"} liked this`; }
+  const rest = rs.length - names.length, ks = new Set(rs.map(kindOfR));
+  /* one kind is said as that kind; a mix of hearts and faces is just a reaction */
+  const verb = ks.size > 1 ? "reacted to this" : `${REACTS[[...ks][0]]} this`;
+  if (!names.length) return `${said(rest)} ${rest === 1 ? "person" : "people"} ${verb}`;
+  if (!rest) return `${names.length === 1 ? names[0] : names.slice(0,-1).join(", ") + " and " + names[names.length-1]} ${verb}`;
+  return `${names.join(", ")} and ${said(rest)} other${rest === 1 ? "" : "s"} ${verb}`; }
 
 function slipHTML(e, opts = {}) { const w = remember(e.works) || works[e.work_id] || {}; const mine = e.user_id === me.id;
   const same = (e.reactions||[]).some(r => r.user_id === me.id), n = (e.reactions||[]).length;
@@ -6361,9 +6513,9 @@ function slipHTML(e, opts = {}) { const w = remember(e.works) || works[e.work_id
     ${e.note?`<div class="q${String(e.note).length > 210 ? " clip" : ""}">“${noteHTML(e.note)}”</div>${String(e.note).length > 210 ? `<button class="more" data-more="${e.id}">More</button>` : ""}`:""}
     ${(() => { const t = together(e); return t ? `<div class="loved" style="margin-top:10px"><span class="together">◆ ${t}</span></div>` : ""; })()}
     ${e.loved?.length?`<div class="loved">${e.loved.slice(0,4).map(k => `<span>${esc(k.startsWith("person:")?lc(k.slice(7)):k)}</span>`).join("")}</div>`:""}
-    <div class="foot"><div class="acts">${mine ? `<button class="chip" data-edit-review="${e.id}">Edit</button><button class="chip" data-delete-review="${e.id}">Delete</button>` : `<button data-like="${e.id}" class="lk ${same?"on":""}" aria-pressed="${same}" aria-label="${same ? "Liked — tap to take it back" : "Like this"}">${heartSVG(same)}</button><button data-reply="${e.id}" class="lk" aria-label="Reply">${BUBBLE}</button>`
+    <div class="foot"><div class="acts">${mine ? `<button class="chip" data-edit-review="${e.id}">Edit</button><button class="chip" data-delete-review="${e.id}">Delete</button>` : `<button data-like="${e.id}" class="lk ${same?"on":""}" aria-pressed="${same}" aria-label="${same ? "Liked — tap to take it back" : "Like this. Hold for faces"}">${myReactHTML(e)}</button><button data-reply="${e.id}" class="lk" aria-label="Reply">${BUBBLE}</button>`
       }${mine && (e.private ?? myEntries.find(x => x.id === e.id)?.private) ? `<span class="tag dim">just me</span>` : mine && e.room_only ? `<span class="tag dim">room only</span>` : ""}</div>${stars(e.score,"sm")}</div>
-    <div class="likes" data-likes="${e.id}">${(() => { const l = likeLine(e); return l ? `<span>${l}</span>` : ""; })()}</div>
+    <div class="likes" data-likes="${e.id}">${(() => { const l = likeLine(e); return l ? `${rfHTML(e)}<span>${l}</span>` : ""; })()}</div>
     <div class="thread" data-thread="${e.id}">${threadHTML(e)}</div></div>`; }
 /* Replies: the table has been there since the start and nothing ever showed one. The last
    two sit under the card; the rest open on a tap. Yours can be taken back with a tap. */
@@ -6416,18 +6568,27 @@ function wireSlips(el, es) { const by = Object.fromEntries(es.map(e => [e.id, e]
      on every tap — which rebuilt the page under your thumb and threw away where you
      were reading. It now appears wherever a review does, and only the button it was,
      plus the line of names under it, changes. */
-  $$("[data-like]", el).forEach(b => b.onclick = async () => { const e = by[b.dataset.like], has = (e.reactions||[]).some(r => r.user_id === me.id);
+  $$("[data-like]", el).forEach(b => { b._e = by[b.dataset.like]; if (b.dataset.hw) return; b.dataset.hw = "1"; let ht = null;
+    const repaint = () => { const e = b._e; if (!e) return; const has = (e.reactions || []).some(r => r.user_id === me.id);
+      b.classList.toggle("on", has); b.setAttribute("aria-pressed", String(has)); b.innerHTML = myReactHTML(e);
+      paintLikes(document.querySelector(`[data-likes="${CSS.escape(e.id)}"]`), e); };
+    b.addEventListener("pointerdown", () => { clearTimeout(ht); ht = setTimeout(() => { b.dataset.held = "1"; openReactTray(b, b._e, repaint); }, 420); });
+    for (const ev of ["pointerup", "pointerleave", "pointercancel"]) b.addEventListener(ev, () => clearTimeout(ht));
+    b.addEventListener("contextmenu", ev => { ev.preventDefault(); clearTimeout(ht); b.dataset.held = "1"; openReactTray(b, b._e, repaint); }); });
+  $$("[data-like]", el).forEach(b => b.onclick = async () => { if (b.dataset.held) { delete b.dataset.held; return; }
+    const e = by[b.dataset.like], has = (e.reactions||[]).some(r => r.user_id === me.id);
     b.disabled = true;
     try { if (has) await q(sb.from("reactions").delete().eq("entry_id",e.id).eq("user_id",me.id)); else { await q(sb.from("reactions").insert({ entry_id:e.id, user_id:me.id }));
         if (e.user_id && e.user_id !== me.id) notify({ to:e.user_id, title:`${me.handle} liked what you said`, body:`About ${works[e.work_id]?.title || "something you logged"}.`, tag:"like-" + e.id }); }
       e.reactions = has ? (e.reactions||[]).filter(r => r.user_id !== me.id) : [...(e.reactions||[]), { user_id:me.id }];
-      b.classList.toggle("on", !has); b.innerHTML = heartSVG(!has);
+      b.classList.toggle("on", !has); b.innerHTML = myReactHTML(e);
+      if (!has && !P.reactTip) { P.reactTip = 1; saveP(); setTimeout(() => say("Hold the heart to answer with your face instead"), 900); }
       b.setAttribute("aria-pressed", String(!has));
       b.setAttribute("aria-label", has ? "Like this" : "Liked — tap to take it back");
       /* the line under it is the other half of the same fact, and it is the only other
          thing that moves — the list must not be rebuilt under the thumb that tapped */
       const line = el.querySelector(`[data-likes="${CSS.escape(e.id)}"]`) || document.querySelector(`[data-likes="${CSS.escape(e.id)}"]`);
-      if (line) rollLine(line, likeLine(e));
+      if (line) paintLikes(line, e);
       if (!has && !REDUCED) requestAnimationFrame(() => { const nb = $(`[data-like="${CSS.escape(e.id)}"]`);
         if (nb) { nb.classList.add("popped"); heartBurst(nb); setTimeout(() => nb.classList.remove("popped"), 520); } });
     } catch (err) { oops(err, has ? "Couldn't take that back" : "Couldn't like that"); }
@@ -6537,7 +6698,7 @@ async function renderRoomFeed(fb, R) {
   const pal = roomPalmares(es), hasYear = R.members.length > 1 && (!!pal || yearEs.length > 0);
   const sec = P.roomSec === "charts" || P.roomSec === "play" || (P.roomSec === "year" && hasYear) ? P.roomSec : "talk";
   const secs = [["talk", "Talk"], ["play", "Play"], ["charts", "Charts"], ...(hasYear ? [["year", "Year"]] : [])];
-  fb.innerHTML = `<div class="roomline"><div class="rl-l"><div class="here" id="hereRow" aria-live="polite"><small>Nobody else in here right now</small></div>${roomStreak(es)}</div>
+  fb.innerHTML = `<div class="roomline"><div class="rl-l"><div class="here" id="hereRow" aria-live="polite"><small>Nobody else in here right now</small></div>${roomStreak(es, R)}</div>
       <button class="iconbtn sm" id="roomMenu" aria-label="Room options"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button></div>
       <div class="nowrow" id="roomNow"></div>
       ${R.members.length < 2 ? `<div class="card"><div class="alone"><b>It's just you in here.</b>
@@ -6551,7 +6712,7 @@ async function renderRoomFeed(fb, R) {
          meant the freshness bookkeeping above (which runs on every render, filter or no)
          marked a moment seen before it was ever shown. */""}
     <div data-rsec="talk"${sec === "talk" ? "" : " hidden"}>
-    ${tonightCard()}
+    ${recapHTML(R, es)}${tonightCard()}
     <div id="roomAsks"></div>
     ${roomMomentsHTML(moments, freshMoments)}
     <div class="tagrow" id="talkTop" style="margin:18px 0 8px"><span class="lbl" style="margin:0">What the room said</span><span class="tfilters" aria-label="Room activity filter">${[["all","All"],["reviews","Reviews"],["activity","Activity"]].map(([k,l]) => `<button data-rfilter="${k}" class="${roomFilter===k?"on":""}">${l}</button>`).join("")}</span></div>${(() => { if (!roomEntries.length && !(roomFilter === "activity" && moments.length)) return blank("var(--pink)","“",roomFilter === "reviews" ? "No reviews yet" : roomFilter === "activity" ? "No activity yet" : "Nothing said yet",roomFilter === "reviews" ? "Reviews with a note or reaction will appear here." : roomFilter === "activity" ? "Room activity without a written review will appear here." : "Log something and it lands here for the room to see.",[["talkAdd","Log something"]]);
@@ -6619,7 +6780,7 @@ async function renderRoomFeed(fb, R) {
     $$(".chip[data-prof]", seats).slice(was).forEach((c, i) => {
       c.style.animationDelay = (i * 90) + "ms"; c.classList.add("seat");
       setTimeout(() => { c.classList.remove("seat"); c.style.animationDelay = ""; }, 700 + i * 90); }); })();
-  wireSlips(fb, es); revealIn(fb); wireCaughtUp(fb); if (currentTab() === "doors") joinRoomChannel(R); roomMood(es);
+  wireSlips(fb, es); revealIn(fb); wireCaughtUp(fb); rollAll(fb); wireRecap(fb, R); if (currentTab() === "doors") joinRoomChannel(R); roomMood(es);
   /* presence says who is here; this says what they are actually in the middle of */
   paintRoomNow(R);
   ["talkAdd","compAdd"].forEach(id => { const el = $("#"+id); if (el) el.onclick = openAdd; });
@@ -9458,7 +9619,7 @@ function goalHTML() { const goal = myGoal(), yr = goalYear();
   if (!goal) return `<button class="linkrow goalset" id="goalSet"><span>Set a goal for ${yr}</span><b>›</b></button>`;
   const n = goalCount(myEntries), pace = goalPace(n, goal), pct = Math.min(100, Math.round(n / goal * 100));
   return `<button class="card goalcard" id="goalSet" aria-label="Your ${yr} goal: ${n} of ${goal}, ${pace.word}. Change it">
-    <span class="gring" style="--p:${pct}"><b>${n}</b><small>of ${goal}</small></span>
+    <span class="gring" style="--p:${pct}"><b data-roll="goal">${n}</b><small>of ${goal}</small></span>
     <span class="gt"><b>${n >= goal ? `${yr}'s goal, done` : `Your ${yr} goal`}</b>
       <small>${n >= goal ? `${n - goal ? `${n - goal} past it. ` : ""}Anything else is a bonus.` : `${pace.word === "right on pace" ? "Right on pace" : pace.word.replace(/^./, c => c.toUpperCase())} · ${goal - n} to go`}</small>
       <span class="pbar"><i style="width:${Math.max(2, pct)}%"></i><em style="left:${Math.min(100, Math.round(pace.due / goal * 100))}%"></em></span>
@@ -10525,6 +10686,7 @@ async function renderClubs() {
       setTimeout(() => { const ring = $(".goalcard .gring"); if (!ring) return; burstAt(ring, 34); buzz([12, 60, 18]);
         if (!REDUCED) ring.animate([{ transform:"scale(.8)" }, { transform:"scale(1.12)", offset:.5 }, { transform:"none" }], { duration:600, easing:"cubic-bezier(.3,1.4,.5,1)" });
         say(`${yr}'s goal, done`, "good"); }, 500); } }
+  setTimeout(() => rollAll(body), 0);
   body.innerHTML = `${pagerHTML(places, P.clubTab, { id:"seasonPager", mode:"tabs", title:"Challenges", under:`<div class="chgoal">${goalHTML()}</div>` })}
     <p class="sub seasonsub">${P.clubTab === "season" ? (phase.key === "upcoming" ? `Next up · ${esc(season.pitch)}` : esc(season.pitch)) : "A list with a deadline, done together. Yours stay in your room; open ones anyone can join."}</p>
     <div id="seasonContent"></div>`;
@@ -10811,6 +10973,12 @@ function countUp(el, to, suffix = "", ms = 600) {
 }
 
 /* ============ WORK PAGE ============ */
+/* how your people scored it, star by star, with their faces on the bars */
+function spreadHTML(fr) { const b = [[], [], [], [], []];
+  for (const e of fr) b[Math.min(5, Math.max(1, Math.round(e.score / 2))) - 1].push(e);
+  const most = Math.max(...b.map(x => x.length));
+  return `<div class="pspread" aria-label="How your people scored it">${b.map((es, i) => `<div class="sb"><span class="sf">${es.slice(0, 3).map(e => avatar(e.profiles)).join("")}${es.length > 3 ? `<em>+${es.length - 3}</em>` : ""}</span>
+    <i style="--h:${es.length ? Math.max(10, Math.round(es.length / most * 52)) : 3}px"></i><small>${i + 1}★</small></div>`).join("")}</div>`; }
 async function openWork(id) { let w = works[id]; if (!w) { try { const rows = await q(sb.from("works").select("*").eq("id", id).limit(1)); w = remember(rows[0]); } catch {} } if (!w) return;
   const cfg = K(w.kind);
   /* the top of a title's page is lit by its own poster, blurred, the way a streaming app
@@ -10954,8 +11122,12 @@ async function openWork(id) { let w = works[id]; if (!w) { try { const rows = aw
   { const mine2 = new Set([...rooms.flatMap(r => r.members.map(m => m.id)), ...follows.map(f => f.followee)]); mine2.delete(me.id);
     const best = {}; for (const e of others) if (mine2.has(e.user_id) && (!best[e.user_id] || e.rated_on > best[e.user_id].rated_on)) best[e.user_id] = e;
     const fr = Object.values(best).sort((a, b) => b.score - a.score), box = $("#wFriends");
-    if (box && fr.length) { box.innerHTML = `<div class="lbl">Your people</div><div class="card fr">${fr.slice(0, 8).map(e => `<button class="frrow" data-fe="${esc(e.id)}">${avatar(e.profiles)}<span class="t"><b>${esc(e.profiles?.handle || "someone")}</b>${e.note ? `<small>“${esc(noteText(e.note).slice(0, 90))}${noteText(e.note).length > 90 ? "…" : ""}”</small>` : ""}</span>${stars(e.score, "sm")}</button>`).join("")}</div>`;
-      $$("[data-fe]", box).forEach(b => b.onclick = () => { const e = fr.find(x => x.id === b.dataset.fe); if (e) openEntry(e); }); } }
+    const rated = !!(mine.length || derived);
+    if (box && fr.length) { box.innerHTML = `<div class="lbl">Your people</div><div class="card fr pre${rated ? "" : " veiled"}">${fr.length >= 2 ? spreadHTML(fr) : ""}<div class="frrows">${fr.slice(0, 8).map(e => `<button class="frrow" data-fe="${esc(e.id)}">${avatar(e.profiles)}<span class="t"><b>${esc(e.profiles?.handle || "someone")}</b>${e.note ? `<small>“${esc(noteText(e.note).slice(0, 90))}${noteText(e.note).length > 90 ? "…" : ""}”</small>` : ""}</span>${stars(e.score, "sm")}</button>`).join("")}</div>${rated ? "" : `<button class="unveil" id="frPeek" type="button"><b>Rate it first, then see how your people scored it</b><small>or tap to peek</small></button>`}</div>`;
+      $$("[data-fe]", box).forEach(b => b.onclick = () => { const e = fr.find(x => x.id === b.dataset.fe); if (e) openEntry(e); });
+      /* the bars grow in once they're showing: straight away if you've rated it, on a peek if not */
+      const card = $(".fr", box), show = () => requestAnimationFrame(() => requestAnimationFrame(() => card.classList.remove("pre")));
+      if (rated) show(); else $("#frPeek").onclick = () => { card.classList.remove("veiled"); $("#frPeek").remove(); show(); }; } }
   const myTaste = tasteOf(myEntries);
   P.entrySort = P.entrySort || "popular";
   const paint = () => { const el = $("#wEntries"); if (!el) return;
@@ -11249,6 +11421,12 @@ function wireEps(box, show) {
 }
 
 /* ============ PROFILE PAGE ============ */
+/* the thing you both loved most, and the two of you leaning in over it */
+function bondHTML(p, es) { const theirs = {}; for (const e of es) if (!e.part && (!theirs[e.work_id] || e.rated_on > theirs[e.work_id].rated_on)) theirs[e.work_id] = e;
+  let best = null; for (const e of myEntries) { if (e.part) continue; const t = theirs[e.work_id]; if (!t || e.score < 8 || t.score < 8) continue;
+    const v = e.score + t.score; if (!best || v > best.v) best = { v, w:works[e.work_id] || t.works }; }
+  if (!best?.w) return "";
+  return `<div class="bond"><span class="bf">${avatar(me)}${avatar(p)}</span><span>What brings you together: <b>${esc(best.w.title)}</b></span></div>`; }
 async function openProfile(userId) { const self = userId === me.id;
   let p = self ? me : null; if (!p) { try { const rows = await q(sb.from("profiles").select("id,handle,bio,avatar").eq("id", userId).limit(1)); p = rows[0]; } catch {} } if (!p) return;
   let es = []; try { es = notApart(await wholeEntries(f => { let x = sb.from("entries").select(ENTRY_SEL);
@@ -11266,7 +11444,8 @@ async function openProfile(userId) { const self = userId === me.id;
   const shared = mine.craft.slice(0,5).map(c=>c[0]).filter(k => t.craft.slice(0,5).some(c => c[0] === k));
   const marks = marksFor(p, es, t, match, { clubsFinished: await clubsFinishedBy(userId) });
   ringCache[userId] = ringFromMarks(marks);
-  openSheet(`<div style="display:flex;align-items:center;gap:12px">${avatar(p, "meet")}<div style="flex:1"><h3>${esc(p.handle)}${self?` <span class="tag dim">you</span>`:""}</h3>${p.bio?`<p class="sub" style="margin-top:2px">${esc(p.bio)}</p>`:""}</div>${!self && match!==null?`<span class="ring">${match}% match</span>`:""}</div>
+  openSheet(`<div style="display:flex;align-items:center;gap:12px">${avatar(p, "meet")}<div style="flex:1"><h3>${esc(p.handle)}${self?` <span class="tag dim">you</span>`:""}</h3>${p.bio?`<p class="sub" style="margin-top:2px">${esc(p.bio)}</p>`:""}</div>${!self && match!==null?`<span class="ring"><b id="pMatch">${match}</b>% match</span>`:""}</div>
+    ${!self ? bondHTML(p, es) : ""}
     <div class="tally">${Object.keys(KINDS).filter(k=>t.kinds[k]).map(k => `<span><b>${t.kinds[k]}</b>${K(k).label.toLowerCase()}</span>`).join("")}
       <button class="chip" id="showFollowers" style="padding:5px 10px"><b style="margin-right:4px">${fc}</b>${fc === 1 ? "follower" : "followers"}</button><button class="chip" id="showFollowing" style="padding:5px 10px"><b style="margin-right:4px">${fg}</b>following</button></div>
     <div class="stack">${self ? `<button class="btn ghost" id="editMe">Edit profile &amp; settings</button>` : `<button class="btn ${isFollowing(p.id)?"ghost":"blue"}" id="followBtn">${isFollowing(p.id)?"Following":"Follow"}</button>`}</div>
@@ -11297,7 +11476,8 @@ async function openProfile(userId) { const self = userId === me.id;
   const fb = $("#followBtn"); if (fb) fb.onclick = async () => {
     if (await setFollow(p.id, !isFollowing(p.id))) openProfile(p.id); };
   const em = $("#editMe"); if (em) em.onclick = openYou;
-  $("#showFollowers").onclick = () => openPeople(p, "followers"); $("#showFollowing").onclick = () => openPeople(p, "following"); }
+  $("#showFollowers").onclick = () => openPeople(p, "followers"); $("#showFollowing").onclick = () => openPeople(p, "following");
+  if ($("#pMatch")) odometer($("#pMatch"), $("#pMatch").textContent); }
 
 /* followers / following lists */
 async function openPeople(p, which) {

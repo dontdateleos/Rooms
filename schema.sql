@@ -1626,3 +1626,11 @@ do $$ begin
     where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'replies')
   then execute 'alter publication supabase_realtime add table public.replies'; end if;
 end $$;
+
+-- v35: a reaction can be a face as well as a heart. Null (or 'like') is the heart; the
+-- others are laughing, wowed and moved. Still one per person per entry.
+alter table reactions add column if not exists kind text;
+do $$ begin
+  if not exists (select 1 from pg_constraint where conname = 'reactions_kind_check')
+  then alter table reactions add constraint reactions_kind_check check (kind is null or kind in ('like','laugh','wow','cry')); end if;
+end $$;

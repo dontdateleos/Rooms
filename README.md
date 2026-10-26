@@ -87,7 +87,7 @@ The service-role key must never go near this repo.
 |---|---|
 | `index.html` | the whole app — markup, styles, logic, the card renderer, the avatar generator |
 | `site.html` | the marketing page |
-| `schema.sql` | Postgres tables, policies and RPCs, v1 through v34 — one file, run start to finish |
+| `schema.sql` | Postgres tables, policies and RPCs, v1 through v35 — one file, run start to finish |
 | `worker.js` | Cloudflare Worker: TMDB proxy, Open Library proxy, IGDB OAuth |
 | `manifest.webmanifest`, `sw.js`, `icons/` | what makes it installable |
 
@@ -220,6 +220,16 @@ straight to a vote on your own picks.
 - **The room:** the room's square gets a face only when the last fortnight was loved (8+) or hated (≤4.5).
 - **Anniversary:** confetti on the anniversary of joining.
 - **Tilt-to-look:** opt-in, off by default.
+
+**Little extras.**
+- **Face reactions (v35):** hold the heart to answer with your own face instead: laughing, wowed or moved. Stored in `reactions.kind`; before v35 it stays a like.
+- **Your people on a title:** a star-by-star spread with their faces, blurred until you've rated it yourself.
+- **Monday recap:** "Last week in the room" shows Monday to Wednesday, and can be dismissed until next week.
+- **Weekly room streak:** shows from two weeks up.
+- **Rolling numbers:** numbers that changed since you last saw them roll like an odometer.
+- **Profiles:** "What brings you together".
+- **Blurred poster previews** while posters load.
+- **Tab icons:** each does its own little move once when picked.
 
 **Imports are history, not news.** Entries brought in from another app carry
 `context.imported` (and `context.before` when undated, as the welcome picks do); they
