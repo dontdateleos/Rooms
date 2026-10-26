@@ -216,7 +216,6 @@ straight to a vote on your own picks.
 **The little guys, kept in their places.** Faces react, dress up and feel things only where `index.html` says they may ("where the little guys are allowed"):
 - **Expressions:** the rating buddy and your corner face react to scores.
 - **Toasts and loading:** toasts carry a pleased or worried face, and search plus the room feed's first load show a thinking face.
-- **Hats:** October and Nov–Dec hats appear on your face, who's here, profiles and match screens. They can be switched off.
 - **Your week:** your corner face shows how your week's been going.
 - **The room:** the room's square gets a face only when the last fortnight was loved (8+) or hated (≤4.5).
 - **Anniversary:** confetti on the anniversary of joining.

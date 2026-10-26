@@ -2279,7 +2279,7 @@ header,nav{-webkit-backdrop-filter:blur(20px) saturate(1.4);backdrop-filter:blur
 /* ---------- alive: things that happen while you watch ---------- */
 .here .face{position:relative}
 .here .face.busy{z-index:2}
-.rl-l:has(.typing,.av.wear){padding-block:8px;margin-block:-8px}
+.rl-l:has(.typing){padding-block:8px;margin-block:-8px}
 .here .face .typing{position:absolute;right:-9px;bottom:-5px;display:flex;gap:2px;padding:3.5px 4px;border-radius:2px 8px 8px 8px;
   background:var(--ink);box-shadow:0 0 0 2px var(--card);line-height:0;animation:typeIn .3s cubic-bezier(.2,1.4,.4,1) both}
 .here .face .typing b{width:4px;height:4px;border-radius:50%;background:var(--card);animation:typeDot 1.2s ease-in-out 20}
@@ -2343,7 +2343,6 @@ html[data-day="night"] .endguy .ge{scale:1 .45;transform-box:fill-box;transform-
 @media (prefers-reduced-motion:reduce){.toast .ti svg,.thinker svg,.thinker .eyes{animation:none!important}}
 
 /* ---------- the little guys, in their places ---------- */
-.av.wear svg,#meAv svg{overflow:visible}
 .mf-faces{display:flex;justify-content:center;gap:2px;margin-top:14px}
 .mf-faces .av{width:40px;height:40px}
 .mf-faces .av svg{overflow:visible}
@@ -2600,7 +2599,7 @@ function avSVG(a) {
   /* the look you chose to rest in, if you chose one, is what everyone sees */
   const eyes = a.mood && MOOD_EYES[a.mood] ? MOOD_EYES[a.mood](ink) : AV_EYES[a.eyes] || AV_EYES.pair;
   return `<svg viewBox="0 0 100 100" data-shape="${a.shape}" aria-hidden="true"><g transform="rotate(${a.tilt||0} 50 54)">${AV_SHAPES[a.shape](c)}
-    ${a.wear ? costumeSVG(a.wear, a.shape) : ""}<g class="eyes" fill="${ink}">${eyes}</g></g>${
+    <g class="eyes" fill="${ink}">${eyes}</g></g>${
       a.founder ? COMET : (a.ring || "")}</svg>`; }
 /* a face is new until you've seen it this session; the seed keeps two people
    who share a shape from blinking in lockstep */
@@ -2609,8 +2608,7 @@ const avSeed = who => { let h = 0; for (let i = 0; i < who.length; i++) h = (h *
 const avatar = (p, cls = "") => { const who = String(p?.id || p?.handle || "");
   const fresh = who && !metFaces.has(who); if (fresh) metFaces.add(who);
   const n = avSeed(who);
-  const a = /\bwear\b/.test(cls) ? worn(p) : avFor(p);
-  return `<span class="av ${cls}${fresh ? " new" : ""}"${p?.id ? ` data-u="${esc(p.id)}"` : ""} style="--bd:${(n % 61) / 10}s;--id:${(n % 37) / 10}s">${avSVG(a)}</span>`; };
+  return `<span class="av ${cls}${fresh ? " new" : ""}"${p?.id ? ` data-u="${esc(p.id)}"` : ""} style="--bd:${(n % 61) / 10}s;--id:${(n % 37) / 10}s">${avSVG(avFor(p))}</span>`; };
 
 /* ---------- faces that feel things ----------
    Every face in the app has had one expression. These are the others it can pull: drawn
@@ -2629,26 +2627,12 @@ const moodOf = v => !(v > 0) ? "ok" : v <= 2 ? "sad" : v <= 5 ? "meh" : v <= 7 ?
 /* ---------- where the little guys are allowed ----------
    The faces react, dress up and feel things only in a few chosen places, so it stays a
    wink rather than a theme park:
-     costumes   your face in the corner, the rating buddy, who's here, a profile, a match
      your week  your face in the corner only
      room mood  the room's square by its name, and only when the room's been loving or
                 hating things — an ordinary week shows nothing
      thinking   the room feed's first load and search; never every placeholder
      tilt       off until you switch it on in your settings */
 const RESTING = ["happy", "sleepy", "meh"];
-/* the season's hat: October's witch hat, the long nights' knitted one, nothing otherwise */
-const costumeNow = () => { if (P.noHat) return null; const m = new Date().getMonth() + 1;
-  return m === 10 ? "witch" : m === 11 || m === 12 ? "beanie" : null; };
-const HAT_TOP = { cube:34, box:15, ball:19, can:22, cone:16, pill:15, arch:15, ghost:15, step:31 };
-function costumeSVG(kind, shape) {
-  const t = HAT_TOP[shape] ?? 16, x = shape === "step" ? 65 : 50;
-  if (kind === "witch") return `<g class="hat"><path d="M${x - 15} ${t + 2} Q${x - 4} ${t - 14} ${x + 9} ${t - 25} Q${x + 4} ${t - 10} ${x + 14} ${t + 2}z" fill="#5A4390"/>
-    <rect x="${x - 13}" y="${t - 3}" width="27" height="5" rx="2" fill="#FFB36B"/><ellipse cx="${x}" cy="${t + 3}" rx="25" ry="5" fill="#46337A"/></g>`;
-  if (kind === "beanie") return `<g class="hat"><path d="M${x - 21} ${t + 5} a21 19 0 0 1 42 0z" fill="#E0407F"/>
-    <rect x="${x - 23}" y="${t}" width="46" height="9" rx="4.5" fill="#FFF7EC"/><circle cx="${x}" cy="${t - 15}" r="6" fill="#FFF7EC"/></g>`;
-  return ""; }
-/* the same face, dressed for the season where costumes are allowed */
-const worn = p => ({ ...avFor(p), wear:costumeNow() });
 /* put a mood on a face (the .av or anything holding its svg); "ok" gives it its own eyes back */
 function faceMood(el, m) {
   const g = el && $(".eyes", el); if (!g) return false;
@@ -4352,7 +4336,7 @@ function paintHere() {
   el.innerHTML = others.length
     ? `<span class="dot"></span><span class="faces">${others.map(p =>
         `<span class="face${seen.size && !seen.has(p.id) ? " came" : ""}${p.doing === "logging" ? " busy" : ""}" data-who="${esc(p.id)}"
-          data-prof="${esc(p.id)}" style="cursor:pointer" title="${esc(p.handle)}">${avatar(p, "wear")}${p.doing === "logging" ? `<i class="typing" aria-hidden="true"><b></b><b></b><b></b></i>` : ""}</span>`).join("")}</span>
+          data-prof="${esc(p.id)}" style="cursor:pointer" title="${esc(p.handle)}">${avatar(p)}${p.doing === "logging" ? `<i class="typing" aria-hidden="true"><b></b><b></b><b></b></i>` : ""}</span>`).join("")}</span>
        <small>${busy.length === 1 ? esc(busy[0].handle) + " is logging something…" : busy.length > 1 ? said(busy.length) + " of you are logging…"
          : others.length === 1 ? esc(others[0].handle) + " is here" : others.length + " here"}</small>`
     : `<small>${hereQuiet || "Nobody else in here right now"}</small>`;
@@ -5527,7 +5511,7 @@ async function enter() {
   switchTab(toSeasons ? "clubs" : "doors"); movePill(true); checkNew(); joinMeChannel();
   if (!P.onboarded && !myEntries.length) setTimeout(openWelcome, 400);
 }
-function paintMeAv() { const el = $("#meAv"); if (!el) return; el.innerHTML = avSVG(worn(me)); el.classList.toggle("wear", !!costumeNow());
+function paintMeAv() { const el = $("#meAv"); if (!el) return; el.innerHTML = avSVG(avFor(me));
   /* your week shows on your face in the corner, and only there: a run of low scores and
      nothing loved makes it unimpressed until you love something again */
   if (!me.avatar?.mood) { const wk = weekMood(); if (wk !== "ok") { const g = $(".eyes", el); g.dataset.orig = g.innerHTML; g.dataset.mood = wk;
@@ -9233,7 +9217,7 @@ function playMatch(w, line = "", faces = []) {
   if (REDUCED) { say(`It's a match: ${w.title}`, "good"); return; }
   $(".matchfx")?.remove();
   const fx = document.createElement("div"); fx.className = "matchfx"; fx.setAttribute("role", "status");
-  fx.innerHTML = `<div class="mf-in"><b class="mf-h">It's a match</b><div class="mf-p">${cover(w)}</div><b class="mf-t">${esc(w.title)}</b>${line ? `<small>${esc(line)}</small>` : ""}${faces.length ? `<div class="mf-faces">${faces.slice(0, 6).map(p => avatar(p, "wear")).join("")}</div>` : ""}</div>`;
+  fx.innerHTML = `<div class="mf-in"><b class="mf-h">It's a match</b><div class="mf-p">${cover(w)}</div><b class="mf-t">${esc(w.title)}</b>${line ? `<small>${esc(line)}</small>` : ""}${faces.length ? `<div class="mf-faces">${faces.slice(0, 6).map(p => avatar(p)).join("")}</div>` : ""}</div>`;
   /* everyone who said yes drops in, one after another, and then they all hop at once */
   $$(".mf-faces .av", fx).forEach((f, i, all) => {
     f.animate([{ transform:"translateY(-40px) scale(.6)", opacity:0 }, { transform:"translateY(4px) scale(1.05,.92)", opacity:1, offset:.7 }, { transform:"none", opacity:1 }],
@@ -11209,7 +11193,7 @@ async function openProfile(userId) { const self = userId === me.id;
   const shared = mine.craft.slice(0,5).map(c=>c[0]).filter(k => t.craft.slice(0,5).some(c => c[0] === k));
   const marks = marksFor(p, es, t, match, { clubsFinished: await clubsFinishedBy(userId) });
   ringCache[userId] = ringFromMarks(marks);
-  openSheet(`<div style="display:flex;align-items:center;gap:12px">${avatar(p, "meet wear")}<div style="flex:1"><h3>${esc(p.handle)}${self?` <span class="tag dim">you</span>`:""}</h3>${p.bio?`<p class="sub" style="margin-top:2px">${esc(p.bio)}</p>`:""}</div>${!self && match!==null?`<span class="ring">${match}% match</span>`:""}</div>
+  openSheet(`<div style="display:flex;align-items:center;gap:12px">${avatar(p, "meet")}<div style="flex:1"><h3>${esc(p.handle)}${self?` <span class="tag dim">you</span>`:""}</h3>${p.bio?`<p class="sub" style="margin-top:2px">${esc(p.bio)}</p>`:""}</div>${!self && match!==null?`<span class="ring">${match}% match</span>`:""}</div>
     <div class="tally">${Object.keys(KINDS).filter(k=>t.kinds[k]).map(k => `<span><b>${t.kinds[k]}</b>${K(k).label.toLowerCase()}</span>`).join("")}
       <button class="chip" id="showFollowers" style="padding:5px 10px"><b style="margin-right:4px">${fc}</b>${fc === 1 ? "follower" : "followers"}</button><button class="chip" id="showFollowing" style="padding:5px 10px"><b style="margin-right:4px">${fg}</b>following</button></div>
     <div class="stack">${self ? `<button class="btn ghost" id="editMe">Edit profile &amp; settings</button>` : `<button class="btn ${isFollowing(p.id)?"ghost":"blue"}" id="followBtn">${isFollowing(p.id)?"Following":"Follow"}</button>`}</div>
@@ -11299,7 +11283,7 @@ function openLog(w, edit = null, preset = 0) { setDoing("logging"); const cfg = 
           logging something you put down a fortnight ago. So it offers what it knows. */""}
     ${(() => { const n = !edit && nowOf(w.id); if (!n) return "";
       const d = dayNo(today()) - dayNo(n.started_on); if (!(d > 0)) return "";
-      return `<div class="chips" style="margin-top:8px"><button class="chip" id="useStart" type="button">Started ${when(n.started_on)} \u00b7 ${waited(d)}</button></div>`; })()}<div class="lbl">Your rating</div><div class="raterow"><div id="rateWrap">${starRow()}</div><span class="buddy av wear" id="rateBuddy" aria-hidden="true">${avSVG(worn(me))}</span></div><div class="ticks" id="tickRow"></div><div id="lovedWrap"></div>
+      return `<div class="chips" style="margin-top:8px"><button class="chip" id="useStart" type="button">Started ${when(n.started_on)} \u00b7 ${waited(d)}</button></div>`; })()}<div class="lbl">Your rating</div><div class="raterow"><div id="rateWrap">${starRow()}</div><span class="buddy av" id="rateBuddy" aria-hidden="true">${avSVG(avFor(me))}</span></div><div class="ticks" id="tickRow"></div><div id="lovedWrap"></div>
     <div class="lbl">Add a note</div><textarea id="wNote" placeholder="One line, if you want">${edit ? esc(edit.note || "") : esc((P.drafts || {})[w.id]?.note || "")}</textarea>
     <div class="spoilrow"><button type="button" class="chip" id="wSpoil">Hide a spoiler</button><small>Select the part that gives it away, or tap to hide the whole note.</small></div>
     ${/* room_only has been in the schema since v13 and nothing ever set it, so every
@@ -11841,8 +11825,8 @@ async function openYou() { let top = { items:[] }; try { top = await ensureMyTop
     <div id="pushSlot"></div>
     <div class="lbl" style="margin-top:10px">How the app looks</div><div class="chips">${[["","Auto"],["light","Light"],["dark","Dark"]].map(([k,l]) => `<button class="chip ${(P.theme||"")===k?"on":""}" data-th="${k}">${l}</button>`).join("")}</div>
     <p class="sub" style="margin-top:4px">Auto follows your phone. The ground still warms and dims across the day either way.</p>
-    <div class="lbl">The little guys</div><div class="chips"><button class="chip ${P.tilt ? "on" : ""}" id="tiltSw">Eyes follow your tilt</button><button class="chip ${P.noHat ? "" : "on"}" id="hatSw">Seasonal hats</button></div>
-    <p class="sub" style="margin-top:4px">Tilt your phone and every face looks the way it leans. Hats come out for Halloween and the long nights.</p>
+    <div class="lbl">The little guys</div><div class="chips"><button class="chip ${P.tilt ? "on" : ""}" id="tiltSw">Eyes follow your tilt</button></div>
+    <p class="sub" style="margin-top:4px">Tilt your phone and every face looks the way it leans.</p>
     <div class="lbl">Cards</div><div class="chips">${[["","Auto"],["day","Day"],["night","Night"]].map(([k,l]) => `<button class="chip ${(P.cardTheme||"")===k?"on":""}" data-ct="${k}">${l}</button>`).join("")}</div>
     <p class="sub" style="margin-top:4px">Auto goes dark in the evening. The medium tints the light either way.</p>
     <div class="lbl">Where you are · decides what's streaming</div>
@@ -11922,7 +11906,6 @@ async function openYou() { let top = { items:[] }; try { top = await ensureMyTop
   $("#tiltSw").onclick = async () => { const b = $("#tiltSw");
     if (P.tilt) { P.tilt = false; saveP(); tiltOff(); b.classList.remove("on"); return; }
     if (await tiltOn(true)) { P.tilt = true; saveP(); b.classList.add("on"); } else say("Your phone didn't allow it"); };
-  $("#hatSw").onclick = () => { P.noHat = !P.noHat; saveP(); $("#hatSw").classList.toggle("on", !P.noHat); paintMeAv(); };
   $("#avShuffle").onclick = () => { av = { shape:AV_NAMES[Math.floor(Math.random()*AV_NAMES.length)],
     col:Math.floor(Math.random()*AV_COLS.length), eyes:AV_EYE_NAMES[Math.floor(Math.random()*AV_EYE_NAMES.length)],
     tilt:Math.floor(Math.random()*9)-4 }; paintAv(); };
