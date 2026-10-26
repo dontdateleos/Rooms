@@ -1615,3 +1615,14 @@ language sql security definer stable set search_path = public as $$
 $$;
 revoke all on function peek_room(text) from public;
 grant execute on function peek_room(text) to anon, authenticated;
+
+-- v34: likes and replies arrive while you're looking. Both tables join the realtime
+-- publication; RLS still decides who is told about which row. Safe to re-run.
+do $$ begin
+  if not exists (select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'reactions')
+  then execute 'alter publication supabase_realtime add table public.reactions'; end if;
+  if not exists (select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'replies')
+  then execute 'alter publication supabase_realtime add table public.replies'; end if;
+end $$;

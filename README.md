@@ -87,7 +87,7 @@ The service-role key must never go near this repo.
 |---|---|
 | `index.html` | the whole app — markup, styles, logic, the card renderer, the avatar generator |
 | `site.html` | the marketing page |
-| `schema.sql` | Postgres tables, policies and RPCs, v1 through v33 — one file, run start to finish |
+| `schema.sql` | Postgres tables, policies and RPCs, v1 through v34 — one file, run start to finish |
 | `worker.js` | Cloudflare Worker: TMDB proxy, Open Library proxy, IGDB OAuth |
 | `manifest.webmanifest`, `sw.js`, `icons/` | what makes it installable |
 
@@ -200,6 +200,18 @@ invite page uses one as its preview image.
 
 **Picking tonight** is one card in Play: swipe → match → vote, with a link to skip
 straight to a vote on your own picks.
+
+**Things happen while you're looking (v34).**
+- Likes and replies on your posts arrive live: a toast, the bell rings, and a slip on screen updates in place. v34 adds `reactions` and `replies` to the realtime publication.
+- Opening the log sheet shows three dots on your face in the room ("mo is logging something…").
+- A new slip flies in from the logger's face.
+- Who's here stays live on every tab, and present people's faces glow wherever they appear.
+- Reopening the app after a minute away catches up the bell, the "on now" strip and the feed.
+- Today's logs say "just now" / "2h ago" and keep ticking.
+- "On now" pills show how fresh they are, with a live dot under 45 minutes, and bars slide when they move.
+- The weekly prompt shows who it's waiting on; tap a face to nudge them once.
+- A vote or answer repaints everyone's Play, via a broadcast on the room channel.
+- The demo acts this out once a visit.
 
 **Imports are history, not news.** Entries brought in from another app carry
 `context.imported` (and `context.before` when undated, as the welcome picks do); they

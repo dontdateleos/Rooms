@@ -20,10 +20,11 @@ const BASE = (process.env.BASE || "http://127.0.0.1:8934").replace(/\/$/, "");
     page.on("pageerror", e => errors.push(String(e)));
     const step = async (name, fn) => {
       try { await fn(); } catch (e) { failures.push(`[${scheme}] ${name}: ${e.message.split("\n")[0]}`); } };
-    /* real taps, not element.click(): a tap has to get past whatever is on top of the
+    /* a tab can carry a count ("Rooms 3"), so a trailing number still matches.
+       real taps, not element.click(): a tap has to get past whatever is on top of the
        button, and a script click doesn't — that difference once hid a demo nobody could tap */
     const tap = async (sel, text) => {
-      const at = text ? page.locator(sel, { hasText:new RegExp(`^\\s*${text}\\s*$`) }) : page.locator(sel);
+      const at = text ? page.locator(sel, { hasText:new RegExp(`^\\s*${text}\\s*(\\d+\\+?)?\\s*$`) }) : page.locator(sel);
       await at.first().click({ timeout:4000 }); };
     const expect = async (sel, what) => { if (!(await page.$(sel))) throw new Error(`missing ${what || sel}`); };
     const wait = ms => page.waitForTimeout(ms);
