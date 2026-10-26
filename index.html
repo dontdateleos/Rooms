@@ -2243,6 +2243,17 @@ header,nav{-webkit-backdrop-filter:blur(20px) saturate(1.4);backdrop-filter:blur
 .goalsroom .gn small{display:block;font-size:12.5px;color:var(--mute);margin-top:2px}
 @media (prefers-reduced-motion:no-preference){.goalcard .pbar i,.goalsroom .pbar i{animation:barGrow .8s cubic-bezier(.2,.8,.2,1) both}}
 @keyframes barGrow{from{width:0}}
+
+/* ---------- picking tonight: one card, three steps ---------- */
+.pflow{display:flex;gap:6px;list-style:none;margin:0 0 10px;padding:0}
+.pflow li{flex:1;display:flex;align-items:center;gap:6px;font:800 12px/1 var(--head);color:var(--mute);letter-spacing:.02em;
+  padding:6px 8px 6px 6px;border-radius:999px;background:color-mix(in srgb,var(--ink) 6%,transparent)}
+.pflow li i{flex:none;width:18px;height:18px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-size:10.5px;
+  background:color-mix(in srgb,var(--ink) 12%,transparent)}
+.pflow li.on{color:var(--ink);background:color-mix(in srgb,var(--apricot) 30%,transparent)}
+.pflow li.on i{background:var(--apricot);color:#151320}
+.pflow li.done i{background:var(--mint);color:#151320}
+.pickown{display:block;margin:12px auto 0;font-size:12.5px}
 </style>
 </head>
 <body>
@@ -8663,6 +8674,17 @@ function nightAfterHTML(R, n, g) {
   const lead = nightLeader(n, g), w = works[lead.id] || {};
   return `<div class="card game nightcard" data-night="${esc(n.id)}"><div class="h"><span>The room's verdict</span><span class="tag dim">${esc(nightLabel(n.at))}</span></div>
     <div class="nverdict">${cover(w)}<div><b>${esc(w.title || "")}</b><small>won the vote, ${lead.n} ${lead.n === 1 ? "vote" : "votes"}</small><div id="nightScores"><p class="sub">Gathering the scores…</p></div></div></div></div>`; }
+/* Picking what to watch was three cards that did one job: swipe the room's lists, see the
+   matches, plan a night and vote. Now it's one card that moves along — swipe, match,
+   vote — with a small way to skip the swiping and put your own picks to the room. */
+function pickFlowHTML(R, g, night) {
+  const st = swipeState(R, g), step = night ? 3 : st.matches.length ? 2 : 1;
+  const bar = `<ol class="pflow" aria-label="Step ${step} of 3">${["Swipe", "Match", "Vote"].map((l, i) =>
+    `<li class="${i + 1 < step ? "done" : i + 1 === step ? "on" : ""}"><i aria-hidden="true">${i + 1 < step ? "\u2713" : i + 1}</i>${l}</li>`).join("")}</ol>`;
+  const inner = (night ? nightHTML(R, night, g) : swipeHTML(R, g)).replace(/^\s*<div class="card game ([^"]*)"/, `<div class="card game $1 pickflow"`);
+  const at = inner.indexOf(">") + 1;
+  return inner.slice(0, at) + bar + inner.slice(at).replace(/<\/div>\s*$/, "")
+    + (night ? "" : `<button class="linkish pickown" id="nightPlan">Or skip the swiping: put your own two or three to a vote</button>`) + `</div>`; }
 const nightPlanHTML = () => `<div class="card game nightcard"><div class="h"><span>Watch night</span></div>
   <p class="sub gline" style="margin-top:4px">Pick a night and two or three options, and let the room vote on what you watch.</p>
   <div class="stack" style="margin-top:10px"><button class="btn soft" id="nightPlan">Plan a night</button></div></div>`;
@@ -8821,7 +8843,7 @@ async function paintGames(R, es) {
   if (past) await fillWorks(past.options).catch(() => {});
   const swNow = swipeState(R, g);
   if (swNow.deck.length) await fillWorks(swNow.matches).catch(() => {});
-  el.innerHTML = (night ? nightHTML(R, night, g) : "") + (night && night.at === today() ? "" : swipeHTML(R, g)) + promptHTML(R, g) + bracketHTML(R, br, g) + (night ? "" : past ? nightAfterHTML(R, past, g) : nightPlanHTML());
+  el.innerHTML = pickFlowHTML(R, g, night) + promptHTML(R, g) + bracketHTML(R, br, g) + (!night && past ? nightAfterHTML(R, past, g) : "");
   /* the Play tab gets a dot while there's something waiting on you */
   const s = promptState(R, g, gameWeek()), bst = br ? bracketState(R, br, g.votes) : null;
   const todo = (!s.voting && !s.mine) || (s.voting && !s.revealed && !s.myVote) || !!bst?.current?.matches.some(mt => !mt.mine)

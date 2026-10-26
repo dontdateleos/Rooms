@@ -87,7 +87,7 @@ The service-role key must never go near this repo.
 |---|---|
 | `index.html` | the whole app — markup, styles, logic, the card renderer, the avatar generator |
 | `site.html` | the marketing page |
-| `schema.sql` | Postgres tables, policies and RPCs, v1 through v28 — one file, run start to finish |
+| `schema.sql` | Postgres tables, policies and RPCs, v1 through v33 — one file, run start to finish |
 | `worker.js` | Cloudflare Worker: TMDB proxy, Open Library proxy, IGDB OAuth |
 | `manifest.webmanifest`, `sw.js`, `icons/` | what makes it installable |
 
@@ -164,7 +164,37 @@ does the ranking in the database (`find_people`, v27) rather than sending the wh
 directory to whoever opens the search sheet.
 
 **Provisioned, not yet wired up (v28):** durable invite status, a room member pinning an
-entry, a room activity log, and per-room notification preferences — `room_invites`,
-`room_pins`, `room_activity`, `room_notification_preferences`, and the functions
-`toggle_room_pin`, `record_room_activity`, `room_remove_member`, `room_transfer_owner`.
-The database side is in place; no screen calls into it yet.
+entry, a room activity log — `room_invites`, `room_pins`, `room_activity`, and the
+functions `toggle_room_pin`, `record_room_activity`, `room_remove_member`,
+`room_transfer_owner`. (`room_notification_preferences` is now used — see v31.)
+
+**Notifications that come to you (v31).** Your rooms hear when you finish something.
+Once an hour the worker's cron (`[triggers]` in `wrangler.toml`) sends the rooms'
+reminders in local time (`TZ`, default Australia/Sydney): Monday 9am this week's
+question, Friday 6pm voting's open, 5pm on a watch night, and three nights before a
+season ends. Each room's menu sets Everything / Just for me / Nothing. Needs the worker
+redeployed after `schema.sql` (v31 adds `push_schedule`, `push_targets_room`,
+`push_targets_season`, and a `p_kind` on `push_targets_for`).
+
+**The diary.** Finished has a Diary view (every log by date, month by month, rewatches
+marked) and Settings downloads it as a CSV Letterboxd can import.
+
+**How far through.** "Where you're up to" understands `p. 120 of 412`, `40%` and
+`S2 E5`: books get a page slider, ticking an episode moves you along, Tonight says the
+next episode, and the room's "on now" strip has progress bars. No schema change.
+
+**Your people on your Up next.** A poster someone in your rooms has finished carries
+their face and score; the bell tells you when it happens.
+
+**A goal for the year (v32).** `profiles.goals` (`{ "2026": 40 }`). Set on You; the
+room's Year section shows everyone's, with pace.
+
+**Invite previews (v33).** `peek_room` returns the room's latest public covers and the
+invite page uses one as its preview image.
+
+**Picking tonight** is one card in Play: swipe → match → vote, with a link to skip
+straight to a vote on your own picks.
+
+**Imports are history, not news.** Entries brought in from another app carry
+`context.imported` (and `context.before` when undated, as the welcome picks do); they
+count in your year and taste but never in a feed, a week, a race or a season.
