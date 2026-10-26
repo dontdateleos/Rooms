@@ -2279,7 +2279,7 @@ header,nav{-webkit-backdrop-filter:blur(20px) saturate(1.4);backdrop-filter:blur
 /* ---------- alive: things that happen while you watch ---------- */
 .here .face{position:relative}
 .here .face.busy{z-index:2}
-.rl-l:has(.typing){padding-block:7px;margin-block:-7px}
+.rl-l:has(.typing,.av.wear){padding-block:8px;margin-block:-8px}
 .here .face .typing{position:absolute;right:-9px;bottom:-5px;display:flex;gap:2px;padding:3.5px 4px;border-radius:2px 8px 8px 8px;
   background:var(--ink);box-shadow:0 0 0 2px var(--card);line-height:0;animation:typeIn .3s cubic-bezier(.2,1.4,.4,1) both}
 .here .face .typing b{width:4px;height:4px;border-radius:50%;background:var(--card);animation:typeDot 1.2s ease-in-out 20}
@@ -2341,6 +2341,24 @@ header,nav{-webkit-backdrop-filter:blur(20px) saturate(1.4);backdrop-filter:blur
 html[data-day="night"] .logo .mark .eyes{scale:1 .42;transform-origin:50% 90%}
 html[data-day="night"] .endguy .ge{scale:1 .45;transform-box:fill-box;transform-origin:50% 90%}
 @media (prefers-reduced-motion:reduce){.toast .ti svg,.thinker svg,.thinker .eyes{animation:none!important}}
+
+/* ---------- the little guys, in their places ---------- */
+.av.wear svg,#meAv svg{overflow:visible}
+.mf-faces{display:flex;justify-content:center;gap:2px;margin-top:14px}
+.mf-faces .av{width:40px;height:40px}
+.mf-faces .av svg{overflow:visible}
+.skelface{width:30px;height:30px;margin:6px auto 2px}
+.skelface svg{width:100%;height:100%;display:block;animation:thinkBob 1.4s ease-in-out 8}
+.skelface .eyes{animation:thinkLook 2.8s ease-in-out 4}
+.buddy.working svg{animation:workBob .55s ease-in-out infinite!important}
+.buddy.working .eyes{translate:-6px 6px!important;transition:translate .2s}
+@keyframes workBob{50%{transform:translateY(-6%) rotate(-3deg)}}
+.ptitle .tdot.faced{width:20px;height:20px;border-radius:6px;margin-top:0;display:grid;place-items:center;transition:width .3s,height .3s}
+.ptitle .tdot.faced svg{width:100%;height:100%;display:block}
+#avMoods{grid-template-columns:repeat(4,1fr);gap:8px}
+html.tilt .av .eyes{translate:calc(var(--tx,0) * 6px) calc(var(--ty,0) * 4px);transition:translate .25s ease-out}
+html.tilt .logo .mark .eyes{translate:calc(var(--tx,0) * 2.4px) calc(var(--ty,0) * 2px);transition:translate .25s ease-out}
+@media (prefers-reduced-motion:reduce){.skelface svg,.skelface .eyes,.buddy.working svg{animation:none!important}}
 </style>
 </head>
 <body>
@@ -2481,7 +2499,7 @@ function avFor(p) {
   const founder = !!p?.founder || founderIds.has(p?.id);
   const ring = ringCache[p?.id] || null;
   if (a && AV_SHAPES[a.shape] && AV_COLS[a.col] !== undefined)
-    return { shape:a.shape, col:a.col, eyes:AV_EYES[a.eyes] ? a.eyes : "pair", tilt:a.tilt ?? 0, founder, ring };
+    return { shape:a.shape, col:a.col, eyes:AV_EYES[a.eyes] ? a.eyes : "pair", tilt:a.tilt ?? 0, mood:["happy", "sleepy", "meh"].includes(a.mood) ? a.mood : null, founder, ring };
   const h = avHash(p?.handle);
   return { shape:AV_DEFAULT[h % AV_DEFAULT.length], col:(h >> 3) % AV_COLS.length,
     eyes:AV_EYE_NAMES[(h >> 11) % AV_EYE_NAMES.length], tilt:((h >> 7) % 9) - 4, founder, ring }; }
@@ -2578,9 +2596,11 @@ function ringFromMarks(marks) {
 function avSVG(a) {
   const base = AV_COLS[a.col] || AV_COLS[0], dark = base === "#151320";
   const c = { base, light: dark ? "#3A3650" : avShade(base, .30), dark: dark ? "#0B0A12" : avShade(base, -.18) };
-  const eyes = AV_EYES[a.eyes] || AV_EYES.pair;
+  const ink = dark ? "#FFF7EC" : "#151320";
+  /* the look you chose to rest in, if you chose one, is what everyone sees */
+  const eyes = a.mood && MOOD_EYES[a.mood] ? MOOD_EYES[a.mood](ink) : AV_EYES[a.eyes] || AV_EYES.pair;
   return `<svg viewBox="0 0 100 100" data-shape="${a.shape}" aria-hidden="true"><g transform="rotate(${a.tilt||0} 50 54)">${AV_SHAPES[a.shape](c)}
-    <g class="eyes" fill="${dark ? "#FFF7EC" : "#151320"}">${eyes}</g></g>${
+    ${a.wear ? costumeSVG(a.wear, a.shape) : ""}<g class="eyes" fill="${ink}">${eyes}</g></g>${
       a.founder ? COMET : (a.ring || "")}</svg>`; }
 /* a face is new until you've seen it this session; the seed keeps two people
    who share a shape from blinking in lockstep */
@@ -2589,7 +2609,8 @@ const avSeed = who => { let h = 0; for (let i = 0; i < who.length; i++) h = (h *
 const avatar = (p, cls = "") => { const who = String(p?.id || p?.handle || "");
   const fresh = who && !metFaces.has(who); if (fresh) metFaces.add(who);
   const n = avSeed(who);
-  return `<span class="av ${cls}${fresh ? " new" : ""}"${p?.id ? ` data-u="${esc(p.id)}"` : ""} style="--bd:${(n % 61) / 10}s;--id:${(n % 37) / 10}s">${avSVG(avFor(p))}</span>`; };
+  const a = /\bwear\b/.test(cls) ? worn(p) : avFor(p);
+  return `<span class="av ${cls}${fresh ? " new" : ""}"${p?.id ? ` data-u="${esc(p.id)}"` : ""} style="--bd:${(n % 61) / 10}s;--id:${(n % 37) / 10}s">${avSVG(a)}</span>`; };
 
 /* ---------- faces that feel things ----------
    Every face in the app has had one expression. These are the others it can pull: drawn
@@ -2603,7 +2624,31 @@ const MOOD_EYES = {
   love:  c => `<path d="M37 59 q5.5 -10 11 0 M54 59 q5.5 -10 11 0" stroke="${c}" stroke-width="5.5" stroke-linecap="round" fill="none"/>
     <circle cx="33" cy="68" r="5" fill="#FF7FA8" fill-opacity=".75"/><circle cx="69" cy="68" r="5" fill="#FF7FA8" fill-opacity=".75"/>`,
 };
+MOOD_EYES.sleepy = c => `<path d="M37 56 q5.5 7 11 0 M54 56 q5.5 7 11 0" stroke="${c}" stroke-width="5" stroke-linecap="round" fill="none"/>`;
 const moodOf = v => !(v > 0) ? "ok" : v <= 2 ? "sad" : v <= 5 ? "meh" : v <= 7 ? "ok" : v <= 9 ? "happy" : "love";
+/* ---------- where the little guys are allowed ----------
+   The faces react, dress up and feel things only in a few chosen places, so it stays a
+   wink rather than a theme park:
+     costumes   your face in the corner, the rating buddy, who's here, a profile, a match
+     your week  your face in the corner only
+     room mood  the room's square by its name, and only when the room's been loving or
+                hating things — an ordinary week shows nothing
+     thinking   the room feed's first load and search; never every placeholder
+     tilt       off until you switch it on in your settings */
+const RESTING = ["happy", "sleepy", "meh"];
+/* the season's hat: October's witch hat, the long nights' knitted one, nothing otherwise */
+const costumeNow = () => { if (P.noHat) return null; const m = new Date().getMonth() + 1;
+  return m === 10 ? "witch" : m === 11 || m === 12 ? "beanie" : null; };
+const HAT_TOP = { cube:34, box:15, ball:19, can:22, cone:16, pill:15, arch:15, ghost:15, step:31 };
+function costumeSVG(kind, shape) {
+  const t = HAT_TOP[shape] ?? 16, x = shape === "step" ? 65 : 50;
+  if (kind === "witch") return `<g class="hat"><path d="M${x - 15} ${t + 2} Q${x - 4} ${t - 14} ${x + 9} ${t - 25} Q${x + 4} ${t - 10} ${x + 14} ${t + 2}z" fill="#5A4390"/>
+    <rect x="${x - 13}" y="${t - 3}" width="27" height="5" rx="2" fill="#FFB36B"/><ellipse cx="${x}" cy="${t + 3}" rx="25" ry="5" fill="#46337A"/></g>`;
+  if (kind === "beanie") return `<g class="hat"><path d="M${x - 21} ${t + 5} a21 19 0 0 1 42 0z" fill="#E0407F"/>
+    <rect x="${x - 23}" y="${t}" width="46" height="9" rx="4.5" fill="#FFF7EC"/><circle cx="${x}" cy="${t - 15}" r="6" fill="#FFF7EC"/></g>`;
+  return ""; }
+/* the same face, dressed for the season where costumes are allowed */
+const worn = p => ({ ...avFor(p), wear:costumeNow() });
 /* put a mood on a face (the .av or anything holding its svg); "ok" gives it its own eyes back */
 function faceMood(el, m) {
   const g = el && $(".eyes", el); if (!g) return false;
@@ -3953,6 +3998,22 @@ document.addEventListener("pointerdown", e => { if (REDUCED || e.pointerType ===
     if (near.length > 24) break; }
   near.forEach(([g, t]) => { g.style.transition = "translate .22s cubic-bezier(.3,1.4,.5,1)"; g.style.translate = t; });
   clearTimeout(glanceT); glanceT = setTimeout(() => near.forEach(([g]) => { g.style.transition = "translate .5s ease"; g.style.translate = ""; }), 1300); }, { passive:true });
+/* tilt: switched on in settings, never by default. The phone's lean becomes two numbers on
+   the page and every face's eyes slide that way — read at most ten times a second, and only
+   moved when the lean has really changed. */
+let tiltH = null, tiltAt = 0, tiltWas = [0, 0];
+async function tiltOn(ask) {
+  if (REDUCED || !("DeviceOrientationEvent" in window)) return false;
+  try { if (ask && typeof DeviceOrientationEvent.requestPermission === "function"
+      && await DeviceOrientationEvent.requestPermission() !== "granted") return false; } catch { return false; }
+  if (tiltH) return true;
+  tiltH = e => { const now = Date.now(); if (now - tiltAt < 100 || e.gamma == null) return; tiltAt = now;
+    const tx = Math.max(-1, Math.min(1, e.gamma / 30)), ty = Math.max(-1, Math.min(1, ((e.beta ?? 45) - 45) / 30));
+    if (Math.abs(tx - tiltWas[0]) < .06 && Math.abs(ty - tiltWas[1]) < .06) return; tiltWas = [tx, ty];
+    const r = document.documentElement.style; r.setProperty("--tx", tx.toFixed(2)); r.setProperty("--ty", ty.toFixed(2)); };
+  addEventListener("deviceorientation", tiltH); document.documentElement.classList.add("tilt"); return true; }
+function tiltOff() { if (tiltH) removeEventListener("deviceorientation", tiltH); tiltH = null; document.documentElement.classList.remove("tilt"); }
+if (P.tilt) tiltOn(false);
 /* a face you touch squishes and blinks, like something that noticed */
 document.addEventListener("pointerdown", e => { if (REDUCED) return;
   const av = e.target.closest?.(".av"); if (!av || av.id === "rateBuddy") return;
@@ -4230,6 +4291,14 @@ function logoRun(order, step, hold) {
   order.forEach((i, k) => setTimeout(() => { rs[i]?.classList.add("lit"); es[i]?.classList.add("lit"); }, k * step));
   logoT = setTimeout(() => { logoT = null; logoLight(logoBase); }, order.length * step + hold); }
 /* the lights come on as the app opens — once a visit, not on every tab */
+/* the day you joined, a year on: the rooms throw their confetti, once */
+function anniversary() { const c = String(me?.created_at || ""); if (!c) return;
+  const d = new Date(c), now = new Date(), yrs = now.getFullYear() - d.getFullYear();
+  if (yrs < 1 || d.getMonth() !== now.getMonth() || d.getDate() !== now.getDate()) return;
+  const key = String(now.getFullYear()); if ((P.anniv || []).includes(key)) return;
+  P.anniv = [...(P.anniv || []), key].slice(-5); saveP();
+  burstAt($(".logo .mark"), 30); buzz([10, 50, 14]); meReact(10);
+  say(`${yrs === 1 ? "A year" : said(yrs) + " years"} in Rooms today. Thanks for being here.`, "good"); }
 function logoWake() { let woke = false; try { woke = sessionStorage.getItem("rooms.woke"); sessionStorage.setItem("rooms.woke", "1"); } catch {}
   if (!woke) logoRun([0, 1, 2, 3], 130, 650); }
 /* you logged something: everyone's light comes on, and the mark gives a little hop */
@@ -4283,7 +4352,7 @@ function paintHere() {
   el.innerHTML = others.length
     ? `<span class="dot"></span><span class="faces">${others.map(p =>
         `<span class="face${seen.size && !seen.has(p.id) ? " came" : ""}${p.doing === "logging" ? " busy" : ""}" data-who="${esc(p.id)}"
-          data-prof="${esc(p.id)}" style="cursor:pointer" title="${esc(p.handle)}">${avatar(p)}${p.doing === "logging" ? `<i class="typing" aria-hidden="true"><b></b><b></b><b></b></i>` : ""}</span>`).join("")}</span>
+          data-prof="${esc(p.id)}" style="cursor:pointer" title="${esc(p.handle)}">${avatar(p, "wear")}${p.doing === "logging" ? `<i class="typing" aria-hidden="true"><b></b><b></b><b></b></i>` : ""}</span>`).join("")}</span>
        <small>${busy.length === 1 ? esc(busy[0].handle) + " is logging something…" : busy.length > 1 ? said(busy.length) + " of you are logging…"
          : others.length === 1 ? esc(others[0].handle) + " is here" : others.length + " here"}</small>`
     : `<small>${hereQuiet || "Nobody else in here right now"}</small>`;
@@ -5441,7 +5510,7 @@ async function loadMe() { const { data:{ session } } = await sb.auth.getSession(
   return me; }
 async function enter() {
   $("#meBtn").hidden = false; $("#meName").textContent = me.handle; paintMeAv();
-  $("#nav").classList.add("on"); $("#add").classList.add("live"); setTimeout(logoWake, 250); warmBeside();
+  $("#nav").classList.add("on"); $("#add").classList.add("live"); setTimeout(logoWake, 250); setTimeout(anniversary, 1800); warmBeside();
   $("#bellBtn").hidden = false; $("#findBtn").hidden = false;
   await Promise.all([despite("Up next", loadLists()), despite("your log", loadMine()),
     despite("your rooms", loadRooms()), despite("who you follow", loadFollows()),
@@ -5458,7 +5527,15 @@ async function enter() {
   switchTab(toSeasons ? "clubs" : "doors"); movePill(true); checkNew(); joinMeChannel();
   if (!P.onboarded && !myEntries.length) setTimeout(openWelcome, 400);
 }
-function paintMeAv() { const el = $("#meAv"); if (el) el.innerHTML = avSVG(avFor(me)); }
+function paintMeAv() { const el = $("#meAv"); if (!el) return; el.innerHTML = avSVG(worn(me)); el.classList.toggle("wear", !!costumeNow());
+  /* your week shows on your face in the corner, and only there: a run of low scores and
+     nothing loved makes it unimpressed until you love something again */
+  if (!me.avatar?.mood) { const wk = weekMood(); if (wk !== "ok") { const g = $(".eyes", el); g.dataset.orig = g.innerHTML; g.dataset.mood = wk;
+    g.innerHTML = MOOD_EYES[wk](g.getAttribute("fill")); el.title = "Rough week? It cheers up when you love something."; } else el.title = ""; } }
+function weekMood() { const since = new Date(Date.now() - 7 * 864e5).toISOString().slice(0, 10);
+  const wk = myEntries.filter(e => !e.part && !isBefore(e) && String(e.rated_on || "") >= since);
+  if (wk.length < 2 || wk.some(e => e.score >= 8)) return "ok";
+  return wk.reduce((t, e) => t + e.score, 0) / wk.length <= 4.5 ? "meh" : "ok"; }
 $("#meBtn").onclick = () => me && switchTab("taste");
 $("#bellBtn").onclick = () => me && openNotes();
 $("#findBtn").onclick = () => me && openFind();
@@ -5643,7 +5720,8 @@ function emptyDoor(colour, mark) {
 function blank(colour, mark, title, body, actions = []) {
   return `<div class="blank">${emptyDoor(colour, mark)}<h3>${title}</h3><p>${body}</p>
     ${actions.length ? `<div class="stack">${actions.map(([id,label,cls]) => `<button class="btn ${cls||"soft"}" id="${id}">${label}</button>`).join("")}</div>` : ""}</div>`; }
-const skeleton = (n = 3) => Array.from({length:n}, () => `<div class="skel"><i class="t"></i><i></i><i class="s"></i></div>`).join("");
+const skeleton = (n = 3, face = false) => (face ? `<div class="skelface" aria-hidden="true">${tinyFace("ok", "#B9A6FF")}</div>` : "")
+  + Array.from({length:n}, () => `<div class="skel"><i class="t"></i><i></i><i class="s"></i></div>`).join("");
 
 /* ---------- the week you have had ----------
    The reel, the cuts and the memories all need a history — a year of it, in places — so
@@ -5788,7 +5866,7 @@ async function renderDoors() {
   const inRoom = cur.key.startsWith("room:");
   body.innerHTML = `${pagerHTML(places, cur.key, { id:"pager", titleId:"feedPick", titleHint:"see everywhere you can go" })}
     ${inRoom ? "" : tonightCard()}
-    <div id="feedBody">${skeleton(3)}</div>
+    <div id="feedBody">${skeleton(3, true)}</div>
     ${weekCard()}${rev ? `<div class="card look" id="revCard"><div class="h"><span>${esc(rev.head)}</span><span class="tag dim">${rev.kind === "year" ? "the year" : "last month"}</span></div>
       <div class="stack"><button class="btn soft" id="revGo">Have a look</button></div></div>` : ""}
     ${mem ? `<div class="card look" id="memCard"><div class="h"><span>${esc(mem.head)}</span><span class="tag dim">${
@@ -5907,6 +5985,16 @@ const place = (key, name, tone, mk) => ({ key, name, tone, mk, col:`var(--${tone
    in the archive; the season or your clubs — it's the same control: the place's name as
    the title, arrows either side, a swipe across it, and a dot per place in that place's
    colour. One look to learn, and the dots say how many there are and where you are. */
+/* the room's square by its name gets a face only when the last fortnight says something:
+   a room that's been loving everything looks pleased, one that's hated it all looks fed up */
+function roomMood(es) { const dot = $("#pager .tdot"); if (!dot) return;
+  const since = new Date(Date.now() - 14 * 864e5).toISOString().slice(0, 10);
+  const rs = (es || []).filter(e => !e.part && String(e.rated_on || "") >= since && e.score > 0);
+  const avg = rs.length >= 4 ? rs.reduce((t, e) => t + e.score, 0) / rs.length : 0;
+  const m = !avg ? "ok" : avg >= 8 ? "happy" : avg <= 4.5 ? "meh" : "ok";
+  dot.classList.toggle("faced", m !== "ok");
+  dot.innerHTML = m === "ok" ? "" : `<svg viewBox="22 30 56 44" aria-hidden="true"><g class="eyes" fill="#151320">${MOOD_EYES[m]("#151320")}</g></svg>`;
+  dot.title = m === "happy" ? "The room's been loving things lately" : m === "meh" ? "The room's been hard to please lately" : ""; }
 function pagerHTML(places, curKey, o = {}) {
   const at = Math.max(0, places.findIndex(p => p.key === curKey)), cur = places[at], many = places.length > 1;
   const id = o.id ? ` id="${o.id}"` : "";
@@ -6474,7 +6562,7 @@ async function renderRoomFeed(fb, R) {
     $$(".chip[data-prof]", seats).slice(was).forEach((c, i) => {
       c.style.animationDelay = (i * 90) + "ms"; c.classList.add("seat");
       setTimeout(() => { c.classList.remove("seat"); c.style.animationDelay = ""; }, 700 + i * 90); }); })();
-  wireSlips(fb, es); revealIn(fb); if (currentTab() === "doors") joinRoomChannel(R);
+  wireSlips(fb, es); revealIn(fb); if (currentTab() === "doors") joinRoomChannel(R); roomMood(es);
   /* presence says who is here; this says what they are actually in the middle of */
   paintRoomNow(R);
   ["talkAdd","compAdd"].forEach(id => { const el = $("#"+id); if (el) el.onclick = openAdd; });
@@ -8969,7 +9057,7 @@ async function openSwipe(R, g, again) {
       const now = await q(sb.from("room_votes").select("voter,choice").eq("room_id", R.id).eq("game", `swipe:${day}:${w.id}`)).catch(() => null);
       const ys = now ? now.filter(v => v.choice === "y").length : st.yes(w.id) + 1;
       if (ys >= 2) { matched.push(w); gameSeen(`m:${R.id}:${day}:${w.id}`, 1);
-        playMatch(w, `${ys} of you said yes`);
+        playMatch(w, `${ys} of you said yes`, (now || []).filter(v => v.choice === "y").map(v => R.members.find(m => m.id === v.voter)).filter(Boolean));
         if (ys === 2) notify({ room:R.id, title:`It's a match in ${R.name}: ${w.title}`, body:"Two of you said yes for tonight.", tag:"swipe-" + R.id, sec:"play" }); } }
     catch (e) { oops(e, "Couldn't save that swipe"); } };
   function drag(c) { if (!c) return; let x0 = null, dx = 0;
@@ -9140,12 +9228,18 @@ function roomBurst(host, n = 28, delay = 500) {
       { transform:`translate(calc(-50% + ${dx * .55}px), calc(-50% - ${up}px)) rotate(${spin * .4}deg) scale(1)`, opacity:1, offset:.35, easing:"cubic-bezier(.3,0,.7,1)" },
       { transform:`translate(calc(-50% + ${dx}px), calc(-50% + ${fall}px)) rotate(${spin}deg) scale(.9)`, opacity:0 }],
       { duration:1500 + Math.random() * 700, delay:delay + Math.random() * 160, easing:"cubic-bezier(.15,.6,.35,1)", fill:"both" }).onfinish = () => d.remove(); } }
-function playMatch(w, line = "") {
+function playMatch(w, line = "", faces = []) {
   if (!w) return;
   if (REDUCED) { say(`It's a match: ${w.title}`, "good"); return; }
   $(".matchfx")?.remove();
   const fx = document.createElement("div"); fx.className = "matchfx"; fx.setAttribute("role", "status");
-  fx.innerHTML = `<div class="mf-in"><b class="mf-h">It's a match</b><div class="mf-p">${cover(w)}</div><b class="mf-t">${esc(w.title)}</b>${line ? `<small>${esc(line)}</small>` : ""}</div>`;
+  fx.innerHTML = `<div class="mf-in"><b class="mf-h">It's a match</b><div class="mf-p">${cover(w)}</div><b class="mf-t">${esc(w.title)}</b>${line ? `<small>${esc(line)}</small>` : ""}${faces.length ? `<div class="mf-faces">${faces.slice(0, 6).map(p => avatar(p, "wear")).join("")}</div>` : ""}</div>`;
+  /* everyone who said yes drops in, one after another, and then they all hop at once */
+  $$(".mf-faces .av", fx).forEach((f, i, all) => {
+    f.animate([{ transform:"translateY(-40px) scale(.6)", opacity:0 }, { transform:"translateY(4px) scale(1.05,.92)", opacity:1, offset:.7 }, { transform:"none", opacity:1 }],
+      { duration:420, delay:700 + i * 110, easing:"cubic-bezier(.3,1.3,.5,1)", fill:"both" });
+    f.animate([{ transform:"none" }, { transform:"translateY(-14px)", offset:.4 }, { transform:"none", offset:.7 }, { transform:"translateY(-7px)", offset:.85 }, { transform:"none" }],
+      { duration:700, delay:700 + all.length * 110 + 260, easing:"ease-in-out" }); });
   document.body.appendChild(fx);
   const p = $(".mf-p", fx), h = $(".mf-h", fx);
   fx.animate([{ opacity:0 }, { opacity:1 }], { duration:200, fill:"both" });
@@ -9205,7 +9299,8 @@ async function paintGames(R, es) {
       if ((gameSeen(k) || 0) < bst.current.r) { gameSeen(k, bst.current.r); playRound(el); } }
     playVote(el);
     const newMatch = swNow.matches.find(id => !gameSeen(`m:${R.id}:${swipeDay()}:${id}`));
-    if (newMatch) { swNow.matches.forEach(id => gameSeen(`m:${R.id}:${swipeDay()}:${id}`, 1)); setTimeout(() => playMatch(works[newMatch], `${swNow.yes(newMatch)} of you said yes for tonight`), 500); } }
+    if (newMatch) { swNow.matches.forEach(id => gameSeen(`m:${R.id}:${swipeDay()}:${id}`, 1)); setTimeout(() => playMatch(works[newMatch], `${swNow.yes(newMatch)} of you said yes for tonight`,
+      swNow.vs.filter(v => v.work === newMatch && v.choice === "y").map(v => R.members.find(m => m.id === v.voter)).filter(Boolean)), 500); } }
   const again = () => { pingRoom("games"); return paintGames(R, es); };
   wireNudges(R, el);
   const ga = $("#gAnswer", el); if (ga) ga.onclick = () => openAnswer(R, g, again);
@@ -11114,7 +11209,7 @@ async function openProfile(userId) { const self = userId === me.id;
   const shared = mine.craft.slice(0,5).map(c=>c[0]).filter(k => t.craft.slice(0,5).some(c => c[0] === k));
   const marks = marksFor(p, es, t, match, { clubsFinished: await clubsFinishedBy(userId) });
   ringCache[userId] = ringFromMarks(marks);
-  openSheet(`<div style="display:flex;align-items:center;gap:12px">${avatar(p, "meet")}<div style="flex:1"><h3>${esc(p.handle)}${self?` <span class="tag dim">you</span>`:""}</h3>${p.bio?`<p class="sub" style="margin-top:2px">${esc(p.bio)}</p>`:""}</div>${!self && match!==null?`<span class="ring">${match}% match</span>`:""}</div>
+  openSheet(`<div style="display:flex;align-items:center;gap:12px">${avatar(p, "meet wear")}<div style="flex:1"><h3>${esc(p.handle)}${self?` <span class="tag dim">you</span>`:""}</h3>${p.bio?`<p class="sub" style="margin-top:2px">${esc(p.bio)}</p>`:""}</div>${!self && match!==null?`<span class="ring">${match}% match</span>`:""}</div>
     <div class="tally">${Object.keys(KINDS).filter(k=>t.kinds[k]).map(k => `<span><b>${t.kinds[k]}</b>${K(k).label.toLowerCase()}</span>`).join("")}
       <button class="chip" id="showFollowers" style="padding:5px 10px"><b style="margin-right:4px">${fc}</b>${fc === 1 ? "follower" : "followers"}</button><button class="chip" id="showFollowing" style="padding:5px 10px"><b style="margin-right:4px">${fg}</b>following</button></div>
     <div class="stack">${self ? `<button class="btn ghost" id="editMe">Edit profile &amp; settings</button>` : `<button class="btn ${isFollowing(p.id)?"ghost":"blue"}" id="followBtn">${isFollowing(p.id)?"Following":"Follow"}</button>`}</div>
@@ -11204,7 +11299,7 @@ function openLog(w, edit = null, preset = 0) { setDoing("logging"); const cfg = 
           logging something you put down a fortnight ago. So it offers what it knows. */""}
     ${(() => { const n = !edit && nowOf(w.id); if (!n) return "";
       const d = dayNo(today()) - dayNo(n.started_on); if (!(d > 0)) return "";
-      return `<div class="chips" style="margin-top:8px"><button class="chip" id="useStart" type="button">Started ${when(n.started_on)} \u00b7 ${waited(d)}</button></div>`; })()}<div class="lbl">Your rating</div><div class="raterow"><div id="rateWrap">${starRow()}</div><span class="buddy av" id="rateBuddy" aria-hidden="true">${avSVG(avFor(me))}</span></div><div class="ticks" id="tickRow"></div><div id="lovedWrap"></div>
+      return `<div class="chips" style="margin-top:8px"><button class="chip" id="useStart" type="button">Started ${when(n.started_on)} \u00b7 ${waited(d)}</button></div>`; })()}<div class="lbl">Your rating</div><div class="raterow"><div id="rateWrap">${starRow()}</div><span class="buddy av wear" id="rateBuddy" aria-hidden="true">${avSVG(worn(me))}</span></div><div class="ticks" id="tickRow"></div><div id="lovedWrap"></div>
     <div class="lbl">Add a note</div><textarea id="wNote" placeholder="One line, if you want">${edit ? esc(edit.note || "") : esc((P.drafts || {})[w.id]?.note || "")}</textarea>
     <div class="spoilrow"><button type="button" class="chip" id="wSpoil">Hide a spoiler</button><small>Select the part that gives it away, or tap to hide the whole note.</small></div>
     ${/* room_only has been in the schema since v13 and nothing ever set it, so every
@@ -11316,7 +11411,7 @@ function openLog(w, edit = null, preset = 0) { setDoing("logging"); const cfg = 
       ta.value = v.slice(0, a) + "||" + v.slice(a, b) + "||" + v.slice(b); }
     ta.focus(); say(whole && a === b ? "Not a spoiler any more" : "Hidden until someone taps it"); };
   $("#wSave").onclick = async () => { if (!score) return; const e = { user_id:me.id, work_id:w.id, rated_on:$("#wDate").value || today(), score, note:$("#wNote").value.trim() || null, loved:loved.length?loved.slice():null, context:Object.keys(ctx).length?ctx:null, breakdown:null, room_only:roomOnly, ...(who === "me" || wasPrivate ? { private:who === "me" } : {}) };
-    $("#wSave").disabled = true; try { await saveEntry(e, edit?.id); await loadMine();
+    $("#wSave").disabled = true; $("#rateBuddy")?.classList.add("working"); try { await saveEntry(e, edit?.id); await loadMine();
       clearTimeout(dt); if (P.drafts?.[w.id]) { delete P.drafts[w.id]; saveP(); }
       const offShelf = !edit?.id && dropFromShelf(w.id);
       /* you are not in the middle of something you have just finished */
@@ -11353,7 +11448,7 @@ function openLog(w, edit = null, preset = 0) { setDoing("logging"); const cfg = 
         for (const R of rooms) if (R.members.length > 1) notify({ room:R.id, kind:"activity", tag:"log-" + R.id,
           title:`${me.handle} ${K(w.kind).verb === "read" ? "read" : K(w.kind).verb === "played" ? "played" : "watched"} ${w.title}`,
           body:`${stars}${nt ? ` · “${nt}”` : ""}` }); }
-    } catch (err) { $("#wMsg").textContent = /private/.test(err.message) ? "“Just me” isn't switched on yet. Save it for everyone or the room for now." : err.message; $("#wSave").disabled = false; } }; }
+    } catch (err) { $("#wMsg").textContent = /private/.test(err.message) ? "“Just me” isn't switched on yet. Save it for everyone or the room for now." : err.message; $("#wSave").disabled = false; $("#rateBuddy")?.classList.remove("working"); } }; }
 
 /* the very first thing anybody logs gets a moment of its own: where it went, and the
    one next step that makes the app worth having — your people, or two more for a taste */
@@ -11737,6 +11832,7 @@ async function openYou() { let top = { items:[] }; try { top = await ensureMyTop
     <div class="picker" id="avShapes"></div>
     <div class="lbl">Eyes</div><div class="picker" id="avEyes"></div>
     <div class="lbl">Colour</div><div class="swatches" id="avCols"></div>
+    <div class="lbl">Resting look</div><div class="picker" id="avMoods"></div>
     <div class="stack"><button class="btn ghost" id="avReset">Back to the one my handle made</button></div>
     <div class="lbl">Handle</div><input id="yHandle" maxlength="24" autocapitalize="none" value="${esc(me.handle)}"><div class="lbl">A line under your name</div><input id="yBio" maxlength="80" placeholder="watches too much, sleeps too little" value="${esc(me.bio||"")}">
     ${top.items.length ? `<div class="lbl">Your four · from your ten</div>${fourHTML(top.items)}` : ""}
@@ -11745,6 +11841,8 @@ async function openYou() { let top = { items:[] }; try { top = await ensureMyTop
     <div id="pushSlot"></div>
     <div class="lbl" style="margin-top:10px">How the app looks</div><div class="chips">${[["","Auto"],["light","Light"],["dark","Dark"]].map(([k,l]) => `<button class="chip ${(P.theme||"")===k?"on":""}" data-th="${k}">${l}</button>`).join("")}</div>
     <p class="sub" style="margin-top:4px">Auto follows your phone. The ground still warms and dims across the day either way.</p>
+    <div class="lbl">The little guys</div><div class="chips"><button class="chip ${P.tilt ? "on" : ""}" id="tiltSw">Eyes follow your tilt</button><button class="chip ${P.noHat ? "" : "on"}" id="hatSw">Seasonal hats</button></div>
+    <p class="sub" style="margin-top:4px">Tilt your phone and every face looks the way it leans. Hats come out for Halloween and the long nights.</p>
     <div class="lbl">Cards</div><div class="chips">${[["","Auto"],["day","Day"],["night","Night"]].map(([k,l]) => `<button class="chip ${(P.cardTheme||"")===k?"on":""}" data-ct="${k}">${l}</button>`).join("")}</div>
     <p class="sub" style="margin-top:4px">Auto goes dark in the evening. The medium tints the light either way.</p>
     <div class="lbl">Where you are · decides what's streaming</div>
@@ -11812,12 +11910,19 @@ async function openYou() { let top = { items:[] }; try { top = await ensureMyTop
       `<button class="${n === av.shape ? "on" : ""}" data-avs="${n}">${avSVG({ shape:n, col:av.col, eyes:av.eyes, tilt:0 })}</button>`).join("");
     $("#avEyes").innerHTML = AV_EYE_NAMES.map(n =>
       `<button class="${n === av.eyes ? "on" : ""}" data-ave="${n}">${avSVG({ shape:av.shape, col:av.col, eyes:n, tilt:0 })}</button>`).join("");
+    $("#avMoods").innerHTML = ["", ...RESTING].map(m =>
+      `<button class="${(av.mood || "") === m ? "on" : ""}" data-avm="${m}" aria-label="${m || "usual"}">${avSVG({ shape:av.shape, col:av.col, eyes:av.eyes, tilt:0, mood:m || null })}</button>`).join("");
+    $$("[data-avm]").forEach(b => b.onclick = () => { av.mood = b.dataset.avm || null; paintAv(); });
     $("#avCols").innerHTML = AV_COLS.map((c,i) =>
       `<button class="sw ${i === av.col ? "on" : ""}" data-avc="${i}" style="background:${c}"></button>`).join("");
     $$("[data-avs]").forEach(b => b.onclick = () => { av.shape = b.dataset.avs; paintAv(); });
     $$("[data-ave]").forEach(b => b.onclick = () => { av.eyes = b.dataset.ave; paintAv(); });
     $$("[data-avc]").forEach(b => b.onclick = () => { av.col = +b.dataset.avc; paintAv(); }); };
   paintAv();
+  $("#tiltSw").onclick = async () => { const b = $("#tiltSw");
+    if (P.tilt) { P.tilt = false; saveP(); tiltOff(); b.classList.remove("on"); return; }
+    if (await tiltOn(true)) { P.tilt = true; saveP(); b.classList.add("on"); } else say("Your phone didn't allow it"); };
+  $("#hatSw").onclick = () => { P.noHat = !P.noHat; saveP(); $("#hatSw").classList.toggle("on", !P.noHat); paintMeAv(); };
   $("#avShuffle").onclick = () => { av = { shape:AV_NAMES[Math.floor(Math.random()*AV_NAMES.length)],
     col:Math.floor(Math.random()*AV_COLS.length), eyes:AV_EYE_NAMES[Math.floor(Math.random()*AV_EYE_NAMES.length)],
     tilt:Math.floor(Math.random()*9)-4 }; paintAv(); };
