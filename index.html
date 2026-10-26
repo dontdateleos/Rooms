@@ -2357,6 +2357,38 @@ html[data-day="night"] .endguy .ge{scale:1 .45;transform-box:fill-box;transform-
 html.tilt .av .eyes{translate:calc(var(--tx,0) * 6px) calc(var(--ty,0) * 4px);transition:translate .25s ease-out}
 html.tilt .logo .mark .eyes{translate:calc(var(--tx,0) * 2.4px) calc(var(--ty,0) * 2px);transition:translate .25s ease-out}
 @media (prefers-reduced-motion:reduce){.skelface svg,.skelface .eyes,.buddy.working svg{animation:none!important}}
+
+/* ---------- scrolling ---------- */
+#newPill{position:fixed;left:50%;z-index:6;display:flex;align-items:center;gap:6px;border:0;cursor:pointer;
+  background:var(--ink);color:var(--cream);border-radius:99px;padding:5px 13px 5px 6px;font:800 13px/1 var(--head);
+  box-shadow:0 10px 24px -10px rgba(0,0,0,.45);translate:-50% -14px;opacity:0;scale:.85;
+  transition:translate .38s cubic-bezier(.3,1.5,.5,1),opacity .2s,scale .38s cubic-bezier(.3,1.5,.5,1)}
+#newPill.on{translate:-50% 0;opacity:1;scale:1}
+#newPill .pf{display:flex}#newPill .pf .av{width:22px;height:22px;margin-right:-6px}#newPill .pf .av:last-child{margin-right:2px}
+.caughtup{display:flex;align-items:center;gap:10px;margin:22px 0 14px}
+.caughtup .cl{flex:1;height:1px;background:var(--line)}
+.caughtup .cm{display:flex;flex-direction:column;align-items:center;gap:3px;text-align:center}
+.caughtup .cm b{font:800 13px/1.2 var(--head);margin-top:4px}
+.caughtup .cm small{font-size:11.5px;color:var(--mute)}
+.caughtup .cg{width:24px;height:24px;transform-origin:50% 90%}.caughtup .cg svg{width:100%;height:100%;display:block}
+.caughtup .ctick{width:28px;height:28px}
+.caughtup .ctick circle{fill:none;stroke:var(--good);stroke-width:2.2}
+.caughtup .ctick path{fill:none;stroke:var(--good);stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:20;stroke-dashoffset:20}
+.caughtup.hit .ctick path{animation:tickDraw .45s cubic-bezier(.3,.9,.3,1) forwards}
+.caughtup.hit .cg{animation:guyNod .7s ease-in-out .3s}
+@keyframes tickDraw{to{stroke-dashoffset:0}}
+@keyframes guyNod{25%{transform:rotate(9deg) translateY(1px)}50%{transform:rotate(-7deg)}75%{transform:rotate(4deg)}}
+#feedBody .earlier:is(.slip,.logline){opacity:.86}
+.dsec{position:relative}
+.dsec .dmonth{position:sticky;top:var(--hdrH,calc(env(safe-area-inset-top) + 44px));z-index:3;margin:14px -18px 8px;padding:8px 20px;
+  background:var(--veil);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+@supports (animation-timeline: view()) { @media (prefers-reduced-motion: no-preference) {
+  .archcard .bg{animation:plxBig linear both;animation-timeline:view()}
+  .po img{scale:1.1;animation:plxSmall linear both;animation-timeline:view()}
+} }
+@keyframes plxBig{from{transform:scale(1.4) translateY(-9%)}to{transform:scale(1.4) translateY(9%)}}
+@keyframes plxSmall{from{translate:0 -4%}to{translate:0 4%}}
+@media (prefers-reduced-motion:reduce){#newPill{transition:none}.caughtup .ctick path{stroke-dashoffset:0}}
 </style>
 </head>
 <body>
@@ -4138,7 +4170,7 @@ document.addEventListener("visibilitychange", () => { try {
   if (document.hidden) { hiddenAt = Date.now(); roomCh?.untrack?.()?.catch?.(() => {}); return; }
   paintDay(); retrack();
   const since = hiddenAt; hiddenAt = 0;
-  if (since && Date.now() - since > 6e4 && me) catchUp(since); } catch {} });
+  if (since && Date.now() - since > 6e4 && me) { feedSince = null; catchUp(since); } } catch {} });
 setInterval(() => { if (document.hidden) return;
   for (const t of document.querySelectorAll("time[data-at]")) { const v = relAt(t.dataset.at); if (t.textContent !== v) t.textContent = v; } }, 6e4);
 async function catchUp(since) {
@@ -4153,7 +4185,7 @@ async function catchUp(since) {
   const memberIds = new Set(R.members.map(m => m.id));
   for (const row of rows) await onLiveEntry(row, memberIds); }
 
-let feedTurn = 0;
+let feedTurn = 0, feedSince = null;
 /* what each club's bar was at the last time you looked, so it has somewhere to travel from */
 const clubWas = {}, clubDone = {};
 /* how many were in each room the last time you drew it */
@@ -4494,7 +4526,34 @@ function rollLine(el, text) {
    the one that floods it. */
 const onLiveEntry = (row, memberIds) =>
   row && !row.part && !isQuiet(row) && !isApart(row.user_id) && memberIds.has(row.user_id)
-    ? dropInSlip(row, "#talkTop").then(ok => { if (ok) { faceToSlip(row); if (currentTab() === "doors" && !document.hidden) markSeen(); } return ok; }) : Promise.resolve(false);
+    ? dropInSlip(row, "#talkTop").then(ok => { if (ok) { faceToSlip(row); newPill(row); if (currentTab() === "doors" && !document.hidden) markSeen(); } return ok; }) : Promise.resolve(false);
+/* ---------- "2 new" ----------
+   A slip that lands while you're further down the feed lands out of sight. A pill with the
+   faces of whoever posted drops in under the header instead; a tap takes you up to them.
+   It goes away by itself once you're back up there. */
+let pillWho = [], pillN = 0;
+/* the header's real height, for anything that pins itself just under it */
+{ const h = document.querySelector("header");
+  if (h && "ResizeObserver" in window) new ResizeObserver(() => document.documentElement.style.setProperty("--hdrH", h.offsetHeight + "px")).observe(h); }
+function newPill(row) {
+  const slip = $(`[data-slip="${CSS.escape(row.id)}"]`), hb = $("header")?.getBoundingClientRect().bottom || 60;
+  if (!slip || slip.getBoundingClientRect().bottom > hb + 8 || currentTab() !== "doors") return;
+  pillN++; pillWho = [row.user_id, ...pillWho.filter(u => u !== row.user_id)].slice(0, 3);
+  const R = activeRoom(), ppl = pillWho.map(u => R?.members.find(m => m.id === u) || { id:u });
+  let el = $("#newPill"); const fresh = !el;
+  if (!el) { el = document.createElement("button"); el.id = "newPill"; el.type = "button"; document.body.appendChild(el);
+    el.onclick = () => { const top = $("#talkTop"); hidePill();
+      if (top) { scrollTo({ top:Math.max(0, top.getBoundingClientRect().top + scrollY - 70), behavior:REDUCED ? "auto" : "smooth" });
+        setTimeout(() => $$(".slip.landedNow").forEach(x => { x.classList.remove("warm"); void x.offsetWidth; x.classList.add("warm"); setTimeout(() => x.classList.remove("warm"), 2600); }), 500); } }; }
+  el.innerHTML = `<span class="pf">${ppl.map(p => avatar(p)).join("")}</span>↑ ${pillN} new`;
+  el.setAttribute("aria-label", `${pillN} new from ${ppl.map(p => p.handle || "someone").join(", ")}. Go up to see`);
+  /* under the header, and under the room's own tab row when that's stuck there too */
+  const under = Math.max($("header")?.getBoundingClientRect().bottom || 60, ...$$(".secbar").map(x => { const r = x.getBoundingClientRect(); return r.top < 140 && r.height ? r.bottom : 0; }));
+  el.style.top = `${Math.round(under + 10)}px`;
+  if (fresh) requestAnimationFrame(() => el.classList.add("on")); else if (!REDUCED) el.animate([{ scale:1 }, { scale:1.08 }, { scale:1 }], { duration:300, easing:"cubic-bezier(.3,1.5,.5,1)" }); }
+function hidePill() { const el = $("#newPill"); pillN = 0; pillWho = []; if (!el) return; el.classList.remove("on"); setTimeout(() => { if (!el.classList.contains("on")) el.remove(); }, 260); }
+addEventListener("scroll", () => { if (!pillN) return; const top = $("#talkTop");
+  if (!top || currentTab() !== "doors" || top.getBoundingClientRect().top > 0) hidePill(); }, { passive:true });
 /* the slip that just landed came from somebody: their face leaves the row of who's here
    and lands on it, and the three dots they had stop */
 function faceToSlip(row) {
@@ -4907,7 +4966,7 @@ function riseIn(sec) { if (!sec || REDUCED) return;
       const r = el.getBoundingClientRect(); return r.height > 0 && r.bottom > 60 && r.top < innerHeight; }).slice(0, 7);
   blocks.forEach((el, i) => el.animate([{ opacity:0, transform:"translateY(14px)" }, { opacity:1, transform:"none" }],
     { duration:320, delay:i * 45, easing:"cubic-bezier(.2,.8,.2,1)", fill:"backwards" })); }
-function switchTab(n, how = {}) { shelfEdit = false; $("#editDock")?.remove();
+function switchTab(n, how = {}) { shelfEdit = false; $("#editDock")?.remove(); if (n !== "doors") hidePill();
   if (n === "library") n = LIB.includes(P.libSide) ? P.libSide : "shelf";
   if (LIB.includes(n) && P.libSide !== n) { P.libSide = n; saveP(); }
   const cur = currentTab(); if (cur) tabScroll[cur] = scrollY;
@@ -4962,7 +5021,10 @@ $$("nav button[data-tab]").forEach(b => b.onclick = () => { if (b.dataset.held) 
 /* the tab you're already on: the first tap goes back to the top, the way every big app
    does it, and a tap at the top fetches what's new */
 function retap(b) { buzz(6);
-  if (scrollY > 24) { scrollTo({ top:0, behavior:REDUCED ? "auto" : "smooth" }); return; }
+  if (scrollY > 24) { scrollTo({ top:0, behavior:REDUCED ? "auto" : "smooth" });
+    /* home again: the logo's rooms come on one by one as you arrive */
+    let done = false; const lit = () => { if (done) return; done = true; logoRun([0, 1, 3, 2], 90, 700); };
+    addEventListener("scrollend", lit, { once:true }); setTimeout(lit, 900); return; }
   if (scrollY) scrollTo({ top:0, behavior:"auto" });
   b.classList.remove("again"); void b.offsetWidth; b.classList.add("again"); setTimeout(() => b.classList.remove("again"), 700);
   pullRefresh().then(ok => { if (!ok) refresh(); }).catch(() => refresh()); }
@@ -5902,7 +5964,9 @@ async function renderDoors() {
   feedTurn = 0;
   /* the dot existed and nothing ever cleared it: markSeen was written and never called,
      so every visit counted the same three days of entries again */
-  if (currentTab() === "doors") markSeen();
+  /* what counted as new is decided once a visit, before it's all marked seen — otherwise
+     the feed asked "new since when?" a moment after answering "since now" */
+  if (currentTab() === "doors") { if (feedSince == null) feedSince = lastSeen(); markSeen(); }
   if (feedNow() === "room") return renderRoomFeed(fb, R);
   leaveRoomChannel();
   if (feedNow() === "following") return renderFollowingFeed(fb);
@@ -5975,6 +6039,17 @@ function roomMood(es) { const dot = $("#pager .tdot"); if (!dot) return;
   dot.classList.toggle("faced", m !== "ok");
   dot.innerHTML = m === "ok" ? "" : `<svg viewBox="22 30 56 44" aria-hidden="true"><g class="eyes" fill="#151320">${MOOD_EYES[m]("#151320")}</g></svg>`;
   dot.title = m === "happy" ? "The room's been loving things lately" : m === "meh" ? "The room's been hard to please lately" : ""; }
+/* ---------- you're all caught up ----------
+   The line between what's new and what you've already seen. The tick draws itself and the
+   little guy nods the first time you scroll down to it; under it the feed is a touch quieter. */
+const caughtUpHTML = () => `<div class="caughtup" role="separator" aria-label="You're all caught up"><span class="cl"></span>
+  <span class="cm"><span class="cg">${tinyFace("ok", "#9EF0C9")}</span><svg class="ctick" viewBox="0 0 26 26" aria-hidden="true"><circle cx="13" cy="13" r="11"/><path d="M8 13.5l3.4 3.4L18.5 9.6"/></svg>
+  <b>You're all caught up</b><small>Earlier</small></span><span class="cl"></span></div>`;
+function wireCaughtUp(root) { const el = $(".caughtup", root); if (!el) return;
+  let n = el.nextElementSibling; while (n) { n.classList.add("earlier"); n = n.nextElementSibling; }
+  if (REDUCED || !("IntersectionObserver" in window)) { el.classList.add("hit"); return; }
+  const io = new IntersectionObserver(xs => { if (!xs.some(x => x.isIntersecting)) return; el.classList.add("hit"); buzz(5); io.disconnect(); }, { threshold:.9 });
+  io.observe(el); }
 function pagerHTML(places, curKey, o = {}) {
   const at = Math.max(0, places.findIndex(p => p.key === curKey)), cur = places[at], many = places.length > 1;
   const id = o.id ? ` id="${o.id}"` : "";
@@ -6480,7 +6555,7 @@ async function renderRoomFeed(fb, R) {
     <div id="roomAsks"></div>
     ${roomMomentsHTML(moments, freshMoments)}
     <div class="tagrow" id="talkTop" style="margin:18px 0 8px"><span class="lbl" style="margin:0">What the room said</span><span class="tfilters" aria-label="Room activity filter">${[["all","All"],["reviews","Reviews"],["activity","Activity"]].map(([k,l]) => `<button data-rfilter="${k}" class="${roomFilter===k?"on":""}">${l}</button>`).join("")}</span></div>${(() => { if (!roomEntries.length && !(roomFilter === "activity" && moments.length)) return blank("var(--pink)","“",roomFilter === "reviews" ? "No reviews yet" : roomFilter === "activity" ? "No activity yet" : "Nothing said yet",roomFilter === "reviews" ? "Reviews with a note or reaction will appear here." : roomFilter === "activity" ? "Room activity without a written review will appear here." : "Log something and it lands here for the room to see.",[["talkAdd","Log something"]]);
-      const since = lastSeen(); let shown = false;
+      const since = feedSince || lastSeen(); let shown = false, caught = false;
       /* A log with nothing said about it is a fact, not a conversation, and a card each
          made the room scroll like a ledger. Back-to-back ones from the same person fold
          into one line; anything with a note or a "loved" stays a full card. */
@@ -6490,6 +6565,8 @@ async function renderRoomFeed(fb, R) {
         else runs.push({ plain:plain(e), es:[e] }); }
       return runs.map(run => { const e = run.es[0], isNew = e.user_id !== me.id && String(e.created_at) > since; let head = "";
         if (isNew && !shown) { shown = true; head = `<div class="newline">New since you were here</div>`; }
+        /* where the new ends: a line you can tick off, and everything under it is older */
+        else if (!isNew && shown && !caught) { caught = true; head = caughtUpHTML(); }
         return head + (run.plain ? logLineHTML(run.es) : slipHTML(e, { talk:true })); }).join(""); })()}
     ${roomPrompt()}
     ${pick ? `<div class="result"><small>Tonight's pick</small><b>${esc(pick.title)}</b><div class="stack" style="margin-top:10px"><button class="btn" id="pickLog">${K(pick.kind).verb} it</button></div></div>` : ""}
@@ -6542,7 +6619,7 @@ async function renderRoomFeed(fb, R) {
     $$(".chip[data-prof]", seats).slice(was).forEach((c, i) => {
       c.style.animationDelay = (i * 90) + "ms"; c.classList.add("seat");
       setTimeout(() => { c.classList.remove("seat"); c.style.animationDelay = ""; }, 700 + i * 90); }); })();
-  wireSlips(fb, es); revealIn(fb); if (currentTab() === "doors") joinRoomChannel(R); roomMood(es);
+  wireSlips(fb, es); revealIn(fb); wireCaughtUp(fb); if (currentTab() === "doors") joinRoomChannel(R); roomMood(es);
   /* presence says who is here; this says what they are actually in the middle of */
   paintRoomNow(R);
   ["talkAdd","compAdd"].forEach(id => { const el = $("#"+id); if (el) el.onclick = openAdd; });
@@ -7045,16 +7122,16 @@ function paintDiary(el) {
   const show = rows.slice(0, diaryShown); let month = "", html = "";
   for (const e of show) { const w = works[e.work_id], d = new Date(String(e.rated_on || e.created_at).slice(0, 10) + "T12:00:00");
     const m = d.toLocaleDateString(undefined, { month:"long", year:"numeric" });
-    if (m !== month) { if (month) html += `</div>`; month = m;
+    if (m !== month) { if (month) html += `</div></div>`; month = m;
       const n = rows.filter(x => { const y = new Date(String(x.rated_on || x.created_at).slice(0, 10) + "T12:00:00"); return y.getMonth() === d.getMonth() && y.getFullYear() === d.getFullYear(); }).length;
-      html += `<div class="dmonth"><span>${esc(m)}</span><em>${n}</em></div><div class="card dlist">`; }
+      html += `<div class="dsec"><div class="dmonth"><span>${esc(m)}</span><em>${n}</em></div><div class="card dlist">`; }
     const again = firsts[e.work_id] && firsts[e.work_id] !== e.id;
     html += `<button class="drow" data-work="${esc(w.id)}" type="button">
       <span class="dday"><b>${d.getDate()}</b><small>${esc(d.toLocaleDateString(undefined, { weekday:"short" }))}</small></span>
       ${cover(w)}
       <span class="dt"><b>${esc(w.title)}</b><small>${tag(w.kind)} ${esc(w.year || "")}${again ? ` <span class="again" title="Again">\u21bb again</span>` : ""}${e.private ? ` <span class="tag dim">just me</span>` : ""}</small></span>
       ${stars(e.score, "sm")}</button>`; }
-  html += `</div>`;
+  html += `</div></div>`;
   if (rows.length > show.length) html += `<div class="stack"><button class="btn quiet" id="diaryMore">Show more · ${rows.length - show.length} earlier</button></div>`;
   el.innerHTML = html;
   $$(".drow", el).forEach(r => r.onclick = () => openWork(r.dataset.work));
