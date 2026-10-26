@@ -2324,6 +2324,23 @@ header,nav{-webkit-backdrop-filter:blur(20px) saturate(1.4);backdrop-filter:blur
 @keyframes guyUp{to{transform:translateY(-4%)}}
 @keyframes guyWave{from{transform:rotate(10deg)}to{transform:rotate(-40deg)}}
 @media (prefers-reduced-motion:reduce){.endguy svg{transform:translateY(-4%)!important;animation:none!important}.endguy .arm,.endguy .ge{animation:none!important}}
+
+/* ---------- grok-style: the face is the status ---------- */
+.toast .ti:is(.face-good,.face-bad){width:24px;height:24px;background:none;border-radius:0}
+.toast .ti svg{width:100%;height:100%;display:block}
+.toast.on .ti.face-good svg{animation:tfHop .5s cubic-bezier(.3,1.5,.5,1) .05s}
+.toast.on .ti.face-bad svg{animation:tfShake .42s ease-in-out .05s}
+@keyframes tfHop{40%{transform:translateY(-22%) scale(1.08,.94)}75%{transform:scale(1.08,.9)}}
+@keyframes tfShake{20%{transform:translateX(-10%) rotate(-6deg)}50%{transform:translateX(9%) rotate(5deg)}80%{transform:translateX(-4%)}}
+.thinker{display:inline-block;width:22px;height:22px;vertical-align:-6px;margin-right:8px}
+.thinker svg{width:100%;height:100%;display:block;animation:thinkBob 1.4s ease-in-out 6}
+.thinker .eyes{animation:thinkLook 2.8s ease-in-out 3}
+@keyframes thinkBob{50%{transform:translateY(-8%) rotate(-4deg)}}
+@keyframes thinkLook{0%,100%{translate:0 0}20%,40%{translate:7px -6px}60%,80%{translate:-6px -5px}}
+/* after eleven the logo's lit rooms get heavy-lidded */
+html[data-day="night"] .logo .mark .eyes{scale:1 .42;transform-origin:50% 90%}
+html[data-day="night"] .endguy .ge{scale:1 .45;transform-box:fill-box;transform-origin:50% 90%}
+@media (prefers-reduced-motion:reduce){.toast .ti svg,.thinker svg,.thinker .eyes{animation:none!important}}
 </style>
 </head>
 <body>
@@ -2593,8 +2610,18 @@ function faceMood(el, m) {
   if (g.dataset.orig == null) g.dataset.orig = g.innerHTML;
   if ((g.dataset.mood || "ok") === m) return false;
   g.dataset.mood = m;
-  g.innerHTML = m === "ok" ? g.dataset.orig : MOOD_EYES[m](g.getAttribute("fill") || "#151320");
+  /* a face never jumps between expressions: the eyes shut for a beat and open on the new
+     one, so it reads as the same little guy changing his mind. A fast drag through three
+     moods is one blink that lands on the last of them. */
+  const swap = () => { const mm = g.dataset.mood || "ok"; g.innerHTML = mm === "ok" ? g.dataset.orig : MOOD_EYES[mm](g.getAttribute("fill") || "#151320"); };
+  if (REDUCED || !g.isConnected || !g.animate) swap();
+  else if (!g._shut) { g._shut = true; g.style.transformBox = "fill-box"; g.style.transformOrigin = "50% 50%";
+    g.animate([{ transform:"scaleY(1)" }, { transform:"scaleY(.08)" }], { duration:70, easing:"ease-in" }).onfinish = () => {
+      swap(); g._shut = false; g.animate([{ transform:"scaleY(.08)" }, { transform:"scaleY(1)" }], { duration:120, easing:"cubic-bezier(.3,1.6,.5,1)" }); }; }
   return true; }
+/* a tiny face for a status: the toast's tick and bang became a little guy pleased or worried */
+const tinyFace = (m, col) => `<svg viewBox="0 0 100 100" aria-hidden="true"><rect x="12" y="16" width="76" height="74" rx="32" fill="${col}"/>
+  <g class="eyes" fill="#151320">${m === "ok" ? `<rect x="38" y="44" width="8" height="18" rx="4"/><rect x="55" y="43" width="8" height="19" rx="4"/>` : MOOD_EYES[m]("#151320")}</g></svg>`;
 /* little hearts thrown up out of something, for a like or a five-star face */
 function heartBurst(el, n = 5) {
   if (REDUCED || !el) return; const r = el.getBoundingClientRect(); if (!r.width) return;
@@ -3168,8 +3195,8 @@ function say(msg, kind = "") {
   clearTimeout(toastT);
   if (!msg) { el.className = "toast"; return; }
   el.textContent = msg; el.className = "toast on " + kind; el.style.translate = "";
-  if (kind === "good" || kind === "bad") { const i = document.createElement("i"); i.className = "ti"; i.setAttribute("aria-hidden", "true");
-    i.textContent = kind === "good" ? "\u2713" : "!"; el.prepend(i); }
+  if (kind === "good" || kind === "bad") { const i = document.createElement("i"); i.className = "ti face-" + kind; i.setAttribute("aria-hidden", "true");
+    i.innerHTML = tinyFace(kind === "good" ? "happy" : "sad", "#FFF7EC"); el.prepend(i); }
   toastT = setTimeout(() => { el.className = "toast"; }, kind === "bad" ? 5200 : 3000);
 }
 /* a toast can be flicked down out of the way, like a notification */
@@ -3911,6 +3938,21 @@ function liteWatch(root) { if (!liteObs || !root?.querySelectorAll) return;
       setTimeout(() => { e.classList.add(how); e.addEventListener("animationend", () => e.classList.remove(how), { once:true });
         setTimeout(() => e.classList.remove(how), 2600); }, Math.random() * 1200); } };
   setTimeout(tick, 1500); })();
+/* the faces near where you touch glance at it, the logo's four included — the room
+   noticing you, once per tap, then looking away again */
+let glanceT = null;
+document.addEventListener("pointerdown", e => { if (REDUCED || e.pointerType === "mouse" && e.button !== 0) return;
+  const x = e.clientX, y = e.clientY, near = [];
+  for (const g of document.querySelectorAll(".logo .mark .eyes, .av .eyes")) {
+    if (g.closest("#rateBuddy,.minih") || g.closest(".av")?.contains(e.target)) continue;
+    const r = g.getBoundingClientRect(); if (!r.width || r.bottom < 0 || r.top > innerHeight) continue;
+    const cx = r.left + r.width / 2, cy = r.top + r.height / 2, dx = x - cx, dy = y - cy, d = Math.hypot(dx, dy);
+    if (d > 280 || d < 4) continue;
+    const big = g.closest(".logo") ? 2.2 : 5;
+    near.push([g, `${(dx / d * big).toFixed(1)}px ${(dy / d * big * .7).toFixed(1)}px`]);
+    if (near.length > 24) break; }
+  near.forEach(([g, t]) => { g.style.transition = "translate .22s cubic-bezier(.3,1.4,.5,1)"; g.style.translate = t; });
+  clearTimeout(glanceT); glanceT = setTimeout(() => near.forEach(([g]) => { g.style.transition = "translate .5s ease"; g.style.translate = ""; }), 1300); }, { passive:true });
 /* a face you touch squishes and blinks, like something that noticed */
 document.addEventListener("pointerdown", e => { if (REDUCED) return;
   const av = e.target.closest?.(".av"); if (!av || av.id === "rateBuddy") return;
@@ -7908,7 +7950,10 @@ async function byPerson(term) {
     .filter(r => P.kinds.includes(r.kind)).slice(0, 8);
   if (!rows.length) return null;
   return { name:who.name, role: directed.length ? "Directed by" : wrote.length ? "Written by" : "With", rows }; }
-async function doSearch(term, onPick, resEl, msgEl, box, acts = null) { msgEl.textContent = "Searching " + P.kinds.map(k => K(k).label.toLowerCase()).join(", ");
+async function doSearch(term, onPick, resEl, msgEl, box, acts = null) {
+  /* the face is the spinner: it looks up and about while the sources answer, and the
+     line it sits in is replaced by whatever they said */
+  msgEl.innerHTML = `<span class="thinker">${tinyFace("ok", "#B9A6FF")}</span>Searching ${esc(P.kinds.map(k => K(k).label.toLowerCase()).join(", "))}`;
   /* the person lookup rides alongside the title searches rather than after them */
   const wantsScreen = P.kinds.includes("film") || P.kinds.includes("tv");
   const [done, person] = await Promise.all([
@@ -11236,17 +11281,21 @@ function openLog(w, edit = null, preset = 0) { setDoing("logging"); const cfg = 
     const at = e => { const r = row.getBoundingClientRect();
       const x = e.clientX - r.left;
       return Math.max(1, Math.min(10, Math.ceil((x / r.width) * 10))); };
+    /* the buddy's eyes follow your finger across the stars, and come back when you let go */
+    const watch = e => { const g = $("#rateBuddy .eyes"); if (!g || REDUCED) return; const r = $("#rateBuddy").getBoundingClientRect();
+      const dx = e ? e.clientX - (r.left + r.width / 2) : 0, dy = e ? e.clientY - (r.top + r.height / 2) : 0, d = Math.hypot(dx, dy) || 1;
+      g.style.transition = "translate .12s ease-out"; g.style.translate = e ? `${(dx / d * 7).toFixed(1)}px ${(dy / d * 4).toFixed(1)}px` : ""; };
     const paint = v => { $$("#rateWrap button svg", row).forEach((sv, i) =>
       sv.innerHTML = starPath(Math.max(0, Math.min(1, v / 2 - i)))); buddy(v); };
     row.addEventListener("pointerdown", e => { e.preventDefault(); row.setPointerCapture(e.pointerId);
-      row.classList.add("holding"); live = at(e); paint(live); buzz(3); });
-    row.addEventListener("pointermove", e => { if (!(e.buttons & 1)) return;
+      row.classList.add("holding"); live = at(e); paint(live); watch(e); buzz(3); });
+    row.addEventListener("pointermove", e => { if (!(e.buttons & 1)) return; watch(e);
       const v = at(e); if (v !== live) { live = v; paint(v); buzz(3); } });
-    row.addEventListener("pointerup", () => { row.classList.remove("holding"); if (live === score) return;
+    row.addEventListener("pointerup", () => { row.classList.remove("holding"); watch(null); if (live === score) return;
       score = live; $("#rateWrap").innerHTML = starRow(); dragStars();
       $$("#rateWrap button").slice(0, Math.ceil(score/2)).forEach((sb2, n) => setTimeout(() => { sb2.classList.add("pop"); setTimeout(() => sb2.classList.remove("pop"), 340); }, n*45));
       $("#wSave").disabled = false; if (!edit) $("#wSave").textContent = "Save the entry"; buzz(8); drawLoved(); });
-    row.addEventListener("pointercancel", () => { row.classList.remove("holding"); paint(score); });
+    row.addEventListener("pointercancel", () => { row.classList.remove("holding"); watch(null); paint(score); });
     row.addEventListener("contextmenu", e => e.preventDefault()); };
   /* your own face sits beside the stars and takes the score to heart as you drag */
   const buddy = v => { const b = $("#rateBuddy"), m = moodOf(v); if (!faceMood(b, m) || REDUCED) return;
