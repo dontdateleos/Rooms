@@ -2738,6 +2738,41 @@ blockquote.kept.big{margin-top:14px;font-size:18px;padding:6px 0 6px 14px}
 .minemenu{border:0;background:none;color:var(--mute);width:34px;height:30px;border-radius:10px;display:grid;place-items:center;cursor:pointer;margin-left:-6px}
 .minemenu svg{width:20px;height:20px;fill:currentColor}
 .minemenu:hover{background:var(--cream2)}
+/* a review is words on the page, not a box: the person and their stars on one line,
+   the thing they're talking about, what they said — and space between one and the next */
+.slip{background:none;box-shadow:none;border-radius:0;padding:18px 0 14px;margin:0;border-bottom:1px solid var(--line)}
+.slip:last-of-type{border-bottom:0}
+.slip.warm{background:color-mix(in srgb,var(--butter) 14%,transparent);border-radius:18px;margin-inline:-10px;padding-inline:10px}
+.slip .who{gap:8px}
+.slip .who .stars{margin-left:2px}
+.slip .who .when{margin-left:auto;font-weight:600;font-size:11.5px}
+.slip .ttl{margin-top:12px}
+.slip .ttl img,.slip .ttl .co{width:38px;height:56px;border-radius:8px}
+.slip .ttl b{font-size:18px}
+.slip .q{font-weight:500;font-size:15.5px;line-height:1.5}
+.slip .foot{border-top:0;padding-top:0;margin-top:10px}
+.lovedline{margin:8px 0 0;font-size:12.5px;color:var(--mute);font-weight:500}
+.lovedline b{color:var(--ink);font-weight:700}
+/* Up next: the grid is the page; picking for you is a button beside Filter */
+.pickchip{background:var(--butter)!important;color:var(--onAccent)!important;border-color:transparent!important}
+.pickchip svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2}
+.pickchip svg circle{fill:currentColor;stroke:none}
+/* the title page: what it is, in three lines, under the poster */
+.wabout{margin:14px 0 0;font-size:14.5px;line-height:1.5;color:color-mix(in srgb,var(--ink) 82%,transparent);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;cursor:pointer}
+.wabout.open{-webkit-line-clamp:unset;display:block}
+#wWatch{margin-top:6px}
+#wWatch .lbl{margin-top:16px}
+/* favourites: four posters, nothing else */
+.favrow{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.fav{border:0;background:none;padding:0;display:flex;flex-direction:column;gap:6px;cursor:pointer;color:var(--mute);min-width:0}
+.fav .co{width:100%;aspect-ratio:2/3;height:auto;border-radius:10px;object-fit:cover;box-shadow:0 14px 24px -16px rgba(0,0,0,.55)}
+.fav small{font:800 10.5px var(--head);letter-spacing:.05em;text-transform:uppercase;display:flex;align-items:center;gap:5px}
+.fav small::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--k)}
+html .slip,html[data-theme] .slip{box-shadow:none}
+.arrived{padding:8px 6px 8px 12px;border-radius:14px;margin-top:10px}
+.arrived p{font-size:13px}
+.arrived .iconbtn.sm{width:28px;height:28px}
+#shelfGrid .cap:has(span:empty){display:none}
 /* ---------- floating pills take turns ----------
    The update bar, the offline note and toasts all live just above the tab bar. When
    more than one is up, the toast steps above the others rather than hiding behind
@@ -7008,14 +7043,13 @@ function likeLine(e) {
 function slipHTML(e, opts = {}) { const w = remember(e.works) || works[e.work_id] || {}; const mine = e.user_id === me.id;
   const same = (e.reactions||[]).some(r => r.user_id === me.id), n = (e.reactions||[]).length;
   return `<div class="slip" data-slip="${e.id}" style="animation-delay:-${(avHash(e.id) % 65) / 10}s">
-    <div class="who" data-prof="${esc(e.user_id)}" style="cursor:pointer">${avatar(e.profiles)} <b>${esc(mine ? "you" : e.profiles?.handle)}</b> <span>· ${K(w.kind).verb} ${whenE(e)}</span></div>
-    ${opts.here ? (dnfOf(e) ? `<div class="here-dnf">${dnfLine(e)}</div>` : "") : `<div class="ttl" data-work="${esc(e.work_id)}"><span class="season-cover">${cover(w)}${seasonEntryStamp(e)}</span><div><b>${esc(w.title)}</b><small>${tag(w.kind)} ${esc(w.year||"")}${dnfOf(e) ? ` ${dnfLine(e)}` : ""}</small></div></div>`}
+    <div class="who" data-prof="${esc(e.user_id)}" style="cursor:pointer">${avatar(e.profiles)} <b>${esc(mine ? "you" : e.profiles?.handle)}</b>${stars(e.score, "sm")}<span class="when">${whenE(e)}</span></div>
+    ${opts.here ? (dnfOf(e) ? `<div class="here-dnf">${dnfLine(e)}</div>` : "") : `<div class="ttl" data-work="${esc(e.work_id)}"><span class="season-cover">${cover(w)}${seasonEntryStamp(e)}</span><div><b>${esc(w.title)}</b><small>${esc(w.year||"")}${w.creator ? ` \u00b7 ${esc(String(w.creator).split(",")[0])}` : ""}${dnfOf(e) ? ` ${dnfLine(e)}` : ""}</small></div></div>`}
     ${e.note?`<div class="q${String(e.note).length > 210 ? " clip" : ""}">“${noteHTML(e.note)}”</div>${String(e.note).length > 210 ? `<button class="more" data-more="${e.id}">More</button>` : ""}`:""}
     ${lineOf(e) ? `<blockquote class="kept" style="--k:${K(w.kind || "film").colour}">${esc(lineOf(e))}</blockquote>` : ""}
-    ${(() => { const t = together(e); return t ? `<div class="loved" style="margin-top:10px"><span class="together">◆ ${t}</span></div>` : ""; })()}
-    ${e.loved?.length?`<div class="loved">${e.loved.slice(0,4).map(k => `<span>${esc(k.startsWith("person:")?lc(k.slice(7)):k)}</span>`).join("")}</div>`:""}
+    ${e.loved?.length ? `<p class="lovedline">Loved ${e.loved.slice(0,3).map(k => `<b>${esc(k.startsWith("person:") ? k.slice(7) : k)}</b>`).join(", ").replace(/, ([^,]*)$/, " and $1")}</p>` : ""}
     <div class="foot"><div class="acts">${mine ? `<button class="minemenu" data-mine-menu="${e.id}" aria-label="Edit or delete">${ICON_MORE}</button>` : `<button data-like="${e.id}" class="lk ${same?"on":""}" aria-pressed="${same}" aria-label="${same ? "Liked — tap to take it back" : "Like this. Hold for faces"}">${myReactHTML(e)}</button><button data-reply="${e.id}" class="lk" aria-label="Reply">${BUBBLE}</button>`
-      }${mine && (e.private ?? myEntries.find(x => x.id === e.id)?.private) ? `<span class="tag dim">just me</span>` : mine && e.room_only ? `<span class="tag dim">room only</span>` : ""}</div>${stars(e.score,"sm")}</div>
+      }${mine && (e.private ?? myEntries.find(x => x.id === e.id)?.private) ? `<span class="tag dim">just me</span>` : mine && e.room_only ? `<span class="tag dim">room only</span>` : ""}</div></div>
     <div class="likes" data-likes="${e.id}">${(() => { const l = likeLine(e); return l ? `${rfHTML(e)}<span>${l}</span>` : ""; })()}</div>
     <div class="thread" data-thread="${e.id}">${threadHTML(e)}</div></div>`; }
 /* Replies: the table has been there since the start and nothing ever showed one. The last
@@ -7891,24 +7925,23 @@ function renderShelf() {
   /* things leave the shelf when you log them, so anything still here with a tick was
      logged from somewhere else; count those, not the unreleased ones sitting below */
   const done = all.filter(w => logged(w.id)).length;
-  const pickBar = `<div class="shelfbar">${shelfEdit ? `<button class="btn" id="shelfDone">Done</button>`
-      : `<button class="btn soft" id="spinOpen">${left.length >= 2
-          ? `Can't decide? ${left.length} to pick from` : "Can't decide? Spin the best of something"}</button>`}</div>
+  const pickBar = `${shelfEdit ? `<div class="shelfbar"><button class="btn" id="shelfDone">Done</button></div>` : ""}
     <div id="resultArea"></div>`;
   if (P.shelfFilter && !counts[P.shelfFilter]) P.shelfFilter = "";
   const kindsHere = Object.keys(KINDS).filter(k => counts[k]);
   const places = [place("", "Up next", "mint", "shelf"), ...(kindsHere.length > 1 ? kindsHere.map(k => place(k, K(k).plural, KIND_TONE[k], k)) : [])];
   const scope = P.kinds.length === 4 ? "everything" : P.kinds.map(k => K(k).plural.toLowerCase()).join(", ");
-  $("#shelfBody").innerHTML = `${pagerHTML(places, P.shelfFilter || "", { id:"shelfPager", mode:"chips", allLabel:"All" })}<p class="sub shelfsub">${all.length ? `${left.length} to go${done ? ` · ${done} done` : ""}${soonCount ? ` · ${soonCount} coming` : ""}` : "Everything you meant to get to."}</p>
+  $("#shelfBody").innerHTML = `${pagerHTML(places, P.shelfFilter || "", { id:"shelfPager", mode:"chips", allLabel:"All" })}${all.length ? "" : `<p class="sub shelfsub">Everything you meant to get to.</p>`}
     <div class="shelfsearch"><input id="search" type="search" placeholder="Search ${esc(scope)}" aria-label="Search ${esc(scope)}" autocomplete="off">${all.length ? `<button class="chip filt ${P.when ? "on" : ""}" id="shelfFilterBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"/></svg>${
-        P.when ? ({ out:"Out now", now:"On it", soon:"Coming", mine:"On mine" }[P.when] || "Filter") : "Filter"}</button>` : ""}</div>
+        P.when ? ({ out:"Out now", now:"On it", soon:"Coming", mine:"On mine" }[P.when] || "Filter") : "Filter"}</button>` : ""}${
+        shelfEdit ? "" : `<button class="chip filt pickchip" id="spinOpen" aria-label="${left.length >= 2 ? `Can't decide? Pick from ${left.length}` : "Spin the best of something"}">${ICON_DICE}Pick</button>`}</div>
     <div class="msg" id="msg"></div><div id="results"></div>${arrivedHTML()}
     ${all.length ? `${pickBar}
       <div class="grid" id="shelfGrid">${rows.map(w => { const soon = isSoon(w), n = nowOf(w.id);
-        return `<div class="cell" data-cell="${esc(w.id)}"><div class="po ${logged(w.id)?"done":""} ${soon?"soon":""} ${n?"onit":""}" data-w="${esc(w.id)}">${cover(w,"")}<b>${esc(w.title)}</b>${tag(w.kind)}
+        return `<div class="cell" data-cell="${esc(w.id)}"><div class="po ${logged(w.id)?"done":""} ${soon?"soon":""} ${n?"onit":""}" data-w="${esc(w.id)}">${cover(w,"")}<b>${esc(w.title)}</b>
           ${soon ? `<span class="soon-tag">${when(w.release)}</span>` : `<button class="tick ${logged(w.id)?"done":""}" data-t="${esc(w.id)}" aria-label="log it"></button>`}</div>
           <div class="cap"><span>${soon ? "Coming" : n ? nowLine(n) : (() => { const f = cameFrom(w.id), sv = svcMine(w.id)[0];
-            return f ? `from ${esc(f.sender_p?.handle || "a friend")}` : sv ? `<em class="onsvc">on ${esc(svcName(sv))}</em>` : esc(w.year||""); })()}</span><span>${!soon && !n && w.length ? w.length+K(w.kind).unit : ""}</span></div></div>`; }).join("")}</div>`
+            return f ? `from ${esc(f.sender_p?.handle || "a friend")}` : sv ? `<em class="onsvc">on ${esc(svcName(sv))}</em>` : ""; })()}</span></div></div>`; }).join("")}</div>`
       : `<div class="tiles" style="margin-top:16px">${Object.keys(KINDS).map((k,i) => `<div class="tile" style="background:${K(k).colour};--r:${[-2,1.5,1,-1.5][i]}deg" data-kt="${k}"><small>Search</small><b>${K(k).plural}</b></div>`).join("")}</div>${blank("var(--mint)","+","Nothing up next","Everything you meant to get to, in one place — out now or still coming. Tap a medium above, or search for it.",[])}${pickBar}`}
     <div id="seriesNext"></div>
     ${(() => { const q = handIn.map(h => [h, h.works || works[h.work_id]]).filter(([, w]) => w);
@@ -9700,7 +9733,7 @@ function asksHTML(R, asks) {
     return `<div class="card askcard" data-ask="${esc(a.id)}"><div class="askq">${avatar(R.members.find(m => m.id === a.user_id) || { id:a.user_id })}<p><b>${esc(who(R, a.user_id))}</b> ${mine ? "asked" : "asks"}<span>${esc(a.body)}</span></p></div>
       ${a.answers.length ? `<div class="askans">${a.answers.map(x => { const w = works[x.work_id] || {};
         return `<div class="askw"><button class="aska" data-gw="${esc(x.work_id)}">${cover(w)}<b>${esc(w.title || "")}</b><small>${esc(who(R, x.user_id))}${x.note ? ` · “${esc(x.note)}”` : ""}</small></button>${x.user_id === me.id ? `<button class="askx" data-unask="${esc(a.id)}|${esc(x.work_id)}">Take back</button>` : ""}</div>`; }).join("")}</div>` : `<p class="sub gline" style="margin:8px 0 0">No answers yet.</p>`}
-      <div class="askacts">${a.closed ? `<span class="tag dim">answered</span>` : mine ? `<button class="chip" data-askdone="${esc(a.id)}">That's answered</button>` : `<button class="btn soft" data-askans="${esc(a.id)}">Suggest something</button>`}</div></div>`; }).join("")
+      <div class="askacts">${a.closed ? `<span class="tag dim">answered</span>` : mine ? `<button class="chip" data-askdone="${esc(a.id)}">That's answered</button>` : `<button class="chip pickchip" data-askans="${esc(a.id)}">Suggest something</button>`}</div></div>`; }).join("")
     + `<button class="askopen" id="askRoom">${BUBBLE}<span>Ask the room for something to watch, read or play</span></button>`; }
 async function paintAsks(R) { const box = $("#roomAsks"); if (!box) return;
   const asks = await loadAsks(R); if ($("#roomAsks") !== box) return;
@@ -10204,11 +10237,11 @@ function playNumbers() { const el = $("#yNum"); if (!el || REDUCED) return;
 async function renderTaste() { const body = $("#tasteBody"); const t = tasteOf(myEntries);
   body.innerHTML = `<div class="pagehead"><button class="tasteme" id="tasteMe" aria-label="Open your profile">${avatar(me)}<div><h2 style="margin:0">${esc(me.handle)}</h2>${me.bio?`<p class="sub" style="margin-top:2px">${esc(me.bio)}</p>`:""}</div></button>
     <button class="iconbtn cog" id="tasteCog" aria-label="Settings">${COG}</button></div>
-    ${myEntries.length ? `<button class="card tastemini" id="tasteMore" aria-label="See your whole taste">${tasteMiniHTML(t)}</button>
+    ${myEntries.length ? `<div id="podium"></div>
+    <button class="card tastemini" id="tasteMore" aria-label="See your whole taste">${tasteMiniHTML(t)}</button>
     ${yourNumbersHTML()}
-    <div id="hotTakes"></div>
-    <div id="podium"></div>
     <div id="myLists"></div>
+    <div id="hotTakes"></div>
     <div class="card" id="recCard"><div class="h"><span>You might like</span><span class="tag dim">from what you loved</span></div><div id="recBody">${skeleton(1)}</div></div>
     ${storyYear() ? `<button class="linkrow yearrow" id="tasteStory"><span>Your ${storyYear()} is ready</span><b>›</b></button>` : ""}
     <button class="linkrow" id="tasteAll"><span>Your ten, the charts, your year and more</span><b>›</b></button>`
@@ -10246,11 +10279,11 @@ async function paintPodium() {
   const kinds = Object.keys(KINDS).filter(k => myEntries.some(e => kindOf(e.work_id) === k));
   try { await ensureRankCache(kinds); } catch { return; }
   if ($("#podium") !== el) return;
-  const rows = kinds.map(k => [k, (rankCache[k] || []).filter(id => works[id]).slice(0, 3)]).filter(([, ids]) => ids.length);
-  if (!rows.length) return;
-  el.innerHTML = `<div class="card podium"><div class="h"><span>Your podium</span><span class="tag dim">top of each list</span></div>
-    ${rows.map(([k, ids]) => `<div class="pd-row"><span class="pd-k" style="background:${K(k).colour}">${esc(K(k).plural)}</span>
-      <div class="pd-ps">${ids.map((id, i) => `<button class="pd-p" data-work="${esc(id)}">${cover(works[id])}<i>${i + 1}</i></button>`).join("")}</div></div>`).join("")}</div>`;
+  /* your favourite in each medium, four posters in a row — the top of each ranked list */
+  const tops = kinds.map(k => [k, (rankCache[k] || []).find(id => works[id])]).filter(([, id]) => id);
+  if (!tops.length) return;
+  el.innerHTML = `<div class="favs"><div class="lbl">Favourites</div><div class="favrow">${tops.map(([k, id]) =>
+    `<button class="fav" data-work="${esc(id)}" aria-label="Your favourite ${esc(K(k).label.toLowerCase())}: ${esc(works[id].title)}">${tileCover(works[id])}<small style="--k:${K(k).colour}">${esc(K(k).label)}</small></button>`).join("")}</div></div>`;
   $$("[data-work]", el).forEach(b => b.onclick = () => openWork(b.dataset.work)); }
 async function openTasteDetail() { const t = tasteOf(myEntries);
   openSheet(`<h3>Your taste</h3>
@@ -11540,6 +11573,7 @@ function spreadHTML(fr) { const b = [[], [], [], [], []];
   return `<div class="pspread" aria-label="How your people scored it">${b.map((es, i) => `<div class="sb"><span class="sf">${es.slice(0, 3).map(e => avatar(e.profiles)).join("")}${es.length > 3 ? `<em>+${es.length - 3}</em>` : ""}</span>
     <i style="--h:${es.length ? Math.max(10, Math.round(es.length / most * 52)) : 3}px"></i><small>${i + 1}★</small></div>`).join("")}</div>`; }
 /* the title page's action bar: what you do with a thing, one row, under its poster */
+const ICON_DICE = `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="4"/><circle cx="9" cy="9" r="1.3"/><circle cx="15" cy="15" r="1.3"/><circle cx="15" cy="9" r="1.3"/><circle cx="9" cy="15" r="1.3"/></svg>`;
 const ICON_MARK = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3.5h10a1 1 0 0 1 1 1V21l-6-4-6 4V4.5a1 1 0 0 1 1-1z"/></svg>`;
 const ICON_PLAY = `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M10 8.5l5.5 3.5-5.5 3.5z"/></svg>`;
 const ICON_MORE = `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5.5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="18.5" cy="12" r="1.6"/></svg>`;
@@ -11550,6 +11584,7 @@ async function openWork(id) { let w = works[id]; if (!w) { try { const rows = aw
   openSheet(`<div class="whero" aria-hidden="true" style="--wk:${cfg.colour}${w.cover ? `;background-image:url('${esc(blurSrc(w.cover))}')` : ""}"></div>
     <div class="head whead" style="--wk:${cfg.colour}">${cover(w)}<div class="hh"><h3>${esc(w.title)}</h3><p class="sub">${tag(w.kind)} ${esc(w.year||"")}${w.creator?" · "+creatorLinks(w):""}${w.length?` · ${w.length}${cfg.unit.replace(" ", "\u00a0")}`:""}</p>${(w.meta?.genres || []).length ? `<div class="wgenres">${(w.meta.genres).slice(0, 4).map(g =>
       `<button class="wgenre" data-wgenre="${esc(g)}" aria-label="Your favourite ${esc(g)} in Finished">${esc(g)}</button>`).join("")}</div>` : ""}</div></div>
+    ${w.meta?.overview ? `<p class="wabout" id="wAbout" role="button" tabindex="0" aria-expanded="false">${esc(String(w.meta.overview).slice(0, 900))}</p>` : ""}
     <div class="wacts">
       <button class="btn wlog ${isSoon(w)?"ghost":""}" id="wLog">${logged(w.id)?"Log it again":isSoon(w)?"Log it anyway":cfg.verb.replace(/^./,c=>c.toUpperCase())+" it"}</button>
       <button class="wact ${activeList()?.items.includes(w.id) ? "on" : ""}" id="wShelf" aria-pressed="${!!activeList()?.items.includes(w.id)}">${ICON_MARK}<span>Up next</span></button>
@@ -11693,7 +11728,8 @@ async function openWork(id) { let w = works[id]; if (!w) { try { const rows = aw
       say(had ? `Out of ${c.name}` : `Added to ${c.name}`); if (currentTab() === "clubs") renderClubs(); }
     catch (e) { oops(e, "Couldn't change the club"); }
     b.disabled = false; });
-  paintWatch(w); paintBorrow(w); paintSeries(w);
+  paintWatch(w, "wWatch", true); paintBorrow(w); paintSeries(w);
+  const ab = $("#wAbout"); if (ab) ab.onclick = () => { const open = ab.classList.toggle("open"); ab.setAttribute("aria-expanded", String(open)); };
   { const ln = $("#wLines"), withLines = es.filter(lineOf);
     if (ln && withLines.length) { ln.innerHTML = `<div class="card"><div class="h"><span>Lines people kept</span><span class="tag dim">${withLines.length}</span></div>${linesHTML(withLines)}</div>`; } }
   const st = await tagStats(w.id); const top = Object.entries(st.counts).sort((a,b)=>b[1]-a[1]).slice(0,5);

@@ -86,6 +86,15 @@ const GENRES = {
 /* what the pick wheel shows under a spun title — the shelf's things, since those are
    what the wheel lands on. Written for the demo, not lifted from anywhere. */
 const ABOUT = {
+  "film:1":"A crew of meticulous thieves in Los Angeles and the detective obsessed with catching them circle each other until a job goes wrong and both men have to decide what they're willing to lose.",
+  "film:6":"The commandant of Auschwitz and his wife build a dream life for their family in a house and garden next to the camp wall.",
+  "film:7":"Two childhood friends from Seoul, separated when one family emigrates, meet again in New York twenty-four years later for one week.",
+  "film:8":"On a holiday in Turkey at the end of the nineties, an eleven-year-old and her young father share a few days she will spend years trying to understand.",
+  "film:32":"In 1630s New England a family banished from their settlement build a farm at the edge of a forest, and begin to come apart when their baby vanishes.",
+  "tv:1":"Baltimore, one institution at a time: a police wiretap on a drug crew, the docks, city hall, the schools and the newspaper, seen from both sides.",
+  "book:1":"On the desert planet Arrakis, the only source of the most valuable substance in the universe, a young heir is drawn into a war for the planet and its people.",
+  "book:2":"Four generations of a Korean family who move to Japan in the early twentieth century, and the choices that follow them through the century.",
+  "game:1":"An archaeologist in a tiny wooden spaceship explores a solar system caught in a twenty-two-minute loop that ends, every time, with the sun going out.",
   "film:2":"A professional safecracker who works alone and plans everything wants one last score so he can buy a normal life — and takes a job from the one man he shouldn't.",
   "film:4":"A tobacco company scientist is pushed out and decides to talk on television about what his old employer knew. A news producer tries to get the interview on air before the lawyers bury it.",
   "tv:2":"Three years after two percent of the world's population vanished without a trace, a police chief in a small New York town tries to hold his family and his town together as both come apart.",
