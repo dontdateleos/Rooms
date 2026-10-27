@@ -93,7 +93,7 @@ The service-role key must never go near this repo.
 |---|---|
 | `index.html` | the whole app — markup, styles, logic, the card renderer, the avatar generator |
 | `site.html` | the marketing page |
-| `schema.sql` | Postgres tables, policies and RPCs, v1 through v36 — one file, run start to finish |
+| `schema.sql` | Postgres tables, policies and RPCs, v1 through v37 — one file, run start to finish |
 | `worker.js` | Cloudflare Worker: TMDB, Open Library and IGDB proxies (only the lookups the app makes), invite link previews (`/i/CODE`), web push sending, and the hourly cron for scheduled reminders. Its `SUPABASE_URL` is set in the file — change it if you point the app at another project |
 | `manifest.webmanifest`, `sw.js`, `icons/` | what makes it installable |
 
@@ -161,6 +161,12 @@ so a failure changes nothing.)
 **v36.** Shared titles keep their names: anyone can add a work or fill in what's missing,
 but a title can't be renamed once set, and covers must come from TMDB, IGDB or Open
 Library. Reactions and replies can only be written on entries you could read.
+
+**v37.** Lists you make (`theme_lists`, `theme_list_items`, `theme_list_likes`): seen by
+your rooms and the people who follow you, never across a block; an open list can be added
+to by anyone in your rooms, and only its owner can reorder it or take other people's
+things off. The line you loved rides in `entries.context.line` and is held to the same
+word rule as the note.
 
 **Up to three rooms.** People can create or join up to three rooms in total. Existing
 memberships are retained; people already in three or more must leave one before adding
@@ -232,6 +238,17 @@ straight to a vote on your own picks.
 - **The room:** the room's square gets a face only when the last fortnight was loved (8+) or hated (≤4.5).
 - **Anniversary:** confetti on the anniversary of joining.
 - **Tilt-to-look:** opt-in, off by default.
+
+**From Letterboxd and Goodreads.**
+- **Lists:** themed lists ("Two hours or less", "Books for a long flight"), numbered if you like, with a line about them and likes. Yours are on the You page, the room's in Charts, anyone's on their profile. "Put it on a list" is on every title. Open ones take additions from the room.
+- **Who made it:** tap a director, showrunner, author or studio on a title to see everything they made, how many you've got to, and your people's favourite (TMDB, Open Library, IGDB).
+- **Series:** films (TMDB collections), games (IGDB) and books (Wikidata, by Open Library id) show where a title sits in its series and what's next; Up next suggests the next one in a series you've started. Remembered on the phone for a fortnight.
+- **Didn't finish:** films get "Walked out" alongside the other mediums' "Didn't finish"/"Dropped it", with where you stopped (`context.stopped`). Things you gave up on are marked in Finished (with a show/hide/only filter) and don't count towards the year's goal.
+- **Your services:** Up next filters to what's on the services you picked in settings, says which one under each poster, and tells you when something on your list arrives on one.
+- **Hot takes:** on the You page, the things you rate furthest above and below the room (or everyone).
+- **A line you loved:** an optional quote with any entry, shown on the card, the title's page and your profile.
+- **Where to read it:** books show a free Open Library loan or read where there is one, and a WorldCat link to find it in a library.
+- **The room's awards:** in December the room votes for its film, show, book and game of the year from its five best-rated; winners show when everyone's voted, and all of them through January.
 
 **Little extras.**
 - **First-run tour:** after the welcome, a six-stop spotlight walks a new person round (their room, +, Rooms, Queue, Challenges, You). Shown once (`prefs.toured`), skippable, and repeatable from settings with "Show me around again".

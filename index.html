@@ -2580,6 +2580,127 @@ header,nav,.secbar{-webkit-backdrop-filter:blur(22px) saturate(1.2);backdrop-fil
 @media (prefers-reduced-motion:reduce){.tr-ring,.tr-card,#tour{transition:none}.tr-card.hop .tr-guy svg{animation:none}}
 
 
+/* ============ the Letterboxd and Goodreads bits ============ */
+/* a title with no cover: its name on its medium's colour */
+.co.tcov,.tcov{display:flex;align-items:flex-end;background:var(--k);color:var(--onAccent);overflow:hidden;padding:5px}
+.tcov b{font:800 9px/1.15 var(--head);display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;text-align:left}
+/* didn't finish, and where */
+.dnf{display:inline-flex;align-items:center;gap:4px;font:800 10.5px/1.2 var(--head);letter-spacing:.02em;color:var(--mute);background:var(--cream2);padding:3px 8px;border-radius:999px;margin-left:2px}
+.stoprow{display:flex;align-items:center;gap:10px;margin-top:10px;padding:8px 8px 8px 14px;border-radius:14px;background:var(--cream2)}
+.stoprow span{font:800 12.5px var(--head);color:var(--mute);white-space:nowrap}
+.stoprow input{flex:1;min-width:0;margin:0;background:var(--card);padding:9px 12px}
+/* a line you loved */
+.linewrap{margin-top:12px}
+.linewrap textarea{font-style:italic}
+blockquote.kept{margin:10px 0 0;padding:4px 0 4px 12px;border-left:3px solid var(--k);font-style:italic;font-size:14.5px;line-height:1.5;color:var(--ink)}
+blockquote.kept.big{margin-top:14px;font-size:18px;padding:6px 0 6px 14px}
+.kline{margin:12px 0 0;padding:0 0 12px;border-bottom:1px solid var(--line)}
+.kline:last-child{border-bottom:0;padding-bottom:2px}
+.kline blockquote{margin:0;padding-left:12px;border-left:3px solid var(--k);font-style:italic;font-size:15px;line-height:1.5}
+.kline figcaption{display:flex;align-items:center;gap:7px;margin-top:8px;padding-left:15px;font-size:12px;color:var(--mute)}
+.kline figcaption .av{width:20px;height:20px}
+.kline figcaption b{font-family:var(--head);color:var(--ink)}
+/* lists */
+.tlrow{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.tlist{display:flex;flex-direction:column;gap:8px;border:0;background:var(--cream2);border-radius:16px;padding:12px;text-align:left;color:var(--ink);cursor:pointer;min-width:0}
+.tl-fan{--w:44px;--h:64px;--step:22px;position:relative;display:block;flex:none;height:var(--h);width:calc(var(--w) + 3 * var(--step))}
+.tl-fan>span{position:absolute;top:0;left:calc(var(--i) * var(--step));width:var(--w);height:var(--h);transform:rotate(calc((var(--i) - 1.5) * 4deg));z-index:calc(4 - var(--i))}
+.tl-fan .co{width:100%;height:100%;border-radius:7px;object-fit:cover;box-shadow:0 6px 14px -8px rgba(0,0,0,.5);display:flex}
+.tl-fan.big{--w:58px;--h:86px;--step:20px}
+.tl-empty{display:grid;place-items:center;width:var(--w);height:var(--h);border-radius:7px;border:2px dashed var(--line);color:var(--mute);font:800 20px var(--head)}
+.tlnew{align-items:center;justify-content:center;border:2px dashed var(--line);background:none;color:var(--mute);font:800 14px var(--head);min-height:120px}
+.tl-t{display:flex;flex-direction:column;gap:3px;min-width:0}
+.tl-t b{font:800 14.5px/1.25 var(--head);letter-spacing:-.01em;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.tl-t small{font-size:11.5px;font-weight:600;color:var(--mute)}
+.tladd{width:100%;border:0;border-bottom:1px solid var(--line);background:none;color:var(--ink);font:inherit;text-align:left}
+.tladd:last-child{border-bottom:0}
+.tladd .tl-fan{--w:30px;--h:44px;--step:9px}
+.tladd.on .t b{color:var(--ink)}
+.tlhead{display:flex;align-items:center;gap:16px}
+.tlhead h3{margin:0}
+.tlnote{margin:12px 0 0;font-size:15px;line-height:1.5}
+.tlbar{display:flex;align-items:center;gap:14px;margin-top:14px}
+.tllike{border:2px solid var(--line);background:var(--card);border-radius:999px;padding:7px 14px;font:800 14px var(--head);color:var(--mute);cursor:pointer;flex:none}
+.tllike.on{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 40%,var(--line))}
+.tllike:disabled{opacity:.7;cursor:default}
+.tllike.popped{animation:heartPop .4s var(--m-spring)}
+.tlseen{flex:1;min-width:0}.tlseen small{font-size:12px;color:var(--mute);font-weight:600}.tlseen b{color:var(--ink)}
+.tlitems{margin-top:10px}
+.tlitem{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line);cursor:pointer}
+.tlitem:last-child{border-bottom:0}
+.tlitem .co{width:40px;height:58px;border-radius:9px;object-fit:cover;flex:none}
+.tlitem .t{flex:1;min-width:0}.tlitem .t b{display:block;font:800 15px var(--head);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tlitem .t small{display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:11.5px;color:var(--mute);font-weight:600;margin-top:3px}
+.tlrk{flex:none;width:22px;text-align:center;font:900 16px var(--head);color:var(--mute);font-variant-numeric:tabular-nums}
+.tlmove{display:flex;gap:4px;flex:none}
+.tlmove button{width:32px;height:32px;border-radius:10px;border:0;background:var(--cream2);color:var(--ink);font:800 14px var(--head);cursor:pointer}
+.tlmove button:disabled{opacity:.35}
+/* who made it */
+.crlink{border:0;background:none;padding:0;font:inherit;color:inherit;cursor:pointer;text-decoration:underline;text-decoration-color:color-mix(in srgb,currentColor 35%,transparent);text-underline-offset:3px}
+.crhead{display:flex;align-items:center;gap:14px}
+.crhead h3{margin:0}
+.crhead .face,.crface{width:64px;height:64px;border-radius:50%;object-fit:cover;flex:none}
+.crhead .face{font-size:20px}
+.crprog .pbar{height:6px;margin-top:10px}
+.crgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px 10px;margin-top:14px}
+.crw{display:flex;flex-direction:column;gap:3px;min-width:0;cursor:pointer;position:relative}
+.crw .co{width:100%;aspect-ratio:2/3;height:auto;border-radius:10px;object-fit:cover}
+.crw:not(.seen) .co{filter:saturate(.55) brightness(.92)}
+.crw.seen::after{content:"\2713";position:absolute;top:6px;right:6px;width:20px;height:20px;border-radius:50%;background:var(--good);color:#fff;font:900 11px/20px var(--head);text-align:center}
+.crw b{font:800 12.5px/1.25 var(--head);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.crw small{font-size:11px;color:var(--mute);font-weight:600}
+.crw .stars{margin-top:2px}
+.crup{padding:4px 8px;font-size:11.5px;align-self:flex-start;margin-top:2px}
+/* series */
+.series .srow{display:flex;gap:8px;overflow-x:auto;padding:10px 2px 4px;scrollbar-width:none}
+.series .srow::-webkit-scrollbar{display:none}
+.spart{position:relative;flex:none;width:58px;border:0;background:none;padding:0;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--mute)}
+.spart .co{width:58px;height:86px;border-radius:9px;object-fit:cover;opacity:.55;transition:opacity var(--m-med)}
+.spart.done .co,.spart.here .co{opacity:1}
+.spart.here .co{outline:3px solid var(--ink);outline-offset:2px}
+.spart small{font:800 11px var(--head)}
+.spart.done small::after{content:" \2713";color:var(--good)}
+.snext{display:flex;align-items:center;gap:10px;margin-top:10px;padding:10px 12px;border-radius:14px;background:var(--cream2)}
+.snext .t{flex:1;min-width:0}.snext small{display:block;font-size:11px;color:var(--mute);font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+.snext b{font:800 15px var(--head)}
+/* where to read it */
+.borrow .linkrow{margin-top:8px;text-decoration:none}
+/* your services */
+.arrived{display:flex;align-items:center;gap:10px;margin:12px 0 0;padding:10px 8px 10px 14px;border-radius:16px;background:color-mix(in srgb,var(--mint) 22%,var(--card))}
+.arrived p{flex:1;margin:0;font-size:13.5px;line-height:1.4}
+.ar-dot{width:9px;height:9px;border-radius:50%;background:var(--good);flex:none;animation:arPulse 1.6s ease-in-out 3}
+@keyframes arPulse{50%{transform:scale(1.5);opacity:.5}}
+.onsvc{font-style:normal;font-weight:800;color:var(--good)}
+/* hot takes */
+.hot .h .seg.mini{margin:0;padding:3px}
+.hot .h .seg.mini button{padding:5px 10px;font-size:12px}
+.htrow{display:flex;align-items:center;gap:12px;width:100%;padding:9px 0;border:0;border-bottom:1px solid var(--line);background:none;color:var(--ink);text-align:left;cursor:pointer}
+.htrow:last-child{border-bottom:0}
+.htrow .co{width:36px;height:52px;border-radius:8px;object-fit:cover;flex:none}
+.htrow .t{flex:1;min-width:0}.htrow .t b{display:block;font:800 14.5px var(--head);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.htrow .t small{font-size:11.5px;color:var(--mute);font-weight:600}
+.htd{flex:none;font:900 14px var(--head);padding:5px 9px;border-radius:999px;font-variant-numeric:tabular-nums;color:var(--onAccent)}
+.htd.up{background:var(--mint)}.htd.down{background:var(--pink)}
+/* the room's awards */
+.awards .awrow{display:flex;align-items:center;gap:12px;width:100%;padding:10px 0;border:0;border-bottom:1px solid var(--line);background:none;color:var(--ink);text-align:left;cursor:pointer}
+.awards .awrow:last-child{border-bottom:0}
+.awrow .co{width:42px;height:62px;border-radius:9px;object-fit:cover;flex:none}
+.aw-q{display:grid!important;place-items:center;background:var(--cream2);color:var(--mute);font:900 20px var(--head)}
+.awrow .t{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.awrow .t small:first-child{font:800 10.5px var(--head);text-transform:uppercase;letter-spacing:.06em}
+.awrow .t b{font:800 15px var(--head);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.awrow .t small{font-size:11.5px;color:var(--mute);font-weight:600}
+.aw-cup{flex:none;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:var(--butter);color:var(--onAccent);font-size:16px}
+.awrow.won .co{box-shadow:0 0 0 3px var(--butter)}
+.awgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px 10px;margin-top:14px}
+.awnom{display:flex;flex-direction:column;gap:4px;border:0;background:none;padding:0;color:var(--ink);text-align:left;cursor:pointer;min-width:0}
+.awnom .co{width:100%;aspect-ratio:2/3;height:auto;border-radius:10px;object-fit:cover;transition:transform var(--m-med) var(--m-ease),box-shadow var(--m-med)}
+.awnom b{font:800 12.5px/1.25 var(--head);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.awnom small{font-size:11px;color:var(--mute);font-weight:600}
+.awnom.on .co{box-shadow:0 0 0 3px var(--ink);transform:translateY(-3px)}
+.awnom.won .co{box-shadow:0 0 0 3px var(--butter)}
+.awnom:disabled{cursor:default}
+
 /* ---------- floating pills take turns ----------
    The update bar, the offline note and toasts all live just above the tab bar. When
    more than one is up, the toast steps above the others rather than hiding behind
@@ -2907,7 +3028,7 @@ function burstAt(el, n = 28, delay = 0) {
 const KINDS = {
   film: { label:"Film", room:"Film", plural:"Films", colour:"var(--film)", verb:"watched", creatorLabel:"Directed by", lengthLabel:"Runtime", unit:" min",
     craft:["the directing","the writing","the acting","the look","the editing","the music","the sets","the ending","the atmosphere","the pacing","the dialogue"],
-    ticks:[["first","First watch","Rewatch"],["where","At the cinema","At home"]] },
+    ticks:[["first","First watch","Rewatch"],["where","At the cinema","At home"],["done","Finished it","Walked out"]] },
   tv: { label:"TV", room:"TV", plural:"TV", colour:"var(--tv)", verb:"watched", creatorLabel:"Made by", lengthLabel:"Episodes", unit:" eps",
     craft:["the writing","the acting","the look","the season","the cast","the music","the ending","the world","the pacing","the dialogue"],
     ticks:[["first","First watch","Rewatch"],["where","Finished it","Didn't finish"]] },
@@ -2969,9 +3090,10 @@ const SERVICES = [["netflix","Netflix"],["disney","Disney+"],["prime","Prime Vid
   ["hulu","Hulu"],["peacock","Peacock"],["stan","Stan"],["binge","Binge"],["now","NOW"],["iplayer","BBC iPlayer"],["crave","Crave"],["mubi","MUBI"],["criterion","Criterion"]];
 const svcKey = name => { const n = lc(name || "").replace(/[^a-z0-9]/g, ""); if (/channel$/.test(n)) return null;
   return SERVICES.find(([k]) => k === "prime" ? /amazonprime|primevideo/.test(n) : k === "max" ? /^(hbo)?max/.test(n) : k === "now" ? /^now(tv)?(cinema|entertainment)?$/.test(n) : n.includes(k))?.[0] || null; };
-const onMine = got => (got?.free || []).filter(p => (P.services || []).includes(svcKey(p.name)));
+const onMine = got => (got?.free || []).filter(p => myServices().includes(svcKey(p.name)));
 async function watchOn(w) {
-  if ((w.kind !== "film" && w.kind !== "tv") || DEMO) return null;
+  if (w.kind !== "film" && w.kind !== "tv") return null;
+  if (DEMO) { const names = sb.__db?.providers?.[w.id]; return names ? { region:REGION(), link:"", free:names.map(name => ({ name, logo:"" })), paid:[] } : null; }
   const region = REGION(), key = w.id + "|" + region;
   if (watchCache[key]) return watchCache[key];
   const path = (w.kind === "film" ? "movie/" : "tv/") + w.id.split(":")[1] + "/watch/providers";
@@ -3115,6 +3237,22 @@ const DETAIL = {
     const genres = [...new Set([...(g?.genres||[]).map(x=>x.name), ...(g?.themes||[]).map(x=>x.name)])];
     return { creator:dev, meta:{ genres, overview:g?.summary || "" }, credits:{ studio:dev } }; } catch { return {}; } }
 };
+/* ---------- didn't finish ----------
+   Every medium already had a way to say it — "Didn't finish", "Dropped it", and now
+   "Walked out" for a film — kept in the entry's context like the other ticks. What's
+   new is where you stopped (context.stopped, in your own words: p. 140, S2 E4, 50
+   minutes in), and that a thing you gave up on doesn't count towards the year's goal,
+   which is about finishing things. It still counts as a log everywhere else. */
+const DNF_WORDS = ["Didn't finish", "Dropped it", "Walked out"];
+const dnfWord = e => Object.values(e?.context || {}).find(v => DNF_WORDS.includes(v)) || "";
+const dnfOf = e => !!dnfWord(e);
+const dnfLine = e => { const w = dnfWord(e); if (!w) return "";
+  const at = String(e.context?.stopped || "").trim();
+  return `<span class="dnf">${esc(w)}${at ? ` \u00b7 ${esc(at)}` : ""}</span>`; };
+const STOP_HINT = { book:"p. 140, or 30%", tv:"S2 E4", game:"12 hours in, or 40%", film:"50 minutes in" };
+/* the line you loved, kept with the entry the same way */
+const LINE_HINT = { book:"A sentence you underlined", film:"Something somebody says in it", tv:"Something somebody says in it", game:"Something somebody says in it" };
+const lineOf = e => String(e?.context?.line || "").trim();
 function peopleOf(w) { const c = w.credits || {}, out = [];
   for (const [key,label] of [["director","director"],["creator","made by"],["author","author"],["writer","writer"],["studio","studio"],["dp","cinematographer"],["editor","editor"],["composer","composer"]])
     (c[key]||"").split(", ").filter(Boolean).forEach(n => { if (!out.find(o=>o[0]===n)) out.push([n,label]); });
@@ -3140,6 +3278,7 @@ function makeLocalSb(seed) {
   if (!db.settings) db.settings = [];                                 /* nor before v22 */
   if (!db.handles) db.handles = [];                                   /* nor before v23 */
   for (const t of ["room_answers", "room_brackets", "room_votes", "room_nights", "room_asks", "room_ask_answers"]) if (!db[t]) db[t] = [];   /* nor before the games */
+  for (const t of ["theme_lists", "theme_list_items", "theme_list_likes"]) if (!db[t]) db[t] = [];   /* nor before v37's lists */
   /* v20 gave entries a part column with a default of false. A row written before that
      has no such key, and the feeds now ask for part = false by name — so without this
      every entry anybody already had would quietly stop appearing anywhere. */
@@ -3290,7 +3429,8 @@ function makeLocalSb(seed) {
         db.room_members = db.room_members.filter(m => m.user_id !== mine);
         db.rooms = db.rooms.filter(r => !was.includes(r.id) || db.room_members.some(m => m.room_id === r.id));
         for (const t of ["entries","lists","list_items","reactions","replies","follows",
-                         "top_lists","top_list_items","club_members","club_votes","nows","handovers","seen","blocks","handles"])
+                         "top_lists","top_list_items","club_members","club_votes","nows","handovers","seen","blocks","handles",
+                         "theme_lists","theme_list_items","theme_list_likes"])
           db[t] = [];
         db.profile = null; db.signedOut = true; save();
         return Promise.resolve({ data:null, error:null }); }
@@ -6830,8 +6970,9 @@ function slipHTML(e, opts = {}) { const w = remember(e.works) || works[e.work_id
   const same = (e.reactions||[]).some(r => r.user_id === me.id), n = (e.reactions||[]).length;
   return `<div class="slip" data-slip="${e.id}" style="animation-delay:-${(avHash(e.id) % 65) / 10}s">
     <div class="who" data-prof="${esc(e.user_id)}" style="cursor:pointer">${avatar(e.profiles)} <b>${esc(mine ? "you" : e.profiles?.handle)}</b> <span>· ${K(w.kind).verb} ${whenE(e)}</span></div>
-    <div class="ttl" data-work="${esc(e.work_id)}"><span class="season-cover">${cover(w)}${seasonEntryStamp(e)}</span><div><b>${esc(w.title)}</b><small>${tag(w.kind)} ${esc(w.year||"")}</small></div></div>
+    <div class="ttl" data-work="${esc(e.work_id)}"><span class="season-cover">${cover(w)}${seasonEntryStamp(e)}</span><div><b>${esc(w.title)}</b><small>${tag(w.kind)} ${esc(w.year||"")}${dnfOf(e) ? ` ${dnfLine(e)}` : ""}</small></div></div>
     ${e.note?`<div class="q${String(e.note).length > 210 ? " clip" : ""}">“${noteHTML(e.note)}”</div>${String(e.note).length > 210 ? `<button class="more" data-more="${e.id}">More</button>` : ""}`:""}
+    ${lineOf(e) ? `<blockquote class="kept" style="--k:${K(w.kind || "film").colour}">${esc(lineOf(e))}</blockquote>` : ""}
     ${(() => { const t = together(e); return t ? `<div class="loved" style="margin-top:10px"><span class="together">◆ ${t}</span></div>` : ""; })()}
     ${e.loved?.length?`<div class="loved">${e.loved.slice(0,4).map(k => `<span>${esc(k.startsWith("person:")?lc(k.slice(7)):k)}</span>`).join("")}</div>`:""}
     <div class="foot"><div class="acts">${mine ? `<button class="chip" data-edit-review="${e.id}">Edit</button><button class="chip" data-delete-review="${e.id}">Delete</button>` : `<button data-like="${e.id}" class="lk ${same?"on":""}" aria-pressed="${same}" aria-label="${same ? "Liked — tap to take it back" : "Like this. Hold for faces"}">${myReactHTML(e)}</button><button data-reply="${e.id}" class="lk" aria-label="Reply">${BUBBLE}</button>`
@@ -7020,7 +7161,7 @@ async function renderRoomFeed(fb, R) {
   /* one long scroll used to hold the conversation, the charts and the year end to end;
      now they're three places you switch between, and the room remembers which you were in */
   const yearEs = es.filter(e => String(e.rated_on || "").startsWith(goalYear()));
-  const pal = roomPalmares(es), hasYear = R.members.length > 1 && (!!pal || yearEs.length > 0);
+  const pal = roomPalmares(es), hasYear = R.members.length > 1 && (!!pal || yearEs.length > 0 || !!awardsPhase());
   const sec = P.roomSec === "charts" || P.roomSec === "play" || (P.roomSec === "year" && hasYear) ? P.roomSec : "talk";
   const secs = [["talk", "Talk"], ["play", "Play"], ["charts", "Charts"], ...(hasYear ? [["year", "Year"]] : [])];
   fb.innerHTML = `<div class="roomline"><div class="rl-l"><div class="here" id="hereRow" aria-live="polite"><small>Nobody else in here right now</small></div>${roomStreak(es, R)}</div>
@@ -7062,17 +7203,21 @@ async function renderRoomFeed(fb, R) {
     ${split ? `<div class="card"><div class="h"><span>A friendly argument</span></div>${compRows([split])}</div>` : ""}
     <div class="card"><div class="h"><span>In competition</span><span class="tag dim">weighted</span></div>${comp.length ? compRows(comp) : blank("var(--butter)","%","No scores yet","Once two of you have rated the same thing, the agreement number appears here.",[["compAdd","Log something"]])}</div>
     <div id="rankMeet"></div>
+    <div id="roomLists"></div>
     </div>
     ${hasYear ? (() => { const t = id => esc(works[id]?.title || "");
       const best = competition(yearEs, 200);
-      return `<div data-rsec="year"${sec === "year" ? "" : " hidden"}><div id="roomGoals"></div>${best.length ? `<div class="card"><div class="h"><span>The room's ${goalYear()}</span><span class="tag dim">${yearEs.length} ${yearEs.length === 1 ? "entry" : "entries"}</span></div>
+      return `<div data-rsec="year"${sec === "year" ? "" : " hidden"}><div id="roomAwards"></div><div id="roomGoals"></div>${best.length ? `<div class="card"><div class="h"><span>The room's ${goalYear()}</span><span class="tag dim">${yearEs.length} ${yearEs.length === 1 ? "entry" : "entries"}</span></div>
         <div class="ywall">${best.slice(0, 6).map((f, i) => { const w = works[f.id] || {};
           return `<button class="yw ${i ? "" : "first"}" data-cw="${esc(f.id)}">${cover(w)}<span class="yrk">${i + 1}</span><b>${esc(w.title || "")}</b><small>${(f.avg/2).toFixed(1)} · ${f.n} of you</small></button>`; }).join("")}</div>
         <button class="linkrow" id="roomYearMore"><span>The rest · best by medium, the agreement, the fight</span><b>›</b></button>
       </div>` : ""}</div>`; })() : ""}
     `;
   endLine($('[data-rsec="talk"]', fb), es, 60);
-  paintRoomGoals(R, es);
+  paintRoomGoals(R, es); paintAwards(R);
+  paintListsCard($("#roomLists"), { build:x => x.in("owner", R.members.map(m => m.id)), title:"Lists from the room" });
+  if (awardsPhase() === "vote" && R.members.length > 1 && P.awardCoach !== `${R.id}:${awardYear()}` && currentTab() === "doors") {
+    P.awardCoach = `${R.id}:${awardYear()}`; saveP(); setTimeout(() => coach(`${awardsName(R)} are open. Vote in the Year tab`), 2600); }
   if (!P.holdTip && myEntries.length >= 3 && currentTab() === "doors") { P.holdTip = 1; saveP(); setTimeout(() => coach("Hold any poster to rate it, shelve it or pass it on"), 1600); }
   $("#roomMenu", fb).onclick = () => openRoomMenu(R); wireTonight(); if (R.members.length > 1) paintAsks(R);
   const segEl = $(".roomsecs", fb); glideSeg(segEl, true);
@@ -7341,6 +7486,7 @@ function cabinetRows(noFacet) {
   }
   let rows = Object.values(best);
   if (P.cabKind) rows = rows.filter(r => r.w.kind === P.cabKind);
+  if (P.cabDnf === "hide") rows = rows.filter(r => !dnfOf(r.e)); else if (P.cabDnf === "only") rows = rows.filter(r => dnfOf(r.e));
   if (cabFacet && !noFacet) rows = rows.filter(r => cabFacetsOf(r.w).includes(cabFacet));
   const qtext = lc(cabQ).trim();
   if (qtext) rows = rows.filter(r => lc([r.w.title, r.w.creator, r.w.year, K(r.w.kind).label]
@@ -7492,7 +7638,7 @@ const rankRowHTML = (r, i, showMove) => { const logo = logoCache[r.w.id];
       <button data-rkup="${id}" data-rkkind="${kind}" ${pos===0?"disabled":""} aria-label="Move up">\u2191</button>
       <button data-rkdown="${id}" data-rkkind="${kind}" ${arr && pos===arr.length-1?"disabled":""} aria-label="Move down">\u2193</button></div>`}
     <div class="meta">
-      <div class="ttlwrap">${titleHTML}<small class="sub" style="${subStyle}">${tag(r.w.kind)} ${esc(r.w.year||"")}${genreLine(r.w)}</small></div>
+      <div class="ttlwrap">${titleHTML}<small class="sub" style="${subStyle}">${tag(r.w.kind)} ${esc(r.w.year||"")}${r.e && dnfOf(r.e) ? ` \u00b7 ${esc(dnfWord(r.e).toLowerCase())}` : genreLine(r.w)}</small></div>
       ${stars(r.score, `sm ${starLight ? "light" : "dark"}`)}
     </div>
   </div>`; };
@@ -7627,7 +7773,7 @@ function paintDiary(el) {
     html += `<button class="drow" data-work="${esc(w.id)}" type="button">
       <span class="dday"><b>${d.getDate()}</b><small>${esc(d.toLocaleDateString(undefined, { weekday:"short" }))}</small></span>
       ${cover(w)}
-      <span class="dt"><b>${esc(w.title)}</b><small>${tag(w.kind)} ${esc(w.year || "")}${again ? ` <span class="again" title="Again">\u21bb again</span>` : ""}${e.private ? ` <span class="tag dim">just me</span>` : ""}</small></span>
+      <span class="dt"><b>${esc(w.title)}</b><small>${tag(w.kind)} ${esc(w.year || "")}${again ? ` <span class="again" title="Again">\u21bb again</span>` : ""}${e.private ? ` <span class="tag dim">just me</span>` : ""}${dnfOf(e) ? ` ${dnfLine(e)}` : ""}</small></span>
       ${stars(e.score, "sm")}</button>`; }
   html += `</div></div>`;
   if (rows.length > show.length) html += `<div class="stack"><button class="btn quiet" id="diaryMore">Show more · ${rows.length - show.length} earlier</button></div>`;
@@ -7642,10 +7788,14 @@ function wireCabinet() {
     const v = await openAsk(`<h3>Sort what you've finished</h3><div class="stack">${Object.entries(CAB_SORTS).filter(([k]) => k !== "rank").map(([k, l]) =>
       `<button class="btn ${cabSort() === k ? "" : "quiet"}" data-sortpick="${k}">${l}</button>`).join("")}</div>
       <div class="lbl" style="margin-top:16px">Cards</div><div class="seg">${[["", "Roomy"], ["compact", "Compact"]].map(([k, l]) =>
-        `<button data-dense="${k}" class="${(P.cabDense || "") === k ? "on" : ""}">${l}</button>`).join("")}</div>`,
+        `<button data-dense="${k}" class="${(P.cabDense || "") === k ? "on" : ""}">${l}</button>`).join("")}</div>
+      ${myEntries.some(dnfOf) ? `<div class="lbl" style="margin-top:16px">Things you didn't finish</div><div class="seg">${[["", "Show them"], ["hide", "Hide them"], ["only", "Only them"]].map(([k, l]) =>
+        `<button data-dnfshow="${k}" class="${(P.cabDnf || "") === k ? "on" : ""}">${l}</button>`).join("")}</div>` : ""}`,
       done => { $$("[data-sortpick]").forEach(b => b.onclick = () => done(b.dataset.sortpick));
-        $$("[data-dense]").forEach(b => b.onclick = () => done("dense:" + b.dataset.dense)); });
+        $$("[data-dense]").forEach(b => b.onclick = () => done("dense:" + b.dataset.dense));
+        $$("[data-dnfshow]").forEach(b => b.onclick = () => done("dnf:" + b.dataset.dnfshow)); });
     if (v?.startsWith?.("dense:")) { P.cabDense = v.slice(6); saveP(); paintTrays(); return; }
+    if (v?.startsWith?.("dnf:")) { P.cabDnf = v.slice(4); saveP(); renderCabinet(); return; }
     if (!v || !CAB_SORTS[v]) return;
     P.cabSort = v; saveP(); sb2.innerHTML = CAB_SORTS[v] + CHEV; paintTrays(); };
   const q2 = $("#cabQ"), fb2 = $("#cabFindBtn");
@@ -7666,11 +7816,12 @@ function wireTokens() {
    toggle, the search box and its own kind chips — four rows of controls before any
    content. They're the same shape of choice (narrow what's showing, not change what
    screen you're on), so they share one sheet now instead of one row each. */
-function shelfFilterSheet(counts, soonCount, nowCount) {
+function shelfFilterSheet(counts, soonCount, nowCount, mineCount = 0) {
   const kindOpts = [["", "Everything"], ...Object.keys(KINDS).filter(k => counts[k]).map(k => [k, K(k).plural + " · " + counts[k]])];
   const whenOpts = [["", "All"], ["out", "Out now"],
     ...(nowCount ? [["now", `In the middle of · ${nowCount}`]] : []),
-    ...(soonCount ? [["soon", `Coming · ${soonCount}`]] : [])];
+    ...(soonCount ? [["soon", `Coming · ${soonCount}`]] : []),
+    ...(myServices().length ? [["mine", `On your services · ${mineCount}`]] : [])];
   return `<h3>Filter Up next</h3>
     <p class="sub">Move along the top to pick a medium. This is for when.</p>
     <div class="chips" style="margin-top:12px">${whenOpts.map(([k, l]) => `<button class="chip ${(P.when||"")===k?"on":""}" data-wf="${k}">${l}</button>`).join("")}</div>`;
@@ -7685,14 +7836,15 @@ function renderShelf() {
   const listed = L ? L.items.map(id => works[id]).filter(Boolean) : [];
   const all = listed.concat(myNow.map(n => n.works || works[n.work_id])
     .filter(w => w && !listed.some(x => x.id === w.id)));
+  if (P.when === "mine" && !myServices().length) P.when = "";
   const rows = all.filter(w => (!P.shelfFilter || w.kind === P.shelfFilter)
-    && (P.when === "soon" ? isSoon(w) : P.when === "now" ? !!nowOf(w.id)
+    && (P.when === "mine" ? svcMine(w.id).length > 0 : P.when === "soon" ? isSoon(w) : P.when === "now" ? !!nowOf(w.id)
       : P.when === "out" ? !isSoon(w) && !nowOf(w.id) : true));
   /* once you've dragged one, the shelf is yours to order; until then what's out comes before what's coming */
   if (!L?.arranged) rows.sort((a,b) => (nowOf(b.id)?1:0) - (nowOf(a.id)?1:0)
     || (isSoon(a)?1:0) - (isSoon(b)?1:0) || String(a.release||"").localeCompare(String(b.release||"")));
   const left = rows.filter(w => !logged(w.id) && !isSoon(w)); const counts = {}; all.forEach(w => counts[w.kind] = (counts[w.kind]||0)+1);
-  const soonCount = all.filter(isSoon).length, nowCount = all.filter(w => nowOf(w.id)).length;
+  const soonCount = all.filter(isSoon).length, nowCount = all.filter(w => nowOf(w.id)).length, mineCount = all.filter(w => svcMine(w.id).length).length;
   /* things leave the shelf when you log them, so anything still here with a tick was
      logged from somewhere else; count those, not the unreleased ones sitting below */
   const done = all.filter(w => logged(w.id)).length;
@@ -7706,15 +7858,16 @@ function renderShelf() {
   const scope = P.kinds.length === 4 ? "everything" : P.kinds.map(k => K(k).plural.toLowerCase()).join(", ");
   $("#shelfBody").innerHTML = `${pagerHTML(places, P.shelfFilter || "", { id:"shelfPager", mode:"chips", allLabel:"All" })}<p class="sub shelfsub">${all.length ? `${left.length} to go${done ? ` · ${done} done` : ""}${soonCount ? ` · ${soonCount} coming` : ""}` : "Everything you meant to get to."}</p>
     <div class="shelfsearch"><input id="search" type="search" placeholder="Search ${esc(scope)}" aria-label="Search ${esc(scope)}" autocomplete="off">${all.length ? `<button class="chip filt ${P.when ? "on" : ""}" id="shelfFilterBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"/></svg>${
-        P.when ? ({ out:"Out now", now:"On it", soon:"Coming" }[P.when] || "Filter") : "Filter"}</button>` : ""}</div>
-    <div class="msg" id="msg"></div><div id="results"></div>
+        P.when ? ({ out:"Out now", now:"On it", soon:"Coming", mine:"On mine" }[P.when] || "Filter") : "Filter"}</button>` : ""}</div>
+    <div class="msg" id="msg"></div><div id="results"></div>${arrivedHTML()}
     ${all.length ? `${pickBar}
       <div class="grid" id="shelfGrid">${rows.map(w => { const soon = isSoon(w), n = nowOf(w.id);
         return `<div class="cell" data-cell="${esc(w.id)}"><div class="po ${logged(w.id)?"done":""} ${soon?"soon":""} ${n?"onit":""}" data-w="${esc(w.id)}">${cover(w,"")}<b>${esc(w.title)}</b>${tag(w.kind)}
           ${soon ? `<span class="soon-tag">${when(w.release)}</span>` : `<button class="tick ${logged(w.id)?"done":""}" data-t="${esc(w.id)}" aria-label="log it"></button>`}</div>
-          <div class="cap"><span>${soon ? "Coming" : n ? nowLine(n) : (() => { const f = cameFrom(w.id);
-            return f ? `from ${esc(f.sender_p?.handle || "a friend")}` : esc(w.year||""); })()}</span><span>${!soon && !n && w.length ? w.length+K(w.kind).unit : ""}</span></div></div>`; }).join("")}</div>`
+          <div class="cap"><span>${soon ? "Coming" : n ? nowLine(n) : (() => { const f = cameFrom(w.id), sv = svcMine(w.id)[0];
+            return f ? `from ${esc(f.sender_p?.handle || "a friend")}` : sv ? `<em class="onsvc">on ${esc(svcName(sv))}</em>` : esc(w.year||""); })()}</span><span>${!soon && !n && w.length ? w.length+K(w.kind).unit : ""}</span></div></div>`; }).join("")}</div>`
       : `<div class="tiles" style="margin-top:16px">${Object.keys(KINDS).map((k,i) => `<div class="tile" style="background:${K(k).colour};--r:${[-2,1.5,1,-1.5][i]}deg" data-kt="${k}"><small>Search</small><b>${K(k).plural}</b></div>`).join("")}</div>${blank("var(--mint)","+","Nothing up next","Everything you meant to get to, in one place — out now or still coming. Tap a medium above, or search for it.",[])}${pickBar}`}
+    <div id="seriesNext"></div>
     ${(() => { const q = handIn.map(h => [h, h.works || works[h.work_id]]).filter(([, w]) => w);
       if (!q.length) return "";
       return `<div class="lbl">Handed to you</div><div class="card" style="margin-top:0">${q.map(([h, w]) =>
@@ -7731,7 +7884,7 @@ function renderShelf() {
   wirePager($("#shelfPager"), places, P.shelfFilter || "", (k, d) => { P.shelfFilter = k; P.kinds = k ? [k] : Object.keys(KINDS); saveP(); shelfTurn = d; renderShelf(); });
   pagerArrive(shelfTurn, $("#shelfPager"), $("#shelfGrid")); shelfTurn = 0;
   const ffb = $("#shelfFilterBtn"); if (ffb) ffb.onclick = () => {
-    openSheet(shelfFilterSheet(counts, soonCount, nowCount));
+    openSheet(shelfFilterSheet(counts, soonCount, nowCount, mineCount));
     $$("[data-kf]").forEach(b => b.onclick = () => { P.shelfFilter = b.dataset.kf; saveP(); closeSheet(); renderShelf(); });
     $$("[data-wf]").forEach(b => b.onclick = () => { P.when = b.dataset.wf; saveP(); closeSheet(); renderShelf(); });
   };
@@ -7769,7 +7922,8 @@ function renderShelf() {
   }
   justDealt = justSwept = null;
   wireShelf(); if (shelfEdit) paintEdit();
-  paintMates();
+  paintMates(); wireArrived(); paintSeriesNext();
+  svcFill(all).then(c => { if (c && currentTab() === "shelf" && !shelfEdit && !$("#sheet").classList.contains("on")) renderShelf(); }).catch(() => {});
   wireSearch();
   if (P.picked && !logged(P.picked) && works[P.picked]) showResult(works[P.picked]); renderWaiting(); }
 /* openLibraryFilters is gone: it moved both filter rows behind a "Filters" button and
@@ -9963,7 +10117,7 @@ const goalsFrom = v => { if (!v) return null; if (typeof v === "number") return 
 const goalsOf = p => goalsFrom((p?.goals || {})[goalYear()]);
 const myGoals = () => goalsOf(me) || goalsFrom((P.goals || {})[goalYear()]);
 const myGoal = () => myGoals()?.total || 0;
-const goalCount = (es, uid, kind) => es.filter(e => (!uid || e.user_id === uid) && (!kind || kindOf(e.work_id) === kind) && !isPart(e.work_id) && !isBefore(e) && String(e.rated_on || "").startsWith(goalYear())).length;
+const goalCount = (es, uid, kind) => es.filter(e => (!uid || e.user_id === uid) && (!kind || kindOf(e.work_id) === kind) && !isPart(e.work_id) && !isBefore(e) && !dnfOf(e) && String(e.rated_on || "").startsWith(goalYear())).length;
 /* the medium rows under a goal: "Films 12 of 20" with a bar each, only for the ones set */
 const goalKindsHTML = (g, count) => { const ks = CAB_ORDER.filter(k => g?.[k]); if (!ks.length) return "";
   return `<span class="gkinds">${ks.map(k => { const n = count(k), pct = Math.min(100, Math.round(n / g[k] * 100));
@@ -10009,7 +10163,9 @@ async function renderTaste() { const body = $("#tasteBody"); const t = tasteOf(m
     <button class="iconbtn cog" id="tasteCog" aria-label="Settings">${COG}</button></div>
     ${myEntries.length ? `<button class="card tastemini" id="tasteMore" aria-label="See your whole taste">${tasteMiniHTML(t)}</button>
     ${yourNumbersHTML()}
+    <div id="hotTakes"></div>
     <div id="podium"></div>
+    <div id="myLists"></div>
     <div class="card" id="recCard"><div class="h"><span>You might like</span><span class="tag dim">from what you loved</span></div><div id="recBody">${skeleton(1)}</div></div>
     ${storyYear() ? `<button class="linkrow yearrow" id="tasteStory"><span>Your ${storyYear()} is ready</span><b>›</b></button>` : ""}
     <button class="linkrow" id="tasteAll"><span>Your ten, the charts, your year and more</span><b>›</b></button>`
@@ -10020,7 +10176,8 @@ async function renderTaste() { const body = $("#tasteBody"); const t = tasteOf(m
   $("#tasteMe").onclick = () => openProfile(me.id);
   $("#tasteCog").onclick = () => openYou();
   const ts = $("#tasteStory"); if (ts) ts.onclick = () => openYearStory();
-  paintPodium(); playNumbers();
+  paintPodium(); playNumbers(); paintHotTakes();
+  paintListsCard($("#myLists"), { build:x => x.eq("owner", me.id), title:"Your lists", empty:"Make one: heist films, books for a long flight, the ones that made you cry.", mine:true });
   [$("#tasteMore"), $("#tasteAll")].forEach(b => { if (b) b.onclick = openTasteDetail; });
   const rb = $("#recBody"); if (!rb) return;
   /* a card that loads forever is worse than no card: if nothing comes back in a few
@@ -11344,28 +11501,33 @@ async function openWork(id) { let w = works[id]; if (!w) { try { const rows = aw
   /* the top of a title's page is lit by its own poster, blurred, the way a streaming app
      sets a title in its own colour; with no poster, its medium's colour does it */
   openSheet(`<div class="whero" aria-hidden="true" style="--wk:${cfg.colour}${w.cover ? `;background-image:url('${esc(blurSrc(w.cover))}')` : ""}"></div>
-    <div class="head whead" style="--wk:${cfg.colour}">${cover(w)}<div class="hh"><h3>${esc(w.title)}</h3><p class="sub">${tag(w.kind)} ${esc(w.year||"")}${w.creator?" · "+esc(w.creator):""}${w.length?` · ${w.length}${cfg.unit.replace(" ", "\u00a0")}`:""}</p>${(w.meta?.genres || []).length ? `<div class="wgenres">${(w.meta.genres).slice(0, 4).map(g =>
+    <div class="head whead" style="--wk:${cfg.colour}">${cover(w)}<div class="hh"><h3>${esc(w.title)}</h3><p class="sub">${tag(w.kind)} ${esc(w.year||"")}${w.creator?" · "+creatorLinks(w):""}${w.length?` · ${w.length}${cfg.unit.replace(" ", "\u00a0")}`:""}</p>${(w.meta?.genres || []).length ? `<div class="wgenres">${(w.meta.genres).slice(0, 4).map(g =>
       `<button class="wgenre" data-wgenre="${esc(g)}" aria-label="Your favourite ${esc(g)} in Finished">${esc(g)}</button>`).join("")}</div>` : ""}</div></div>
     <div class="numbers wnums" id="wNumbers" style="--wk:${cfg.colour}"><div><b>—</b><span>You</span></div><div><b>—</b><span>Your room</span></div><div><b>—</b><span>Following</span></div><div><b>—</b><span>Everyone</span></div></div>
     <div id="wFriends"></div>
     <p class="sumup mine" id="wAgain" hidden></p>
-    ${w.kind === "film" || w.kind === "tv" ? `<div id="wWatch"></div>` : ""}
+    ${w.kind === "film" || w.kind === "tv" ? `<div id="wWatch"></div>` : w.kind === "book" ? `<div id="wBorrow"></div>` : ""}
     <div class="card"><div class="h"><span>Everyone</span><span class="tag dim" id="wCount">—</span></div><div class="trio" id="wTrio"><div><b>—</b><span>Score</span></div><div><b>—</b><span>Logged it</span></div><div><b>—</b><span>Agree</span></div></div>
       <p class="sumup" id="wVerdict" hidden></p>
       <div class="lbl">What people loved</div><div id="wLoved">${skeleton(2)}</div></div>
+    <div id="wLines"></div>
     ${isSoon(w) ? `<p class="sub" style="margin-top:12px">Out ${when(w.release)}. It's in Up next until then.</p>` : ""}
     <div id="wNow"></div>
+    ${w.kind !== "tv" && !isPart(w.id) ? `<div id="wSeries"></div>` : ""}
     <div class="stack"><button class="btn ${isSoon(w)?"ghost":""}" id="wLog">${logged(w.id)?"Log it again":isSoon(w)?"Log it anyway":cfg.verb.replace(/^./,c=>c.toUpperCase())+" it"}</button><button class="btn ghost" id="wShelf">${activeList()?.items.includes(w.id)?"Take it out of Up next":"Add to Up next"}</button>${
       reachable().length ? `<button class="btn quiet" id="wHand">Tell someone to ${cfg.verb === "read" ? "read" : cfg.verb === "played" ? "play" : "watch"} it</button>` : ""}${
-      myOpenClubs().length ? `<button class="btn quiet" id="wClub">Add it to a club</button>` : ""}</div>
+      myOpenClubs().length ? `<button class="btn quiet" id="wClub">Add it to a club</button>` : ""}${isPart(w.id) ? "" : `<button class="btn quiet" id="wList">Put it on a list</button>`}</div>
     <div class="chips" id="wClubs" hidden style="margin-top:8px"><p class="sub" style="width:100%;margin:0 0 2px">Highlighted clubs have it. Tap one to add or remove it.</p>${myOpenClubs().map(c =>
       `<button class="chip ${(c.items || []).includes(w.id) ? "on" : ""}" data-addclub="${esc(c.id)}">${esc(c.name)}</button>`).join("")}</div>
-    <div class="card"><div class="h"><span>Details</span></div>${Object.entries(w.credits||{}).filter(([k,v]) => v).map(([r,n]) => `<div class="kv"><span>${r === "dp" ? "camerawork" : r}</span>${esc(n)}</div>`).join("")}${w.meta?.genres?.length?`<div class="kv"><span>genres</span>${esc(w.meta.genres.join(", "))}</div>`:""}</div>
+    <div class="card"><div class="h"><span>Details</span></div>${Object.entries(w.credits||{}).filter(([k,v]) => v).map(([r,n]) => `<div class="kv"><span>${r === "dp" ? "camerawork" : r}</span>${
+      ["director","creator","author","studio"].includes(r) && !isPart(w.id) ? creatorLinks({ creator:n }) : esc(n)}</div>`).join("")}${w.meta?.genres?.length?`<div class="kv"><span>genres</span>${esc(w.meta.genres.join(", "))}</div>`:""}</div>
     ${w.kind === "tv" && !isPart(w.id) ? `<details class="fold" id="wParts"><summary>Seasons and episodes</summary>
       <div id="wSeasons"><p class="empty" style="padding:12px 0">Looking</p></div></details>` : ""}
     <div id="wEntries"></div><div class="stack"><button class="btn soft" id="wCard">Share it</button><button class="btn quiet" id="wClose">Close</button></div>`);
   $$("[data-wgenre]").forEach(b => b.onclick = () => { cabFacet = "g:" + b.dataset.wgenre;
     P.cabKind = logCount() && CAB_ORDER.includes(w.kind) ? w.kind : ""; saveP(); closeSheet(); switchTab("archive"); });
+  $$("[data-creator]", $("#sheetBody")).forEach(b => b.onclick = () => openCreator(b.dataset.creator, w.kind, w.id));
+  const wl = $("#wList"); if (wl) wl.onclick = () => openAddToList(w);
   $("#wClose").onclick = closeSheet; $("#wLog").onclick = () => openLog(w); $("#wShelf").onclick = async () => { const b = $("#wShelf"); b.disabled = true;
     const on = activeList()?.items.includes(w.id);
     try { if (on) await removeFromShelf(w.id); else await addToShelf(w.id); } finally {
@@ -11465,7 +11627,9 @@ async function openWork(id) { let w = works[id]; if (!w) { try { const rows = aw
       say(had ? `Out of ${c.name}` : `Added to ${c.name}`); if (currentTab() === "clubs") renderClubs(); }
     catch (e) { oops(e, "Couldn't change the club"); }
     b.disabled = false; });
-  paintWatch(w);
+  paintWatch(w); paintBorrow(w); paintSeries(w);
+  { const ln = $("#wLines"), withLines = es.filter(lineOf);
+    if (ln && withLines.length) { ln.innerHTML = `<div class="card"><div class="h"><span>Lines people kept</span><span class="tag dim">${withLines.length}</span></div>${linesHTML(withLines)}</div>`; } }
   const st = await tagStats(w.id); const top = Object.entries(st.counts).sort((a,b)=>b[1]-a[1]).slice(0,5);
   /* one score per person, latest wins — the same rule the averages use */
   const latest = {}; es.forEach(r => { if (!latest[r.user_id] || r.rated_on > latest[r.user_id].rated_on) latest[r.user_id] = r; });
@@ -11504,6 +11668,489 @@ async function openWork(id) { let w = works[id]; if (!w) { try { const rows = aw
     wireSlips(el, es); revealIn(el);
     $$("[data-es]", el).forEach(b => b.onclick = () => { P.entrySort = b.dataset.es; saveP(); paint(); }); };
   paint(); }
+
+/* ============ the bits Letterboxd and Goodreads had ============
+   Lists you make, a page for whoever made something, the series a thing belongs to,
+   where to borrow a book, what's on your services, where you part ways with the room,
+   and the room's awards. Each one fails quietly: a lookup that can't be reached, or a
+   database that hasn't run v37 yet, leaves its card out rather than showing an error. */
+
+/* ---------- who someone is, by id ---------- */
+const handleCache = {};
+const handleOf = id => id === me?.id ? "you" : handleCache[id]
+  || rooms.flatMap(r => r.members).find(m => m.id === id)?.handle || "someone";
+async function fillHandles(ids) { const need = [...new Set(ids)].filter(id => id && id !== me?.id && !handleCache[id]
+    && !rooms.some(r => r.members.some(m => m.id === id)));
+  if (!need.length) return;
+  try { (await q(sb.from("profiles").select("id,handle").in("id", need))).forEach(p => handleCache[p.id] = p.handle); } catch {} }
+/* the poster or, for something with no cover, its title on its medium's colour */
+const tileCover = (w, cls = "co") => w?.cover ? cover(w, cls)
+  : `<span class="${cls} tcov" style="--k:${K(w?.kind || "film").colour}"><b>${esc(w?.title || "")}</b></span>`;
+const hitOpen = async (hit, from) => { try {
+    const w = works[hit.id]?.title ? works[hit.id] : hit.id ? await ensureWork(hit) : null;
+    if (w) { openWork(w.id); return; } } catch {}
+  say("Couldn't open that one just now"); };
+
+/* ============ lists ============
+   A list is a title, a line about it, the things on it (in an order if you say so),
+   and who liked it. Your rooms and the people who follow you can see yours; an open
+   list can be added to by anyone in your rooms. */
+async function loadThemeLists(build) {
+  let ls = [];
+  try { ls = await q(build(sb.from("theme_lists").select("*")).order("updated_at", { ascending:false }).limit(60)); }
+  catch (e) { if (missingBit(e)) needs("v37", "lists"); return []; }
+  ls = notApart(ls.map(l => ({ ...l, user_id:l.owner })));
+  if (!ls.length) return [];
+  const ids = ls.map(l => l.id);
+  let items = [], likes = [];
+  try { items = await q(sb.from("theme_list_items").select("list_id,work_id,added_by,position,added_at").in("list_id", ids)); } catch {}
+  try { likes = await q(sb.from("theme_list_likes").select("list_id,user_id").in("list_id", ids)); } catch {}
+  for (const l of ls) {
+    l.items = items.filter(i => i.list_id === l.id).sort((a, b) => (a.position ?? 1e9) - (b.position ?? 1e9)
+      || String(a.added_at).localeCompare(String(b.added_at)));
+    l.likes = likes.filter(x => x.list_id === l.id).map(x => x.user_id); }
+  await fillWorks(ls.flatMap(l => l.items.slice(0, 4).map(i => i.work_id)));
+  await fillHandles(ls.map(l => l.owner));
+  return ls; }
+const listFan = (l, big = false) => { const ws = l.items.slice(0, 4).map(i => works[i.work_id]).filter(Boolean);
+  return `<span class="tl-fan${big ? " big" : ""}">${ws.length ? ws.map((w, i) => `<span style="--i:${i}">${tileCover(w)}</span>`).join("")
+    : `<span class="tl-empty">+</span>`}</span>`; };
+const listTileHTML = l => `<button class="tlist" data-tlist="${esc(l.id)}">${listFan(l)}<span class="tl-t"><b>${esc(l.title)}</b>
+  <small>${l.items.length} ${l.items.length === 1 ? "thing" : "things"} · ${l.owner === me.id ? "yours" : "by " + esc(handleOf(l.owner))}${
+    l.likes.length ? ` · ♥ ${l.likes.length}` : ""}${l.open ? ` · open` : ""}</small></span></button>`;
+const wireListTiles = (root, after) => $$("[data-tlist]", root).forEach(b => b.onclick = () => openThemeList(b.dataset.tlist, after));
+/* a card of lists, wherever lists are shown: yours on the You page, somebody's on their
+   profile, everybody's in the room's Charts */
+async function paintListsCard(el, { build, title, empty = "", mine = false }) {
+  if (!el) return; const ls = await loadThemeLists(build);
+  if (!el.isConnected) return;
+  if (!ls.length && !mine) { el.innerHTML = ""; return; }
+  if (behind.has("v37")) { el.innerHTML = ""; return; }
+  el.innerHTML = `<div class="card tlcard"><div class="h"><span>${esc(title)}</span><span class="tag dim">${ls.length}</span></div>
+    ${ls.length || mine ? `<div class="tlrow">${ls.slice(0, 8).map(listTileHTML).join("")}${mine ? `<button class="tlist tlnew" data-newlist>+ New list</button>` : ""}</div>` : ""}
+    ${!ls.length && empty ? `<p class="sub" style="margin-top:10px">${empty}</p>` : ""}</div>`;
+  wireListTiles(el, () => paintListsCard(el, { build, title, empty, mine }));
+  const nl = $("[data-newlist]", el); if (nl) nl.onclick = async () => { const l = await newThemeList(); if (l) openThemeList(l.id); }; }
+async function newThemeList(first = null) {
+  const title = await askText({ title:"A new list", sub:"What's it of? Heist films, books for a long flight, the ones that made you cry.", placeholder:"Two hours or less", ok:"Make it", max:60 });
+  if (!title) return null;
+  if (willNotName(title)) { say(NAME_NO); return null; }
+  try { const l = await q(sb.from("theme_lists").insert({ owner:me.id, title, note:null, ranked:false, open:false }).select().single());
+    if (first) await q(sb.from("theme_list_items").insert({ list_id:l.id, work_id:first, added_by:me.id, position:0 }));
+    say(first ? `On ${title}` : "Made it", "good"); return l; }
+  catch (e) { if (missingBit(e)) { needs("v37", "lists"); say("Lists need the latest database update"); } else oops(e, "Couldn't make that list"); return null; } }
+/* "Put it on a list": yours, ticked if it's on them, and the open ones in your rooms */
+async function openAddToList(w) {
+  const R = new Set(rooms.flatMap(r => r.members.map(m => m.id)));
+  const ls = await loadThemeLists(x => x);
+  if (behind.has("v37")) { say("Lists need the latest database update"); return; }
+  const mine = ls.filter(l => l.owner === me.id), open = ls.filter(l => l.owner !== me.id && l.open && R.has(l.owner));
+  const row = l => { const on = l.items.some(i => i.work_id === w.id);
+    return `<button class="row tladd ${on ? "on" : ""}" data-addl="${esc(l.id)}">${listFan(l)}<div class="t"><b>${esc(l.title)}</b><small>${l.items.length} ${l.items.length === 1 ? "thing" : "things"}${l.owner === me.id ? "" : " · " + esc(handleOf(l.owner)) + "'s, open"}</small></div><span class="chip ${on ? "on" : ""}">${on ? "On it" : "Add"}</span></button>`; };
+  openSheet(`<div class="head">${cover(w)}<div class="hh"><h3>Put it on a list</h3><p class="sub">${esc(w.title)}</p></div></div>
+    ${mine.length ? `<div class="lbl">Your lists</div><div class="card">${mine.map(row).join("")}</div>` : `<p class="sub" style="margin-top:14px">You haven't made a list yet. Name one and ${esc(w.title)} goes straight on it.</p>`}
+    ${open.length ? `<div class="lbl">Open in your rooms</div><div class="card">${open.map(row).join("")}</div>` : ""}
+    <div class="stack"><button class="btn" id="tlNew">A new list with it on</button><button class="btn quiet" id="tlBack">Back to ${esc(w.title)}</button></div>`);
+  $("#tlBack").onclick = () => openWork(w.id);
+  $("#tlNew").onclick = async () => { const l = await newThemeList(w.id); if (l) openAddToList(w); };
+  $$("[data-addl]").forEach(b => b.onclick = async () => { const l = ls.find(x => x.id === b.dataset.addl); if (!l) return;
+    const on = l.items.some(i => i.work_id === w.id); b.disabled = true;
+    try { if (on) { await q(sb.from("theme_list_items").delete().eq("list_id", l.id).eq("work_id", w.id)); l.items = l.items.filter(i => i.work_id !== w.id); }
+      else { await ensureWork(w); await q(sb.from("theme_list_items").insert({ list_id:l.id, work_id:w.id, added_by:me.id, position:l.items.length }));
+        l.items.push({ list_id:l.id, work_id:w.id, added_by:me.id, position:l.items.length });
+        if (l.owner !== me.id) notify({ to:l.owner, title:`${me.handle} added to ${l.title}`, body:w.title, tag:"list-" + l.id }); }
+      b.classList.toggle("on", !on); $(".chip", b).classList.toggle("on", !on); $(".chip", b).textContent = on ? "Add" : "On it";
+      buzz(5); say(on ? `Off ${l.title}` : `On ${l.title}`); }
+    catch (e) { oops(e, "Couldn't change that list"); } b.disabled = false; }); }
+let listEditing = false;
+async function openThemeList(id, after = null) {
+  const [l] = await loadThemeLists(x => x.eq("id", id));
+  if (!l) { say("That list isn't there any more"); return; }
+  await fillWorks(l.items.map(i => i.work_id)); await fillHandles(l.items.map(i => i.added_by));
+  const owner = l.owner === me.id, roomIds = new Set(rooms.flatMap(r => r.members.map(m => m.id)));
+  const canAdd = owner || (l.open && roomIds.has(l.owner));
+  const ws = l.items.map(i => ({ i, w:works[i.work_id] })).filter(x => x.w);
+  const seen = ws.filter(x => logged(x.w.id)).length, pct = ws.length ? Math.round(seen / ws.length * 100) : 0;
+  const liked = l.likes.includes(me.id);
+  const myScore = id2 => { const e = myEntries.filter(e => e.work_id === id2).sort(newestFirst)[0]; return e ? e.score : 0; };
+  const draw = () => {
+    openSheet(`<div class="tlhead">${listFan(l, true)}<div><h3>${esc(l.title)}</h3><p class="sub">${owner ? "Your list" : `By <button class="linky" data-prof="${esc(l.owner)}">${esc(handleOf(l.owner))}</button>`} · ${ws.length} ${ws.length === 1 ? "thing" : "things"}${l.ranked ? " · in order" : ""}${l.open ? " · the room can add" : ""}</p></div></div>
+      ${l.note ? `<p class="tlnote">${esc(l.note)}</p>` : ""}
+      <div class="tlbar"><button class="lk tllike ${liked ? "on" : ""}" id="tlLike" aria-pressed="${liked}" ${owner ? "disabled" : ""}>♥ <b>${l.likes.length}</b></button>
+        ${ws.length ? `<div class="tlseen"><small>You've got to <b>${seen}</b> of ${ws.length}</small><span class="pbar"><i style="width:${Math.max(2, pct)}%"></i></span></div>` : ""}</div>
+      <div class="tlitems">${ws.length ? ws.map(({ i, w }, n) => `<div class="tlitem" data-tw="${esc(w.id)}">
+          ${l.ranked ? `<span class="tlrk">${n + 1}</span>` : ""}${tileCover(w)}
+          <div class="t"><b>${esc(w.title)}</b><small>${tag(w.kind)} ${esc(w.year || "")}${i.added_by && i.added_by !== l.owner ? ` · added by ${esc(handleOf(i.added_by))}` : ""}</small></div>
+          ${listEditing && owner ? `<span class="tlmove"><button data-tlup="${n}" ${n ? "" : "disabled"} aria-label="Move up">↑</button><button data-tldown="${n}" ${n < ws.length - 1 ? "" : "disabled"} aria-label="Move down">↓</button><button data-tlrm="${esc(w.id)}" aria-label="Take it off">×</button></span>`
+            : myScore(w.id) ? stars(myScore(w.id), "sm") : (i.added_by === me.id && !owner) ? `<button class="chip" data-tlrm="${esc(w.id)}">Take mine off</button>` : ""}</div>`).join("")
+        : `<p class="empty">Nothing on it yet.${canAdd ? " Search below to add the first one." : ""}</p>`}</div>
+      ${canAdd ? `<input id="tlSearch" type="search" placeholder="Add something to it" style="margin-top:12px"><div class="msg" id="tlMsg"></div><div id="tlResults"></div>` : ""}
+      <div class="stack">${owner ? `<button class="btn ghost" id="tlOrder">${listEditing ? "Done" : "Reorder or take things off"}</button><button class="btn quiet" id="tlEdit">Name, note and who can add</button>` : ""}<button class="btn quiet" id="tlClose">${after ? "Back" : "Close"}</button></div>`);
+    $("#tlClose").onclick = () => { listEditing = false; if (after) { closeSheet(); after(); } else closeSheet(); };
+    $$("[data-prof]", $("#sheetBody")).forEach(b => b.onclick = () => openProfile(b.dataset.prof));
+    $$("[data-tw]").forEach(r => r.onclick = ev => { if (ev.target.closest("button")) return; openWork(r.dataset.tw); });
+    const lk = $("#tlLike"); if (lk && !owner) lk.onclick = async () => { lk.disabled = true; const was = l.likes.includes(me.id);
+      try { if (was) { await q(sb.from("theme_list_likes").delete().eq("list_id", l.id).eq("user_id", me.id)); l.likes = l.likes.filter(u => u !== me.id); }
+        else { await q(sb.from("theme_list_likes").insert({ list_id:l.id, user_id:me.id })); l.likes.push(me.id);
+          notify({ to:l.owner, title:`${me.handle} liked your list`, body:l.title, tag:"listlike-" + l.id }); }
+        lk.classList.toggle("on", !was); lk.setAttribute("aria-pressed", String(!was)); $("b", lk).textContent = l.likes.length;
+        if (!was && !REDUCED) { lk.classList.remove("popped"); void lk.offsetWidth; lk.classList.add("popped"); } buzz(5); }
+      catch (e) { oops(e, "Couldn't like that"); } lk.disabled = false; };
+    const order = async () => { try { await Promise.all(l.items.map((it, n) => it.position === n ? null
+        : (it.position = n, q(sb.from("theme_list_items").update({ position:n }).eq("list_id", l.id).eq("work_id", it.work_id)))).filter(Boolean)); }
+      catch (e) { oops(e, "Couldn't save the order"); } };
+    const swap = (a, b) => { const x = l.items[a]; l.items[a] = l.items[b]; l.items[b] = x; order(); draw(); };
+    $$("[data-tlup]").forEach(b => b.onclick = () => swap(+b.dataset.tlup, +b.dataset.tlup - 1));
+    $$("[data-tldown]").forEach(b => b.onclick = () => swap(+b.dataset.tldown, +b.dataset.tldown + 1));
+    $$("[data-tlrm]").forEach(b => b.onclick = async () => { const wid = b.dataset.tlrm;
+      try { await q(sb.from("theme_list_items").delete().eq("list_id", l.id).eq("work_id", wid));
+        l.items = l.items.filter(i => i.work_id !== wid); ws.splice(ws.findIndex(x => x.w.id === wid), 1); draw(); say("Taken off"); }
+      catch (e) { oops(e, "Couldn't take it off"); } });
+    const to = $("#tlOrder"); if (to) to.onclick = () => { listEditing = !listEditing; draw(); };
+    const te = $("#tlEdit"); if (te) te.onclick = () => openListEditor(l, after);
+    const sx = $("#tlSearch"); let t;
+    if (sx) sx.oninput = e => { clearTimeout(t); const v = e.target.value.trim(); if (!v) { $("#tlResults").innerHTML = ""; return; }
+      t = setTimeout(() => doSearch(v, async r => { try { const w = await ensureWork(window.__hits[r.dataset.add]);
+          if (l.items.some(i => i.work_id === w.id)) { say("It's already on it"); return; }
+          await q(sb.from("theme_list_items").insert({ list_id:l.id, work_id:w.id, added_by:me.id, position:l.items.length }));
+          l.items.push({ list_id:l.id, work_id:w.id, added_by:me.id, position:l.items.length }); ws.push({ i:l.items[l.items.length - 1], w });
+          if (!owner) notify({ to:l.owner, title:`${me.handle} added to ${l.title}`, body:w.title, tag:"list-" + l.id });
+          buzz(5); say(`On ${l.title}`); draw(); }
+        catch (err) { $("#tlMsg").textContent = err.message; } }, $("#tlResults"), $("#tlMsg"), sx), 400); }; };
+  draw(); }
+function openListEditor(l, after) {
+  let ranked = !!l.ranked, open = !!l.open;
+  openSheet(`<h3>Your list</h3><div class="lbl">Called</div><input id="leTitle" maxlength="60" value="${esc(l.title)}">
+    <div class="lbl">A line about it</div><textarea id="leNote" maxlength="300" rows="2" placeholder="Optional">${esc(l.note || "")}</textarea>
+    <div class="lbl">Order</div><div class="seg" id="leRanked">${[[false, "Just a list"], [true, "Numbered, in order"]].map(([k, t]) => `<button data-ler="${k}" class="${ranked === k ? "on" : ""}">${t}</button>`).join("")}</div>
+    <div class="lbl">Who can add</div><div class="seg" id="leOpen">${[[false, "Only me"], [true, "Anyone in my rooms"]].map(([k, t]) => `<button data-leo="${k}" class="${open === k ? "on" : ""}">${t}</button>`).join("")}</div>
+    <p class="sub" style="margin-top:8px">Your rooms and the people who follow you can see it either way.</p>
+    <div class="stack"><button class="btn" id="leSave">Save</button><button class="btn quiet" id="leBack">Back to the list</button><button class="btn quiet bad" id="leDel">Delete the list</button></div><p class="msg" id="leMsg"></p>`);
+  $$("[data-ler]").forEach(b => b.onclick = () => { ranked = b.dataset.ler === "true"; $$("[data-ler]").forEach(x => x.classList.toggle("on", x === b)); });
+  $$("[data-leo]").forEach(b => b.onclick = () => { open = b.dataset.leo === "true"; $$("[data-leo]").forEach(x => x.classList.toggle("on", x === b)); });
+  $("#leBack").onclick = () => openThemeList(l.id, after);
+  $("#leSave").onclick = async () => { const title = $("#leTitle").value.trim(), note = $("#leNote").value.trim() || null;
+    if (!title) { $("#leMsg").textContent = "It needs a name"; return; }
+    if (willNotName(title)) { $("#leMsg").textContent = NAME_NO; return; }
+    if (note && willNotPost(note)) { $("#leMsg").textContent = "That word doesn't go up here. Say it another way."; return; }
+    try { await q(sb.from("theme_lists").update({ title, note, ranked, open, updated_at:new Date().toISOString() }).eq("id", l.id)); say("Saved", "good"); openThemeList(l.id, after); }
+    catch (e) { $("#leMsg").textContent = e.message; } };
+  $("#leDel").onclick = async () => { if (!await askYesNo({ title:`Delete ${l.title}?`, sub:"The list goes for everyone. The things on it stay in your log.", ok:"Delete it", bad:true })) return;
+    try { await q(sb.from("theme_list_items").delete().eq("list_id", l.id)); await q(sb.from("theme_lists").delete().eq("id", l.id)); closeSheet(); say("Deleted"); if (after) after(); else refresh(); }
+    catch (e) { oops(e, "Couldn't delete it"); } }; }
+
+/* ============ who made it ============
+   Tap a director, a showrunner, an author or a studio and see everything they made,
+   with how far through it you are and what your people thought. */
+const creatorCache = {};
+async function creatorWorks(name, kind) {
+  const key = kind + "|" + name; if (creatorCache[key]) return creatorCache[key];
+  const screen = kind === "film" || kind === "tv";
+  const sameKind = w => screen ? (w.kind === "film" || w.kind === "tv") : w.kind === kind;
+  const local = Object.values(works).filter(w => w?.title && !isPart(w.id) && sameKind(w)
+    && String(w.creator || "").split(/,\s*/).includes(name));
+  try { (await q(sb.from("works").select("*").eq("creator", name).limit(80))).forEach(w => { if (w && !w.parent_id && sameKind(w) && !local.some(x => x.id === w.id)) local.push(remember(w)); }); } catch {}
+  let fetched = [], photo = "";
+  if (!DEMO) try {
+    if (screen) { const d = await tmdb("search/person", { query:name, include_adult:"false" });
+      const who = (d.results || []).find(r => lc(r.name) === lc(name));
+      if (who) { photo = FACE_IMG(who.profile_path); const cr = await tmdb(`person/${who.id}/combined_credits`);
+        const pick = test => { const seenIds = new Set(); return (cr.crew || []).filter(test).map(r => { const k = r.media_type === "tv" ? "tv" : "film", id = `${k}:${r.id}`;
+            if (seenIds.has(id) || !(r.title || r.name)) return null; seenIds.add(id); const date = r.release_date || r.first_air_date || "";
+            return { id, kind:k, title:r.title || r.name, year:date.slice(0, 4), cover:TMDB_IMG(r.poster_path), creator:name, ...(date ? { release:date } : {}) }; }).filter(Boolean); };
+        fetched = pick(r => (r.job === "Director" && r.media_type === "movie") || (r.job === "Creator" && r.media_type === "tv"));
+        if (!fetched.length) fetched = pick(r => ["Screenplay", "Writer", "Novel"].includes(r.job)); } }
+    else if (kind === "book") { const d = await ol("/search.json", { author:name, limit:"60", sort:"editions",
+        fields:"key,title,author_name,first_publish_year,cover_i,number_of_pages_median,edition_count" });
+      const titles = new Set();
+      fetched = (d.docs || []).filter(b => (b.author_name || []).some(a => lc(a) === lc(name))).filter(b => { const t = lc(b.title || "");
+          if (!t || titles.has(t)) return false; titles.add(t); return true; }).slice(0, 40)
+        .map(b => ({ id:"book:" + String(b.key).replace("/works/", ""), kind:"book", title:b.title, year:String(b.first_publish_year || ""), creator:name,
+          length:b.number_of_pages_median || 0, cover:b.cover_i ? `https://covers.openlibrary.org/b/id/${b.cover_i}-M.jpg` : "" })); }
+    else if (kind === "game") { const g = await igdb("games", `where involved_companies.company.name = "${name.replace(/"/g, "")}" & version_parent = null; fields name,first_release_date,cover.image_id; sort first_release_date asc; limit 60;`);
+      fetched = (g || []).map(x => ({ id:"game:" + x.id, kind:"game", title:x.name, creator:name,
+        year:x.first_release_date ? String(new Date(x.first_release_date * 1000).getFullYear()) : "",
+        cover:x.cover?.image_id ? `https://images.igdb.com/igdb/image/upload/t_cover_big/${x.cover.image_id}.jpg` : "" })); }
+  } catch {}
+  const by = {}; for (const w of [...fetched, ...local]) by[w.id] = works[w.id]?.title ? works[w.id] : w;
+  const rows = Object.values(by).sort((a, b) => String(a.year || "9999").localeCompare(String(b.year || "9999")) || String(a.title).localeCompare(String(b.title)));
+  window.__hits = Object.assign(window.__hits || {}, Object.fromEntries(rows.map(r => [r.id, r])));
+  return (creatorCache[key] = { name, photo, rows }); }
+async function openCreator(name, kind, fromId = null) {
+  openSheet(`<div class="crhead">${faceEl(name, null)}<div><h3>${esc(name)}</h3><p class="sub">${esc(K(kind).creatorLabel)}</p></div></div>${skeleton(2)}`);
+  const c = await creatorWorks(name, kind);
+  const out = c.rows.filter(w => !isSoon(w)), seen = out.filter(w => logged(w.id)).length;
+  /* your people's word on each: rooms and follows, latest score each */
+  const ppl = new Set([...rooms.flatMap(r => r.members.map(m => m.id)), ...follows.map(f => f.followee)]); ppl.delete(me.id);
+  const theirs = {}; try { const ids = c.rows.map(w => w.id);
+    for (const ch of inChunks(ids, 80)) for (const e of notApart(await q(sb.from("entries").select("user_id,work_id,score,rated_on").in("work_id", ch).limit(1500))))
+      if (ppl.has(e.user_id)) { const k = e.work_id + "|" + e.user_id; if (!theirs[k] || e.rated_on > theirs[k].rated_on) theirs[k] = e; } } catch {}
+  const avg = {}; for (const e of Object.values(theirs)) (avg[e.work_id] ||= []).push(e.score);
+  const best = Object.entries(avg).filter(([, s]) => s.length >= 2).map(([id, s]) => [id, s.reduce((a, b) => a + b, 0) / s.length]).sort((a, b) => b[1] - a[1])[0];
+  const mine = id => myEntries.filter(e => e.work_id === id).sort(newestFirst)[0];
+  const verb = K(kind).verb, pct = out.length ? Math.round(seen / out.length * 100) : 0;
+  openSheet(`<div class="crhead">${c.photo ? `<img class="crface" src="${esc(c.photo)}" alt="">` : faceEl(name, null)}<div><h3>${esc(name)}</h3><p class="sub">${esc(K(kind).creatorLabel)} · ${c.rows.length} ${c.rows.length === 1 ? "thing" : "things"}</p></div></div>
+    ${out.length ? `<div class="card crprog"><div class="h"><span>You've ${esc(verb)} ${seen} of ${out.length}</span><span class="tag dim">${pct}%</span></div><span class="pbar"><i style="width:${Math.max(2, pct)}%"></i></span>
+      ${best && works[best[0]] ? `<p class="sub" style="margin-top:10px">Your people's favourite: <b>${esc(works[best[0]].title)}</b> · ${(best[1] / 2).toFixed(1)}★</p>` : ""}</div>` : ""}
+    ${c.rows.length ? `<div class="crgrid">${c.rows.map(w => { const e = mine(w.id), s = avg[w.id];
+        return `<div class="crw ${e ? "seen" : ""}${isSoon(w) ? " soon" : ""}" data-crw="${esc(w.id)}" role="button" tabindex="0">${tileCover(w)}
+          <b>${esc(w.title)}</b><small>${isSoon(w) ? "Coming " + when(w.release) : esc(w.year || "")}${s ? ` · your people ${(s.reduce((a, b) => a + b, 0) / s.length / 2).toFixed(1)}` : ""}</small>
+          ${e ? stars(e.score, "sm") : activeList()?.items.includes(w.id) ? `<span class="tag dim">up next</span>` : `<button class="chip crup" data-crup="${esc(w.id)}" aria-label="Add ${esc(w.title)} to Up next">+ Up next</button>`}</div>`; }).join("")}</div>`
+      : `<p class="empty">Couldn't find anything else by ${esc(name)} just now.</p>`}
+    <div class="stack">${fromId && works[fromId] ? `<button class="btn quiet" id="crBack">Back to ${esc(works[fromId].title)}</button>` : ""}<button class="btn quiet" id="crClose">Close</button></div>`);
+  $("#crClose").onclick = closeSheet; const cb = $("#crBack"); if (cb) cb.onclick = () => openWork(fromId);
+  $$("[data-crw]").forEach(b => b.onclick = ev => { if (ev.target.closest("[data-crup]")) return; const w = c.rows.find(x => x.id === b.dataset.crw); if (w) hitOpen(w); });
+  $$("[data-crup]").forEach(b => b.onclick = async ev => { ev.stopPropagation(); b.disabled = true; await addToShelf(b.dataset.crup);
+    b.outerHTML = `<span class="tag dim">up next</span>`; }); }
+/* the names on a title's page that open one: its maker, by medium */
+const creatorLinks = w => String(w.creator || "").split(/,\s*/).filter(Boolean).map(n =>
+  `<button class="crlink" data-creator="${esc(n)}">${esc(n)}</button>`).join(", ");
+
+/* ============ series ============
+   Films from TMDB's collections, games from IGDB's, books from Wikidata (by the Open
+   Library id it keeps). Asked once a fortnight per title and remembered on this phone. */
+const SERIES_KEY = "rooms.series";
+const seriesStore = (() => { try { return JSON.parse(localStorage.getItem(SERIES_KEY) || "{}"); } catch { return {}; } })();
+const seriesKnown = id => works[id]?.meta?.series || (seriesStore[id] && Date.now() - seriesStore[id].at < 14 * 864e5 ? seriesStore[id].s : undefined);
+const keepSeries = (id, s) => { seriesStore[id] = { at:Date.now(), s };
+  const keys = Object.keys(seriesStore); if (keys.length > 400) keys.sort((a, b) => seriesStore[a].at - seriesStore[b].at).slice(0, 100).forEach(k => delete seriesStore[k]);
+  try { localStorage.setItem(SERIES_KEY, JSON.stringify(seriesStore)); } catch {} return s; };
+async function seriesOf(w) {
+  const known = seriesKnown(w.id); if (known !== undefined) return known;
+  if (DEMO || isPart(w.id) || w.kind === "tv") return null;
+  const raw = w.id.split(":")[1]; let s = null;
+  try {
+    if (w.kind === "film") { const d = await tmdb("movie/" + raw); const col = d.belongs_to_collection;
+      if (col?.id) { const c = await tmdb("collection/" + col.id);
+        const parts = (c.parts || []).filter(p => p.release_date).sort((a, b) => a.release_date.localeCompare(b.release_date));
+        s = { name:String(c.name || col.name || "").replace(/\s+Collection$/i, ""), parts:parts.map((p, i) => ({ id:"film:" + p.id, title:p.title, year:p.release_date.slice(0, 4),
+          cover:TMDB_IMG(p.poster_path), n:i + 1, ...(p.release_date > today() ? { release:p.release_date } : {}) })) }; } }
+    else if (w.kind === "game") { const set = "name,games.name,games.first_release_date,games.cover.image_id,games.version_parent";
+      const [g] = await igdb("games", `where id = ${+raw}; fields ${set.split(",").map(f => "collections." + f).join(",")},${set.split(",").map(f => "franchises." + f).join(",")};`);
+      const groups = [...(g?.collections || []), ...(g?.franchises || [])].map(c => ({ name:c.name, games:(c.games || []).filter(x => !x.version_parent && x.first_release_date) }))
+        .filter(c => c.games.length >= 2 && c.games.length <= 30).sort((a, b) => a.games.length - b.games.length);
+      const c = groups[0]; if (c) { const gs = c.games.sort((a, b) => a.first_release_date - b.first_release_date);
+        s = { name:c.name, parts:gs.map((x, i) => ({ id:"game:" + x.id, title:x.name, year:String(new Date(x.first_release_date * 1000).getFullYear()), n:i + 1,
+          cover:x.cover?.image_id ? `https://images.igdb.com/igdb/image/upload/t_cover_big/${x.cover.image_id}.jpg` : "" })) }; } }
+    else if (w.kind === "book" && proxy()) { /* asked through the worker, which writes the query: Wikidata never sees who's asking */
+      const r = await fetch(proxy() + "/wd/series?ol=" + encodeURIComponent(raw));
+      if (r.ok) { const rows = (await r.json()).results?.bindings || [];
+        const bySeries = {}; for (const b of rows) { const sid = b.series?.value; if (!sid) continue;
+          const g = bySeries[sid] ||= { name:b.seriesLabel?.value || "", parts:{} };
+          const pid = b.part.value, p = g.parts[pid] ||= { title:b.partLabel?.value || "", ord:null, year:"", ol:"" };
+          if (b.ord?.value && !isNaN(parseFloat(b.ord.value))) p.ord = parseFloat(b.ord.value);
+          const y = (b.date?.value || "").slice(0, 4); if (y && (!p.year || y < p.year)) p.year = y;
+          if (b.ol?.value) p.ol = b.ol.value; }
+        const g = Object.values(bySeries).map(x => ({ ...x, list:Object.values(x.parts).filter(p => p.title && !/^Q\d+$/.test(p.title)) }))
+          .filter(x => x.list.length >= 2 && x.list.length <= 40).sort((a, b) => b.list.length - a.list.length)[0];
+        if (g) { const list = g.list.sort((a, b) => (a.ord ?? 999) - (b.ord ?? 999) || String(a.year || "9999").localeCompare(String(b.year || "9999")));
+          s = { name:g.name.replace(/\s+(series|trilogy|saga|sequence|cycle)$/i, "") || g.name, parts:list.map((p, i) => ({ title:p.title, year:p.year, n:i + 1,
+            ...(p.ol ? { id:"book:" + p.ol } : {}) })) }; } } }
+  } catch { return null; }
+  if (s && s.parts.length < 2) s = null;
+  /* where this one sits: by id, or by its title when the source names it differently */
+  if (s) for (const p of s.parts) if (p.id === w.id || (!p.id && lc(p.title) === lc(w.title))) p.id = w.id;
+  return keepSeries(w.id, s); }
+const seriesAt = (s, id) => s?.parts.findIndex(p => p.id === id) ?? -1;
+async function paintSeries(w) {
+  const el = $("#wSeries"); if (!el) return;
+  const s = await seriesOf(w); if (!s || $("#wSeries") !== el) return;
+  await fillWorks(s.parts.map(p => p.id).filter(Boolean)); if ($("#wSeries") !== el) return;
+  const at = seriesAt(s, w.id), done = p => p.id && logged(p.id);
+  const next = s.parts.find((p, i) => i > Math.max(at, ...s.parts.map((q2, j) => done(q2) ? j : -1)) && !done(p) && !(p.release && p.release > today()));
+  const unit = w.kind === "book" ? "book" : w.kind === "game" ? "game" : "film";
+  el.innerHTML = `<div class="card series"><div class="h"><span>${esc(s.name)}</span><span class="tag dim">${at >= 0 ? `${unit} ${at + 1} of ${s.parts.length}` : `${s.parts.length} ${unit}s`}</span></div>
+    <div class="srow">${s.parts.map((p, i) => `<button class="spart ${i === at ? "here" : ""} ${done(p) ? "done" : ""}" data-spart="${i}" aria-label="${esc(p.title)}">
+      ${tileCover(works[p.id]?.title ? works[p.id] : { ...p, kind:w.kind })}<small>${i + 1}</small></button>`).join("")}</div>
+    ${next ? `<div class="snext"><div class="t"><small>Next for you</small><b>${esc(next.title)}</b></div>${next.id && activeList()?.items.includes(next.id) ? `<span class="tag dim">up next</span>`
+      : `<button class="chip" id="sNextAdd">+ Up next</button>`}</div>` : s.parts.every(done) ? `<p class="sub" style="margin-top:8px">You've done the lot.</p>` : ""}</div>`;
+  const open = async p => { if (p.id === w.id) return;
+    if (p.id) { await hitOpen({ id:p.id, kind:w.kind, title:p.title, year:p.year, cover:p.cover || "", creator:w.creator || "" }); return; }
+    try { const hits = await SOURCES[w.kind](`${p.title} ${w.kind === "book" ? w.creator || "" : ""}`.trim());
+      const hit = hits.find(h => lc(h.title) === lc(p.title)) || hits[0]; if (hit) { p.id = hit.id; keepSeries(w.id, s); await hitOpen(hit); return; } } catch {}
+    say(`Couldn't find ${p.title} just now`); };
+  $$("[data-spart]", el).forEach(b => b.onclick = () => open(s.parts[+b.dataset.spart]));
+  const na = $("#sNextAdd", el); if (na) na.onclick = async () => { na.disabled = true;
+    try { if (!next.id) { const hits = await SOURCES[w.kind](next.title); const hit = hits.find(h => lc(h.title) === lc(next.title)) || hits[0]; if (!hit) throw new Error("not found"); next.id = hit.id; window.__hits = Object.assign(window.__hits || {}, { [hit.id]:hit }); keepSeries(w.id, s); }
+      else window.__hits = Object.assign(window.__hits || {}, { [next.id]:works[next.id] || { id:next.id, kind:w.kind, title:next.title, year:next.year, cover:next.cover || "" } });
+      await addToShelf(next.id); na.outerHTML = `<span class="tag dim">up next</span>`; }
+    catch { na.disabled = false; say(`Couldn't find ${next.title} just now`); } }; }
+/* on Up next: the next one in a series you've started, for anything whose series this
+   phone already knows (and a quiet look-up for the last few things you finished) */
+let seriesLooking = false;
+async function paintSeriesNext() {
+  const el = $("#seriesNext"); if (!el) return;
+  const L = activeList(), on = new Set(L?.items || []);
+  const recent = []; const seenW = new Set();
+  for (const e of myEntries.slice().sort(newestFirst)) { if (isPart(e.work_id) || seenW.has(e.work_id)) continue; seenW.add(e.work_id);
+    const w = works[e.work_id]; if (w && w.kind !== "tv") recent.push(w); if (recent.length >= 40) break; }
+  if (!seriesLooking && !DEMO) { seriesLooking = true;
+    (async () => { let n = 0; for (const w of recent.slice(0, 12)) { if (seriesKnown(w.id) !== undefined) continue; await seriesOf(w).catch(() => null); if (++n >= 4) break; }
+      if (n && $("#seriesNext") === el) paintSeriesNext(); })(); }
+  const out = [], named = new Set();
+  for (const w of recent) { const s = seriesKnown(w.id); if (!s || named.has(s.name)) continue;
+    const last = Math.max(...s.parts.map((p, i) => p.id && logged(p.id) ? i : -1)); if (last < 0) continue;
+    const next = s.parts.slice(last + 1).find(p => !(p.id && (logged(p.id) || on.has(p.id))) && !(p.release && p.release > today()));
+    if (!next) continue; named.add(s.name); out.push({ w, s, next }); if (out.length >= 3) break; }
+  if (!out.length) { el.innerHTML = ""; return; }
+  if (out.some(x => x.next.id && !works[x.next.id]?.title)) { await fillWorks(out.map(x => x.next.id).filter(Boolean)); if ($("#seriesNext") !== el) return; }
+  el.innerHTML = `<div class="lbl">Next in a series you've started</div><div class="card" style="margin-top:0">${out.map(({ w, s, next }, i) =>
+    `<div class="row" data-snx="${i}">${tileCover(works[next.id]?.title ? works[next.id] : { ...next, kind:w.kind })}<div class="t"><b>${esc(next.title)}</b><small>${tag(w.kind)} ${esc(s.name)} · ${next.n} of ${s.parts.length}</small></div><button class="chip" data-snxadd="${i}">Add</button></div>`).join("")}</div>`;
+  $$("[data-snxadd]", el).forEach(b => b.onclick = async ev => { ev.stopPropagation(); const { w, s, next } = out[+b.dataset.snxadd]; b.disabled = true;
+    try { if (!next.id) { const hits = await SOURCES[w.kind](next.title); const hit = hits.find(h => lc(h.title) === lc(next.title)) || hits[0]; if (!hit) throw 0; next.id = hit.id; window.__hits = Object.assign(window.__hits || {}, { [hit.id]:hit }); keepSeries(w.id, s); }
+      else window.__hits = Object.assign(window.__hits || {}, { [next.id]:works[next.id] || { id:next.id, kind:w.kind, title:next.title, year:next.year, cover:next.cover || "" } });
+      await addToShelf(next.id); renderShelf(); } catch { b.disabled = false; say(`Couldn't find ${next.title} just now`); } });
+  $$("[data-snx]", el).forEach(r => r.onclick = ev => { if (ev.target.closest("button")) return; const { w, next } = out[+r.dataset.snx];
+    if (next.id) hitOpen({ id:next.id, kind:w.kind, title:next.title, year:next.year, cover:next.cover || "" }); else openWork(w.id); }); }
+
+/* ============ where to read it ============
+   Open Library lends scanned books free, one reader at a time, and some are free to
+   read outright; WorldCat finds the libraries near you that have a copy. */
+async function borrowOf(w) {
+  if (w.kind !== "book") return null;
+  const raw = w.id.split(":")[1];
+  if (DEMO) return { access:["book:1", "book:5", "book:30"].includes(w.id) ? "borrowable" : "no_ebook", key:"/works/" + raw };
+  try { const d = await ol("/search.json", { title:w.title, ...(w.creator ? { author:w.creator } : {}), limit:"8", fields:"key,ebook_access,has_fulltext" });
+    const doc = (d.docs || []).find(x => x.key === "/works/" + raw) || (d.docs || [])[0];
+    return { access:doc?.ebook_access || "no_ebook", key:doc?.key || "/works/" + raw }; } catch { return { access:"unknown", key:"/works/" + raw }; } }
+async function paintBorrow(w) {
+  const el = $("#wBorrow"); if (!el) return;
+  const b = await borrowOf(w); if (!b || $("#wBorrow") !== el) return;
+  const olUrl = "https://openlibrary.org" + b.key, wc = "https://search.worldcat.org/search?q=" + encodeURIComponent(`${w.title} ${w.creator || ""}`.trim());
+  const free = b.access === "public", lend = b.access === "borrowable";
+  el.innerHTML = `<div class="card"><div class="h"><span>Where to read it</span>${free || lend ? `<span class="tag" style="background:var(--mint);color:var(--onAccent)">free</span>` : ""}</div>
+    <div class="borrow">${free ? `<a class="linkrow" href="${esc(olUrl)}" target="_blank" rel="noopener"><span>Read it free on Open Library</span><b>›</b></a>`
+      : lend ? `<a class="linkrow" href="${esc(olUrl)}" target="_blank" rel="noopener"><span>Borrow it free from Open Library</span><b>›</b></a>` : ""}
+      <a class="linkrow" href="${esc(wc)}" target="_blank" rel="noopener"><span>Find it in a library near you</span><b>›</b></a></div>
+    <p class="sub" style="margin-top:8px;font-size:11px">${lend ? "Open Library lends a scanned copy for two weeks, one reader at a time. " : ""}Libraries via WorldCat.</p></div>`; }
+
+/* ============ your services ============
+   What you subscribe to is chosen in settings. Up next can narrow to what's on them,
+   and when something you mean to watch turns up on one — it wasn't there last time the
+   app looked — you hear about it once. */
+const myServices = () => P.services || (DEMO ? sb.__db?.services : null) || [];
+const SVC_KEY = "rooms.svc", ARRIVED_KEY = "rooms.arrived";
+const svcStore = (() => { try { return JSON.parse(localStorage.getItem(SVC_KEY) || "{}"); } catch { return {}; } })();
+const svcGet = id => svcStore[id];
+const svcName = k => SERVICES.find(([x]) => x === k)?.[1] || k;
+const svcMine = id => (svcGet(id)?.on || []).filter(k => myServices().includes(k));
+const arrivedList = () => { try { return JSON.parse(localStorage.getItem(ARRIVED_KEY) || "[]").filter(a => Date.now() - a.at < 10 * 864e5); } catch { return []; } };
+const setArrived = a => { try { localStorage.setItem(ARRIVED_KEY, JSON.stringify(a.slice(-20))); } catch {} };
+let svcBusy = false;
+async function svcFill(ws) {
+  if (svcBusy || !myServices().length) return 0; svcBusy = true; let changed = 0;
+  try { const todo = ws.filter(w => (w.kind === "film" || w.kind === "tv") && !isSoon(w) && !(svcGet(w.id) && Date.now() - svcGet(w.id).at < 864e5)).slice(0, 24);
+    const arrived = arrivedList(), fresh = [];
+    for (const w of todo) { const got = await watchOn(w); if (!got) continue;
+      const on = [...new Set((got.free || []).map(p => svcKey(p.name)).filter(Boolean))];
+      const before = svcGet(w.id)?.on ?? (DEMO ? (sb.__db?.providersBefore?.[w.id] || null)?.map(svcKey).filter(Boolean) : null);
+      if (before) for (const k of on) if (!before.includes(k) && myServices().includes(k) && !arrived.some(a => a.id === w.id && a.svc === k)) {
+        arrived.push({ id:w.id, svc:k, at:Date.now() }); fresh.push([w, k]); }
+      svcStore[w.id] = { at:Date.now(), on }; changed++; }
+    if (changed) { try { localStorage.setItem(SVC_KEY, JSON.stringify(svcStore)); } catch {} setArrived(arrived); }
+    if (fresh.length) say(fresh.length === 1 ? `${fresh[0][0].title} is now on ${svcName(fresh[0][1])}` : `${fresh.length} things in Up next just arrived on your services`, "good"); }
+  finally { svcBusy = false; }
+  return changed; }
+const arrivedHTML = () => { const a = arrivedList().filter(x => !x.seen && works[x.id] && activeList()?.items.includes(x.id) && !logged(x.id)); if (!a.length) return "";
+  return `<div class="arrived" id="arrived"><span class="ar-dot" aria-hidden="true"></span><p>${a.slice(0, 3).map(x => `<button class="linky" data-arw="${esc(x.id)}">${esc(works[x.id].title)}</button> is now on <b>${esc(svcName(x.svc))}</b>`).join(" · ")}</p>
+    <button class="iconbtn sm" id="arrivedX" aria-label="Got it">×</button></div>`; };
+function wireArrived() { $$("[data-arw]").forEach(b => b.onclick = () => openWork(b.dataset.arw));
+  const x = $("#arrivedX"); if (x) x.onclick = () => { setArrived(arrivedList().map(a => ({ ...a, seen:true }))); $("#arrived")?.remove(); }; }
+
+/* ============ where you part ways ============
+   Your scores against the room's and everyone's, for things at least two others have
+   rated: the ones you rate furthest above, and furthest below. */
+async function hotTakes() {
+  const mine = {}; for (const e of myEntries) { if (isPart(e.work_id) || isBefore(e) || e.private) continue;
+    const c = mine[e.work_id]; if (!c || newestFirst(e, c) < 0) mine[e.work_id] = e; }
+  const ids = Object.keys(mine); if (ids.length < 3) return null;
+  const roomIds = new Set(rooms.flatMap(r => r.members.map(m => m.id))); roomIds.delete(me.id);
+  const latest = {};
+  for (const ch of inChunks(ids, 80)) { try { for (const e of notApart(await q(sb.from("entries").select("user_id,work_id,score,rated_on,created_at").in("work_id", ch).neq("user_id", me.id).limit(3000)))) {
+      const k = e.work_id + "|" + e.user_id; if (!latest[k] || newestFirst(e, latest[k]) < 0) latest[k] = e; } } catch {} }
+  const pools = { room:{}, all:{} };
+  for (const e of Object.values(latest)) { (pools.all[e.work_id] ||= []).push(e.score); if (roomIds.has(e.user_id)) (pools.room[e.work_id] ||= []).push(e.score); }
+  const takes = pool => Object.entries(pool).filter(([, s]) => s.length >= 2).map(([id, s]) => { const them = s.reduce((a, b) => a + b, 0) / s.length;
+    return { id, mine:mine[id].score, them, n:s.length, d:mine[id].score - them }; }).filter(x => Math.abs(x.d) >= 2).sort((a, b) => Math.abs(b.d) - Math.abs(a.d));
+  return { room:takes(pools.room), all:takes(pools.all) }; }
+async function paintHotTakes() {
+  const el = $("#hotTakes"); if (!el) return;
+  const t = await hotTakes(); if (!t || $("#hotTakes") !== el) return;
+  let pool = t.room.length ? "room" : "all";
+  const draw = () => { const rows = t[pool]; if (!t.room.length && !t.all.length) { el.innerHTML = ""; return; }
+    const up = rows.filter(x => x.d > 0).slice(0, 3), down = rows.filter(x => x.d < 0).slice(0, 3);
+    const line = x => { const w = works[x.id] || {}; return `<button class="htrow" data-work="${esc(x.id)}">${tileCover(w)}<span class="t"><b>${esc(w.title || "")}</b>
+      <small>You ${(x.mine / 2).toFixed(1)}★ · ${pool === "room" ? "the room" : "everyone"} ${(x.them / 2).toFixed(1)}★</small></span><span class="htd ${x.d > 0 ? "up" : "down"}">${x.d > 0 ? "+" : "−"}${(Math.abs(x.d) / 2).toFixed(1)}</span></button>`; };
+    el.innerHTML = `<div class="card hot"><div class="h"><span>Your hot takes</span>${t.room.length && t.all.length ? `<div class="seg mini">${[["room", "Room"], ["all", "Everyone"]].map(([k, l]) => `<button data-htp="${k}" class="${pool === k ? "on" : ""}">${l}</button>`).join("")}</div>` : `<span class="tag dim">${pool === "room" ? "vs the room" : "vs everyone"}</span>`}</div>
+      ${up.length ? `<div class="lbl">You rate higher</div>${up.map(line).join("")}` : ""}${down.length ? `<div class="lbl">You rate lower</div>${down.map(line).join("")}` : ""}
+      ${!up.length && !down.length ? `<p class="empty" style="padding:10px 0 4px">You and ${pool === "room" ? "the room" : "everyone"} are never more than a star apart.</p>` : ""}</div>`;
+    $$("[data-htp]", el).forEach(b => b.onclick = () => { pool = b.dataset.htp; draw(); });
+    $$("[data-work]", el).forEach(b => b.onclick = () => openWork(b.dataset.work)); };
+  draw(); }
+
+/* ============ lines people kept ============ */
+const linesHTML = (es, { who = true, title = false } = {}) => es.filter(lineOf).slice(0, 6).map(e => { const w = works[e.work_id] || e.works || {};
+  return `<figure class="kline" style="--k:${K(w.kind || "film").colour}"><blockquote>${esc(lineOf(e))}</blockquote><figcaption>${
+    who ? `${avatar(e.profiles || { id:e.user_id })}<b>${esc(e.user_id === me.id ? "you" : e.profiles?.handle || handleOf(e.user_id))}</b>` : ""}${
+    title ? `<button class="linky" data-work="${esc(e.work_id)}">${esc(w.title || "")}</button>` : ""}</figcaption></figure>`; }).join("");
+
+/* ============ the room's awards ============
+   December: everybody in the room votes once per medium for the room's thing of the
+   year, from the five the room rated best. A category's winner shows once everyone's
+   voted in it, and all of them on the first of January (and all January after). */
+const awardsName = R => /^the\s/i.test(R.name) ? `${R.name} Awards` : `The ${R.name} Awards`;
+const awardYear = (d = new Date()) => d.getMonth() === 0 ? d.getFullYear() - 1 : d.getFullYear();
+const awardsPhase = (d = new Date()) => d.getMonth() === 11 ? "vote" : d.getMonth() === 0 ? "won" : d.getMonth() === 10 && d.getDate() >= 15 ? "soon" : null;
+async function awardsData(R) {
+  const y = awardYear(), ids = R.members.map(m => m.id);
+  let es = []; try { es = notApart(await wholeEntries(f => { let x = sb.from("entries").select("user_id,work_id,score,rated_on,created_at,works(*)");
+    if (f) x = x.eq("part", false); return x.in("user_id", ids).gte("rated_on", `${y}-01-01`).lte("rated_on", `${y}-12-31`).limit(3000); })); } catch {}
+  es.forEach(e => remember(e.works));
+  const latest = {}; for (const e of es) { if (dnfOf(e)) continue; const k = e.work_id + "|" + e.user_id; if (!latest[k] || newestFirst(e, latest[k]) < 0) latest[k] = e; }
+  const per = {}; for (const e of Object.values(latest)) (per[e.work_id] ||= []).push(e.score);
+  const cats = CAB_ORDER.map(kind => { const rows = Object.entries(per).filter(([id]) => kindOf(id) === kind && !isPart(id))
+      .map(([id, s]) => ({ id, n:s.length, avg:s.reduce((a, b) => a + b, 0) / s.length }))
+      .sort((a, b) => (b.n >= 2) - (a.n >= 2) || b.avg - a.avg || b.n - a.n).slice(0, 5);
+    return { kind, nominees:rows }; }).filter(c => c.nominees.length >= 2);
+  let votes = []; try { votes = await q(sb.from("room_votes").select("game,voter,choice").eq("room_id", R.id).like("game", `awards:${y}:%`)); } catch {}
+  for (const c of cats) { c.game = `awards:${y}:${c.kind}`; c.votes = votes.filter(v => v.game === c.game && c.nominees.some(n => n.id === v.choice));
+    c.mine = c.votes.find(v => v.voter === me.id)?.choice || null;
+    c.revealed = awardsPhase() === "won" || (c.votes.length >= R.members.length && R.members.length > 1);
+    const tally = {}; for (const v of c.votes) tally[v.choice] = (tally[v.choice] || 0) + 1;
+    const order = Object.entries(tally).sort((a, b) => b[1] - a[1] || (c.nominees.find(n => n.id === b[0])?.avg || 0) - (c.nominees.find(n => n.id === a[0])?.avg || 0));
+    c.winner = c.revealed ? order[0] || null : null; c.tied = !!(c.winner && order[1] && order[1][1] === order[0][1]); }
+  return { y, cats }; }
+async function paintAwards(R) {
+  const el = $("#roomAwards"); if (!el) return; const phase = awardsPhase();
+  if (!phase || R.members.length < 2) { el.innerHTML = ""; return; }
+  if (phase === "soon") { el.innerHTML = `<div class="card awards soon"><div class="h"><span>${esc(awardsName(R))} ${awardYear()}</span><span class="tag dim">from 1 December</span></div>
+    <p class="sub">The room votes for its film, show, book and game of the year, from the five you all rated best.</p></div>`; return; }
+  const d = await awardsData(R); if ($("#roomAwards") !== el) return;
+  if (!d.cats.length) { el.innerHTML = ""; return; }
+  const label = k => ({ film:"Film", tv:"Show", book:"Book", game:"Game" })[k] + " of the year";
+  el.innerHTML = `<div class="card awards"><div class="h"><span>${esc(awardsName(R))} ${d.y}</span><span class="tag ${phase === "won" ? "" : "dim"}" ${phase === "won" ? `style="background:var(--butter);color:var(--onAccent)"` : ""}>${phase === "won" ? "the winners" : "vote by 31 Dec"}</span></div>
+    ${d.cats.map(c => { const win = c.winner && works[c.winner[0]], mine = c.mine && works[c.mine], shut = phase !== "vote";
+      return `<button class="awrow ${win ? "won" : ""}" data-award="${c.kind}">${win ? tileCover(win) : mine ? tileCover(mine) : `<span class="co aw-q">?</span>`}
+        <span class="t"><small style="color:${K(c.kind).colour}">${label(c.kind)}</small><b>${win ? esc(win.title) : mine ? `Your vote: ${esc(mine.title)}` : shut ? "Nobody voted" : "You haven't voted"}</b>
+        <small>${win ? `${c.winner[1]} of ${c.votes.length} ${c.votes.length === 1 ? "vote" : "votes"}${c.tied ? " · a tie, the room's scores settled it" : ""}` : shut ? "See the nominees" : `${c.votes.length} of ${R.members.length} voted`}</small></span>
+        ${win ? `<span class="aw-cup" aria-hidden="true">★</span>` : shut ? "" : `<span class="chip ${mine ? "" : "on"}">${mine ? "Change" : "Vote"}</span>`}</button>`; }).join("")}</div>`;
+  $$("[data-award]", el).forEach(b => b.onclick = () => { const c = d.cats.find(x => x.kind === b.dataset.award); if (c) openAwardVote(R, d.y, c, () => paintAwards(R)); }); }
+function openAwardVote(R, y, c, after) {
+  const label = ({ film:"film", tv:"show", book:"book", game:"game" })[c.kind];
+  const locked = c.revealed || awardsPhase() !== "vote";
+  const tally = {}; for (const v of c.votes) tally[v.choice] = (tally[v.choice] || 0) + 1;
+  openSheet(`<h3>The room's ${label} of ${y}</h3><p class="sub">${locked ? "The votes are in." : `The five you rated best this year. One vote each${c.mine ? " — you can change yours until the end of December" : ""}.`}</p>
+    <div class="awgrid">${c.nominees.map(n => { const w = works[n.id] || {};
+      return `<button class="awnom ${c.mine === n.id ? "on" : ""} ${c.winner?.[0] === n.id ? "won" : ""}" data-awv="${esc(n.id)}" ${locked ? "disabled" : ""}>${tileCover(w)}<b>${esc(w.title || "")}</b>
+        <small>${(n.avg / 2).toFixed(1)}★ · ${n.n} of you${locked ? ` · ${tally[n.id] || 0} ${tally[n.id] === 1 ? "vote" : "votes"}` : ""}</small></button>`; }).join("")}</div>
+    <div class="stack"><button class="btn quiet" id="awBack">Back</button></div>`);
+  $("#awBack").onclick = () => { closeSheet(); after?.(); };
+  $$("[data-awv]").forEach(b => b.onclick = async () => { $$("[data-awv]").forEach(x => x.disabled = true);
+    try { await q(sb.from("room_votes").upsert({ room_id:R.id, game:c.game, voter:me.id, choice:b.dataset.awv }, { onConflict:"room_id,game,voter" }));
+      $$("[data-awv]").forEach(x => x.classList.toggle("on", x === b)); buzz([6, 30, 8]);
+      if (!REDUCED) playVote(b);
+      say("Voted", "good"); setTimeout(() => { closeSheet(); after?.(); }, 650); }
+    catch (e) { oops(e, "Couldn't save your vote"); $$("[data-awv]").forEach(x => x.disabled = false); } }); }
 
 
 /* ---------- marks ----------
@@ -11828,6 +12475,8 @@ async function openProfile(userId) { const self = userId === me.id;
     ${rankKinds.length ? `<div class="card"><div class="h"><span>${self?"Your":esc(p.handle)+"'s"} rankings</span><span class="tag dim">top three by medium</span></div>
       ${rankKinds.map(k => `<div class="lbl" style="margin-top:10px">${K(k).plural}</div>
         <div class="archlist mini">${ranks[k].slice(0, 3).filter(id => works[id]).map((id, i) => rankRowHTML({ w:works[id], score:0 }, i, false)).join("")}</div>`).join("")}</div>` : ""}
+    <div id="pLists"></div>
+    ${es.some(lineOf) ? `<div class="card"><div class="h"><span>Lines ${self ? "you've" : "they've"} kept</span></div>${linesHTML(es, { who:false, title:true })}</div>` : ""}
     <div class="lbl">Entries</div>${es.length ? es.slice(0,20).map(e => slipHTML(e)).join("") : `<p class="empty">Nothing logged yet.</p>`}
     <div class="stack"><button class="btn soft" id="pCard">Save the card</button><button class="btn quiet" id="pClose">Close</button></div>
     ${self ? "" : `<p class="sub" style="text-align:center;margin-top:16px">
@@ -11836,7 +12485,8 @@ async function openProfile(userId) { const self = userId === me.id;
   const pr = $("#pReport"); if (pr) pr.onclick = () => openReport({ about_user:userId, who:p.handle });
   const pb = $("#pBlock"); if (pb) pb.onclick = () => openBlock(userId, p.handle);
   $("#pCard").onclick = () => openCuts("taste", { p, t }, "Share this taste");
-  $("#pClose").onclick = closeSheet; wireSlips($("#sheetBody"), es); revealIn($("#sheetBody")); $$("#sheetBody .four [data-work], #sheetBody .archcard[data-work]").forEach(x => x.onclick = () => openWork(x.dataset.work));
+  $("#pClose").onclick = closeSheet; wireSlips($("#sheetBody"), es); revealIn($("#sheetBody")); $$("#sheetBody .four [data-work], #sheetBody .archcard[data-work], #sheetBody .kline [data-work]").forEach(x => x.onclick = () => openWork(x.dataset.work));
+  paintListsCard($("#pLists"), { build:x => x.eq("owner", userId), title:self ? "Your lists" : `${p.handle}'s lists`, mine:self, empty:"Nothing yet." });
   const fb = $("#followBtn"); if (fb) fb.onclick = async () => {
     if (await setFollow(p.id, !isFollowing(p.id))) openProfile(p.id); };
   const em = $("#editMe"); if (em) em.onclick = openYou;
@@ -11900,9 +12550,11 @@ function openLog(w, edit = null, preset = 0) { setDoing("logging"); const cfg = 
           logging something you put down a fortnight ago. So it offers what it knows. */""}
     ${(() => { const n = !edit && nowOf(w.id); if (!n) return "";
       const d = dayNo(today()) - dayNo(n.started_on); if (!(d > 0)) return "";
-      return `<div class="chips" style="margin-top:8px"><button class="chip" id="useStart" type="button">Started ${when(n.started_on)} \u00b7 ${waited(d)}</button></div>`; })()}<div class="lbl">Your rating</div><div class="raterow"><div id="rateWrap">${starRow()}</div><span class="buddy av" id="rateBuddy" aria-hidden="true">${avSVG(avFor(me))}</span></div><div class="ticks" id="tickRow"></div><div id="lovedWrap"></div>
+      return `<div class="chips" style="margin-top:8px"><button class="chip" id="useStart" type="button">Started ${when(n.started_on)} \u00b7 ${waited(d)}</button></div>`; })()}<div class="lbl">Your rating</div><div class="raterow"><div id="rateWrap">${starRow()}</div><span class="buddy av" id="rateBuddy" aria-hidden="true">${avSVG(avFor(me))}</span></div><div class="ticks" id="tickRow"></div><div id="stopRow"></div><div id="lovedWrap"></div>
     <div class="lbl">Add a note</div><textarea id="wNote" placeholder="One line, if you want">${edit ? esc(edit.note || "") : esc((P.drafts || {})[w.id]?.note || "")}</textarea>
     <div class="spoilrow"><button type="button" class="chip" id="wSpoil">Hide a spoiler</button><small>Select the part that gives it away, or tap to hide the whole note.</small></div>
+    ${isPart(w.id) ? "" : `<div class="linewrap" id="lineWrap">${ctx.line ? "" : `<button type="button" class="chip" id="wLineOpen">+ A line you loved</button>`}
+      <div class="linebox" ${ctx.line ? "" : "hidden"}><div class="lbl">A line you loved</div><textarea id="wLine" rows="2" maxlength="300" placeholder="${esc(LINE_HINT[w.kind] || "")}">${esc(ctx.line || "")}</textarea></div></div>`}
     ${/* room_only has been in the schema since v13 and nothing ever set it, so every
           entry anybody has ever written is public. Only worth offering when there is a
           room to keep it in. */""}
@@ -11924,7 +12576,16 @@ function openLog(w, edit = null, preset = 0) { setDoing("logging"); const cfg = 
     $$("[data-tk]").forEach(b => b.onclick = async () => { const [key,val] = b.dataset.tk.split("|"); if (key === "with") { const v = await askText({ title:"Who with?", label:"Their name", value:ctx.with || "", placeholder:"Anybody, however you say it", ok:"That's them", max:40 });
         /* a name, and one the room reads on your entry — held to the name rule, not the
            review rule, because it is somebody else being called it */
-        if (v !== null) { if (willNotName(v)) { say(NAME_NO); } else ctx.with = v; } } else ctx[key] = ctx[key] === val ? null : val; drawTicks(); }); }; drawTicks();
+        if (v !== null) { if (willNotName(v)) { say(NAME_NO); } else ctx.with = v; } } else ctx[key] = ctx[key] === val ? null : val; drawTicks(); });
+    drawStop(); };
+  /* gave up on it: where? Prefilled from wherever you'd said you were up to */
+  const drawStop = () => { const el = $("#stopRow"); if (!el) return; const gaveUp = Object.values(ctx).some(v => DNF_WORDS.includes(v));
+    if (!gaveUp) { delete ctx.stopped; el.innerHTML = ""; return; }
+    if (ctx.stopped == null) { const n = nowOf(w.id); if (n?.at) ctx.stopped = String(n.at).slice(0, 30); }
+    if ($("#wStop", el)) return;
+    el.innerHTML = `<label class="stoprow"><span>Where did you stop?</span><input id="wStop" maxlength="30" placeholder="${esc(STOP_HINT[w.kind] || "")}" value="${esc(ctx.stopped || "")}"></label>`;
+    $("#wStop", el).oninput = ev => { const v = ev.target.value.trim(); if (v) ctx.stopped = v; else delete ctx.stopped; }; };
+  drawTicks();
   let stats = { n:0, counts:{}, share:() => 0, hot:() => false };
   let faces = w.meta?.faces || {};
   const chip = (key, label, cls = "") => { const who = cls.includes("who") && key.startsWith("person:") ? key.slice(7) : null;
@@ -12018,7 +12679,12 @@ function openLog(w, edit = null, preset = 0) { setDoing("logging"); const cfg = 
     else { while (a < b && /\s/.test(v[a])) a++; while (b > a && /\s/.test(v[b - 1])) b--;
       ta.value = v.slice(0, a) + "||" + v.slice(a, b) + "||" + v.slice(b); }
     ta.focus(); say(whole && a === b ? "Not a spoiler any more" : "Hidden until someone taps it"); };
-  $("#wSave").onclick = async () => { if (!score) return; const e = { user_id:me.id, work_id:w.id, rated_on:$("#wDate").value || today(), score, note:$("#wNote").value.trim() || null, loved:loved.length?loved.slice():null, context:Object.keys(ctx).length?ctx:null, breakdown:null, room_only:roomOnly, ...(who === "me" || wasPrivate ? { private:who === "me" } : {}) };
+  const lo = $("#wLineOpen"); if (lo) lo.onclick = () => { lo.remove(); const bx = $("#lineWrap .linebox"); bx.hidden = false; $("#wLine").focus(); };
+  $("#wSave").onclick = async () => { if (!score) return;
+    const line = ($("#wLine")?.value || "").trim().replace(/\s+/g, " ");
+    if (line && willNotPost(line)) { $("#wMsg").textContent = "That word doesn't go up here. Say it another way."; return; }
+    if (line) ctx.line = line.slice(0, 300); else delete ctx.line;
+    const e = { user_id:me.id, work_id:w.id, rated_on:$("#wDate").value || today(), score, note:$("#wNote").value.trim() || null, loved:loved.length?loved.slice():null, context:Object.keys(ctx).length?ctx:null, breakdown:null, room_only:roomOnly, ...(who === "me" || wasPrivate ? { private:who === "me" } : {}) };
     $("#wSave").disabled = true; $("#rateBuddy")?.classList.add("working"); try { await saveEntry(e, edit?.id); await loadMine();
       clearTimeout(dt); if (P.drafts?.[w.id]) { delete P.drafts[w.id]; saveP(); }
       const offShelf = !edit?.id && dropFromShelf(w.id);
@@ -12118,7 +12784,8 @@ function openBlock(id, who = "") {
 
 function openEntry(e, justSaved = false) { const w = works[e.work_id] || e.works || {}; const cfg = K(w.kind || kindOf(e.work_id)); const mine = e.user_id === me.id;
   openSheet(`${justSaved?`<span class="tag savedchip" style="background:var(--mint)">Saved</span>`:""}<div class="head" style="margin-top:10px">${cover(w)}<div class="hh"><h3>${esc(w.title)}</h3><p class="sub">${tag(w.kind)} ${esc(w.year||"")} · ${esc(mine?"you":e.profiles?.handle||"")} ${cfg.verb} ${when(e.rated_on)}${mine && e.room_only ? ` · <span class="tag dim">room only</span>` : ""}</p><div style="margin-top:10px">${stars(e.score,"big")}</div></div></div>
-    ${e.context && Object.keys(e.context).some(k => k !== "before" && k !== "imported") ? `<div class="ticks">${Object.entries(e.context).filter(([k,v]) => v && k !== "before" && k !== "imported").map(([k,v]) => `<span class="tk on">${k==="with"?"With "+esc(v):esc(v)}</span>`).join("")}</div>` : ""}
+    ${e.context && Object.keys(e.context).some(k => !["before","imported","line"].includes(k)) ? `<div class="ticks">${Object.entries(e.context).filter(([k,v]) => v && !["before","imported","line"].includes(k)).map(([k,v]) => `<span class="tk on">${k==="with"?"With "+esc(v):k==="stopped"?"Stopped at "+esc(v):esc(v)}</span>`).join("")}</div>` : ""}
+    ${lineOf(e) ? `<blockquote class="kept big" style="--k:${cfg.colour}">${esc(lineOf(e))}</blockquote>` : ""}
     ${e.loved?.length?`<div class="chips" style="margin-top:12px">${e.loved.map(k => `<span class="chip ${k.startsWith("person:")?"who on":"on"}">${esc(k.startsWith("person:")?lc(k.slice(7)):k)}</span>`).join("")}</div>`:""}
     ${e.note?`<div class="card"><div class="say" style="font-size:19px;margin:0">“${noteHTML(e.note)}”</div></div>`:""}
     <div class="stack"><button class="btn soft" id="eCard">Save the card</button><button class="btn ghost" id="eWork">Open ${esc(w.title)}</button>${mine && e.id?`<button class="btn quiet" id="eEdit">Edit</button><button class="btn quiet" id="eDel">Delete</button>`:""}<button class="btn quiet" id="eClose">Close</button></div>
@@ -12455,7 +13122,7 @@ async function openYou() { let top = { items:[] }; try { top = await ensureMyTop
     <div class="lbl">Where you are · decides what's streaming</div>
     <input id="region" maxlength="2" autocapitalize="characters" autocomplete="country"
       placeholder="${esc(REGION())}" value="${esc(P.region || "")}" style="text-transform:uppercase">
-    <div class="lbl">What you subscribe to</div><div class="chips" id="svcPick">${SERVICES.map(([k, l]) => `<button class="chip ${(P.services || []).includes(k) ? "on" : ""}" data-svc="${k}">${l}</button>`).join("")}</div>
+    <div class="lbl">What you subscribe to</div><div class="chips" id="svcPick">${SERVICES.map(([k, l]) => `<button class="chip ${myServices().includes(k) ? "on" : ""}" data-svc="${k}">${l}</button>`).join("")}</div>
     <p class="sub" style="margin-top:4px">Watch nights and swipes mark the options you can already watch.</p>
     ${/* Each source sets terms for showing its data, and these are them: TMDB wants its
           approved logo and that exact sentence in the app's credits; JustWatch's streaming
@@ -12581,7 +13248,7 @@ async function openYou() { let top = { items:[] }; try { top = await ensureMyTop
       $("#newPw").value = ""; $("#pwMsg").textContent = "Saved. That's your password on this email now."; }
     catch (e) { $("#pwMsg").textContent = e.message; }
     finally { sp.disabled = false; } };
-  $$("[data-svc]").forEach(b => b.onclick = () => { const k = b.dataset.svc, on = new Set(P.services || []);
+  $$("[data-svc]").forEach(b => b.onclick = () => { const k = b.dataset.svc, on = new Set(myServices());
     on.has(k) ? on.delete(k) : on.add(k); P.services = [...on]; saveP(); b.classList.toggle("on", on.has(k)); });
   const rg = $("#region"); if (rg) rg.onchange = e => {
     const v = e.target.value.trim().toUpperCase();
@@ -12629,7 +13296,7 @@ async function exportEverything() {
   /* it said "everything" and fetched four tables out of seventeen. Clubs, votes, your
      ten, what you are in the middle of and anything anybody handed you were all missing,
      and the two lists that were there came out with their dates blanked. */
-  const [entries, myReplies, myReactions, myFollows, myNows, myHands, myTops, myVotes, myClubIn, mySeenRows, myBlocks, myHandles, myAnswers, myRoomVotes] =
+  const [entries, myReplies, myReactions, myFollows, myNows, myHands, myTops, myVotes, myClubIn, mySeenRows, myBlocks, myHandles, myAnswers, myRoomVotes, myThemeLists, myListLikes] =
     await Promise.all([
       grab("entries", "*", "user_id"),
       grab("replies", "*", "user_id"),
@@ -12646,10 +13313,14 @@ async function exportEverything() {
       grab("handles", "*", "owner"),
       grab("room_answers", "*", "user_id"),
       grab("room_votes", "*", "voter"),
+      grab("theme_lists", "*", "owner"),
+      grab("theme_list_likes", "*", "user_id"),
     ]);
+  let myListItems = []; if (myThemeLists.length) try { myListItems = await q(sb.from("theme_list_items").select("*").in("list_id", myThemeLists.map(l => l.id))); } catch {}
   const myClubs = [...clubs, ...openClubs].filter(c => myClubIn.some(m => m.club_id === c.id));
   const usedWorks = {};
-  for (const id of new Set([...entries.map(e => e.work_id), ...lists.flatMap(l => l.items)]))
+  await fillWorks(myListItems.map(i => i.work_id));
+  for (const id of new Set([...entries.map(e => e.work_id), ...lists.flatMap(l => l.items), ...myListItems.map(i => i.work_id)]))
     if (works[id]) usedWorks[id] = works[id];
   return {
     exported_at: new Date().toISOString(), from: location.origin + location.pathname,
@@ -12673,6 +13344,7 @@ async function exportEverything() {
     nows: myNows, handovers: myHands, seen: mySeenRows, blocks: myBlocks, handles: myHandles,
     follows: myFollows,
     room_answers: myAnswers, room_votes: myRoomVotes,
+    theme_lists: myThemeLists, theme_list_items: myListItems, theme_list_likes: myListLikes,
   };
 }
 function downloadJSON(obj, name) {

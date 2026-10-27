@@ -28,7 +28,7 @@
  * neither of which can live on a phone.
  */
 
-const CACHE = { tmdb: 60 * 60 * 24, ol: 60 * 60 * 24, igdb: 60 * 60 * 12 };
+const CACHE = { tmdb: 60 * 60 * 24, ol: 60 * 60 * 24, igdb: 60 * 60 * 12, wd: 60 * 60 * 24 * 7 };
 
 export default {
   async scheduled(event, env, ctx) { ctx.waitUntil(runSchedule(env).catch(() => {})); },
@@ -64,6 +64,7 @@ export default {
       if (url.pathname.startsWith("/3/")) return await tmdb(url, env, ctx, cors);
       if (url.pathname.startsWith("/ol/")) return await openLibrary(url, env, ctx, cors);
       if (url.pathname.startsWith("/igdb/")) return await igdb(request, url, env, ctx, cors);
+      if (url.pathname === "/wd/series") return await wikidataSeries(url, env, ctx, cors);
       if (url.pathname === "/push/key") return json({ key: env.VAPID_PUBLIC || null }, 200, cors);
       if (url.pathname === "/push/send" && request.method === "POST") return await pushSend(request, env, ctx, cors);
       return json({ error: "unknown route" }, 404, cors);
@@ -104,7 +105,7 @@ async function cached(key, ctx, ttl, make) {
 /* only the lookups the app actually makes. The Origin check above stops browsers on other
    sites, not a script that sets the header itself, so the paths are the second fence:
    whatever else TMDB or IGDB can answer, this worker won't spend its keys asking. */
-const TMDB_OK = /^\/3\/(search\/(movie|tv|person)|discover\/(movie|tv)|find\/[\w-]+|genre\/(movie|tv)\/list|movie\/upcoming|person\/\d+\/combined_credits|(movie|tv)\/\d+(\/(images|recommendations|credits|watch\/providers|season\/\d+))?)$/;
+const TMDB_OK = /^\/3\/(search\/(movie|tv|person)|discover\/(movie|tv)|find\/[\w-]+|genre\/(movie|tv)\/list|movie\/upcoming|person\/\d+\/combined_credits|collection\/\d+|(movie|tv)\/\d+(\/(images|recommendations|credits|watch\/providers|season\/\d+))?)$/;
 const IGDB_OK = new Set(["games", "genres"]);
 async function tmdb(url, env, ctx, cors) {
   if (!env.TMDB_KEY) return json({ error: "no TMDB_KEY set" }, 500, cors);
@@ -122,6 +123,23 @@ const whoWeAre = env => `Rooms/1.0 (${(env.CONTACT || (env.ORIGIN || "").split("
 async function openLibrary(url, env, ctx, cors) {
   const up = "https://openlibrary.org" + url.pathname.replace(/^\/ol/, "") + url.search;
   const res = await cached(up, ctx, CACHE.ol, () => fetch(up, { headers: { "User-Agent": whoWeAre(env) } }));
+  return withCors(res, cors);
+}
+
+/* the series a book belongs to, from Wikidata, by the Open Library work id it keeps
+   (P648). Only the id comes from the app; the query is written here, so this can't be
+   used to ask Wikidata anything else. Asked through here so Wikidata never sees who's
+   reading, and cached for a week because series don't change often. */
+async function wikidataSeries(url, env, ctx, cors) {
+  const ol = (url.searchParams.get("ol") || "").toUpperCase();
+  if (!/^OL\d{1,12}W$/.test(ol)) return json({ error: "needs an Open Library work id" }, 400, cors);
+  const sparql = `SELECT ?series ?seriesLabel ?part ?partLabel ?ord ?date ?ol WHERE {
+    ?book wdt:P648 "${ol}" . ?book wdt:P179 ?series .
+    ?part p:P179 ?st . ?st ps:P179 ?series . OPTIONAL { ?st pq:P1545 ?ord . }
+    OPTIONAL { ?part wdt:P577 ?date . } OPTIONAL { ?part wdt:P648 ?ol . FILTER(STRENDS(?ol, "W")) }
+    SERVICE wikibase:label { bd:serviceParam wikibase:language "en". } } LIMIT 120`;
+  const up = "https://query.wikidata.org/sparql?format=json&query=" + encodeURIComponent(sparql);
+  const res = await cached(up, ctx, CACHE.wd, () => fetch(up, { headers: { "User-Agent": whoWeAre(env), Accept: "application/sparql-results+json" } }));
   return withCors(res, cors);
 }
 

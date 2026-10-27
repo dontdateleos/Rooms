@@ -1681,3 +1681,103 @@ do $$ begin
       references auth.users(id) on delete set null not valid;
   end if;
 end $$;
+
+-- v37: lists you make, like Letterboxd's — "Heist films", "Books for a long flight" —
+-- with an order if you want one, a line about them, and likes. They're seen by your
+-- rooms and the people who follow you (never by somebody you've blocked or who has
+-- blocked you), and a list you mark open can be added to by anyone in your rooms.
+-- Nothing else in this version needs a table: the line you loved and where you stopped
+-- ride in entries.context, the series and creator pages are looked up, and the room's
+-- awards are room_votes like the other games. Safe to re-run.
+create table if not exists theme_lists (
+  id uuid primary key default gen_random_uuid(),
+  owner uuid not null references profiles on delete cascade,
+  title text not null check (char_length(title) between 1 and 60),
+  note text check (char_length(note) <= 300),
+  ranked boolean not null default false,
+  open boolean not null default false,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create index if not exists theme_lists_owner_idx on theme_lists (owner, updated_at desc);
+create table if not exists theme_list_items (
+  list_id uuid not null references theme_lists on delete cascade,
+  work_id text not null references works on delete cascade,
+  added_by uuid references profiles on delete set null,
+  position int,
+  added_at timestamptz not null default now(),
+  primary key (list_id, work_id)
+);
+create index if not exists theme_list_items_list_idx on theme_list_items (list_id, position);
+create table if not exists theme_list_likes (
+  list_id uuid not null references theme_lists on delete cascade,
+  user_id uuid not null references profiles on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (list_id, user_id)
+);
+alter table theme_lists enable row level security;
+alter table theme_list_items enable row level security;
+alter table theme_list_likes enable row level security;
+
+do $$ begin
+  if not exists (select 1 from pg_constraint where conname = 'theme_lists_title_clean') then
+    alter table theme_lists add constraint theme_lists_title_clean check (not bad_name(title)) not valid; end if;
+  if not exists (select 1 from pg_constraint where conname = 'theme_lists_note_clean') then
+    alter table theme_lists add constraint theme_lists_note_clean check (not bad_word(note)) not valid; end if;
+end $$;
+
+-- who can see a list: its owner, and anyone who shares a room with them or follows them,
+-- unless either has blocked the other
+create or replace function can_see_list(l uuid)
+returns boolean language sql security definer stable set search_path = public as $$
+  select exists (select 1 from theme_lists t where t.id = l and (t.owner = auth.uid()
+    or ((shares_room(t.owner) or exists (select 1 from follows f where f.follower = auth.uid() and f.followee = t.owner))
+        and not apart_from(t.owner))))
+$$;
+revoke all on function can_see_list(uuid) from public, anon;
+grant execute on function can_see_list(uuid) to authenticated;
+
+drop policy if exists theme_lists_read on theme_lists;
+create policy theme_lists_read on theme_lists for select to authenticated using (can_see_list(id));
+drop policy if exists theme_lists_mine on theme_lists;
+create policy theme_lists_mine on theme_lists for all to authenticated
+  using (owner = auth.uid()) with check (owner = auth.uid());
+
+drop policy if exists theme_items_read on theme_list_items;
+create policy theme_items_read on theme_list_items for select to authenticated using (can_see_list(list_id));
+drop policy if exists theme_items_add on theme_list_items;
+create policy theme_items_add on theme_list_items for insert to authenticated
+  with check (added_by = auth.uid() and exists (select 1 from theme_lists t where t.id = list_id
+    and (t.owner = auth.uid() or (t.open and shares_room(t.owner) and not apart_from(t.owner)))));
+drop policy if exists theme_items_move on theme_list_items;
+create policy theme_items_move on theme_list_items for update to authenticated
+  using (exists (select 1 from theme_lists t where t.id = list_id and t.owner = auth.uid()))
+  with check (exists (select 1 from theme_lists t where t.id = list_id and t.owner = auth.uid()));
+drop policy if exists theme_items_drop on theme_list_items;
+create policy theme_items_drop on theme_list_items for delete to authenticated
+  using (added_by = auth.uid() or exists (select 1 from theme_lists t where t.id = list_id and t.owner = auth.uid()));
+
+drop policy if exists theme_likes_read on theme_list_likes;
+create policy theme_likes_read on theme_list_likes for select to authenticated using (can_see_list(list_id));
+drop policy if exists theme_likes_mine on theme_list_likes;
+create policy theme_likes_mine on theme_list_likes for all to authenticated
+  using (user_id = auth.uid()) with check (user_id = auth.uid() and can_see_list(list_id));
+
+-- a list moves to the top of everyone's view when something goes on or comes off it,
+-- whoever did the adding (which is why this runs as the table's owner)
+create or replace function theme_list_touch() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  update theme_lists set updated_at = now() where id = coalesce(new.list_id, old.list_id);
+  return null;
+end $$;
+drop trigger if exists theme_list_touch on theme_list_items;
+create trigger theme_list_touch after insert or delete on theme_list_items
+  for each row execute function theme_list_touch();
+
+-- the line you loved is read by the room like the note is, so it's held to the same rule
+do $$ begin
+  if not exists (select 1 from pg_constraint where conname = 'entries_line_clean') then
+    alter table entries add constraint entries_line_clean check (not bad_word(context->>'line')
+      and char_length(coalesce(context->>'line', '')) <= 300) not valid; end if;
+end $$;

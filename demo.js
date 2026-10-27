@@ -49,6 +49,18 @@ const WORKS = [
   ["film:32","film","The Witch","2015","Robert Eggers",92,"#9EF0C9","#4F7E66"],
   ["tv:30","tv","The Haunting of Hill House","2018","Mike Flanagan",10,"#B9A6FF","#5E4E96"],
   ["book:30","book","Mexican Gothic","2020","Silvia Moreno-Garcia",301,"#F5A3C7","#9C5376"],
+  /* the rest of two directors' films, so a director's page has gaps to fill */
+  ["film:40","film","Manhunter","1986","Michael Mann",120,"#8FD3FF","#4F7FA6"],
+  ["film:41","film","The Last of the Mohicans","1992","Michael Mann",112,"#9EF0C9","#4E8A6C"],
+  ["film:42","film","Ali","2001","Michael Mann",157,"#FFB36B","#B97A3E"],
+  ["film:43","film","Miami Vice","2006","Michael Mann",132,"#B9A6FF","#6E5FB0"],
+  ["film:44","film","Public Enemies","2009","Michael Mann",140,"#7A7590","#4A465C"],
+  ["film:45","film","Ferrari","2023","Michael Mann",130,"#FF8E6E","#B8473A"],
+  ["film:46","film","Birth","2004","Jonathan Glazer",100,"#FFE86A","#B9A23A"],
+  ["film:47","film","Under the Skin","2013","Jonathan Glazer",108,"#7A7590","#2E2B3A"],
+  /* a book put down partway, and the one after Dune */
+  ["book:4","book","The Overstory","2018","Richard Powers",502,"#9EF0C9","#4F8A6A"],
+  ["book:5","book","Dune Messiah","1969","Frank Herbert",256,"#FFB36B","#C98C3E"],
 ];
 const COMING = [
   ["film:20","film","The Bride!","2026","Maggie Gyllenhaal",0,"#FF8E6E","#C96A52", soon(38)],
@@ -67,6 +79,9 @@ const GENRES = {
   "film:20":["Horror","Romance"], "game:20":["Adventure","Action"],
   "film:30":["Horror","Science Fiction"], "film:31":["Horror","Drama"], "film:32":["Horror","Mystery"],
   "tv:30":["Drama","Horror","Mystery"], "book:30":["Horror fiction","Gothic"],
+  "film:40":["Crime","Thriller"], "film:41":["Adventure","Drama"], "film:42":["Drama"], "film:43":["Crime","Action"],
+  "film:44":["Crime","Drama"], "film:45":["Drama"], "film:46":["Drama","Mystery"], "film:47":["Science Fiction","Horror"],
+  "book:4":["Literary fiction"], "book:5":["Science fiction"],
 };
 /* what the pick wheel shows under a spun title — the shelf's things, since those are
    what the wheel lands on. Written for the demo, not lifted from anywhere. */
@@ -98,12 +113,17 @@ const CAST = {
   "tv:3":"Gary Oldman, Jack Lowden, Kristin Scott Thomas, Saskia Reeves",
   "tv:30":"Carla Gugino, Michiel Huisman, Elizabeth Reaser, Victoria Pedretti",
 };
+/* Dune's six, the way the series lookup hands them back: the first two are in the demo,
+   the rest are only names */
+const DUNE = { name:"Dune", parts:[["Dune","1965","book:1"],["Dune Messiah","1969","book:5"],["Children of Dune","1976"],
+  ["God Emperor of Dune","1981"],["Heretics of Dune","1984"],["Chapterhouse: Dune","1985"]].map(([title, year, id], i) => ({ title, year, n:i + 1, ...(id ? { id } : {}) })) };
 const works = {};
 for (const [id,kind,title,year,creator,length,a,b,release] of [...WORKS, ...COMING]) {
   works[id] = { id, kind, title, year, creator, length, cover:poster(title, a, b),
     meta:{ genres:GENRES[id] || [], ...(ABOUT[id] ? { overview:ABOUT[id] } : {}) },
     credits:{ director:creator, ...(CAST[id] ? { cast:CAST[id] } : {}) }, ...(release ? { release } : {}) };
 }
+works["book:1"].meta.series = DUNE; works["book:5"].meta.series = DUNE;
 
 const PEOPLE = [
   { id:"u-mo",   handle:"mo",   bio:"Watches everything twice.", goals:{ "2026":{ film:12, tv:6 } } },
@@ -170,12 +190,22 @@ const LOG = [
   ["u-cass","film:32",9,15,"",["the look"]],
   ["u-cass","film:30",8,10,"",[]],
   ["u-ali","film:31",7,3,"",[]],
+  /* put down partway: a book you gave up on, and a film somebody walked out of */
+  ["me","book:4",5,25,"Beautiful, and I was so tired.",[]],
 ];
+/* where they stopped, and the lines people kept — both ride in an entry's context */
+const CONTEXT = {
+  "me|book:4":{ done:"Didn't finish", stopped:"p. 140" },
+  "u-cass|film:6":{ done:"Walked out", stopped:"50 minutes in" },
+  "me|film:1":{ line:"Don't let yourself get attached to anything you are not willing to walk out on in thirty seconds flat." },
+  "u-ali|book:2":{ line:"History has failed us, but no matter." },
+  "u-ali|film:9":{ line:"I'm not the guy you kill. I'm the guy you buy." },
+};
 
 const entries = LOG.map(([u,w,score,d,note,loved], i) => ({
   id:"e" + i, user_id:u, work_id:w, score, rated_on:day(d),
   note:note || null, loved:loved.length ? loved : null,
-  breakdown:null, context:null, room_only:false, created_at:ago(d),
+  breakdown:null, context:CONTEXT[u + "|" + w] || null, room_only:false, created_at:ago(d),
 }));
 
 /* The Wire, season one, so a show's page has episodes to open — and two of them have
@@ -197,6 +227,8 @@ const ymd = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")
 const monday = back => { const d = new Date(); d.setHours(12, 0, 0, 0);
   d.setDate(d.getDate() - ((d.getDay() + 6) % 7) - back * 7); return ymd(d); };
 const WK = monday(0), LASTWK = monday(1), MONTH = ymd(new Date()).slice(0, 7);
+/* in January the awards still being shown are last year's */
+const AWARD_YEAR = new Date().getMonth() === 0 ? new Date().getFullYear() - 1 : new Date().getFullYear();
 const SEEDS = ["film:1","film:7","film:6","film:3","film:5","film:8","film:2","film:9"];
 const answers = [
   ["u-mo",   WK, "film:8", "Watch it, then call your dad."],
@@ -220,6 +252,8 @@ const roomVotes = [
   vote(`bracket:${MONTH}:2:1`, "u-mo", "film:6", 1),
   /* mo has put Saturday to the room; two of you have voted */
   vote("night:n1", "u-mo", "film:4", 1), vote("night:n1", "u-cass", "film:2", 1),
+  /* the room's awards (they open in December): two of you have already voted for film */
+  vote(`awards:${AWARD_YEAR}:film`, "u-mo", "film:1", 1), vote(`awards:${AWARD_YEAR}:film`, "u-cass", "film:7", 1),
   /* and two of them are swiping for tonight: one match already, Slow Horses still open */
   ...[["u-mo","tv:3","y"],["u-mo","film:8","y"],["u-mo","film:5","y"],["u-cass","film:8","y"],["u-cass","tv:3","n"]].map(([v, w, c]) => vote(`swipe:${day(0)}:${w}`, v, c, 0.05)),
 ];
@@ -289,6 +323,24 @@ export function demoSeed() {
     room_ask_answers:[{ ask_id:"a1", user_id:"u-mo", work_id:"film:5", note:"89 minutes and Ben Kingsley never blinks.", created_at:ago(0.8) }],
     room_nights:[{ id:"n1", room_id:"r1", at:soon(2), options:["film:2","film:4","film:9"], created_by:"u-mo", created_at:ago(1) }],
     room_brackets:[{ room_id:"r1", month:MONTH, kind:"film", seeds:SEEDS, created_by:"u-mo", created_at:ago(20) }],
+
+    /* lists people made: one open to the room, one ranked, one of yours */
+    theme_lists:[
+      { id:"tl1", owner:"u-mo", title:"Two hours or less, no notes", note:"For a weeknight. Add yours.", ranked:false, open:true, created_at:ago(40), updated_at:ago(2) },
+      { id:"tl2", owner:"u-cass", title:"Cities at night", note:"Sodium light and somebody driving.", ranked:true, open:false, created_at:ago(30), updated_at:ago(6) },
+      { id:"tl3", owner:"me", title:"The long ones worth it", note:"", ranked:false, open:false, created_at:ago(20), updated_at:ago(9) },
+    ],
+    theme_list_items:[
+      ...["film:5","film:7","film:8","film:32","film:2"].map((work_id, i) => ({ list_id:"tl1", work_id, added_by:i === 4 ? "u-cass" : "u-mo", position:i, added_at:ago(40 - i) })),
+      ...["film:3","film:1","film:43","film:40","tv:3"].map((work_id, i) => ({ list_id:"tl2", work_id, added_by:"u-cass", position:i, added_at:ago(30 - i) })),
+      ...["film:1","tv:1","book:2","film:4"].map((work_id, i) => ({ list_id:"tl3", work_id, added_by:"me", position:i, added_at:ago(20 - i) })),
+    ],
+    theme_list_likes:[{ list_id:"tl1", user_id:"u-cass" }, { list_id:"tl1", user_id:"u-rue" }, { list_id:"tl2", user_id:"me" }, { list_id:"tl3", user_id:"u-mo" }],
+    /* where a few of Up next's things stream, for the services filter; Thief has just
+       arrived on Netflix (it wasn't anywhere the last time the app looked) */
+    services:["netflix","stan"],
+    providers:{ "film:2":["Netflix"], "film:4":["Stan","Prime Video"], "tv:2":["Max"], "film:9":["Netflix"], "film:1":["Prime Video"] },
+    providersBefore:{ "film:2":[], "film:4":["Stan","Prime Video"], "tv:2":["Max"] },
 
     follows:[{ follower:"me", followee:"u-rue" }, { follower:"me", followee:"u-ali" },
       { follower:"u-mo", followee:"me" }, { follower:"u-cass", followee:"me" }],
