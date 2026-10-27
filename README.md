@@ -7,8 +7,14 @@ progressive web app: no build step, no framework, no bundler.
 
 ## Run it
 
-Open `index.html`. That's it. It runs in **local mode** — everything saves to the
-device, nothing leaves it — until you add a backend.
+Serve the folder over http — opening `index.html` straight from disk is blocked by the
+browser — for example `python3 -m http.server 8934`, then:
+
+- `http://localhost:8934/index.html?demo` — **demo mode**: invented people, nothing saved.
+- `http://localhost:8934/index.html` — the real app, signed in against the Supabase project
+  set in `SUPABASE_URL` / `SUPABASE_ANON_KEY` near the top of the script.
+
+`tests/smoke.js` walks the demo in dark and light and fails on any error.
 
 Hosted on GitHub Pages: push this repo, then Settings → Pages → deploy from `main`, root.
 
@@ -87,8 +93,8 @@ The service-role key must never go near this repo.
 |---|---|
 | `index.html` | the whole app — markup, styles, logic, the card renderer, the avatar generator |
 | `site.html` | the marketing page |
-| `schema.sql` | Postgres tables, policies and RPCs, v1 through v35 — one file, run start to finish |
-| `worker.js` | Cloudflare Worker: TMDB proxy, Open Library proxy, IGDB OAuth |
+| `schema.sql` | Postgres tables, policies and RPCs, v1 through v36 — one file, run start to finish |
+| `worker.js` | Cloudflare Worker: TMDB, Open Library and IGDB proxies (only the lookups the app makes), invite link previews (`/i/CODE`), web push sending, and the hourly cron for scheduled reminders. Its `SUPABASE_URL` is set in the file — change it if you point the app at another project |
 | `manifest.webmanifest`, `sw.js`, `icons/` | what makes it installable |
 
 ## Layout
@@ -148,7 +154,13 @@ games from IGDB. None of those are covered by the above.
 
 There is no `migrations/` folder — `schema.sql` is the only file to run, cumulative and
 idempotent, so re-running the whole thing against a database that already has some of
-it applied is always safe.
+it applied is safe. (Until v36 it wasn't: an older `peek_room` definition clashed with
+v33's and stopped every re-run there. The deploy workflow now runs it in one transaction,
+so a failure changes nothing.)
+
+**v36.** Shared titles keep their names: anyone can add a work or fill in what's missing,
+but a title can't be renamed once set, and covers must come from TMDB, IGDB or Open
+Library. Reactions and replies can only be written on entries you could read.
 
 **Up to three rooms.** People can create or join up to three rooms in total. Existing
 memberships are retained; people already in three or more must leave one before adding

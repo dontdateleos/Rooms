@@ -1,4 +1,4 @@
-const SHELL="rooms-shell-v2", ASSETS=["./","./index.html","./manifest.webmanifest","./vendor/type.css","./vendor/supabase.js"];
+const SHELL="rooms-shell-v3", ASSETS=["./","./index.html","./manifest.webmanifest","./vendor/type.css","./vendor/supabase.js"];
 self.addEventListener("install",e=>e.waitUntil(caches.open(SHELL).then(c=>c.addAll(ASSETS)).then(()=>self.skipWaiting())));
 self.addEventListener("activate",e=>e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==SHELL).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
 /* network first, cache as the fallback for when there is no network. Opening the app asks
@@ -18,6 +18,10 @@ self.addEventListener("fetch",e=>{const u=new URL(e.request.url); if(u.origin!==
      called now, while the event is still live, not once the network gets round to it */
   e.waitUntil(net.then(()=>put).catch(()=>{}));
   const old=()=>caches.match(e.request,{ignoreSearch:true});
+  /* the bundled library, fonts and icons don't change between visits, and waiting on the
+     network for them on a weak connection left a blank page: the copy here answers at once
+     and the network quietly refreshes it for next time */
+  if(!nav&&/\/(vendor|icons)\//.test(u.pathname)){e.respondWith(old().then(r=>r||net)); return;}
   if(!nav){e.respondWith(net.catch(old)); return;}
   e.respondWith(new Promise(done=>{let settled=false; const give=r=>{if(!settled&&r){settled=true; done(r);}};
     const t=setTimeout(()=>old().then(give),WAIT);

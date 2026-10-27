@@ -1,9 +1,12 @@
 {
+  "id": "./",
   "name": "Rooms",
   "short_name": "Rooms",
   "description": "What your friends are watching, reading and playing.",
   "start_url": ".",
+  "scope": "./",
   "display": "standalone",
+  "orientation": "portrait",
   "background_color": "#16131C",
   "theme_color": "#16131C",
   "icons": [

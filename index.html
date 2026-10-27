@@ -45,7 +45,7 @@
      --ink, which is why a dark theme gets both right by swapping two values.
      --veil is the ground behind the blurred header and nav. */
   --onAccent:#151320;--veil:rgba(255,247,236,.96);
-  --apricot:#FFB36B;--pink:#F5A3C7;--butter:#FFE86A;--mint:#9EF0C9;--sky:#8FD3FF;--lilac:#B9A6FF;--good:#1E9E6A;--bad:#E0407F;
+  --apricot:#FFB36B;--pink:#F5A3C7;--butter:#FFE86A;--mint:#9EF0C9;--sky:#8FD3FF;--lilac:#B9A6FF;--good:#17805A;--bad:#C42A66;
   --film:var(--apricot);--tv:var(--pink);--book:var(--butter);--game:var(--mint);
   --head:Outfit,sans-serif;--body:Inter,system-ui,sans-serif}
 /* the ground warms and dims across the day, so seven in the morning and ten at
@@ -652,7 +652,7 @@ header:has(#meBtn:not([hidden])) .logoword{display:none}
 /* slips (feed) — a slight ambient drift, on the standalone translate property so it
    never fights the :active press-scale (that's still plain `transform`) */
 .slip{background:var(--card);border-radius:22px;padding:14px 16px;margin-top:12px;box-shadow:0 14px 34px -26px rgba(21,19,32,.3);
-  animation:slipFloat 6.5s ease-in-out infinite}
+  animation:slipFloat 6.5s ease-in-out 3}
 @keyframes slipFloat{0%,100%{translate:0 0}50%{translate:0 -4px}}
 .slip .who{display:flex;align-items:center;gap:9px;font-size:12.5px;font-weight:700;color:var(--mute)}
 .slip .who b{color:var(--ink)}
@@ -1349,7 +1349,7 @@ svg .comet{transform-box:fill-box;transform-origin:center;animation:cometTurn 4.
 .mk-founder b{color:var(--bad)}
 .mk-argument,.mk-stillhere{border-color:var(--ink)}
 .here .dot{width:7px;height:7px;border-radius:50%;background:var(--good);flex:none;
-  animation:hereBeat 2.6s ease-in-out infinite}
+  animation:hereBeat 2.6s ease-in-out 8}
 @keyframes hereBeat{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(.82)}}
 @keyframes faceIn{0%{transform:scale(0) translateY(6px);opacity:0}62%{transform:scale(1.18)}100%{transform:none;opacity:1}}
 .here .face.came{animation:faceIn .52s cubic-bezier(.2,1.4,.4,1) both}
@@ -1927,7 +1927,7 @@ nav button .dot{top:0;right:calc(50% - 24px)}
    or two; the ghost and the empty-state rooms bob. Nothing moves enough to read as a
    loading state, and none of it runs for anyone who has asked for less motion. */
 @media (prefers-reduced-motion:no-preference){
-  .av:not(#meAv) svg[data-shape]{transform-origin:50% 82%;animation-duration:var(--dur,6s)!important;animation-iteration-count:infinite!important;
+  .av:not(#meAv) svg[data-shape]{transform-origin:50% 82%;animation-duration:var(--dur,6s)!important;animation-iteration-count:4!important;
     animation-timing-function:ease-in-out!important;animation-delay:calc(1.2s + var(--id,0s))!important}
   .av:not(#meAv) svg[data-shape="ball"]{animation-name:liveBreathe!important;--dur:5.4s}
   .av:not(#meAv) svg[data-shape="box"]{animation-name:liveNod!important;--dur:6.6s}
@@ -1943,12 +1943,12 @@ nav button .dot{top:0;right:calc(50% - 24px)}
     animation-delay:calc(2s + var(--bd,0s)), calc(5s + var(--id,0s))}
   .logo .mark .re.lit{animation:avBlink 9s ease-in-out infinite, liveGlance 17s ease-in-out infinite;animation-delay:3s, 6s}
   .logo .mark .re.lit:nth-of-type(2){animation-delay:4.2s, 8s}
-  .season-ghost svg,.season-object svg{animation:liveBob 4.8s ease-in-out infinite!important}
-  .emptydoor.hope{animation:liveBob 5.2s ease-in-out infinite!important}
-  .emptydoor .zz{animation:doorZ 3.2s ease-in-out infinite!important}
+  .season-ghost svg,.season-object svg{animation:liveBob 4.8s ease-in-out 4!important}
+  .emptydoor.hope{animation:liveBob 5.2s ease-in-out 4!important}
+  .emptydoor .zz{animation:doorZ 3.2s ease-in-out 6!important}
   .emptydoor .zz.z2{animation-delay:1.3s!important}
   /* posters in the feeds drift up a couple of pixels and back, each on its own beat */
-  .slip .co,.logline .co,.moment-row .co,.tn-main .co,.sn-late .po,.ll-w .co,.row[data-w] .co{animation:liveFloat 7.2s ease-in-out infinite}
+  .slip .co,.logline .co,.moment-row .co,.tn-main .co,.sn-late .po,.ll-w .co,.row[data-w] .co{animation:liveFloat 7.2s ease-in-out 3}
   .slip:nth-child(3n+1) .co,.moment-row:nth-child(3n+1) .co,.sn-late:nth-child(3n+1) .po,.row[data-w]:nth-child(3n+1) .co{animation-delay:-2.4s;animation-duration:8.1s}
   .slip:nth-child(3n+2) .co,.moment-row:nth-child(3n+2) .co,.sn-late:nth-child(3n+2) .po,.row[data-w]:nth-child(3n+2) .co{animation-delay:-4.9s;animation-duration:6.6s}
   /* things you can tap give a little under your finger, and lift a touch under a mouse */
@@ -2849,7 +2849,7 @@ const svcKey = name => { const n = lc(name || "").replace(/[^a-z0-9]/g, ""); if 
   return SERVICES.find(([k]) => k === "prime" ? /amazonprime|primevideo/.test(n) : k === "max" ? /^(hbo)?max/.test(n) : k === "now" ? /^now(tv)?(cinema|entertainment)?$/.test(n) : n.includes(k))?.[0] || null; };
 const onMine = got => (got?.free || []).filter(p => (P.services || []).includes(svcKey(p.name)));
 async function watchOn(w) {
-  if (w.kind !== "film" && w.kind !== "tv") return null;
+  if ((w.kind !== "film" && w.kind !== "tv") || DEMO) return null;
   const region = REGION(), key = w.id + "|" + region;
   if (watchCache[key]) return watchCache[key];
   const path = (w.kind === "film" ? "movie/" : "tv/") + w.id.split(":")[1] + "/watch/providers";
@@ -3218,7 +3218,11 @@ if (!sb) {
   else if (LOCAL) sb = makeLocalSb(window.__seed || null);
   /* still loaded on demand, so a device-only log never fetches 200KB it has no use
      for — but from here now rather than from a CDN. See vendor/supabase.js. */
-  else { const { createClient } = await import("./vendor/supabase.js"); sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY); } }
+  else { try { const { createClient } = await import("./vendor/supabase.js"); sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY); }
+    /* a stalled connection used to leave a blank page with the name on it and nothing else */
+    catch (e) { document.body.innerHTML = `<div style="min-height:100vh;display:grid;place-items:center;padding:24px;text-align:center;font-family:system-ui,sans-serif;background:#16131C;color:#FFF7EC">
+      <div><p style="font-size:20px;font-weight:800;margin:0 0 8px">Rooms couldn't open</p><p style="opacity:.75;margin:0 0 18px">Check your connection, then try again.</p>
+      <button onclick="location.reload()" style="font:inherit;font-weight:700;padding:12px 22px;border-radius:999px;border:0;background:#FFF7EC;color:#16131C">Try again</button></div></div>`; throw e; } } }
 const q = async p => { const { data, error } = await p; if (error) throw error; return data; };
 
 /* ---------- when the app is ahead of the database ----------
@@ -3489,12 +3493,17 @@ async function saveEntry(row, editId) {
   try { if (editId) await q(sb.from("entries").update(row).eq("id", editId)); else await q(sb.from("entries").insert(row)); return true; }
   catch (e) { if (navigator.onLine && !/fetch|network|failed/i.test(String(e.message))) throw e;
     const a = queued(); a.push({ row, editId }); setQueue(a); showOffline(`Saved here · ${a.length} waiting to sync`); return false; } }
-async function flushQueue() { const a = queued(); if (!a.length) return; showOffline(`Syncing ${a.length}…`); const left = [];
-  for (const it of a) { try { if (it.editId) await q(sb.from("entries").update(it.row).eq("id", it.editId)); else await q(sb.from("entries").insert(it.row)); } catch { left.push(it); } }
-  setQueue(left);
+let flushing = false;
+async function flushQueue() { const a = queued(); if (!a.length || flushing || navigator.onLine === false || !me) return; flushing = true; showOffline(`Syncing ${a.length}…`); const left = [];
+  /* a network failure waits for next time; the database saying no (a 4xx, a check) never
+     changes on retry, so that one is dropped rather than tried for ever */
+  for (const it of a) { try { if (it.editId) await q(sb.from("entries").update(it.row).eq("id", it.editId)); else await q(sb.from("entries").insert(it.row)); }
+    catch (e) { if (/fetch|network|failed|timeout/i.test(String(e?.message || "")) || !navigator.onLine) left.push(it); else console.warn("dropped a queued log", e); } }
+  flushing = false; setQueue(left);
   if (left.length) showOffline(`${left.length} still waiting`);
   else { showOffline("Synced", true); setTimeout(() => showOffline(null), 1800); await loadMine(); refresh(); } }
 addEventListener("online", flushQueue);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) flushQueue().catch(() => {}); });
 
 /* ============ state ============ */
 let me = null; const works = {}; let lists = [], rooms = [], clubs = [], myEntries = [], myParts = [], follows = [], loggedIds = new Set();
@@ -4115,6 +4124,16 @@ function tiltOff() { if (tiltH) removeEventListener("deviceorientation", tiltH);
 if (P.tilt) tiltOn(false).then(ok => { if (ok || typeof DeviceOrientationEvent?.requestPermission !== "function") return;
   /* iPhones forget the permission between launches and only ask from a tap: the first one asks again */
   addEventListener("pointerup", () => tiltOn(true), { once:true }); });
+/* plenty of rows and cards open something on a tap without being buttons. They get a role
+   and a place in the tab order as they arrive, and Enter or Space presses them. */
+const PRESSABLE = "div[data-prof],div[data-w],div[data-cw],div[data-work],div[data-entry],div[data-up],div[data-fe],span[data-prof]";
+function pressables(root) { if (!root.querySelectorAll) return;
+  for (const el of [...(root.matches?.(PRESSABLE) ? [root] : []), ...root.querySelectorAll(PRESSABLE)]) {
+    if (el.hasAttribute("role")) continue; el.setAttribute("role", "button"); el.tabIndex = 0; } }
+new MutationObserver(ms => { for (const m of ms) for (const n of m.addedNodes) if (n.nodeType === 1) pressables(n); })
+  .observe(document.body, { childList:true, subtree:true });
+document.addEventListener("keydown", e => { if (e.key !== "Enter" && e.key !== " ") return;
+  const el = e.target; if (!el?.matches?.(PRESSABLE) || el.getAttribute("role") !== "button") return; e.preventDefault(); el.click(); });
 /* a face you touch squishes and blinks, like something that noticed */
 document.addEventListener("pointerdown", e => { if (REDUCED) return;
   const av = e.target.closest?.(".av"); if (!av || av.id === "rateBuddy") return;
@@ -5654,7 +5673,7 @@ async function enter() {
   await despite("your clubs", loadClubs()); await despite("handovers", loadHand());
   loadSettings().catch(() => {});
   await despite("your invite", useInvite());
-  takeRoomLink(); pushKeepUp(); takeShare(); paintMeAv();
+  takeRoomLink(); pushKeepUp(); takeShare(); paintMeAv(); flushQueue().catch(() => {});
   booting = true;
   /* a "season ends in three nights" notification opens on the season */
   const toSeasons = /^#seasons\b/.test(location.hash); if (toSeasons) { history.replaceState(null, "", location.pathname + location.search); P.clubTab = "season"; }
@@ -5959,7 +5978,7 @@ function roomMomentsHTML(moments, fresh = new Set()) { if (!moments.length) retu
     const row = (title, small) => `<div class="row moment-row${fresh.has(key) ? " fresh" : ""}" data-cw="${esc(m.workId)}">${cover(w)}<div class="t"><b>${title}</b><small>${small}</small></div></div>`;
     if (m.kind === "handover") return row(`You logged ${esc(w.title || "a recommendation")}`,
       `from ${esc(m.hand.sender_p?.handle || "someone")}`);
-    const names = m.people.map(e => e.user_id === me.id ? "you" : (e.profiles?.handle || "someone"));
+    const names = m.people.map(e => e.user_id === me.id ? "you" : esc(e.profiles?.handle || "someone"));
     return row(`${esc(w.title || "A title")} crossed paths`,
       `${names.length === 2 ? names.join(" and ") : `${names.slice(0,2).join(", ")} and ${names.length-2} more`} logged it this week`);
   }).join("")}</div>`;
@@ -7133,6 +7152,9 @@ const saveLogos = () => { if (DEMO) return; clearTimeout(logoSaveT);
   logoSaveT = setTimeout(() => { try { localStorage.setItem(LOGO_KEY, JSON.stringify(logoSaved)); } catch {} }, 500); };
 async function ensureLogo(w) {
   if (!(w.kind === "film" || w.kind === "tv")) return null;
+  /* the demo's ids are made up, so it doesn't ask — and says so in the cache, or the tray
+     that waits on logos would redraw itself for ever */
+  if (DEMO) return (logoCache[w.id] = null);
   if (w.id in logoCache) return logoCache[w.id];
   if (logoLoading.has(w.id)) return null;
   logoLoading.add(w.id);
@@ -7412,7 +7434,7 @@ function renderShelf() {
   const places = [place("", "Up next", "mint", "shelf"), ...(kindsHere.length > 1 ? kindsHere.map(k => place(k, K(k).plural, KIND_TONE[k], k)) : [])];
   const scope = P.kinds.length === 4 ? "everything" : P.kinds.map(k => K(k).plural.toLowerCase()).join(", ");
   $("#shelfBody").innerHTML = `${pagerHTML(places, P.shelfFilter || "", { id:"shelfPager", mode:"chips", allLabel:"All" })}<p class="sub shelfsub">${all.length ? `${left.length} to go${done ? ` · ${done} done` : ""}${soonCount ? ` · ${soonCount} coming` : ""}` : "Everything you meant to get to."}</p>
-    <div class="shelfsearch"><input id="search" type="search" placeholder="Search ${esc(scope)}" autocomplete="off">${all.length ? `<button class="chip filt ${P.when ? "on" : ""}" id="shelfFilterBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"/></svg>${
+    <div class="shelfsearch"><input id="search" type="search" placeholder="Search ${esc(scope)}" aria-label="Search ${esc(scope)}" autocomplete="off">${all.length ? `<button class="chip filt ${P.when ? "on" : ""}" id="shelfFilterBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"/></svg>${
         P.when ? ({ out:"Out now", now:"On it", soon:"Coming" }[P.when] || "Filter") : "Filter"}</button>` : ""}</div>
     <div class="msg" id="msg"></div><div id="results"></div>
     ${all.length ? `${pickBar}
@@ -9592,7 +9614,7 @@ async function paintGames(R, es) {
 }
 const fourHTML = items => `<div class="four">${[0,1,2,3].map(i => { const w = works[items[i]]; return w ? `<div class="po" data-work="${esc(w.id)}">${cover(w,"")}<b>${esc(w.title)}</b></div>` : `<div class="po" style="opacity:.4"></div>`; }).join("")}</div>`;
 let recs = null;
-async function loadRecs() { if (recs) return recs; const onShelf = new Set(lists.flatMap(l => l.items)); const seeds = myEntries.filter(e => e.score >= 8).slice(0, 6); const pool = {}; let reached = false;
+async function loadRecs() { if (recs) return recs; if (DEMO) return (recs = []); const onShelf = new Set(lists.flatMap(l => l.items)); const seeds = myEntries.filter(e => e.score >= 8).slice(0, 6); const pool = {}; let reached = false;
   for (const e of seeds) { const w = works[e.work_id]; if (!w) continue; const raw = e.work_id.split(":")[1]; try { let out = [];
     if (w.kind === "film" || w.kind === "tv") { const d = await tmdb(`${w.kind === "film" ? "movie" : "tv"}/${raw}/recommendations`); out = (d.results||[]).slice(0,8).map(r => ({ id:`${w.kind}:${r.id}`, kind:w.kind, title:r.title||r.name, year:String(r.release_date||r.first_air_date||"").slice(0,4), cover:TMDB_IMG(r.poster_path) })); }
     else if (w.kind === "book" && w.creator) { const d = await ol("/search.json", { q:`author:"${w.creator}"`, limit:"6", fields:"key,title,author_name,first_publish_year,cover_i" }); out = (d.docs||[]).map(b => ({ id:"book:"+String(b.key).replace("/works/",""), kind:"book", title:b.title, year:String(b.first_publish_year||""), creator:(b.author_name||[])[0]||"", cover:b.cover_i?`https://covers.openlibrary.org/b/id/${b.cover_i}-M.jpg`:"" })); }

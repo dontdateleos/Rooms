@@ -68,7 +68,8 @@ export default {
       if (url.pathname === "/push/send" && request.method === "POST") return await pushSend(request, env, ctx, cors);
       return json({ error: "unknown route" }, 404, cors);
     } catch (e) {
-      return json({ error: String(e && e.message || e) }, 502, cors);
+      console.error(e);
+      return json({ error: "the source didn't answer" }, 502, cors);
     }
   }
 };
@@ -100,8 +101,14 @@ async function cached(key, ctx, ttl, make) {
   return out;
 }
 
+/* only the lookups the app actually makes. The Origin check above stops browsers on other
+   sites, not a script that sets the header itself, so the paths are the second fence:
+   whatever else TMDB or IGDB can answer, this worker won't spend its keys asking. */
+const TMDB_OK = /^\/3\/(search\/(movie|tv|person)|discover\/(movie|tv)|find\/[\w-]+|genre\/(movie|tv)\/list|movie\/upcoming|person\/\d+\/combined_credits|(movie|tv)\/\d+(\/(images|recommendations|credits|watch\/providers|season\/\d+))?)$/;
+const IGDB_OK = new Set(["games", "genres"]);
 async function tmdb(url, env, ctx, cors) {
   if (!env.TMDB_KEY) return json({ error: "no TMDB_KEY set" }, 500, cors);
+  if (!TMDB_OK.test(url.pathname)) return json({ error: "not a lookup this app makes" }, 404, cors);
   const up = new URL("https://api.themoviedb.org" + url.pathname + url.search);
   up.searchParams.set("api_key", env.TMDB_KEY);
   const res = await cached(up.toString(), ctx, CACHE.tmdb, () => fetch(up.toString()));
@@ -147,7 +154,9 @@ async function igdb(request, url, env, ctx, cors) {
     return json({ error: "no IGDB_CLIENT_ID / IGDB_CLIENT_SECRET set" }, 500, cors);
   if (request.method !== "POST") return json({ error: "igdb wants POST with an apicalypse body" }, 405, cors);
   const endpoint = url.pathname.replace(/^\/igdb\//, "");
+  if (!IGDB_OK.has(endpoint)) return json({ error: "not a lookup this app makes" }, 404, cors);
   const body = await request.text();
+  if (body.length > 2000) return json({ error: "too long" }, 413, cors);
   /* IGDB allows four requests a second across everybody using the app, so the same question
      is answered from memory, and a "too many" gets one polite retry rather than an error */
   const key = "https://igdb.cache/" + endpoint + "?q=" + encodeURIComponent(body);

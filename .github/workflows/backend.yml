@@ -34,7 +34,7 @@ jobs:
           if [ -z "$DB" ]; then echo "::notice::SUPABASE_DB_URL isn't set, so the database was left alone."; exit 0; fi
           command -v psql >/dev/null || { sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client; }
           # notices ("already exists, skipping") are expected on every run after the first
-          psql "$DB" -v ON_ERROR_STOP=1 -q -f schema.sql >/dev/null 2>/tmp/err || { grep -v NOTICE /tmp/err; exit 1; }
+          psql "$DB" -v ON_ERROR_STOP=1 --single-transaction -q -f schema.sql >/dev/null 2>/tmp/err || { grep -v NOTICE /tmp/err; exit 1; }
           echo "::notice::schema.sql is up to date in Supabase."
   worker:
     runs-on: ubuntu-latest
@@ -56,7 +56,9 @@ jobs:
           [ -z "$CLOUDFLARE_ACCOUNT_ID" ] && unset CLOUDFLARE_ACCOUNT_ID
           W="npx --yes wrangler@4"
           $W deploy
-          have=$($W secret list --format json 2>/dev/null || echo "[]")
+          # if the list can't be read, stop: guessing "none" would make new notification keys and
+          # quietly switch off every phone that already said yes
+          have=$($W secret list --format json) || { echo "::error::Couldn't read the worker's secrets, so nothing was changed."; exit 1; }
           has() { echo "$have" | node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>{try{process.exit(JSON.parse(d).some(s=>s.name===process.argv[1])?0:1)}catch{process.exit(1)}})" "$1"; }
           put() { printf '%s' "$2" | $W secret put "$1" >/dev/null && echo "set $1"; }
           # the notification keys are made once and then kept: a new pair would quietly

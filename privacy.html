@@ -55,7 +55,7 @@ a{color:inherit;text-decoration-color:var(--apricot);text-underline-offset:3px;t
 <p class="stand">The short version: what you write down is yours, it is shown to the people
 you chose and to nobody else, nothing about you is measured or sold, and you can take all of
 it out or delete all of it from inside the app.</p>
-<p class="when">Last updated 20 September 2026</p>
+<p class="when">Last updated 27 October 2026</p>
 
 <p>Rooms is a place to write down the films, television, books and games you have finished,
 and to see what a few friends made of the same things. This page says exactly what it keeps,
@@ -108,10 +108,15 @@ you are, and it is not shown in any feed.</li>
 <li><b>Handovers</b>: what you passed to somebody, what they passed to you, any line that came
 with it, and whether it was taken up.</li>
 <li><b>Who you follow</b>, and the likes you gave to other people's entries.</li>
-<li><b>Room invites, a pinned entry, room activity, and per-room notification settings.</b> The
-database has room for these — an invite's status, a member marking an entry as the room's own,
-a log of what happened in a room, and how you'd want to be notified about it — but no screen in
-the app writes to any of them yet. If that changes, this page changes with it.</li>
+<li><b>How each room notifies you</b> — everything, just things for you, or nothing — set from
+the room's menu.</li>
+<li><b>Notifications, if you switch them on.</b> Your phone gives Rooms an address to send to
+and the keys to encrypt with; those are kept so a friend's like or a room's reminder can reach
+you. The message itself (who did what, and the title) passes through our notification worker on
+Cloudflare and your phone maker's push service (Apple or Google) on its way to you. Switching
+notifications off, or closing your account, deletes the address.</li>
+<li><b>Room invites, a pinned entry and room activity.</b> The database has room for these, but
+no screen in the app writes to them yet. If that changes, this page changes with it.</li>
 <li><b>Rooms and clubs</b> you are in, and how you voted in a club.</li>
 <li><b>When each of those happened.</b> Times are how the feeds are ordered and how "new since
 you last looked" is worked out.</li>
@@ -134,8 +139,12 @@ browser and no server ever sees it.</li>
 <div class="card">
 <ul>
 <li><b>No analytics.</b> There is no analytics service in the app, no tag manager, no session
-recorder, no crash reporter, no advertising kit, no pixel and no beacon. Nobody is counting
-your taps, because nothing is there to count them.</li>
+recorder, no advertising kit, no pixel and no beacon. Nobody is counting your taps, because
+nothing is there to count them.</li>
+<li><b>One exception: when the app breaks.</b> If something crashes on your phone, Rooms sends us
+the error message, where in the app it happened, the app version, your browser and phone type,
+and your account id, so we can fix it. Nothing you wrote is included. Closing your account
+removes your id from those reports.</li>
 <li><b>No tracking across other apps or sites</b>, and nothing is shared with a data broker.
 There is no advertising in Rooms, so there is no profile to build for it.</li>
 <li><b>Nothing is sold.</b> Not now, and if that ever changes it is a different app with a
@@ -178,8 +187,9 @@ they do not yet know can be answered the same day.</p>
 
 <h2>An invite link</h2>
 <p>Somebody sent a link to a room can see, before making an account, what they were sent to:
-the room's name, who is in it, and how many things those people have logged between them.
-<b>Not a word anybody wrote.</b> The code is fair proof that a room is real; it is not a
+the room's name, the handles of who is in it, how many things those people have logged between
+them, and the posters of the last few public things logged there. <b>Not a word anybody
+wrote.</b> The code is fair proof that a room is real; it is not a
 licence to publish what is inside it to anyone who is handed six characters.</p>
 
 <h2>Who else can see what you wrote</h2>
@@ -236,8 +246,7 @@ true and you should know it.</p>
 
 <p>Nothing else is loaded from anywhere else. The type and the sign-in library are served from
 the app's own address rather than from a content delivery network, on purpose, so that opening
-Rooms does not announce you to a company you have never heard of. There is a test in the
-repository that fails if anybody adds one back.</p>
+Rooms does not announce you to a company you have never heard of.</p>
 
 <h2>If you are in the UK or the EU</h2>
 <p>Your log is held in Australia, which the European Commission has not declared to have

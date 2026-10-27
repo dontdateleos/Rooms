@@ -903,6 +903,9 @@ grant execute on function claim_handle(text) to authenticated;
 -- wrote. The code is the only thing guarding a room, and it is fair to let it prove the
 -- room is real — it is not fair to let it publish everybody's writing to anyone who is
 -- handed six characters.
+-- dropped first: v33 below gives it another column, and a database that already has v33
+-- refuses "create or replace" with a different return type, which stopped every re-run here
+drop function if exists peek_room(text);
 create or replace function peek_room(p_code text)
 returns table (name text, members int, logged bigint, handles text[])
 language sql security definer stable set search_path = public as $$
@@ -1633,4 +1636,48 @@ alter table reactions add column if not exists kind text;
 do $$ begin
   if not exists (select 1 from pg_constraint where conname = 'reactions_kind_check')
   then alter table reactions add constraint reactions_kind_check check (kind is null or kind in ('like','laugh','wow','cry')); end if;
+end $$;
+
+-- v36: the shared catalogue keeps its titles, and reactions/replies can only be written
+-- where they could be read.
+--
+-- Anyone signed in adds works and fills in what's missing (details, credits, a cover),
+-- which the app needs. What nobody gets to do is rename a title or point a cover at a
+-- server of their choosing: once a title is set it stays, and covers come only from the
+-- three sources the app searches. NOT VALID so old rows aren't re-checked.
+create or replace function works_keep_title() returns trigger language plpgsql as $$
+begin
+  new.id := old.id; new.kind := old.kind;
+  if coalesce(old.title, '') <> '' then new.title := old.title; end if;
+  return new;
+end $$;
+drop trigger if exists works_keep_title on works;
+create trigger works_keep_title before update on works for each row execute function works_keep_title();
+do $$ begin
+  if not exists (select 1 from pg_constraint where conname = 'works_cover_source') then
+    alter table works add constraint works_cover_source check (cover is null or cover = ''
+      or cover ~ '^https://(image\.tmdb\.org|images\.igdb\.com|covers\.openlibrary\.org)/') not valid;
+  end if;
+end $$;
+
+drop policy if exists reactions_mine on reactions;
+create policy reactions_mine on reactions for all to authenticated
+  using (user_id = auth.uid())
+  with check (user_id = auth.uid() and exists (select 1 from entries e where e.id = reactions.entry_id
+    and (e.user_id = auth.uid() or (not e.private and ((not e.room_only) or shares_room(e.user_id))))
+    and not apart_from(e.user_id)));
+drop policy if exists replies_mine on replies;
+create policy replies_mine on replies for all to authenticated
+  using (user_id = auth.uid())
+  with check (user_id = auth.uid() and exists (select 1 from entries e where e.id = replies.entry_id
+    and (e.user_id = auth.uid() or (not e.private and ((not e.room_only) or shares_room(e.user_id))))
+    and not apart_from(e.user_id)));
+
+-- crash reports stop pointing at you when you close your account: the error stays (it's
+-- about the app, not you), the link to who saw it goes.
+do $$ begin
+  if not exists (select 1 from pg_constraint where conname = 'client_errors_user_fk') then
+    alter table client_errors add constraint client_errors_user_fk foreign key (user_id)
+      references auth.users(id) on delete set null not valid;
+  end if;
 end $$;
