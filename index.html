@@ -2804,6 +2804,8 @@ html[data-theme="dark"] .sn-tile{box-shadow:inset 0 0 0 1px color-mix(in srgb,va
 .sn-covers .snc{width:30px;height:44px}
 .sn-covers .snc:not(:first-child){margin-left:-10px}
 .sn-covers .snc .snci{box-shadow:0 6px 12px -6px rgba(0,0,0,.6)}
+
+.cabcount{flex:1;min-width:0;margin:0;font-size:13px;color:var(--mute);font-weight:600}
 /* ---------- floating pills take turns ----------
    The update bar, the offline note and toasts all live just above the tab bar. When
    more than one is up, the toast steps above the others rather than hiding behind
@@ -2837,7 +2839,7 @@ html.sheetup body:has(#updBar) .toast{top:calc(70px + env(safe-area-inset-top))}
   <section id="tab-auth" class="on"><div class="auth" id="authBody"></div></section>
   <section id="tab-doors"><div id="doorsBody"></div></section>
   <div class="libbar" id="libBar" hidden><h2 class="pagetitle" data-pagetitle="Queue">Queue</h2><div class="seg glide ul" role="tablist" aria-label="Your queue"><span class="segglide"></span>
-    <button data-lib="shelf" role="tab">Up next</button><button data-lib="archive" role="tab">Finished</button></div></div>
+    <button data-lib="shelf" role="tab">Up next</button><button data-lib="archive" role="tab">Diary</button><button data-lib="ranked" role="tab">Ranked</button></div></div>
   <section id="tab-archive"><div id="archiveBody"></div></section>
   <section id="tab-shelf"><div id="shelfBody"></div></section>
   <section id="tab-taste"><div id="tasteBody"></div></section>
@@ -5486,7 +5488,8 @@ const LIB = ["shelf", "archive"];
 const navOf = n => LIB.includes(n) ? "library" : n;
 function paintLib(n, instant) { const bar = $("#libBar"); if (!bar) return;
   bar.hidden = !LIB.includes(n); if (bar.hidden) return;
-  $$("[data-lib]", bar).forEach(b => { const on = b.dataset.lib === n;
+  const lit = n === "archive" && cabRanked() ? "ranked" : n;
+  $$("[data-lib]", bar).forEach(b => { const on = b.dataset.lib === lit;
     b.classList.toggle("on", on); b.setAttribute("aria-selected", on ? "true" : "false"); });
   glideSeg($(".seg", bar), instant); }
 /* The collapsing title. Each page marks its own name with data-pagetitle; once that
@@ -5578,7 +5581,13 @@ function retap(b) { buzz(6);
   if (scrollY) scrollTo({ top:0, behavior:"auto" });
   b.classList.remove("again"); void b.offsetWidth; b.classList.add("again"); setTimeout(() => b.classList.remove("again"), 700);
   pullRefresh().then(ok => { if (!ok) refresh(); }).catch(() => refresh()); }
-$$("#libBar [data-lib]").forEach(b => b.onclick = () => { if (currentTab() !== b.dataset.lib) switchTab(b.dataset.lib); });
+/* Queue is three pages: what's next, the diary of what you finished, and your rankings.
+   The last two are one page under the hood, so moving between them redraws it in place. */
+$$("#libBar [data-lib]").forEach(b => b.onclick = () => { const k = b.dataset.lib;
+  if (k === "shelf") { if (currentTab() !== "shelf") switchTab("shelf"); return; }
+  const want = k === "ranked";
+  if (want !== cabRanked()) { if (want) { P.cabSortWas = cabSort(); P.cabSort = "rank"; P.cabView = ""; } else { P.cabView = "diary"; unrank(); diaryShown = 120; } saveP(); buzz(5); }
+  if (currentTab() !== "archive") switchTab("archive"); else { renderCabinet(); paintLib("archive"); scrollTo({ top:0 }); } });
 /* Holding a tab does the thing you'd go there to do: hold Library and the shelf is dealt
    onto the wheel, hold Rooms and you get the list of everywhere to go. A hold that fires
    eats the tap that follows it, so letting go doesn't also switch tabs. */
@@ -6221,7 +6230,7 @@ const TOUR = [
   { at:'#hereRow .couch, #hereRow', title:"Your room", body:"Everyone in the room sits up here. Tap a face to see what they're watching, reading or playing.", col:"#F5A3C7", need:"doors" },
   { at:'#add', title:"Log something", body:"Finished a film, show, book or game? Tap + and drag across the stars. Then pick the one thing you loved most.", col:"#FFB36B" },
   { at:'nav button[data-tab="doors"]', title:"Rooms", body:"What your friends log lands here. Hold a heart to answer with your face, or tap the bubble to reply.", col:"#F5A3C7" },
-  { at:'nav button[data-tab="library"]', title:"Queue", body:"Up next is everything you mean to get to. Finished is everything you've done, with a diary by month.", col:"#B9A6FF" },
+  { at:'nav button[data-tab="library"]', title:"Queue", body:"Up next is everything you mean to get to. Diary is everything you've finished, by date, and Ranked is your order of them.", col:"#B9A6FF" },
   { at:'nav button[data-tab="clubs"]', title:"Challenges", body:"Set a goal for the year, and join this month's season with the room.", col:"#FFE86A" },
   { at:'nav button[data-tab="taste"]', title:"You", body:"Your taste, your year, and your settings. That's the whole tour.", col:"#8FD3FF", last:true },
 ];
@@ -7610,7 +7619,7 @@ function cabinetRows(noFacet) {
   const byNew = (a, b) => newestFirst(a.e, b.e);
   const byName = (a, b) => String(a.w.title || "").localeCompare(String(b.w.title || ""),
     undefined, { sensitivity:"base", numeric:true });
-  if (how === "rank") rows.sort((a, b) => { if (a.w.kind !== b.w.kind) return 0;
+  if (how === "rank") rows.sort((a, b) => { if (a.w.kind !== b.w.kind) return CAB_ORDER.indexOf(a.w.kind) - CAB_ORDER.indexOf(b.w.kind);
     const arr = rankCache[a.w.kind]; if (!arr) return (b.score || 0) - (a.score || 0) || byNew(a, b);
     const ia = arr.indexOf(a.w.id), ib = arr.indexOf(b.w.id);
     if (ia === -1 && ib === -1) return (b.score || 0) - (a.score || 0) || byNew(a, b);
@@ -7637,6 +7646,7 @@ const CHEV = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"
 const LENS = `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>`;
 function renderCabinet() {
   const body = $("#archiveBody"); if (!body) return;
+  if (!cabRanked() && P.cabView !== "diary") P.cabView = "diary";
   const counts = cabinetCounts(), kinds = CAB_ORDER.filter(k => counts[k]);
   if (P.cabKind && !CAB_ORDER.includes(P.cabKind) || !logCount()) P.cabKind = "";
   /* everything first, then all four mediums, each in its colour — always all four, so a
@@ -7645,8 +7655,7 @@ function renderCabinet() {
   const places = [place("", "Finished", "sky", "archive"), ...(logCount() ? CAB_ORDER.map(k => place(k, K(k).plural, KIND_TONE[k], k)) : [])];
   body.innerHTML = `${pagerHTML(places, P.cabKind || "", { id:"cabPager", mode:"chips", allLabel:"All" })}
     ${logCount() ? `<div class="cabbar">
-        <div class="seg cabview" role="tablist" aria-label="How to look at it">${[["", "Shelf"], ["diary", "Diary"], ["rank", "Ranked"]].map(([k, l]) =>
-          `<button data-cabview="${k}" class="${cabViewNow() === k ? "on" : ""}" role="tab" aria-selected="${cabViewNow() === k}">${l}</button>`).join("")}</div>
+        <p class="cabcount" id="cabCount">${cabRanked() ? "Your order, best first" : `${logCount()} logged`}</p>
         <button class="cabfind ${cabQ ? "on" : ""}" id="cabFindBtn" aria-label="Search what you've finished" aria-expanded="${cabQ ? "true" : "false"}">${LENS}</button>
         <button class="cabfind ${cabFiltered() ? "on" : ""}" id="cabSortBtn" aria-label="Sort and filter">${SLIDERS}</button>
         <p class="sub" id="cabSub" hidden></p>
@@ -7655,7 +7664,7 @@ function renderCabinet() {
       <div class="cabfacets" id="cabFacets" role="group" aria-label="Your favourites by"></div>`
     : `<p class="sub" id="cabSub"></p>`}
     <div id="cabTrays"></div>
-    ${logCount() ? `<div class="shelfbar"><button class="btn quiet" id="cabList">See it as a list \u00b7 ${logCount()} logged</button></div>` : ""}`;
+    ${logCount() && cabRanked() ? `<div class="shelfbar"><button class="btn quiet" id="cabList">See it as a list \u00b7 ${logCount()} logged</button></div>` : ""}`;
   paintFacets(); paintTrays(); wireCabinet();
   wirePager($("#cabPager", body), places, P.cabKind || "", (k, d) => { P.cabKind = k; saveP(); cabTurn = d; renderCabinet(); });
   pagerArrive(cabTurn, $("#cabPager", body), $("#cabTrays", body)); cabTurn = 0;
@@ -7907,8 +7916,8 @@ function wireCabinet() {
         `<button data-sortpick="${k}" class="${cabSort() === k ? "on" : ""}">${l}</button>`).join("")}</div>` : ""}
       ${types.length ? `<div class="lbl" style="margin-top:16px">Your favourites by</div><div class="stack menu">${types.map(t =>
         `<button class="btn quiet" data-facetpick="${t}">${facetLabel(t, P.cabKind || "")}${cabFacet[0] === t ? ` \u00b7 ${esc(cabFacet.slice(2))}` : ""}</button>`).join("")}</div>` : ""}
-      <div class="lbl" style="margin-top:16px">Cards</div><div class="seg">${[["", "Roomy"], ["compact", "Compact"]].map(([k, l]) =>
-        `<button data-dense="${k}" class="${(P.cabDense || "") === k ? "on" : ""}">${l}</button>`).join("")}</div>
+      ${cabRanked() ? `<div class="lbl" style="margin-top:16px">Cards</div><div class="seg">${[["", "Roomy"], ["compact", "Compact"]].map(([k, l]) =>
+        `<button data-dense="${k}" class="${(P.cabDense || "") === k ? "on" : ""}">${l}</button>`).join("")}</div>` : ""}
       ${myEntries.some(dnfOf) ? `<div class="lbl" style="margin-top:16px">Things you didn't finish</div><div class="seg">${[["", "Show them"], ["hide", "Hide them"], ["only", "Only them"]].map(([k, l]) =>
         `<button data-dnfshow="${k}" class="${(P.cabDnf || "") === k ? "on" : ""}">${l}</button>`).join("")}</div>` : ""}`,
       done => { $$("[data-sortpick]").forEach(b => b.onclick = () => done(b.dataset.sortpick));
@@ -9382,7 +9391,7 @@ async function paintRankMeet(R) {
       ${o.slice(0, open ? 30 : 10).map((x, i) => { const w = works[x.id] || {};
         return `<div class="row" data-rmw="${esc(x.id)}"><span class="rk">${i + 1}</span>${cover(w)}<div class="t"><b>${esc(w.title || "")}</b><span class="rpos">${pos(x.id).map(({ m, i:j }) => `<span title="${esc(m.id === me.id ? "you" : m.handle)}: #${j + 1}">${avatar(m)}<b>#${j + 1}</b></span>`).join("")}</span></div></div>`; }).join("")}
       ${!open && o.length > 10 ? `<div class="stack" style="margin-top:6px"><button class="btn quiet" data-roall="${k}">See all ${Math.min(30, o.length)}</button></div>` : ""}
-      <p class="sub" style="margin-top:8px;font-size:12px">Folded together from everyone's ranked lists — only what at least two of you have ranked. Sharpen yours in Finished and this moves.</p></div>`; };
+      <p class="sub" style="margin-top:8px;font-size:12px">Folded together from everyone's ranked lists — only what at least two of you have ranked. Sharpen yours in Ranked and this moves.</p></div>`; };
   el.innerHTML = (top.length ? `<div class="card"><div class="h"><span>Where your orders meet</span><span class="tag dim">ranked lists</span></div>
     ${top.map(l => { const w = works[l.w] || {};
       return `<div class="row" data-rmw="${esc(l.w)}">${cover(w)}<div class="t"><b>${esc(w.title || "")}</b><small>${esc(l.text)}</small></div></div>`; }).join("")}</div>` : "")
@@ -9622,7 +9631,7 @@ function bracketState(R, br, votes) {
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 function bracketHTML(R, br, g) {
   if (!br) return `<div class="card game"><div class="h"><span>The bracket</span></div>
-    <p class="sub gline">Starts once the room has four things in common — rank a few in Finished, or log some of the same things.</p></div>`;
+    <p class="sub gline">Starts once the room has four things in common — rank a few in Ranked, or log some of the same things.</p></div>`;
   const st = bracketState(R, br, g.votes), mon = MONTHS[+br.month.slice(5) - 1];
   const head = `<div class="h"><span>The bracket</span><span class="tag dim">${esc(K(br.kind).plural)} · ${mon}</span></div>`;
   const past = st.rounds.filter(r => r.closed && r !== st.current);
@@ -11637,7 +11646,7 @@ async function openWork(id) { let w = works[id]; if (!w) { try { const rows = aw
      sets a title in its own colour; with no poster, its medium's colour does it */
   openSheet(`<div class="whero" aria-hidden="true" style="--wk:${cfg.colour}${w.cover ? `;background-image:url('${esc(blurSrc(w.cover))}')` : ""}"></div>
     <div class="head whead" style="--wk:${cfg.colour}">${cover(w)}<div class="hh"><h3>${esc(w.title)}</h3><p class="sub">${tag(w.kind)} ${esc(w.year||"")}${w.creator?" · "+creatorLinks(w):""}${w.length?` · ${w.length}${cfg.unit.replace(" ", "\u00a0")}`:""}</p>${(w.meta?.genres || []).length ? `<div class="wgenres">${(w.meta.genres).slice(0, 4).map(g =>
-      `<button class="wgenre" data-wgenre="${esc(g)}" aria-label="Your favourite ${esc(g)} in Finished">${esc(g)}</button>`).join("")}</div>` : ""}</div></div>
+      `<button class="wgenre" data-wgenre="${esc(g)}" aria-label="Your favourite ${esc(g)} in your diary">${esc(g)}</button>`).join("")}</div>` : ""}</div></div>
     ${w.meta?.overview ? `<p class="wabout" id="wAbout" role="button" tabindex="0" aria-expanded="false">${esc(String(w.meta.overview).slice(0, 900))}</p>` : ""}
     <div class="wacts">
       <button class="btn wlog ${isSoon(w)?"ghost":""}" id="wLog">${logged(w.id)?"Log it again":isSoon(w)?"Log it anyway":cfg.verb.replace(/^./,c=>c.toUpperCase())+" it"}</button>
