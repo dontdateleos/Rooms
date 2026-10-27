@@ -109,8 +109,8 @@ html[data-theme="light"] .logo .mark .rm{fill-opacity:.6}
 /* Taste is behind your name now, so your name is lit while you're on it, as a tab would be */
 .me.on{background:var(--ink);color:var(--cream)}
 .tasteme{display:flex;align-items:center;gap:12px;margin-top:10px;background:none;border:0;padding:0;color:inherit;font:inherit;text-align:left;cursor:pointer}
-.cabbar{display:flex;align-items:center;gap:8px;margin-top:6px}
-.cabbar .sub{flex:1;min-width:0;margin:0}
+.cabbar{display:flex;align-items:center;gap:6px;margin-top:6px}
+.cabbar .sub{flex:1;min-width:0;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13.5px}
 .cabkinds{display:flex;gap:5px;margin-top:10px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
 /* only when the chips don't all fit: fade the edge they continue past, so the row reads
    as one you can push sideways rather than one that's been cut off */
@@ -647,7 +647,7 @@ header:has(#meBtn:not([hidden])) .logoword{display:none}
 .picker button:active{transform:scale(.94)}
 .swatches{display:grid;grid-template-columns:repeat(9,1fr);gap:6px;margin-top:8px}
 .sw{width:100%;aspect-ratio:1;border-radius:99px;border:3px solid transparent;cursor:pointer;padding:0}
-.sw.on{border-color:var(--ink)}
+.sw.on{border-color:transparent;outline:2.5px solid var(--ink);outline-offset:2px}
 
 /* slips (feed) — a slight ambient drift, on the standalone translate property so it
    never fights the :active press-scale (that's still plain `transform`) */
@@ -1672,7 +1672,7 @@ body.demomode .secbar{top:78px}
 .searchline .clearsearch{flex:none;width:auto;padding:9px 12px;font-size:12px}
 .roomactions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
 .roomactions .btn{width:100%;padding:11px 12px;font-size:14px}
-.room-manage{margin-top:10px}.room-manage>button{border:0;background:none;padding:0;cursor:pointer;font:inherit}.room-manage-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}.room-manage-actions[hidden]{display:none}.room-manage-actions .btn{padding:10px 11px;font-size:13px}.room-manage-actions .btn.quiet{grid-column:1/-1}.room-streak{display:flex;align-items:center;gap:7px;margin-top:10px;padding:8px 10px;background:var(--cream2);border-radius:12px;color:var(--mute);font-size:12px;font-weight:750}.room-streak i{display:inline-grid;place-items:center;width:19px;height:19px;border-radius:50%;background:var(--mint);color:var(--ink);font-style:normal;font-size:12px}.rec-empty{padding:4px 0}.rec-empty .stack{margin-top:12px}
+.room-manage{margin-top:10px}.room-manage>button{border:0;background:none;padding:0;cursor:pointer;font:inherit}.room-manage-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}.room-manage-actions[hidden]{display:none}.room-manage-actions .btn{width:100%;padding:11px 12px;font-size:14px}.room-manage-actions .btn.quiet{grid-column:1/-1}.room-streak{display:flex;align-items:center;gap:7px;margin-top:10px;padding:8px 10px;background:var(--cream2);border-radius:12px;color:var(--mute);font-size:12px;font-weight:750}.room-streak i{display:inline-grid;place-items:center;width:19px;height:19px;border-radius:50%;background:var(--mint);color:var(--ink);font-style:normal;font-size:12px}.rec-empty{padding:4px 0}.rec-empty .stack{margin-top:12px}
 .demoHint{margin-top:8px;color:var(--mute);font-size:12px;font-weight:600;text-align:center}
 .roomhead{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .roomhead .h{flex:1;min-width:0}
@@ -2182,7 +2182,7 @@ html[data-theme="dark"] .swatches button{box-shadow:inset 0 0 0 2px rgba(255,255
 header,nav{-webkit-backdrop-filter:blur(20px) saturate(1.4);backdrop-filter:blur(20px) saturate(1.4)}
 
 /* ---------- the diary ---------- */
-.cabdiary.on{background:var(--ink);color:var(--cream);border-color:var(--ink)}
+.cabdiary{padding-inline:12px}.cabdiary.on{background:var(--ink);color:var(--cream);border-color:var(--ink)}
 .dmonth{display:flex;align-items:baseline;justify-content:space-between;margin:18px 2px 8px;font-family:var(--head);font-weight:900;font-size:18px;letter-spacing:-.02em}
 .dmonth em{font-style:normal;font-size:12px;font-weight:800;color:var(--mute)}
 .dlist{padding:4px 14px;margin-top:0}
@@ -4817,6 +4817,12 @@ let pillWho = [], pillN = 0;
 /* the header's real height, for anything that pins itself just under it */
 { const h = document.querySelector("header");
   if (h && "ResizeObserver" in window) new ResizeObserver(() => document.documentElement.style.setProperty("--hdrH", h.offsetHeight + "px")).observe(h); }
+/* under the header, and under the room's own tab row once that's stuck there too.
+   Kept up to date while scrolling, since the tab row only sticks part way down. */
+function placePill() { const el = $("#newPill"); if (!el) return;
+  const under = Math.max($("header")?.getBoundingClientRect().bottom || 60, ...$$("#tab-doors .secbar").map(x => { const r = x.getBoundingClientRect(); return r.top < 140 && r.height ? r.bottom : 0; }));
+  el.style.top = `${Math.round(under + 10)}px`; }
+addEventListener("scroll", () => { if ($("#newPill")) requestAnimationFrame(placePill); }, { passive:true });
 function newPill(row) {
   const slip = $(`[data-slip="${CSS.escape(row.id)}"]`), hb = $("header")?.getBoundingClientRect().bottom || 60;
   if (!slip || slip.getBoundingClientRect().bottom > hb + 8 || currentTab() !== "doors") return;
@@ -4829,9 +4835,7 @@ function newPill(row) {
         setTimeout(() => $$(".slip.landedNow").forEach(x => { x.classList.remove("warm"); void x.offsetWidth; x.classList.add("warm"); setTimeout(() => x.classList.remove("warm"), 2600); }), 500); } }; }
   el.innerHTML = `<span class="pf">${ppl.map(p => avatar(p)).join("")}</span>↑ ${pillN} new`;
   el.setAttribute("aria-label", `${pillN} new from ${ppl.map(p => p.handle || "someone").join(", ")}. Go up to see`);
-  /* under the header, and under the room's own tab row when that's stuck there too */
-  const under = Math.max($("header")?.getBoundingClientRect().bottom || 60, ...$$(".secbar").map(x => { const r = x.getBoundingClientRect(); return r.top < 140 && r.height ? r.bottom : 0; }));
-  el.style.top = `${Math.round(under + 10)}px`;
+  placePill();
   if (fresh) requestAnimationFrame(() => el.classList.add("on")); else if (!REDUCED) el.animate([{ scale:1 }, { scale:1.08 }, { scale:1 }], { duration:300, easing:"cubic-bezier(.3,1.5,.5,1)" }); }
 function hidePill() { const el = $("#newPill"); pillN = 0; pillWho = []; if (!el) return; el.classList.remove("on"); setTimeout(() => { if (!el.classList.contains("on")) el.remove(); }, 260); }
 addEventListener("scroll", () => { if (!pillN) return; const top = $("#talkTop");
@@ -6559,7 +6563,7 @@ function openFeedPick() {
     ${rooms.map(r => row(`data-fp="room:${esc(r.id)}"`, r.name, `${r.members?.length || ""} ${r.members?.length === 1 ? "person" : "people"} · a room`.trim(), fn === "room" && R?.id === r.id, `var(--${roomColour(r)})`)).join("")}
     ${row(`data-fp="following"`, "Following", "the people whose taste you follow", fn === "following", "var(--lilac)")}
     ${row(`data-fp="everyone"`, "Everyone", "what the whole app is finishing", fn === "everyone", "var(--sky)")}
-    ${rooms.length < ROOM_LIMIT ? `<div class="stack" style="margin-top:12px;flex-direction:row"><button class="btn soft" id="newRoom">Open a room</button><button class="btn ghost" id="joinRoom">Join with a code</button></div>` : ""}
+    ${rooms.length < ROOM_LIMIT ? `<div class="roomactions"><button class="btn soft" id="newRoom">Open a room</button><button class="btn ghost" id="joinRoom">Join with a code</button></div>` : ""}
     <p class="msg" id="roomMsg"></p>`);
   wireRoomButtons();
   $$("[data-fp]").forEach(b => b.onclick = () => { closeSheet();
@@ -7284,6 +7288,10 @@ const CAB_ORDER = ["film", "tv", "book", "game"];
    I actually think was best" is the question the scores are there to answer. */
 const CAB_SORTS = { recent:"Recent", rank:"Ranked", best:"Highest", az:"A\u2013Z", year:"By year" };
 const cabSort = () => CAB_SORTS[P.cabSort] ? P.cabSort : "recent";
+/* Diary and Ranked are two switches of their own rather than buried in the sort menu.
+   They're two ways of reading the same things, so turning one on turns the other off. */
+const cabRanked = () => P.cabView !== "diary" && cabSort() === "rank";
+const unrank = () => { if (P.cabSort === "rank") P.cabSort = P.cabSortWas && P.cabSortWas !== "rank" ? P.cabSortWas : "recent"; };
 /* the sort is a preference and is kept; what you typed into the box is not. A search
    remembered from last week is an empty archive with no explanation for it. */
 let cabQ = "";
@@ -7362,7 +7370,8 @@ function renderCabinet() {
     ${logCount() ? `<div class="cabbar">
         <p class="sub" id="cabSub"></p>
         <button class="cabsort cabdiary ${P.cabView === "diary" ? "on" : ""}" id="cabDiaryBtn" aria-pressed="${P.cabView === "diary"}">Diary</button>
-        ${P.cabView === "diary" ? "" : `<button class="cabsort" id="cabSortBtn" aria-label="Sort what you've finished">${CAB_SORTS[cabSort()]}${CHEV}</button>`}
+        <button class="cabsort cabdiary ${cabRanked() ? "on" : ""}" id="cabRankBtn" aria-pressed="${cabRanked()}">Ranked</button>
+        ${P.cabView === "diary" || cabRanked() ? "" : `<button class="cabsort" id="cabSortBtn" aria-label="Sort what you've finished">${CAB_SORTS[cabSort()]}${CHEV}</button>`}
         <button class="cabfind ${cabQ ? "on" : ""}" id="cabFindBtn" aria-label="Search what you've finished" aria-expanded="${cabQ ? "true" : "false"}">${LENS}</button>
       </div>
       <input id="cabQ" class="searchlog" type="search" placeholder="Find something in here" autocomplete="off" value="${esc(cabQ)}"${cabQ ? "" : " hidden"}>
@@ -7606,9 +7615,11 @@ function paintDiary(el) {
   $$(".drow", el).forEach(r => r.onclick = () => openWork(r.dataset.work));
   const more = $("#diaryMore"); if (more) more.onclick = () => { diaryShown += 200; paintDiary(el); }; }
 function wireCabinet() {
-  const db = $("#cabDiaryBtn"); if (db) db.onclick = () => { P.cabView = P.cabView === "diary" ? "" : "diary"; diaryShown = 120; saveP(); buzz(5); renderCabinet(); };
+  const db = $("#cabDiaryBtn"); if (db) db.onclick = () => { P.cabView = P.cabView === "diary" ? "" : "diary"; if (P.cabView) unrank(); diaryShown = 120; saveP(); buzz(5); renderCabinet(); };
+  const rb = $("#cabRankBtn"); if (rb) rb.onclick = () => { if (cabRanked()) unrank(); else { P.cabSortWas = cabSort(); P.cabSort = "rank"; P.cabView = ""; }
+    saveP(); buzz(5); renderCabinet(); };
   const sb2 = $("#cabSortBtn"); if (sb2) sb2.onclick = async () => {
-    const v = await openAsk(`<h3>Sort what you've finished</h3><div class="stack">${Object.entries(CAB_SORTS).map(([k, l]) =>
+    const v = await openAsk(`<h3>Sort what you've finished</h3><div class="stack">${Object.entries(CAB_SORTS).filter(([k]) => k !== "rank").map(([k, l]) =>
       `<button class="btn ${cabSort() === k ? "" : "quiet"}" data-sortpick="${k}">${l}</button>`).join("")}</div>
       <div class="lbl" style="margin-top:16px">Cards</div><div class="seg">${[["", "Roomy"], ["compact", "Compact"]].map(([k, l]) =>
         `<button data-dense="${k}" class="${(P.cabDense || "") === k ? "on" : ""}">${l}</button>`).join("")}</div>`,
@@ -9076,7 +9087,7 @@ async function paintRankMeet(R) {
         return `<div class="row" data-rmw="${esc(x.id)}"><span class="rk">${i + 1}</span>${cover(w)}<div class="t"><b>${esc(w.title || "")}</b><span class="rpos">${pos(x.id).map(({ m, i:j }) => `<span title="${esc(m.id === me.id ? "you" : m.handle)}: #${j + 1}">${avatar(m)}<b>#${j + 1}</b></span>`).join("")}</span></div></div>`; }).join("")}
       ${!open && o.length > 10 ? `<div class="stack" style="margin-top:6px"><button class="btn quiet" data-roall="${k}">See all ${Math.min(30, o.length)}</button></div>` : ""}
       <p class="sub" style="margin-top:8px;font-size:12px">Folded together from everyone's ranked lists — only what at least two of you have ranked. Sharpen yours in Finished and this moves.</p></div>`; };
-  el.innerHTML = (top.length ? `<div class="card"><div class="h"><span>Where your orders meet</span><span class="tag dim">from everyone's ranked lists</span></div>
+  el.innerHTML = (top.length ? `<div class="card"><div class="h"><span>Where your orders meet</span><span class="tag dim">ranked lists</span></div>
     ${top.map(l => { const w = works[l.w] || {};
       return `<div class="row" data-rmw="${esc(l.w)}">${cover(w)}<div class="t"><b>${esc(w.title || "")}</b><small>${esc(l.text)}</small></div></div>`; }).join("")}</div>` : "")
     + (duel ? `<div class="card settle"><div class="h"><span>Settle it</span><span class="tag dim">${esc(K(duel.k).plural)}</span></div>
@@ -12404,7 +12415,7 @@ async function openYou() { let top = { items:[] }; try { top = await ensureMyTop
     <div style="display:flex;align-items:center;gap:14px;margin-top:6px">
       <span class="av big" id="avPreview"></span>
       <div><p class="sub" id="avNote"></p>
-        <div class="stack"><button class="btn quiet" id="avShuffle" style="padding:8px 0">Shuffle</button></div></div>
+        <div class="chips" style="margin-top:8px"><button class="chip" id="avShuffle" type="button">Shuffle</button></div></div>
     </div>
     <div class="picker" id="avShapes"></div>
     <div class="lbl">Eyes</div><div class="picker" id="avEyes"></div>
