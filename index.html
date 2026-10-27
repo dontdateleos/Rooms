@@ -2453,6 +2453,9 @@ nav button[data-tab="taste"].on .ni-f g{animation:blinkOnce .3s ease-in-out .25s
 @keyframes tiDeal{from{transform:translateY(-6px);opacity:0}}
 @keyframes tiWobble{25%{transform:rotate(-12deg)}55%{transform:rotate(8deg)}80%{transform:rotate(-3deg)}}
 @media (prefers-reduced-motion:reduce){nav button.on .ni-f,nav button.on .ni-f *,.rstrip span,.bond .bf .av,.reacttray,.reacttray button{animation:none!important;transition:none!important}.pspread i{transition:none}}
+
+#wNumbers .hushed b{filter:blur(6px);opacity:.6;cursor:pointer}
+#wNumbers .hushed{cursor:pointer}
 </style>
 </head>
 <body>
@@ -2787,7 +2790,8 @@ const tag = k => `<span class="tag ${k}">${K(k).label}</span>`;
 /* a cover fades in the first time it loads; once it's been seen, a redraw (coming back
    to a tab, say) shows it straight away rather than fading every poster in again */
 const seenCovers = window.__seenCovers = new Set();
-const coverBg = u => { if (seenCovers.has(u)) return ""; const t = blurSrc(u); return t && t !== u ? ` style="background:url('${esc(t)}') center/cover"` : ""; };
+const coverBg = u => { if (seenCovers.has(u)) return ""; const t = blurSrc(u); if (!t || t === u || !/^https:\/\//.test(t)) return "";
+  return ` style="background:url('${esc(t.replace(/['"()\\\s<>]/g, c => encodeURIComponent(c)))}') center/cover"`; };
 const cover = (w, cls = "co") => w?.cover ? `<img class="${cls}${seenCovers.has(w.cover) ? " ok" : ""}" src="${esc(w.cover)}"${coverBg(w.cover)} alt="" onload="this.classList.add('ok');window.__seenCovers.add(this.getAttribute('src'))" onerror="this.remove()">` : `<div class="${cls}"></div>`;
 
 /* ============ prefs + sources ============ */
@@ -2984,7 +2988,7 @@ function peopleOf(w) { const c = w.credits || {}, out = [];
    refresh puts it back exactly as it was. */
 const DEMO = /(^|[#?&])demo\b/.test(location.hash + location.search);
 const LOCAL = !window.__mockSb && (DEMO || SUPABASE_URL.includes("YOUR-"));
-const GAME_KEYS = { room_answers:["room_id","week","user_id"], room_brackets:["room_id","month"], room_votes:["room_id","game","voter"], room_ask_answers:["ask_id","user_id","work_id"] };
+const GAME_KEYS = { reactions:["entry_id","user_id"], room_answers:["room_id","week","user_id"], room_brackets:["room_id","month"], room_votes:["room_id","game","voter"], room_ask_answers:["ask_id","user_id","work_id"] };
 function makeLocalSb(seed) {
   const KEY = "rooms.db";
   const blank = { profile:null, signedOut:false, works:{}, profiles:[], entries:[], lists:[], list_items:[], rooms:[], room_members:[], clubs:[], club_members:[], club_votes:[], reactions:[], replies:[], top_lists:[], top_list_items:[], follows:[], nows:[], handovers:[], seen:[], blocks:[], reports:[], settings:[], handles:[], room_answers:[], room_brackets:[], room_votes:[], room_nights:[], room_asks:[], room_ask_answers:[] };
@@ -4090,7 +4094,9 @@ async function tiltOn(ask) {
     const r = document.documentElement.style; r.setProperty("--tx", tx.toFixed(2)); r.setProperty("--ty", ty.toFixed(2)); };
   addEventListener("deviceorientation", tiltH); document.documentElement.classList.add("tilt"); return true; }
 function tiltOff() { if (tiltH) removeEventListener("deviceorientation", tiltH); tiltH = null; document.documentElement.classList.remove("tilt"); }
-if (P.tilt) tiltOn(false);
+if (P.tilt) tiltOn(false).then(ok => { if (ok || typeof DeviceOrientationEvent?.requestPermission !== "function") return;
+  /* iPhones forget the permission between launches and only ask from a tap: the first one asks again */
+  addEventListener("pointerup", () => tiltOn(true), { once:true }); });
 /* a face you touch squishes and blinks, like something that noticed */
 document.addEventListener("pointerdown", e => { if (REDUCED) return;
   const av = e.target.closest?.(".av"); if (!av || av.id === "rateBuddy") return;
@@ -4386,7 +4392,7 @@ function meReact(v) {
     sv?.animate(m === "sad" ? [{ transform:"none" }, { transform:"translateY(8%) rotate(-6deg)" }, { transform:"none" }]
       : [{ transform:"none" }, { transform:"translateY(-26%) scale(1.1)", offset:.4 }, { transform:"none" }], { duration:m === "sad" ? 900 : 560, easing:"cubic-bezier(.3,1.4,.5,1)" });
     if (m === "love") heartBurst(el, 3);
-    setTimeout(() => faceMood(el, "ok"), 1600); }, 420); }
+    setTimeout(() => faceMood(el, weekMood()), 1600); }, 420); }
 /* tap the logo and the four rooms hop in turn; five quick taps and they throw a party */
 (() => { const mk = $(".logo .mark"); if (!mk) return; mk.style.cursor = "pointer"; let taps = [];
   mk.addEventListener("click", () => { const now = Date.now(); taps = [...taps.filter(t => now - t < 2500), now];
@@ -4400,7 +4406,7 @@ function logoCheer() { logoRun([3, 0, 1, 2], 70, 900);
     { duration:420, delay:300, easing:"cubic-bezier(.2,1.3,.4,1)" }); }
 let roomCh = null, roomChId = null, hereNow = [];
 let nowPaintT = null;
-function leaveRoomChannel() { if (roomCh) { try { sb.removeChannel(roomCh); } catch {} }
+function leaveRoomChannel() { if (roomCh) { try { sb.removeChannel(roomCh); } catch {} } const hc = $("#hereCss"); if (hc) hc.textContent = "";
   clearTimeout(nowPaintT); roomCh = null; roomChId = null; hereNow = []; logoHere(0); }
 /* what you're in the middle of rides along with your face: opening the log sheet shows
    the room three dots on you, the way a chat shows somebody typing */
@@ -4657,22 +4663,24 @@ let talkCh = null;
 function joinTalkChannel() {
   if (talkCh || !me || sb.__local || !sb.channel) return;
   try { const ch = sb.channel(`talk:${me.id}`);
-    ch.on("postgres_changes", { event:"INSERT", schema:"public", table:"reactions" }, p => onLiveTalk(p.new, REACTS[kindOfR(p.new)]));
-    ch.on("postgres_changes", { event:"INSERT", schema:"public", table:"replies" }, p => onLiveTalk(p.new, "replied to"));
+    ch.on("postgres_changes", { event:"INSERT", schema:"public", table:"reactions" }, p => onLiveTalk(p.new, REACTS[kindOfR(p.new)], false));
+    ch.on("postgres_changes", { event:"INSERT", schema:"public", table:"replies" }, p => onLiveTalk(p.new, "replied to", true));
     talkCh = ch; ch.subscribe(); } catch {} }
 let talkQ = [], talkT = null;
-function onLiveTalk(row, verb) {
+function onLiveTalk(row, verb, isReply = false) {
   if (!row || !me || row.user_id === me.id || isApart(row.user_id)) return;
   const mine = myEntries.find(e => e.id === row.entry_id);
-  if ($(`[data-slip="${CSS.escape(row.entry_id)}"]`)) refreshSlip(row.entry_id, verb === "liked" ? "like" : "reply");
+  if ($(`[data-slip="${CSS.escape(row.entry_id)}"]`)) refreshSlip(row.entry_id, isReply ? "reply" : "like");
   if (!mine) return;
   /* five likes in a burst is one toast, not five */
-  talkQ.push({ uid:row.user_id, verb, e:mine }); clearTimeout(talkT);
+  talkQ.push({ uid:row.user_id, verb, reply:isReply, e:mine }); clearTimeout(talkT);
   talkT = setTimeout(() => { const qd = talkQ; talkQ = [];
     const names = [...new Set(qd.map(x => knownName(x.uid) || "someone"))];
     const who = names.length === 1 ? names[0] : names.length === 2 ? names.join(" and ") : `${names[0]} and ${said(names.length - 1)} others`;
     const verbs = new Set(qd.map(x => x.verb)), one = new Set(qd.map(x => x.e.id)).size === 1, title = works[qd[0].e.work_id]?.title;
-    say(`${who} ${verbs.size > 1 ? "liked and replied to" : [...verbs][0]} ${one && title ? `what you said about ${title}` : "what you said"}`);
+    const rp = qd.some(x => x.reply), rx = qd.some(x => !x.reply);
+    const v = verbs.size === 1 ? [...verbs][0] : rp && rx ? "reacted and replied to" : "reacted to";
+    say(`${who} ${v} ${one && title ? `what you said about ${title}` : "what you said"}`);
     buzz(8); const bell = $("#bellBtn");
     if (bell && !REDUCED) { bell.classList.remove("jolt"); void bell.offsetWidth; bell.classList.add("jolt"); }
     checkNew().catch(() => {}); }, 1400); }
@@ -4683,7 +4691,7 @@ async function refreshSlip(id, what) {
   if (!full) return; remember(full.works);
   for (const slip of $$(`[data-slip="${CSS.escape(id)}"]`)) {
     const lk = $("[data-likes]", slip);
-    if (lk && what === "like") { paintLikes(lk, full);
+    if (lk && what === "like") { paintLikes(lk, full); wireSlips(slip, [full]);
       if (!REDUCED) { lk.insertAdjacentHTML("beforebegin", `<i class="heartup" aria-hidden="true">${heartSVG(true)}</i>`);
         const h = lk.previousElementSibling; setTimeout(() => h?.remove(), 1000); } }
     if (what === "reply") { const t = $("[data-thread]", slip); if (!t) continue;
@@ -5088,7 +5096,7 @@ $$("nav button[data-tab]").forEach(b => b.onclick = () => { if (b.dataset.held) 
 function retap(b) { buzz(6);
   if (scrollY > 24) { scrollTo({ top:0, behavior:REDUCED ? "auto" : "smooth" });
     /* home again: the logo's rooms come on one by one as you arrive */
-    let done = false; const lit = () => { if (done) return; done = true; logoRun([0, 1, 3, 2], 90, 700); };
+    let done = false; const lit = () => { if (done) return; done = true; removeEventListener("scrollend", lit); logoRun([0, 1, 3, 2], 90, 700); };
     addEventListener("scrollend", lit, { once:true }); setTimeout(lit, 900); return; }
   if (scrollY) scrollTo({ top:0, behavior:"auto" });
   b.classList.remove("again"); void b.offsetWidth; b.classList.add("again"); setTimeout(() => b.classList.remove("again"), 700);
@@ -5349,6 +5357,7 @@ addEventListener("popstate", () => {
   if ($("#ask").classList.contains("on")) { closeAsk(null); if ($("#sheet").classList.contains("on")) markBack(); return; }
   if ($("#sheet").classList.contains("on")) closeSheet(); });
 function openSheet(html) { clearTimeout(sheetGoing); sheetGoing = null; markBack();
+  if (myDoing && !String(html).includes('id="rateWrap"')) setDoing(null);
   $("#sheet").setAttribute("aria-hidden", "false");
   $("#sheetBody").innerHTML = `<div class="grab"></div>` + html;
   { const h = $("#sheetBody h3, #sheetBody h2"); $("#sheet").setAttribute("aria-label", (h?.textContent || "Rooms").trim().slice(0, 80)); }
@@ -5609,8 +5618,8 @@ function renderClaim() { const b = $("#authBody");
   $("#handle").onkeydown = e => { if (e.key === "Enter") claim(); }; }
 
 async function loadMe() { const { data:{ session } } = await sb.auth.getSession(); if (!session) { me = null; pendingUser = null; return null; }
-  if (sb.__local) { me = { id:sb.__db.profile.id, handle:sb.__db.profile.handle, bio:sb.__db.profile.bio||"", avatar:sb.__db.profile.avatar||null, goals:sb.__db.profile.goals||null }; return me; }
-  const rows = await q(sb.from("profiles").select("id,handle,bio,avatar").eq("id", session.user.id).limit(1));
+  if (sb.__local) { me = { id:sb.__db.profile.id, handle:sb.__db.profile.handle, bio:sb.__db.profile.bio||"", avatar:sb.__db.profile.avatar||null, goals:sb.__db.profile.goals||null, created_at:sb.__db.profile.created_at || null }; return me; }
+  const rows = await q(sb.from("profiles").select("id,handle,bio,avatar,created_at").eq("id", session.user.id).limit(1));
   me = rows[0] || null; pendingUser = me ? null : session.user.id;
   /* asked for on its own, so a database without v32 just has no goals rather than no you */
   if (me) try { const [g] = await q(sb.from("profiles").select("goals").eq("id", me.id).limit(1)); me.goals = g?.goals || null; } catch {}
@@ -5627,7 +5636,7 @@ async function enter() {
   await despite("your clubs", loadClubs()); await despite("handovers", loadHand());
   loadSettings().catch(() => {});
   await despite("your invite", useInvite());
-  takeRoomLink(); pushKeepUp(); takeShare();
+  takeRoomLink(); pushKeepUp(); takeShare(); paintMeAv();
   booting = true;
   /* a "season ends in three nights" notification opens on the season */
   const toSeasons = /^#seasons\b/.test(location.hash); if (toSeasons) { history.replaceState(null, "", location.pathname + location.search); P.clubTab = "season"; }
@@ -5868,7 +5877,7 @@ function roomMoments(entries) {
 function recapHTML(R, es) { const d = new Date().getDay(); if (!R || ![1, 2, 3].includes(d)) return "";
   const thisWk = weekStart(new Date()), lastWk = weekStart(new Date(Date.now() - 7 * 864e5));
   if ((P.recapSeen || {})[R.id] === thisWk) return "";
-  const wk = es.filter(e => !e.part && !isQuiet(e) && weekStart(String(e.created_at || e.rated_on).slice(0, 10) + "T12:00:00") === lastWk);
+  const wk = es.filter(e => !e.part && !isQuiet(e) && weekOf(e) === lastWk);
   if (wk.length < 3) return "";
   const byW = {}; wk.forEach(e => (byW[e.work_id] ||= []).push(e.score));
   const top = Object.entries(byW).map(([id, ss]) => [id, ss.reduce((a, b) => a + b, 0) / ss.length, ss.length]).sort((a, b) => (b[2] > 1) - (a[2] > 1) || b[1] - a[1])[0];
@@ -5880,16 +5889,30 @@ function recapHTML(R, es) { const d = new Date().getDay(); if (!R || ![1, 2, 3].
     <div class="rstrip">${strip.map((w, i) => `<span style="--i:${i}">${cover(w)}</span>`).join("")}</div>
     <p class="rline"><span><b>${esc(tw.title || "")}</b> was the room's pick · ${(top[1] / 2).toFixed(1)}★${top[2] > 1 ? ` from ${said(top[2])} of you` : ""}</span></p>
     <p class="rline">${avatar(profOfId(busy))}<span><b>${esc(busy === me.id ? "You" : profOfId(busy).handle || "Someone")}</b> logged the most · ${bn}</span></p></div>`; }
+/* the feed holds the newest sixty logs, which in a busy room is a week or two. The streak
+   and last week's recap need whole weeks, so they ask for the last nine on their own and
+   fill their places in when that comes back. */
+async function roomWeeks(R) { if (!R) return;
+  const since = new Date(Date.now() - 9 * 7 * 864e5).toISOString(), ids = R.members.map(m => m.id);
+  let rows = []; try { rows = feedRows(await q(sb.from("entries").select("id,user_id,work_id,score,created_at,rated_on,context,part,works(*)")
+    .in("user_id", ids).eq("part", false).gte("created_at", since).order("created_at", { ascending:false }).limit(600))); } catch { return; }
+  if (activeRoom()?.id !== R.id) return;
+  rows.forEach(e => remember(e.works));
+  const wk = weekStreak(R, rows), slot = $("#wkSlot");
+  if (slot) slot.innerHTML = wk >= 2 ? ` · <span class="wstreak" title="Weeks in a row that ${R.members.length <= 4 ? "all of you" : "most of you"} logged something">${wk}-week streak</span>` : "";
+  const rs = $("#recapSlot"); if (rs) { rs.innerHTML = recapHTML(R, rows); wireRecap(rs, R); } }
 function wireRecap(root, R) { const x = $("#recapX", root); if (!x) return;
   x.onclick = () => { P.recapSeen = { ...(P.recapSeen || {}), [R.id]:weekStart(new Date()) }; saveP(); leaveOut($("#recap")); }; }
 /* ---------- the room's weekly streak ----------
    Weekly, not daily, so it never nags: a week counts when everyone (most of a bigger
    room) logged at least one thing in it. It only shows from two weeks up, and missing a
    week just quietly ends it. This week counts too, once it's already made. */
+/* the week a log belongs to, by your clock: created_at is UTC, so it's read as a moment */
+const weekOf = e => weekStart(e.created_at ? new Date(e.created_at) : String(e.rated_on).slice(0, 10) + "T12:00:00");
 const weekStart = d => { const x = new Date(d); x.setHours(12, 0, 0, 0); x.setDate(x.getDate() - (x.getDay() + 6) % 7); return x.toISOString().slice(0, 10); };
 function weekStreak(R, es) { const n = R.members.length; if (n < 2) return 0;
   const need = n <= 4 ? n : Math.ceil(n * .75), by = {};
-  for (const e of es) { if (e.part || isQuiet(e)) continue; const w = weekStart(String(e.created_at || e.rated_on).slice(0, 10) + "T12:00:00");
+  for (const e of es) { if (e.part || isQuiet(e)) continue; const w = weekOf(e);
     (by[w] ||= new Set()).add(e.user_id); }
   const made = w => (by[w]?.size || 0) >= need;
   let cur = new Date(), streak = 0; const thisWk = weekStart(cur);
@@ -5911,8 +5934,7 @@ function roomStreak(entries, R = null) {
     const set = byDay.get(day) || new Set(); set.add(e.user_id); byDay.set(day, set); }
   const sharedDays = [...byDay.values()].filter(set => set.size >= 2).length;
   if (people.size < 2) return "";
-  const wk = R ? weekStreak(R, entries) : 0;
-  return `<small class="room-streak" title="${sharedDays ? `${sharedDays} ${sharedDays===1?"day":"days"} more than one of you logged` : ""}"><b class="rnum" data-roll="wk:${R?.id || ""}">${people.size}</b> logged this week${wk >= 2 ? ` · <span class="wstreak" title="Weeks in a row that ${R.members.length <= 4 ? "all of you" : "most of you"} logged something">${wk}-week streak</span>` : ""}</small>`;
+  return `<small class="room-streak" title="${sharedDays ? `${sharedDays} ${sharedDays===1?"day":"days"} more than one of you logged` : ""}"><b class="rnum" data-roll="wk:${R?.id || ""}">${people.size}</b> logged this week<span id="wkSlot"></span></small>`;
 }
 function roomMomentsHTML(moments, fresh = new Set()) { if (!moments.length) return "";
   return `<div class="lbl">Room moments</div><div class="card" style="margin-top:0">${moments.map(m => { const w = works[m.workId] || {}, key = `${m.kind}:${m.workId}:${m.at}`;
@@ -6450,9 +6472,9 @@ function knownName(id) {
 const LIKE_NAMES = 2;
 /* ---------- faces instead of emoji ----------
    A heart is a tap. Hold it and you can answer with your own face instead: laughing,
-   wowed, or moved. Same one-per-person row as a like, with a kind on it (v35); a
+   gasping, or welling up. Same one-per-person row as a like, with a kind on it (v35); a
    database without the column still takes the like. */
-const REACTS = { like:"liked", laugh:"laughed at", wow:"was wowed by", cry:"was moved by" };
+const REACTS = { like:"liked", laugh:"laughed at", wow:"gasped at", cry:"welled up at" };
 const REACT_NAMES = { like:"Love it", laugh:"Funny", wow:"Wow", cry:"Moved" };
 const REACT_EYES = {
   like: c => MOOD_EYES.love(c),
@@ -6483,12 +6505,15 @@ function openReactTray(b, e, after) { closeReactTray(); buzz(8);
   setTimeout(() => addEventListener("pointerdown", function off(ev) { if (!t.contains(ev.target)) { closeReactTray(); removeEventListener("pointerdown", off, true); } }, true), 0); }
 async function setReaction(e, k) {
   const cur = (e.reactions || []).find(x => x.user_id === me.id), off = cur && kindOfR(cur) === k;
-  try { if (cur) await q(sb.from("reactions").delete().eq("entry_id", e.id).eq("user_id", me.id));
-    if (!off) { try { await q(sb.from("reactions").insert(k === "like" ? { entry_id:e.id, user_id:me.id } : { entry_id:e.id, user_id:me.id, kind:k })); }
-      catch (err) { if (k === "like" || !/kind/i.test(err?.message || "")) throw err;
-        await q(sb.from("reactions").insert({ entry_id:e.id, user_id:me.id })); k = "like"; say("Faces need the latest update, so that went in as a like"); } }
+  /* one row per person per entry, so a change of face is an upsert — never a delete that a
+     failed insert could leave behind */
+  try { if (off) await q(sb.from("reactions").delete().eq("entry_id", e.id).eq("user_id", me.id));
+    else { try { await q(sb.from("reactions").upsert({ entry_id:e.id, user_id:me.id, kind:k === "like" ? null : k }, { onConflict:"entry_id,user_id" })); }
+      catch (err) { if (!/kind/i.test(err?.message || "")) throw err;
+        if (!cur) await q(sb.from("reactions").insert({ entry_id:e.id, user_id:me.id }));
+        if (k !== "like") say("Faces need the latest update, so that went in as a like"); k = "like"; } }
     e.reactions = (e.reactions || []).filter(x => x.user_id !== me.id); if (!off) e.reactions.push({ user_id:me.id, kind:k === "like" ? null : k });
-    if (!off && e.user_id && e.user_id !== me.id) notify({ to:e.user_id, title:`${me.handle} ${REACTS[k]} what you said`, body:`About ${works[e.work_id]?.title || "something you logged"}.`, tag:"like-" + e.id });
+    if (!off && !cur && e.user_id && e.user_id !== me.id) notify({ to:e.user_id, title:`${me.handle} ${REACTS[k]} what you said`, body:`About ${works[e.work_id]?.title || "something you logged"}.`, tag:"like-" + e.id });
     if (!off && !REDUCED) { const nb = $(`[data-like="${CSS.escape(e.id)}"]`); if (nb) { nb.classList.add("popped"); setTimeout(() => nb.classList.remove("popped"), 520); } }
   } catch (err) { oops(err, "Couldn't react to that"); } }
 function likeLine(e) {
@@ -6572,9 +6597,12 @@ function wireSlips(el, es) { const by = Object.fromEntries(es.map(e => [e.id, e]
     const repaint = () => { const e = b._e; if (!e) return; const has = (e.reactions || []).some(r => r.user_id === me.id);
       b.classList.toggle("on", has); b.setAttribute("aria-pressed", String(has)); b.innerHTML = myReactHTML(e);
       paintLikes(document.querySelector(`[data-likes="${CSS.escape(e.id)}"]`), e); };
-    b.addEventListener("pointerdown", () => { clearTimeout(ht); ht = setTimeout(() => { b.dataset.held = "1"; openReactTray(b, b._e, repaint); }, 420); });
+    /* a hold eats the tap that follows it — but only that one: a right-click or an Android
+       long-press sends no tap afterwards, so the flag can't be left standing */
+    const hold = () => { if (reactTray) return; b.dataset.held = "1"; setTimeout(() => delete b.dataset.held, 700); openReactTray(b, b._e, repaint); };
+    b.addEventListener("pointerdown", () => { clearTimeout(ht); ht = setTimeout(hold, 420); });
     for (const ev of ["pointerup", "pointerleave", "pointercancel"]) b.addEventListener(ev, () => clearTimeout(ht));
-    b.addEventListener("contextmenu", ev => { ev.preventDefault(); clearTimeout(ht); b.dataset.held = "1"; openReactTray(b, b._e, repaint); }); });
+    b.addEventListener("contextmenu", ev => { ev.preventDefault(); clearTimeout(ht); hold(); }); });
   $$("[data-like]", el).forEach(b => b.onclick = async () => { if (b.dataset.held) { delete b.dataset.held; return; }
     const e = by[b.dataset.like], has = (e.reactions||[]).some(r => r.user_id === me.id);
     b.disabled = true;
@@ -6712,7 +6740,7 @@ async function renderRoomFeed(fb, R) {
          meant the freshness bookkeeping above (which runs on every render, filter or no)
          marked a moment seen before it was ever shown. */""}
     <div data-rsec="talk"${sec === "talk" ? "" : " hidden"}>
-    ${recapHTML(R, es)}${tonightCard()}
+    <div id="recapSlot"></div>${tonightCard()}
     <div id="roomAsks"></div>
     ${roomMomentsHTML(moments, freshMoments)}
     <div class="tagrow" id="talkTop" style="margin:18px 0 8px"><span class="lbl" style="margin:0">What the room said</span><span class="tfilters" aria-label="Room activity filter">${[["all","All"],["reviews","Reviews"],["activity","Activity"]].map(([k,l]) => `<button data-rfilter="${k}" class="${roomFilter===k?"on":""}">${l}</button>`).join("")}</span></div>${(() => { if (!roomEntries.length && !(roomFilter === "activity" && moments.length)) return blank("var(--pink)","“",roomFilter === "reviews" ? "No reviews yet" : roomFilter === "activity" ? "No activity yet" : "Nothing said yet",roomFilter === "reviews" ? "Reviews with a note or reaction will appear here." : roomFilter === "activity" ? "Room activity without a written review will appear here." : "Log something and it lands here for the room to see.",[["talkAdd","Log something"]]);
@@ -6727,7 +6755,7 @@ async function renderRoomFeed(fb, R) {
       return runs.map(run => { const e = run.es[0], isNew = e.user_id !== me.id && String(e.created_at) > since; let head = "";
         if (isNew && !shown) { shown = true; head = `<div class="newline">New since you were here</div>`; }
         /* where the new ends: a line you can tick off, and everything under it is older */
-        else if (!isNew && shown && !caught) { caught = true; head = caughtUpHTML(); }
+        else if (String(e.created_at) <= since && shown && !caught) { caught = true; head = caughtUpHTML(); }
         return head + (run.plain ? logLineHTML(run.es) : slipHTML(e, { talk:true })); }).join(""); })()}
     ${roomPrompt()}
     ${pick ? `<div class="result"><small>Tonight's pick</small><b>${esc(pick.title)}</b><div class="stack" style="margin-top:10px"><button class="btn" id="pickLog">${K(pick.kind).verb} it</button></div></div>` : ""}
@@ -6780,7 +6808,7 @@ async function renderRoomFeed(fb, R) {
     $$(".chip[data-prof]", seats).slice(was).forEach((c, i) => {
       c.style.animationDelay = (i * 90) + "ms"; c.classList.add("seat");
       setTimeout(() => { c.classList.remove("seat"); c.style.animationDelay = ""; }, 700 + i * 90); }); })();
-  wireSlips(fb, es); revealIn(fb); wireCaughtUp(fb); rollAll(fb); wireRecap(fb, R); if (currentTab() === "doors") joinRoomChannel(R); roomMood(es);
+  wireSlips(fb, es); revealIn(fb); wireCaughtUp(fb); rollAll(fb); roomWeeks(R); if (currentTab() === "doors") joinRoomChannel(R); roomMood(es);
   /* presence says who is here; this says what they are actually in the middle of */
   paintRoomNow(R);
   ["talkAdd","compAdd"].forEach(id => { const el = $("#"+id); if (el) el.onclick = openAdd; });
@@ -9480,11 +9508,11 @@ function playVote(el) {
 
 let lastGames = null, gamesTouched = 0, gamesT = null;
 const pingRoom = ev => { try { roomCh?.send({ type:"broadcast", event:ev, payload:{} }); } catch {} };
-function gamesPinged() { clearTimeout(gamesT);
+function gamesPinged(n = 0) { clearTimeout(gamesT); if (n > 20) return;
   gamesT = setTimeout(() => { const el = $("#roomGames"), cur = activeRoom();
     if (!el || !lastGames || cur?.id !== lastGames[0].id || el.closest("[hidden]")) return;
     /* never under a thumb: a tap in the last few seconds, or a sheet open, waits */
-    if (Date.now() - gamesTouched < 8e3 || $("#sheet").classList.contains("on")) { gamesPinged(); return; }
+    if (Date.now() - gamesTouched < 8e3 || $("#sheet").classList.contains("on")) { gamesT = setTimeout(() => gamesPinged(n + 1), 3000); return; }
     paintGames(...lastGames); }, 900); }
 async function paintGames(R, es) {
   const el = $("#roomGames"); if (!el) return;
@@ -9629,7 +9657,7 @@ async function setGoal() { const yr = goalYear(), cur = myGoals() || {};
   const v = await openAsk(`<h3>Your goals for ${yr}</h3><p class="sub">How many things do you mean to finish this year? Set a total, or a number for each, or both.</p>
     <div class="lbl" style="margin-top:12px">Everything</div>
     <div class="chips">${[12, 24, 52, 100].map(n => `<button class="chip ${cur.total === n && !split ? "on" : ""}" data-goal="${n}">${n}</button>`).join("")}</div>
-    <input id="goalN" type="number" inputmode="numeric" min="1" max="999" placeholder="Or any number" value="${cur.total && (split || ![12,24,52,100].includes(cur.total)) ? cur.total : ""}" style="margin-top:10px">
+    <input id="goalN" type="number" inputmode="numeric" min="1" max="999" placeholder="Or any number" value="${cur.total || ""}" style="margin-top:10px">
     <div class="lbl" style="margin-top:14px">Or by medium</div>
     <div class="goalsplit">${CAB_ORDER.map(k => `<label style="--k:${K(k).colour}"><span>${esc(K(k).plural)}</span><input type="number" inputmode="numeric" min="0" max="999" data-gk="${k}" value="${cur[k] || ""}" placeholder="–"></label>`).join("")}</div>
     <p class="sub" style="margin-top:6px;font-size:12px">Leave the total empty and it's the sum of these.</p>
@@ -10602,12 +10630,15 @@ function openSeasonChallenge(challenge) {
   if (!challenge) return;
   const S = challengeSeason(challenge.id);
   let picks = S.picks.filter(([kind]) => kind === challenge.kind);
+  /* a second time round starts from what you loved the first time */
+  if (!picks.length && /^second-time-round/.test(challenge.id)) picks = [...new Map(myEntries.filter(e => !e.part && kindOf(e.work_id) === challenge.kind && e.score >= 8)
+    .sort((a, b) => b.score - a.score).map(e => [e.work_id, works[e.work_id]])).values()].filter(Boolean).slice(0, 10).map(w => [w.kind, w.title]);
   if (!picks.length) picks = Object.values(works).filter(w => w.kind === challenge.kind && !logged(w.id) && S.qualifies({ work_id:w.id, works:w }))
     .slice(0, 15).map(w => [w.kind, w.title]);
   const entries = seasonEntries(challenge), medal = seasonMedal(entries.length);
   openSheet(`<div class="head"><div class="season-object ${challenge.kind}">${challenge.mark}</div><div class="hh"><h3>${esc(challenge.name)}</h3><p class="sub">${esc(challenge.copy)} ${esc(S.rule)}</p></div></div>
     <div class="card" style="margin-top:14px"><b>${entries.length} logged</b><p class="sub" style="margin-top:4px">${medal ? medal.name + " earned so far." : "Your first qualifying log earns Bronze."}</p></div>
-    <div class="lbl">Start here</div><div class="season-picks">${picks.map(([kind,title], i) => `<button class="row" type="button" data-season-pick="${esc(title)}" data-season-kind="${kind}"><span class="rk">${i+1}</span><div class="t"><b>${esc(title)}</b><small>${tag(kind)} · horror pick</small></div><span class="chip">Find</span></button>`).join("")}</div>
+    <div class="lbl">Start here</div><div class="season-picks">${picks.map(([kind,title], i) => `<button class="row" type="button" data-season-pick="${esc(title)}" data-season-kind="${kind}"><span class="rk">${i+1}</span><div class="t"><b>${esc(title)}</b><small>${tag(kind)}${/^second-time-round/.test(challenge.id) ? " · you loved it" : ""}</small></div><span class="chip">Find</span></button>`).join("")}</div>
     <div class="stack"><button class="btn quiet" id="seasonClose">Back</button></div>`);
   $("#seasonClose").onclick = closeSheet;
   $$('[data-season-pick]').forEach(row => row.onclick = () => { P.kinds = [row.dataset.seasonKind]; P.shelfFilter = row.dataset.seasonKind; saveP(); closeSheet(); switchTab("shelf"); setTimeout(() => { const search = $("#search"); if (!search) return; search.value = row.dataset.seasonPick; search.dispatchEvent(new Event("input", { bubbles:true })); search.focus(); }, 100); });
@@ -11025,7 +11056,10 @@ async function openWork(id) { let w = works[id]; if (!w) { try { const rows = aw
   if ($("#wNumbers")) { const vals = [["You", mine.length ? (mine[0].score/2).toFixed(1) : derived ? (derived.score/2).toFixed(1) : "—"],["Your room",avg(room)],["Following",avg(fol)],["Everyone",avg(es)]];
     $("#wNumbers").innerHTML = vals.map(([l],i) => `<div><b>—</b><span>${
       i === 0 && derived ? `From ${derived.seasons === 1 ? "a season" : derived.seasons + " seasons"}` : l}</span></div>`).join("");
-    $$("#wNumbers b").forEach((b,i) => countUp(b, vals[i][1])); }
+    $$("#wNumbers b").forEach((b,i) => countUp(b, vals[i][1]));
+    /* before you've rated it, the averages of the people you know wait too; a tap shows one */
+    if (!mine.length && !derived) $$("#wNumbers > div").slice(1, 3).forEach(d => { d.classList.add("hushed"); d.title = "Rate it first, or tap to peek";
+      d.onclick = () => $$("#wNumbers .hushed").forEach(x => x.classList.remove("hushed")); }); }
   if ($("#wTrio")) { $("#wTrio").innerHTML = `<div><b id="tScore">—</b><span>Score</span></div><div><b id="tCount">—</b><span>Logged it</span></div>
       <div class="agree ${agree !== null && agree < 70 ? "low" : ""}"><span class="gauge">
         <svg class="ring" viewBox="0 0 44 44" aria-hidden="true">
@@ -11127,7 +11161,7 @@ async function openWork(id) { let w = works[id]; if (!w) { try { const rows = aw
       $$("[data-fe]", box).forEach(b => b.onclick = () => { const e = fr.find(x => x.id === b.dataset.fe); if (e) openEntry(e); });
       /* the bars grow in once they're showing: straight away if you've rated it, on a peek if not */
       const card = $(".fr", box), show = () => requestAnimationFrame(() => requestAnimationFrame(() => card.classList.remove("pre")));
-      if (rated) show(); else $("#frPeek").onclick = () => { card.classList.remove("veiled"); $("#frPeek").remove(); show(); }; } }
+      if (rated) show(); else $("#frPeek").onclick = () => { card.classList.remove("veiled"); $("#frPeek").remove(); $$("#wNumbers .hushed").forEach(x => x.classList.remove("hushed")); show(); }; } }
   const myTaste = tasteOf(myEntries);
   P.entrySort = P.entrySort || "popular";
   const paint = () => { const el = $("#wEntries"); if (!el) return;

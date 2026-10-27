@@ -222,7 +222,7 @@ straight to a vote on your own picks.
 - **Tilt-to-look:** opt-in, off by default.
 
 **Little extras.**
-- **Face reactions (v35):** hold the heart to answer with your own face instead: laughing, wowed or moved. Stored in `reactions.kind`; before v35 it stays a like.
+- **Face reactions (v35):** hold the heart to answer with your own face instead: laughing, gasping or welling up. Stored in `reactions.kind`; before v35 it stays a like.
 - **Your people on a title:** a star-by-star spread with their faces, blurred until you've rated it yourself.
 - **Monday recap:** "Last week in the room" shows Monday to Wednesday, and can be dismissed until next week.
 - **Weekly room streak:** shows from two weeks up.
