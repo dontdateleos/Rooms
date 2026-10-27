@@ -44,7 +44,7 @@
      and a pastel is a pastel at midnight. --cream doubles as the light that reads on
      --ink, which is why a dark theme gets both right by swapping two values.
      --veil is the ground behind the blurred header and nav. */
-  --onAccent:#151320;--veil:rgba(255,247,236,.92);
+  --onAccent:#151320;--veil:rgba(255,247,236,.96);
   --apricot:#FFB36B;--pink:#F5A3C7;--butter:#FFE86A;--mint:#9EF0C9;--sky:#8FD3FF;--lilac:#B9A6FF;--good:#1E9E6A;--bad:#E0407F;
   --film:var(--apricot);--tv:var(--pink);--book:var(--butter);--game:var(--mint);
   --head:Outfit,sans-serif;--body:Inter,system-ui,sans-serif}
@@ -63,7 +63,7 @@ html[data-day="night"]    {--cream:#EDE2D6;--cream2:#E4D4C5;--line:#DCCBBB}
    and the pastels keep their dark ink because they are still pastels. */
 html[data-theme="dark"]{color-scheme:dark;
   --ink:#F4EDE2;--cream:#16131C;--cream2:#1D1A25;--card:#242030;--line:#2B2733;--mute:#A099B4;
-  --veil:rgba(22,19,28,.92);--blue:#3E68F0;--good:#35C08C}
+  --veil:rgba(22,19,28,.96);--blue:#3E68F0;--good:#35C08C}
 html[data-theme="light"]{color-scheme:light}
 /* the ground still moves across the day; it moves between darks instead */
 html[data-theme="dark"][data-day="early"]    {--cream:#141119;--cream2:#1B1822;--line:#29252F}
@@ -463,7 +463,7 @@ a:focus-visible,[tabindex]:focus-visible,.chip:focus-visible,[data-work]:focus-v
 .roomline{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:8px}
 .rl-l{display:flex;flex-wrap:nowrap;align-items:center;gap:0 10px;min-width:0;overflow:hidden;white-space:nowrap}
 .rl-l .room-streak{overflow:hidden;text-overflow:ellipsis;min-width:0}
-.rl-l .room-streak::before{content:"·";margin-right:8px}
+.rl-l .room-streak::before{content:none}
 .roomline .here{min-height:28px;flex:none}
 .roomline .here .face .av svg{width:24px;height:24px}
 [data-rsec="talk"]>.tonight{margin:4px 0 6px}
@@ -1882,7 +1882,7 @@ nav button .dot{top:0;right:calc(50% - 24px)}
 .sn-rr b small{font-weight:600;color:var(--mute);font-size:11px}
 .sn-bar{flex:1;height:6px;border-radius:3px;background:var(--cream2);overflow:hidden}
 .sn-bar i{display:block;height:100%;border-radius:3px;background:var(--ink);opacity:.75;transition:width .5s cubic-bezier(.2,.8,.2,1)}
-.sn-rr.me .sn-bar i{background:var(--apricot);opacity:1}
+.sn-rr.mine .sn-bar i{background:var(--apricot);opacity:1}
 .sn-rr .n{font-family:var(--head);font-weight:900;font-size:16px;min-width:20px;text-align:right}
 
 
@@ -1907,7 +1907,7 @@ nav button .dot{top:0;right:calc(50% - 24px)}
 .sn-rr b em{display:block;font-style:normal;font-family:var(--body);font-weight:700;font-size:10px;color:var(--good);letter-spacing:.02em}
 .sn-lane{position:relative;height:6px;border-radius:3px;background:var(--cream2);margin:0 14px}
 .sn-lane .fill{position:absolute;left:0;top:0;bottom:0;border-radius:3px;background:var(--ink);opacity:.25}
-.sn-rr.me .sn-lane .fill{background:var(--apricot);opacity:1}
+.sn-rr.mine .sn-lane .fill{background:var(--apricot);opacity:1}
 .sn-lane .runner{position:absolute;top:50%;transform:translate(-50%,-50%)}
 .sn-lane .runner .av{width:28px;height:28px;display:block}
 .sn-rr.lead .n{color:var(--apricot)}
@@ -2456,6 +2456,24 @@ nav button[data-tab="taste"].on .ni-f g{animation:blinkOnce .3s ease-in-out .25s
 
 #wNumbers .hushed b{filter:blur(6px);opacity:.6;cursor:pointer}
 #wNumbers .hushed{cursor:pointer}
+
+/* ---------- pre-launch visual pass ---------- */
+:root{--starOff:color-mix(in srgb,var(--ink) 10%,transparent);--starEdge:color-mix(in srgb,var(--ink) 42%,transparent)}
+.rl-l .room-streak{white-space:nowrap}
+.roomline .rl-l{flex-wrap:wrap;row-gap:2px}
+.wstreak{white-space:nowrap}
+/* fingers are bigger than hearts */
+.slip .foot .lk{position:relative}
+.slip .foot .lk::after{content:"";position:absolute;inset:-12px -8px}
+.slip .who{padding-block:6px;margin-block:-6px}
+.rcx{min-width:44px;min-height:44px;margin:-10px -10px -10px auto}
+.here .face::after{content:"";position:absolute;inset:-8px -3px}
+header,nav,.secbar{-webkit-backdrop-filter:blur(22px) saturate(1.2);backdrop-filter:blur(22px) saturate(1.2)}
+.reacttray{box-shadow:0 14px 34px -12px rgba(0,0,0,.55),0 0 0 1px color-mix(in srgb,var(--ink) 16%,transparent)}
+.chip.who:not(.on){border-color:color-mix(in srgb,var(--lilac) 45%,var(--line))}
+.mf-tap{display:block;margin-top:10px;font:600 11.5px var(--body);font-style:normal;opacity:.6}
+.hushed .odo,.hushed b{filter:blur(6px);opacity:.6}
+.hushed{cursor:pointer}
 </style>
 </head>
 <body>
@@ -2538,9 +2556,9 @@ const STAR = "M12 2.6l2.9 6.1 6.6.9-4.8 4.6 1.2 6.6L12 17.6 6.1 20.8l1.2-6.6L2.5
 let gid = 0;
 function starPath(f) {
   if (f >= 1) return `<path d="${STAR}" fill="var(--ink)"/>`;
-  if (f <= 0) return `<path d="${STAR}" fill="var(--line)"/>`;
+  if (f <= 0) return `<path d="${STAR}" fill="var(--starOff)" stroke="var(--starEdge)" stroke-width="1.1" stroke-linejoin="round"/>`;
   const g = "g" + (++gid);
-  return `<defs><linearGradient id="${g}"><stop offset="50%" stop-color="var(--ink)"/><stop offset="50%" stop-color="var(--line)"/></linearGradient></defs><path d="${STAR}" fill="url(#${g})"/>`;
+  return `<defs><linearGradient id="${g}"><stop offset="50%" stop-color="var(--ink)"/><stop offset="50%" stop-color="var(--starOff)"/></linearGradient></defs><path d="${STAR}" fill="url(#${g})" stroke="var(--starEdge)" stroke-width="1.1" stroke-linejoin="round"/>`;
 }
 const stars = (half, cls = "") => `<div class="stars ${cls}">${[0,1,2,3,4].map(i => { const f = half/2 - i;
   return `<i class="${f >= 1 ? "" : f > 0 ? "half" : "off"}"></i>`; }).join("")}</div>`;
@@ -4436,7 +4454,7 @@ function paintHere() {
     ? `<span class="dot"></span><span class="faces">${others.map(p =>
         `<span class="face${seen.size && !seen.has(p.id) ? " came" : ""}${p.doing === "logging" ? " busy" : ""}" data-who="${esc(p.id)}"
           data-prof="${esc(p.id)}" style="cursor:pointer" title="${esc(p.handle)}">${avatar(p)}${p.doing === "logging" ? `<i class="typing" aria-hidden="true"><b></b><b></b><b></b></i>` : ""}</span>`).join("")}</span>
-       <small>${busy.length === 1 ? esc(busy[0].handle) + " is logging something…" : busy.length > 1 ? said(busy.length) + " of you are logging…"
+       <small>${busy.length === 1 ? esc(busy[0].handle) + "'s logging…" : busy.length > 1 ? said(busy.length) + " of you are logging…"
          : others.length === 1 ? esc(others[0].handle) + " is here" : others.length + " here"}</small>`
     : `<small>${hereQuiet || "Nobody else in here right now"}</small>`;
   /* anyone who's here gets lit eyes wherever their face turns up, not only in this row */
@@ -4884,7 +4902,7 @@ function noteRow(n) {
 function openNotes() {
   const ns = noteList();
   openSheet(`<h3>What happened</h3>
-    <p class="sub">People, agreement, the games, and anything somebody put in front of you.</p>
+    <p class="sub">New follows, likes and replies, room games, and things friends sent you.</p>
     <div id="noteBody" style="margin-top:10px">${ns.length ? ns.map(noteRow).join("")
       : `<p class="msg">Nothing yet. When somebody follows you, agrees with something you wrote,
          or hands you a title, it lands here.</p>`}</div>
@@ -6172,7 +6190,7 @@ function roomMood(es) { const dot = $("#pager .tdot"); if (!dot) return;
    The line between what's new and what you've already seen. The tick draws itself and the
    little guy nods the first time you scroll down to it; under it the feed is a touch quieter. */
 const caughtUpHTML = () => `<div class="caughtup" role="separator" aria-label="You're all caught up"><span class="cl"></span>
-  <span class="cm"><span class="cg">${tinyFace("ok", "#9EF0C9")}</span><svg class="ctick" viewBox="0 0 26 26" aria-hidden="true"><circle cx="13" cy="13" r="11"/><path d="M8 13.5l3.4 3.4L18.5 9.6"/></svg>
+  <span class="cm"><svg class="ctick" viewBox="0 0 26 26" aria-hidden="true"><circle cx="13" cy="13" r="11"/><path d="M8 13.5l3.4 3.4L18.5 9.6"/></svg>
   <b>You're all caught up</b><small>Earlier</small></span><span class="cl"></span></div>`;
 function wireCaughtUp(root) { const el = $(".caughtup", root); if (!el) return;
   let n = el.nextElementSibling; while (n) { n.classList.add("earlier"); n = n.nextElementSibling; }
@@ -7410,9 +7428,8 @@ function renderShelf() {
         `<div class="row" style="cursor:default">${cover(w)}<div class="t"><b>${esc(w.title)}</b>
           <small>${tag(w.kind)} from ${esc(h.sender_p?.handle || "someone")}${h.note ? ` · “${esc(h.note)}”` : ""}</small></div>
           <span class="chip" data-yes="${esc(h.id)}">Take it</span><span class="chip" data-no="${esc(h.id)}">No</span></div>`).join("")}</div>`; })()}
-    <div class="lbl">Coming soon · add to Up next</div><div id="waitBody"><p class="msg">Loading what's coming</p></div>
-    <p class="sub" style="margin-top:6px;font-size:12px">Films, shows and games with a date on them.
-      Books don't appear here — no book source publishes a forthcoming list.</p>
+    <div id="waitWrap"><div class="lbl">Out soon · add to Up next</div><div id="waitBody"><p class="msg">Loading what's coming</p></div>
+    <p class="sub" style="margin-top:6px;font-size:12px">Films, shows and games with a release date.</p></div>
 `;
   $$("[data-sk]").forEach(b => b.onclick = () => { const k = b.dataset.sk; if (P.kinds.includes(k)) { if (P.kinds.length > 1) P.kinds = P.kinds.filter(x => x !== k); } else P.kinds = [...P.kinds, k]; saveP(); renderShelf(); });
   const sf = $("#shelfFocus"); if (sf) sf.onclick = () => $("#search")?.focus();
@@ -7913,7 +7930,7 @@ async function paintRoomGoals(R, es) { const el = $("#roomGoals"); if (!el) retu
     const b = $("#roomGoalSet", el); if (b) b.onclick = setGoal; return; }
   const list = withGoal.map(x => { const n = x.p.id === me.id ? goalCount(myEntries) : goalCount(es, x.p.id); return { ...x, n, pace:goalPace(n, x.goal) }; })
     .sort((a, b) => (b.n / b.goal) - (a.n / a.goal));
-  el.innerHTML = `<div class="card goalsroom"><div class="h"><span>Goals for ${yr}</span><span class="tag dim">${list.length} of ${R.members.length} in</span></div>
+  el.innerHTML = `<div class="card goalsroom"><div class="h"><span>Goals for ${yr}</span><span class="tag dim">${list.length} of ${R.members.length} set one</span></div>
     ${list.map(x => { const pct = Math.min(100, Math.round(x.n / x.goal * 100));
       return `<div class="grow2">${avatar(x.p, "av")}<span class="gn"><b>${x.p.id === me.id ? "you" : esc(x.p.handle)}</b><small>${x.n} of ${x.goal} · ${x.pace.word}</small>
         <span class="pbar"><i style="width:${Math.max(2, pct)}%"></i><em style="left:${Math.min(100, Math.round(x.pace.due / x.goal * 100))}%"></em></span>
@@ -8294,11 +8311,16 @@ async function doSearch(term, onPick, resEl, msgEl, box, acts = null) {
     Promise.all(P.kinds.map(k => SOURCES[k](term).then(r => ({ k, r })).catch(e => ({ k, err:e.message })))),
     wantsScreen ? byPerson(term).catch(() => null) : null,
   ]);
-  const hits = done.flatMap(d => d.r || []); const errs = done.filter(d => d.err).map(d => `${K(d.k).label}: ${d.err}`);
+  /* what's already in your log, Up next or the room comes first, and still turns up offline */
+  const t0 = lc(term).trim(), local = t0.length < 2 ? [] : Object.values(works).filter(w => w?.title && !isPart(w.id) && P.kinds.includes(w.kind) && lc(w.title).includes(t0)).slice(0, 6);
+  const seenIds = new Set(local.map(w => w.id));
+  const hits = [...local, ...done.flatMap(d => d.r || []).filter(h => !seenIds.has(h.id))];
+  const failed = done.filter(d => d.err).map(d => K(d.k).label);
+  const errs = failed.length ? [`Couldn't reach ${failed.length === P.kinds.length ? "search" : failed.join(", ") + " search"} just now`] : [];
   const byThem = person ? person.rows.filter(r => !hits.some(h => h.id === r.id)) : [];
   msgEl.textContent = (hits.length || byThem.length) ? errs.join(" · ") : "";
   if (!hits.length && !byThem.length) { resEl.innerHTML = errs.length
-    ? blank("var(--pink)","!","Can't search that", errs.join(" · ") + ". It's usually the connection — try again in a moment.", [])
+    ? blank("var(--pink)","!","Search can't be reached", "Check your connection and try again in a moment.", [])
     : blank("var(--cream2)","?", `Nothing for “${esc(term)}”`, `Try fewer words, or turn on another medium above. Some things simply aren't in TMDB, Open Library or IGDB.`, []);
     return; } window.__hits = Object.assign(window.__hits||{}, Object.fromEntries([...hits, ...byThem].map(h => [h.id, h])));
   const inner = h => `${cover(h)}<div class="t"><b>${esc(h.title)}</b><small>${tag(h.kind)} ${isSoon(h)?`Coming ${when(h.release)}`:esc(h.year||"")}${h.creator?" · "+esc(h.creator):""}</small></div>`;
@@ -8485,8 +8507,8 @@ async function renderWaiting() { const el = $("#waitBody"); if (!el) return;
     if (P.kinds.includes("tv")) jobs.push(tmdb("discover/tv",{ "first_air_date.gte":today(), sort_by:"popularity.desc", page:"1" }).then(d => (d.results||[]).map(r => ({ id:"tv:"+r.id, kind:"tv", title:r.name, year:(r.first_air_date||"").slice(0,4), release:r.first_air_date, date:r.first_air_date, cover:TMDB_IMG(r.poster_path) }))).catch(()=>[]));
     if (P.kinds.includes("game")) jobs.push(igdb("games", `where first_release_date > ${Math.floor(Date.now()/1000)}; sort first_release_date asc; fields name,first_release_date,cover.image_id; limit 6;`).then(g => g.map(x => { const d = new Date(x.first_release_date*1000).toISOString().slice(0,10);
       return { id:"game:"+x.id, kind:"game", title:x.name, year:d.slice(0,4), release:d, date:d, cover:x.cover?.image_id?`https://images.igdb.com/igdb/image/upload/t_cover_big/${x.cover.image_id}.jpg`:"" }; })).catch(()=>[]));
-    const res = await Promise.all(jobs); upcoming = res.flat().filter(x => x.date && x.date >= today()).sort((a,b) => a.date.localeCompare(b.date)).slice(0,8); }
-  if (!upcoming.length) { el.innerHTML = `<p class="empty">Nothing dated yet.</p>`; return; } const L = activeList();
+    const res = await Promise.all(jobs.map(j => j.catch(() => []))); upcoming = res.flat().filter(x => x.date && x.date >= today()).sort((a,b) => a.date.localeCompare(b.date)).slice(0,8); }
+  if (!upcoming.length) { $("#waitWrap")?.remove(); return; } const L = activeList();
   window.__hits = Object.assign(window.__hits||{}, Object.fromEntries(upcoming.map(u => [u.id, u])));
   el.innerHTML = `<div class="card" style="margin-top:0">${upcoming.map(r => `<div class="row" data-up="${esc(r.id)}">${cover(r)}<div class="t"><b>${esc(r.title)}</b><small>${tag(r.kind)} ${when(r.date)}</small></div><span class="chip ${L?.items.includes(r.id)?"on":""}">${L?.items.includes(r.id)?"In Up next":"Add"}</span></div>`).join("")}</div>`;
   $$("[data-up]", el).forEach(x => x.onclick = () => addToShelf(x.dataset.up)); }
@@ -8549,8 +8571,9 @@ function tasteHTML(t, opts = {}) { if (t.tagged < 3) return blank("var(--butter)
   `Say what you loved on a few entries — the look, the writing, how it plays — and the profile builds itself. ${t.tagged} of 3 so far.`,
   opts.third ? [] : [["tasteBlankAdd","Log something"]]);
   const top = t.craft.slice(0,3).map(c => c[0]); const carries = t.craft.filter(([,v]) => Object.keys(v.by).length > 1).slice(0,3);
-  const slices = t.craft.slice(0,6).map(([k,v]) => ({ name:k, v:v.total,
-    col:K(Object.entries(v.by).sort((a,b)=>b[1]-a[1])[0][0]).colour }));
+  /* every slice its own colour: by medium alone, a film person's ring was one solid colour */
+  const DONUT = ["#FFB36B", "#F5A3C7", "#B9A6FF", "#8FD3FF", "#9EF0C9", "#FFE86A"];
+  const slices = t.craft.slice(0,6).map(([k,v], i) => ({ name:k, v:v.total, col:DONUT[i % DONUT.length] }));
   return `<div class="say">${opts.third ? "Goes" : "You go"} for <span class="hl" style="background:var(--butter)">${esc(top[0])}</span>${top[1]?`, ${esc(top[1])}`:""}${top[2]?` and ${esc(top[2])}`:""}.</div>
     <div class="donutWrap">${donutSVG(slices)}<ul class="donutLegend">${slices.map(s => `<li><span class="dot" style="background:${s.col}"></span>${esc(s.name)}</li>`).join("")}</ul></div>
     ${carries.length ? `<div class="lbl">What carries across</div><div class="chips">${carries.map(([k,v]) => `<span class="chip">${esc(k)} <u>${Object.keys(v.by).map(x=>K(x).label).join(", ")}</u></span>`).join("")}</div>` : ""}
@@ -9479,7 +9502,7 @@ function playMatch(w, line = "", faces = []) {
   if (REDUCED) { say(`It's a match: ${w.title}`, "good"); return; }
   $(".matchfx")?.remove();
   const fx = document.createElement("div"); fx.className = "matchfx"; fx.setAttribute("role", "status");
-  fx.innerHTML = `<div class="mf-in"><b class="mf-h">It's a match</b><div class="mf-p">${cover(w)}</div><b class="mf-t">${esc(w.title)}</b>${line ? `<small>${esc(line)}</small>` : ""}${faces.length ? `<div class="mf-faces">${faces.slice(0, 6).map(p => avatar(p)).join("")}</div>` : ""}</div>`;
+  fx.innerHTML = `<div class="mf-in"><b class="mf-h">It's a match</b><div class="mf-p">${cover(w)}</div><b class="mf-t">${esc(w.title)}</b>${line ? `<small>${esc(line)}</small>` : ""}<em class="mf-tap">Tap to close</em>${faces.length ? `<div class="mf-faces">${faces.slice(0, 6).map(p => avatar(p)).join("")}</div>` : ""}</div>`;
   /* everyone who said yes drops in, one after another, and then they all hop at once */
   $$(".mf-faces .av", fx).forEach((f, i, all) => {
     f.animate([{ transform:"translateY(-40px) scale(.6)", opacity:0 }, { transform:"translateY(4px) scale(1.05,.92)", opacity:1, offset:.7 }, { transform:"none", opacity:1 }],
@@ -9494,7 +9517,7 @@ function playMatch(w, line = "", faces = []) {
   sparkBurst(p, 34, [90, 200], 620); roomBurst(fx, 30, 560); roomBurst(fx, 22, 900);
   buzz([12, 60, 18]);
   const go = () => { fx.animate([{ opacity:1 }, { opacity:0 }], { duration:220, fill:"both" }).onfinish = () => fx.remove(); };
-  fx.onclick = go; setTimeout(() => fx.isConnected && go(), 2600); }
+  fx.onclick = go; setTimeout(() => fx.isConnected && go(), 2200); }
 function playChampion(el) {
   const c = $(".champ", el); if (!c) return;
   c.animate([{ transform:"scale(.85)", opacity:0 }, { transform:"scale(1.04)", opacity:1, offset:.6 }, { transform:"none" }], { duration:620, easing:"cubic-bezier(.2,1,.4,1)" });
@@ -9545,8 +9568,9 @@ async function paintGames(R, es) {
       if ((gameSeen(k) || 0) < bst.current.r) { gameSeen(k, bst.current.r); playRound(el); } }
     playVote(el);
     const newMatch = swNow.matches.find(id => !gameSeen(`m:${R.id}:${swipeDay()}:${id}`));
-    if (newMatch) { swNow.matches.forEach(id => gameSeen(`m:${R.id}:${swipeDay()}:${id}`, 1)); setTimeout(() => playMatch(works[newMatch], `${swNow.yes(newMatch)} of you said yes for tonight`,
-      swNow.vs.filter(v => v.work === newMatch && v.choice === "y").map(v => R.members.find(m => m.id === v.voter)).filter(Boolean)), 500); } }
+    /* the full-screen moment is for a match you just made; one that happened while you were
+       away is news, so it's a toast */
+    if (newMatch) { swNow.matches.forEach(id => gameSeen(`m:${R.id}:${swipeDay()}:${id}`, 1)); setTimeout(() => say(`It's a match: ${works[newMatch]?.title || "tonight's pick"} · ${swNow.yes(newMatch)} of you said yes`, "good"), 500); } }
   const again = () => { pingRoom("games"); return paintGames(R, es); };
   wireNudges(R, el);
   const ga = $("#gAnswer", el); if (ga) ga.onclick = () => openAnswer(R, g, again);
@@ -10378,7 +10402,7 @@ async function renderFriendClubs(el) { const R = activeRoom();
       pct = items.length ? Math.round(done/items.length*100) : 0, ks = [...new Set(items.map(kindOf))], d = daysTo(c.due);
     return `<div class="club ${c.scope === "open" ? "open" : ""}" data-c="${c.id}">
       <div class="top"><span class="tag" style="background:${c.scope === "open" ? "var(--lilac)" : "var(--sky)"}">${esc(c.label || (c.scope === "open" ? "Open" : "Your room"))}</span>
-        <span class="deadline ${d !== null && d <= 7 ? "soon" : ""}">${d === null ? "rolling" : d < 0 ? "finished" : d === 0 ? "ends today" : d + " days left"}</span></div>
+        <span class="deadline ${d !== null && d <= 7 ? "soon" : ""}">${d === null ? "no end date" : d < 0 ? "finished" : d === 0 ? "ends today" : d + " days left"}</span></div>
       <b>${esc(c.name)}</b>
       ${items.length ? `<div class="clubposters">${items.slice(0, 8).map(id => { const w = works[id];
         return `<span class="cp${logged(id) ? " done" : ""}" style="${w?.cover ? "" : `background:${K(kindOf(id)).colour}`}">${w ? cover(w, "cpi") : ""}</span>`; }).join("")}${items.length > 8 ? `<span class="cpmore">+${items.length - 8}</span>` : ""}</div>` : ""}
@@ -10806,7 +10830,7 @@ function paintSeasonRace(S, room, myTotal) {
   const line = !lead.n ? "Nobody's on the board yet." : lead.p.id === me.id ? (rows[1]?.n === lead.n ? `You're level with ${esc(rows[1].p.handle)}.` : "You're out in front.") : meAt === -1 ? "" : `${esc(lead.p.handle)}'s ahead${rows[meAt].n < lead.n ? ` by ${lead.n - rows[meAt].n}` : ""}.`;
   el.innerHTML = `<div class="lbl">The room's race<small>${line}</small></div>
     <div class="card sn-race">${rows.slice(0, 8).map((r, i) => { const pct = lead.n ? Math.round(r.n / lead.n * 100) : 0;
-      return `<div class="sn-rr${r.p.id === me.id ? " me" : ""}${i === 0 && r.n ? " lead" : ""}" data-prof="${esc(r.p.id)}">
+      return `<div class="sn-rr${r.p.id === me.id ? " mine" : ""}${i === 0 && r.n ? " lead" : ""}" data-prof="${esc(r.p.id)}">
         <b>${esc(r.p.handle)}${r.p.id === me.id ? " <small>(you)</small>" : ""}${room.fresh.has(r.p.id) ? ` <em>new today</em>` : ""}</b>
         <span class="sn-lane"><i class="fill" style="width:${pct}%"></i><span class="runner" style="left:${pct}%">${avatar(r.p)}</span></span>
         <span class="n">${r.n}</span></div>`; }).join("")}</div>`;
@@ -11029,7 +11053,7 @@ async function openWork(id) { let w = works[id]; if (!w) { try { const rows = aw
     <div class="stack"><button class="btn ${isSoon(w)?"ghost":""}" id="wLog">${logged(w.id)?"Log it again":isSoon(w)?"Log it anyway":cfg.verb.replace(/^./,c=>c.toUpperCase())+" it"}</button><button class="btn ghost" id="wShelf">${activeList()?.items.includes(w.id)?"Take it out of Up next":"Add to Up next"}</button>${
       reachable().length ? `<button class="btn quiet" id="wHand">Tell someone to ${cfg.verb === "read" ? "read" : cfg.verb === "played" ? "play" : "watch"} it</button>` : ""}${
       myOpenClubs().length ? `<button class="btn quiet" id="wClub">Add it to a club</button>` : ""}</div>
-    <div class="chips" id="wClubs" hidden style="margin-top:8px"><p class="sub" style="width:100%;margin:0 0 2px">Lit means it's in there. Tap to add or take out.</p>${myOpenClubs().map(c =>
+    <div class="chips" id="wClubs" hidden style="margin-top:8px"><p class="sub" style="width:100%;margin:0 0 2px">Highlighted clubs have it. Tap one to add or remove it.</p>${myOpenClubs().map(c =>
       `<button class="chip ${(c.items || []).includes(w.id) ? "on" : ""}" data-addclub="${esc(c.id)}">${esc(c.name)}</button>`).join("")}</div>
     <div class="card"><div class="h"><span>Details</span></div>${Object.entries(w.credits||{}).filter(([k,v]) => v).map(([r,n]) => `<div class="kv"><span>${r === "dp" ? "camerawork" : r}</span>${esc(n)}</div>`).join("")}${w.meta?.genres?.length?`<div class="kv"><span>genres</span>${esc(w.meta.genres.join(", "))}</div>`:""}</div>
     ${w.kind === "tv" && !isPart(w.id) ? `<details class="fold" id="wParts"><summary>Seasons and episodes</summary>
@@ -11058,14 +11082,15 @@ async function openWork(id) { let w = works[id]; if (!w) { try { const rows = aw
       i === 0 && derived ? `From ${derived.seasons === 1 ? "a season" : derived.seasons + " seasons"}` : l}</span></div>`).join("");
     $$("#wNumbers b").forEach((b,i) => countUp(b, vals[i][1]));
     /* before you've rated it, the averages of the people you know wait too; a tap shows one */
-    if (!mine.length && !derived) $$("#wNumbers > div").slice(1, 3).forEach(d => { d.classList.add("hushed"); d.title = "Rate it first, or tap to peek";
-      d.onclick = () => $$("#wNumbers .hushed").forEach(x => x.classList.remove("hushed")); }); }
+    if (!mine.length && !derived) $$("#wNumbers > div").slice(1, 4).forEach(d => { d.classList.add("hushed"); d.title = "Rate it first, or tap to peek";
+      d.onclick = () => $$(".hushed").forEach(x => x.classList.remove("hushed")); }); }
   if ($("#wTrio")) { $("#wTrio").innerHTML = `<div><b id="tScore">—</b><span>Score</span></div><div><b id="tCount">—</b><span>Logged it</span></div>
       <div class="agree ${agree !== null && agree < 70 ? "low" : ""}"><span class="gauge">
         <svg class="ring" viewBox="0 0 44 44" aria-hidden="true">
           <circle class="track" cx="22" cy="22" r="18"></circle><circle class="val" id="tRing" cx="22" cy="22" r="18"></circle></svg>
         <b id="tAgree" class="${agree!==null?(agree>=70?"good":"bad"):""}">—</b></span><span>Agree</span></div>`;
     odometer($("#tScore"), avg(es)); odometer($("#tCount"), String(es.length));
+    if (!mine.length && !derived) { const sc = $("#tScore")?.parentElement; if (sc) { sc.classList.add("hushed"); sc.onclick = () => $$(".hushed").forEach(x => x.classList.remove("hushed")); } }
     countUp($("#tAgree"), agree === null ? "—" : String(agree));
     /* 17 — the arc sweeps to the same number the label counts to */
     const ring = $("#tRing");
@@ -11161,7 +11186,7 @@ async function openWork(id) { let w = works[id]; if (!w) { try { const rows = aw
       $$("[data-fe]", box).forEach(b => b.onclick = () => { const e = fr.find(x => x.id === b.dataset.fe); if (e) openEntry(e); });
       /* the bars grow in once they're showing: straight away if you've rated it, on a peek if not */
       const card = $(".fr", box), show = () => requestAnimationFrame(() => requestAnimationFrame(() => card.classList.remove("pre")));
-      if (rated) show(); else $("#frPeek").onclick = () => { card.classList.remove("veiled"); $("#frPeek").remove(); $$("#wNumbers .hushed").forEach(x => x.classList.remove("hushed")); show(); }; } }
+      if (rated) show(); else $("#frPeek").onclick = () => { card.classList.remove("veiled"); $("#frPeek").remove(); $$(".hushed").forEach(x => x.classList.remove("hushed")); show(); }; } }
   const myTaste = tasteOf(myEntries);
   P.entrySort = P.entrySort || "popular";
   const paint = () => { const el = $("#wEntries"); if (!el) return;
@@ -12137,7 +12162,7 @@ async function openYou() { let top = { items:[] }; try { top = await ensureMyTop
     </div>
     ${/* Nobody needs these. They are here for the one person running their own worker,
           and out in the open they read as two things you were supposed to fill in. */""}
-    <details class="fold"${(P.workerUrl || P.tmdbKey) ? " open" : ""}><summary>Your own data sources</summary>
+    <details class="fold"${(P.workerUrl || P.tmdbKey) ? " open" : ""}><summary>Advanced: your own search keys</summary>
       <p class="sub">Leave both empty and the app uses the shared worker, which is what almost
         everyone should do. A key you put here is kept on this device and never sent anywhere
         but the service it belongs to.</p>
@@ -12152,7 +12177,7 @@ async function openYou() { let top = { items:[] }; try { top = await ensureMyTop
       <div class="stack"><button class="btn" id="savePw">Save the password</button></div><p class="msg" id="pwMsg"></p></div>`}
     <div class="stack"><button class="btn ghost" id="importBtn">Import a log from another app</button>
       <button class="btn ghost" id="bringBtn">Bring another log into this one</button>
-      ${sb.__local?``:`<button class="btn ghost" id="takeout">Download everything</button><button class="btn quiet" id="takeoutCsv">Download your diary as a spreadsheet</button>`}${sb.__local?`<button class="btn ghost" id="backup">Back up the log</button><button class="btn quiet" id="restore">Restore from a backup</button><input type="file" id="restoreFile" accept="application/json" hidden>`:""}<button class="btn quiet" id="signOut">${sb.__local?"Close the log":"Sign out"}</button><button class="btn quiet" id="sClose">Done</button></div><p class="msg" id="sMsg"></p>
+      ${sb.__local?``:`<button class="btn ghost" id="takeout">Download everything</button><button class="btn quiet" id="takeoutCsv">Download your diary as a spreadsheet</button>`}${sb.__local?`<button class="btn ghost" id="backup">Back up the log</button><button class="btn quiet" id="restore">Restore from a backup</button><input type="file" id="restoreFile" accept="application/json" hidden>`:""}<button class="btn quiet" id="signOut">Sign out</button><button class="btn quiet" id="sClose">Done</button></div><p class="msg" id="sMsg"></p>
     ${blocked.size ? `<details class="fold" id="blockFold"><summary>Blocked \u00b7 ${blocked.size}</summary>
       <p class="sub">Neither of you sees the other. Letting somebody back in does not put
         back the following that blocking undid.</p>
