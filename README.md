@@ -243,6 +243,20 @@ straight to a vote on your own picks.
 - **Blurred poster previews** while posters load.
 - **Tab icons:** each does its own little move once when picked.
 
+**After Grok Bot: faces as status, places to be.**
+- **The couch:** the room's people sit on a couch at the top of the room. Who's here sits up; anyone quiet a week leans back asleep.
+- **Faces show what people are doing**, on the couch and on "on now":
+  - lit by a screen when watching
+  - eyes along a page when reading
+  - darting when playing
+  - a hop and a tick when they've just finished something
+- **Peek card:** tapping a face in the room opens a small card first (what they're on, what they last logged), with the profile one more tap away.
+- **Watch night:** faces gather on the watch-night card as people vote, and hop once when everyone's in.
+- **Handing a title over** tosses the poster to the friend's face.
+- **Members sheet:** shows everyone at a desk with whatever they're on.
+- **Room colour:** each room's colour washes the top of its page.
+- **Opening screen:** the four rooms look at the name while the app loads, only if loading takes a moment.
+
 **Imports are history, not news.** Entries brought in from another app carry
 `context.imported` (and `context.before` when undated, as the welcome picks do); they
 count in your year and taste but never in a feed, a week, a race or a season.

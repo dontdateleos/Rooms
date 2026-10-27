@@ -2474,9 +2474,91 @@ header,nav,.secbar{-webkit-backdrop-filter:blur(22px) saturate(1.2);backdrop-fil
 .mf-tap{display:block;margin-top:10px;font:600 11.5px var(--body);font-style:normal;opacity:.6}
 .hushed .odo,.hushed b{filter:blur(6px);opacity:.6}
 .hushed{cursor:pointer}
+
+/* ---------- the opening ---------- */
+#splash{position:fixed;inset:0;z-index:120;display:grid;place-items:center;background:var(--cream);opacity:0;animation:spIn .3s ease .25s forwards;transition:opacity .28s}
+#splash.gone{opacity:0!important;animation:none}
+@keyframes spIn{to{opacity:1}}
+.sp-in{position:relative;width:220px;height:160px;display:grid;place-items:center}
+.sp-in b{font:900 36px/1 var(--head);letter-spacing:-.04em;color:var(--ink);position:relative;z-index:1}
+.sp{position:absolute;width:40px;height:40px;border-radius:12px}
+.sp u{position:absolute;top:13px;width:5px;height:12px;border-radius:3px;background:#151320;animation:spLook 3.2s ease-in-out infinite}
+.sp u:first-child{left:13px}.sp u:last-child{left:22px}
+.s1{left:6px;top:4px;background:#F5A3C7;--dx:4px;--dy:3px}.s2{right:6px;top:4px;background:#FFB36B;--dx:-4px;--dy:3px}
+.s3{left:6px;bottom:4px;background:#B9A6FF;--dx:4px;--dy:-3px}.s4{right:6px;bottom:4px;background:#8FD3FF;--dx:-4px;--dy:-3px}
+.s2 u{animation-delay:.3s}.s3 u{animation-delay:.6s}.s4 u{animation-delay:.15s}
+@keyframes spLook{0%,10%{transform:none}25%,60%{transform:translate(var(--dx),var(--dy))}63%{transform:translate(var(--dx),var(--dy)) scaleY(.1)}66%,85%{transform:translate(var(--dx),var(--dy))}100%{transform:none}}
+/* ---------- the room's own colour ---------- */
+#doorsBody.washed{position:relative;isolation:isolate}
+.roomwash{position:absolute;left:-18px;right:-18px;top:-90px;height:360px;z-index:-1;pointer-events:none;
+  background:radial-gradient(110% 75% at 15% 0%,color-mix(in srgb,var(--rc) 30%,transparent) 0%,color-mix(in srgb,var(--rc) 10%,transparent) 45%,transparent 75%)}
+/* ---------- the couch ---------- */
+.couch{position:relative;display:inline-flex;align-items:flex-end;gap:3px;padding:0 9px 3px;margin-right:2px}
+.roomline .here .couch .face .av svg{width:31px;height:31px}
+.couch .cushion{position:absolute;left:0;right:0;bottom:0;height:17px;border-radius:9px 9px 6px 6px;background:color-mix(in srgb,var(--rc,var(--lilac)) 40%,var(--card));
+  box-shadow:inset 0 3px 0 rgba(255,255,255,.12),inset 0 -3px 0 rgba(0,0,0,.12)}
+.rl-l:has(.couch){padding-block:7px;margin-block:-7px}
+.couch::before{content:"";position:absolute;left:4px;right:4px;bottom:10px;height:17px;border-radius:9px;background:color-mix(in srgb,var(--rc,var(--lilac)) 22%,var(--card))}
+.here .couch .face{margin:0;position:relative;z-index:1;background:none;box-shadow:none;border-radius:0;transition:transform .35s cubic-bezier(.3,1.4,.5,1),opacity .3s}
+.couch .face.off{opacity:.78;transform:translateY(2px)}
+.couch .face.off.st-quiet{transform:translateY(4px) rotate(-12deg);opacity:.6}
+.couch .face.st-quiet .av .eyes{scale:1 .14!important}
+.couch .face.sat{animation:sitUp .5s cubic-bezier(.3,1.5,.5,1)}
+@keyframes sitUp{from{transform:translateY(5px) rotate(-8deg)}}
+:is(.couch .face,.nowpill).st-watching .av{animation:stGlow 2.6s ease-in-out 6}
+:is(.couch .face,.nowpill).st-reading .av .eyes{animation:stRead 3.2s ease-in-out 5!important}
+:is(.couch .face,.nowpill).st-playing .av .eyes{animation:stDart 1.6s steps(1) 8!important}
+.couch .face.st-finished .av{animation:stHop 1.6s cubic-bezier(.3,1.4,.5,1) 2}
+.couch .face.st-finished::after{content:"\2713";position:absolute;right:-3px;top:-4px;width:13px;height:13px;border-radius:50%;background:var(--good);color:#fff;font:900 8px/13px var(--head);text-align:center;z-index:2}
+@keyframes stGlow{0%,100%{filter:none}40%{filter:brightness(1.2) drop-shadow(0 0 5px rgba(143,211,255,.55))}55%{filter:brightness(.96)}}
+@keyframes stRead{0%{translate:-4px 2px}70%{translate:4px 2px}78%,100%{translate:-4px 5px}}
+@keyframes stDart{0%{translate:-4px 0}25%{translate:4px -2px}50%{translate:2px 3px}75%{translate:-3px -1px}}
+@keyframes stHop{0%,40%,100%{transform:none}55%{transform:translateY(-8px) scale(1.06,.94)}70%{transform:scale(1.08,.9)}}
+/* ---------- peek ---------- */
+.peekcard{position:fixed;z-index:85;width:min(290px,calc(100vw - 24px));background:var(--card);border-radius:18px;padding:12px;
+  box-shadow:0 22px 44px -18px rgba(0,0,0,.55),0 0 0 1px color-mix(in srgb,var(--ink) 12%,transparent);transform:scale(.3);opacity:0;
+  transition:transform .3s cubic-bezier(.3,1.4,.5,1),opacity .16s}
+.peekcard.on{transform:none;opacity:1}
+.pk-h{display:flex;align-items:center;gap:10px}
+.pk-h .av{width:36px;height:36px}
+.pk-h b{display:block;font:800 16px/1.2 var(--head)}.pk-h small{color:var(--mute);font-size:12.5px}
+.pk-row{display:flex;gap:10px;align-items:center;width:100%;text-align:left;border:0;background:none;color:var(--ink);font:inherit;padding:8px 0 0;cursor:pointer}
+.pk-row .co{width:30px;height:44px;border-radius:6px;object-fit:cover;flex:none;background:var(--cream2)}
+.pk-row span{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.pk-row b{font:700 13.5px/1.25 var(--body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pk-row small{font-size:11.5px;color:var(--mute)}
+.pk-none{margin:10px 0 0;font-size:13px;color:var(--mute)}
+.pk-go{margin-top:10px;border:0;background:var(--cream2);color:var(--ink);font:800 13px var(--head);border-radius:12px;padding:10px 12px;width:100%;text-align:left;cursor:pointer}
+/* ---------- gather ---------- */
+.ngather{display:flex;align-items:center;margin:10px 0 2px}
+.ngather span{width:30px;height:30px;margin-right:-5px;position:relative}
+.ngather span .av{width:30px;height:30px}
+.ngather small{margin-left:14px;font:700 12px var(--head);color:var(--mute)}
+.ngather .drop{animation:gDrop .55s cubic-bezier(.3,1.4,.5,1) calc(var(--i) * 90ms) both}
+.ngather.allin span{animation:gHop .7s ease-in-out .3s}
+@keyframes gDrop{from{transform:translateY(-34px) scale(.6);opacity:0}70%{transform:translateY(2px) scale(1.06,.94);opacity:1}}
+@keyframes gHop{40%{transform:translateY(-10px)}70%{transform:none}85%{transform:translateY(-4px)}}
+/* ---------- toss ---------- */
+.tosser{position:fixed;z-index:90;width:30px;height:44px;border-radius:5px;overflow:hidden;background:var(--lilac);pointer-events:none;box-shadow:0 8px 16px -8px rgba(0,0,0,.5)}
+.tosser img{width:100%;height:100%;object-fit:cover;display:block}
+/* ---------- desks ---------- */
+.desks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:12px}
+.desk{position:relative;height:88px;border:0;border-radius:14px;background:var(--cream2);color:var(--ink);cursor:pointer;overflow:hidden;text-align:left;font:inherit}
+.desk.mine{box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--ink) 18%,transparent)}
+.desk small{position:absolute;left:10px;right:10px;top:8px;font:700 11.5px/1.2 var(--head);color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.desk .dface{position:absolute;left:10px;bottom:8px}.desk .dface .av{width:38px;height:38px}
+.desk .dprop{position:absolute;right:10px;bottom:10px}
+.desk .dscreen{width:56px;height:36px;border-radius:5px;background:#0C0B10;padding:3px;box-shadow:0 0 0 2px color-mix(in srgb,var(--ink) 18%,transparent)}
+.desk .dscreen .co{width:100%;height:100%;object-fit:cover;border-radius:2px;display:block}
+.desk .dbook .co{width:30px;height:42px;border-radius:3px;object-fit:cover;display:block;transform:rotate(-6deg)}
+.desk .dpad{width:46px;height:22px;border-radius:11px;background:var(--mint);display:block}
+.desk .dpad i{position:absolute;left:9px;top:8px;width:7px;height:7px;border-radius:2px;background:rgba(0,0,0,.3)}
+.desk .dnone{position:absolute;right:10px;bottom:12px;font-size:11.5px;color:var(--mute)}
+@media (prefers-reduced-motion:reduce){#splash{animation:none;opacity:1}.sp u,.couch .face,.couch .face .av,.couch .face .eyes,.nowpill .av,.nowpill .eyes,.ngather span,.peekcard{animation:none!important;transition:none}}
 </style>
 </head>
 <body>
+<div id="splash" aria-hidden="true"><div class="sp-in"><b>Rooms</b><i class="sp s1"><u></u><u></u></i><i class="sp s2"><u></u><u></u></i><i class="sp s3"><u></u><u></u></i><i class="sp s4"><u></u><u></u></i></div></div>
 
 <header><h1 class="sr-only">Rooms</h1><div class="wrap">
   <div class="logo"><svg class="mark" viewBox="10 10 80 80" aria-hidden="true"><rect class="rm" data-r="0" x="12" y="12" width="36" height="36" rx="10" fill="#F5A3C7"/><rect class="rm" data-r="1" x="52" y="12" width="36" height="36" rx="10" fill="#FFB36B"/><rect class="rm" data-r="2" x="12" y="52" width="36" height="36" rx="10" fill="#B9A6FF"/><rect class="rm lit" data-r="3" x="52" y="52" width="36" height="36" rx="10" fill="#8FD3FF"/><g class="eyes re" fill="#151320"><rect x="23" y="23" width="4.6" height="10" rx="2.3"/><rect x="32.4" y="24" width="4.6" height="11" rx="2.3"/></g><g class="eyes re" fill="#151320"><rect x="63" y="23" width="4.6" height="10" rx="2.3"/><rect x="72.4" y="24" width="4.6" height="11" rx="2.3"/></g><g class="eyes re" fill="#151320"><rect x="23" y="63" width="4.6" height="10" rx="2.3"/><rect x="32.4" y="64" width="4.6" height="11" rx="2.3"/></g><g class="eyes re lit" fill="#151320"><rect x="63" y="63" width="4.6" height="10" rx="2.3"/><rect x="72.4" y="64" width="4.6" height="11" rx="2.3"/></g></svg><span class="hdrtitle" id="hdrTitle" aria-hidden="true"></span><span class="logoword">Rooms</span></div>
@@ -4349,6 +4431,19 @@ function flyTo(fromEl, toEl, src) {
     toEl.animate([{transform:"none"},{transform:"translateY(-4px) scale(1.06)"},{transform:"none"}],
       { duration:340, easing:"cubic-bezier(.3,1.5,.5,1)" }); }; }
 
+/* handing something over: the poster is tossed in an arc and the face it lands on catches it */
+function tossTo(fromEl, toEl, src) {
+  if (REDUCED || !fromEl || !toEl) return;
+  const a = fromEl.getBoundingClientRect(), b = toEl.getBoundingClientRect(); if (!a.width || !b.width) return;
+  const f = document.createElement("div"); f.className = "tosser";
+  f.style.left = a.left + a.width / 2 - 15 + "px"; f.style.top = a.top + a.height / 2 - 22 + "px";
+  if (src) f.innerHTML = `<img src="${esc(src)}" alt="">`;
+  document.body.appendChild(f);
+  const dx = b.left + b.width / 2 - (a.left + a.width / 2), dy = b.top + b.height / 2 - (a.top + a.height / 2), up = -Math.max(70, Math.abs(dx) * .35);
+  const frames = Array.from({ length:13 }, (_, i) => { const t = i / 12;
+    return { transform:`translate(${(dx * t).toFixed(1)}px,${(dy * t + up * 4 * t * (1 - t)).toFixed(1)}px) rotate(${Math.round(t * 340)}deg) scale(${(1 - .45 * t).toFixed(2)})`, opacity:t > .95 ? 0 : 1 }; });
+  f.animate(frames, { duration:620, easing:"cubic-bezier(.35,.1,.55,1)" }).onfinish = () => { f.remove();
+    toEl.animate([{ transform:"none" }, { transform:"translateY(3px) scale(1.18,.82)" }, { transform:"translateY(-6px) scale(.95,1.06)" }, { transform:"none" }], { duration:420, easing:"ease-out" }); }; }
 /* height has to be pinned before it can be animated to nothing */
 function leaveOut(el, after) {
   if (!el) { after?.(); return; }
@@ -4453,6 +4548,51 @@ function retrack() { if (roomCh && !document.hidden) roomCh.track(presenceMe()).
 function setDoing(v) { if (myDoing === v) return; myDoing = v; clearTimeout(doingT);
   if (v) doingT = setTimeout(() => setDoing(null), 4 * 6e4);
   retrack(); }
+/* ---------- the couch ----------
+   Everyone in the room sits on one couch at the top of it. Who's here sits up with their
+   eyes open; whoever's been quiet a week leans back asleep. And the face says what they're
+   doing, so no line of text has to: lit by a screen when they're watching, eyes going along
+   a page when they're reading, darting when they're playing, a hop and a tick when they've
+   just finished something. */
+const couch = { id:null, last:{}, now:{} };
+const KIND_DOING = { film:"watching", tv:"watching", book:"reading", game:"playing" };
+/* ---------- peek before you open ----------
+   A face in the room opens a small card first: what they're on and how far, what they
+   last logged. The whole profile is one more tap, and you never left the feed. */
+let peekEl = null;
+function closePeek() { if (!peekEl) return; const p = peekEl; peekEl = null; p.classList.remove("on"); setTimeout(() => p.remove(), 200); }
+function peekPerson(id, from) {
+  const R = activeRoom(), m = R?.members.find(x => x.id === id);
+  if (!m || id === me.id || !from) { openProfile(id); return; }
+  closePeek(); buzz(5);
+  const now = couch.now[id], last = couch.last[id], nw = now && (now.works || works[now.work_id]), lw = last && (last.works || works[last.work_id]);
+  const st = memberState(id, hereNow.some(p => p.id === id));
+  const el = document.createElement("div"); el.className = "peekcard"; el.setAttribute("role", "dialog"); el.setAttribute("aria-label", m.handle);
+  el.innerHTML = `<div class="pk-h">${avatar(m)}<div><b>${esc(m.handle)}</b><small>${esc(STATE_WORD[st] || (hereNow.some(p => p.id === id) ? "here now" : "in the room"))}</small></div></div>
+    ${nw ? `<button class="pk-row" data-pkw="${esc(now.work_id)}">${cover(nw)}<span><b>${esc(nw.title)}</b><small>${nowLine(now)}</small>${progressBar(progressOf(now, nw))}</span></button>` : ""}
+    ${lw ? `<button class="pk-row" data-pkw="${esc(last.work_id)}">${cover(lw)}<span><small>Last logged · ${when(last.rated_on)}</small><b>${esc(lw.title)}</b>${stars(last.score, "sm")}</span></button>` : ""}
+    ${!nw && !lw ? `<p class="pk-none">Nothing logged in here yet.</p>` : ""}
+    <button class="pk-go" id="pkGo">See ${esc(m.handle)}'s profile ›</button>`;
+  document.body.appendChild(el); peekEl = el;
+  const r = from.getBoundingClientRect(), w = el.offsetWidth, h = el.offsetHeight;
+  const left = Math.max(12, Math.min(innerWidth - w - 12, r.left + r.width / 2 - 34)), below = r.bottom + 8 + h < innerHeight - 70;
+  el.style.left = left + "px"; el.style.top = (below ? r.bottom + 8 : Math.max(12, r.top - h - 8)) + "px";
+  el.style.transformOrigin = `${r.left + r.width / 2 - left}px ${below ? "-6px" : h + 6 + "px"}`;
+  requestAnimationFrame(() => el.classList.add("on"));
+  $("#pkGo", el).onclick = () => { closePeek(); openProfile(id); };
+  $$("[data-pkw]", el).forEach(b => b.onclick = () => { closePeek(); openWork(b.dataset.pkw); });
+  setTimeout(() => { const off = ev => { if (peekEl !== el) return removeEventListener("pointerdown", off, true);
+      if (!el.contains(ev.target)) { closePeek(); removeEventListener("pointerdown", off, true); } };
+    addEventListener("pointerdown", off, true);
+    addEventListener("scroll", () => { if (peekEl === el) closePeek(); }, { once:true, passive:true }); }, 0); }
+addEventListener("keydown", e => { if (e.key === "Escape" && peekEl) closePeek(); });
+function memberState(id, here) {
+  const t = Date.now(), last = couch.last[id], now = couch.now[id];
+  if (last && t - Date.parse(last.created_at) < 2 * 36e5) return "finished";
+  if (now && t - Date.parse(now.updated_at || "") < 3 * 36e5) return KIND_DOING[kindOf(now.work_id)] || "watching";
+  if (!here && (!last || t - Date.parse(last.created_at) > 7 * 864e5)) return "quiet";
+  return "idle"; }
+const STATE_WORD = { finished:"just finished something", watching:"watching now", reading:"reading now", playing:"playing now", quiet:"quiet lately", idle:"" };
 let hereQuiet = "";
 function paintHere() {
   logoHere(hereNow.filter(p => p.id !== me?.id).length);
@@ -4469,6 +4609,19 @@ function paintHere() {
       ghost.style.position = "absolute"; ghost.style.pointerEvents = "none";
       f.after(ghost); setTimeout(() => ghost.remove(), 300); }); }
   const busy = others.filter(p => p.doing === "logging");
+  const R = activeRoom(), seat = R && couch.id === R.id ? R.members.filter(m => m.id !== me.id).slice(0, 7) : null;
+  if (seat && seat.length) {
+    const here = new Set(others.map(p => p.id)), wasOn = new Set($$(".couch .face.on", el).map(f => f.dataset.who));
+    el.innerHTML = `${others.length ? `<span class="dot"></span>` : ""}<span class="couch" style="--rc:var(--${roomColour(R)})"><span class="cushion" aria-hidden="true"></span>${seat.map(m => {
+        const on = here.has(m.id), p = others.find(x => x.id === m.id) || m, st = memberState(m.id, on), b = p.doing === "logging";
+        return `<span class="face ${on ? "on" : "off"} st-${st}${b ? " busy" : ""}${on && wasOn.size && !wasOn.has(m.id) ? " sat" : ""}" data-who="${esc(m.id)}" data-prof="${esc(m.id)}" role="button" tabindex="0"
+          title="${esc(m.handle)}${STATE_WORD[st] ? " · " + STATE_WORD[st] : on ? " · here" : ""}">${avatar(m)}${b ? `<i class="typing" aria-hidden="true"><b></b><b></b><b></b></i>` : ""}</span>`; }).join("")}</span>
+      <small>${busy.length === 1 ? esc(busy[0].handle) + "'s logging…" : busy.length > 1 ? said(busy.length) + " of you are logging…"
+        : others.length === 1 ? esc(others[0].handle) + " is here" : others.length ? others.length + " here" : hereQuiet || "Nobody else in here right now"}</small>`;
+    $$("[data-prof]", el).forEach(x => x.onclick = ev => { ev.stopPropagation(); peekPerson(x.dataset.prof, x); });
+    let hs = $("#hereCss"); if (!hs) { hs = document.createElement("style"); hs.id = "hereCss"; document.head.appendChild(hs); }
+    hs.textContent = others.length ? others.map(p => `.av[data-u="${CSS.escape(String(p.id))}"]`).join(",") + "{filter:drop-shadow(0 0 0 transparent) drop-shadow(0 0 3px color-mix(in srgb,var(--mint) 70%,transparent))}" : "";
+    return; }
   el.innerHTML = others.length
     ? `<span class="dot"></span><span class="faces">${others.map(p =>
         `<span class="face${seen.size && !seen.has(p.id) ? " came" : ""}${p.doing === "logging" ? " busy" : ""}" data-who="${esc(p.id)}"
@@ -5521,7 +5674,12 @@ function landCover() { const t = coverTap; coverTap = null;
   addEventListener("scroll", () => { if (el) { clearTimeout(t); t = null; if (down) release(); else el = null; } }, { passive:true }); })();
 
 /* ============ auth ============ */
-function renderAuth() {
+/* the opening: the four rooms look at the name and blink while the app wakes up. It only
+   fades in if loading takes more than a moment, and leaves as soon as there's a page. */
+function hideSplash() { const sp = document.getElementById("splash"); if (!sp || sp.classList.contains("gone")) return;
+  sp.classList.add("gone"); setTimeout(() => sp.remove(), 320); }
+setTimeout(hideSplash, 10000);
+function renderAuth() { hideSplash();
   const b = $("#authBody");
   if (sb.__local) { const prev = sb.__db.profile;
     b.innerHTML = `<h1>Every room<br>you’ve <span>been in.</span></h1>
@@ -5661,7 +5819,7 @@ async function loadMe() { const { data:{ session } } = await sb.auth.getSession(
   /* asked for on its own, so a database without v32 just has no goals rather than no you */
   if (me) try { const [g] = await q(sb.from("profiles").select("goals").eq("id", me.id).limit(1)); me.goals = g?.goals || null; } catch {}
   return me; }
-async function enter() {
+async function enter() { hideSplash();
   $("#meBtn").hidden = false; $("#meName").textContent = me.handle; paintMeAv();
   $("#nav").classList.add("on"); $("#add").classList.add("live"); setTimeout(logoWake, 250); setTimeout(anniversary, 1800); warmBeside();
   $("#bellBtn").hidden = false; $("#findBtn").hidden = false;
@@ -6133,6 +6291,7 @@ async function renderDoors() {
   /* what counted as new is decided once a visit, before it's all marked seen — otherwise
      the feed asked "new since when?" a moment after answering "since now" */
   if (currentTab() === "doors") { if (feedSince == null) feedSince = lastSeen(); markSeen(); }
+  if (feedNow() !== "room") { $("#doorsBody")?.classList.remove("washed"); $("#doorsBody .roomwash")?.remove(); }
   if (feedNow() === "room") return renderRoomFeed(fb, R);
   leaveRoomChannel();
   if (feedNow() === "following") return renderFollowingFeed(fb);
@@ -6354,13 +6513,22 @@ async function wireRoomNote(R) { const seg = $("#roomNote"); if (!seg) return;
     try { await q(sb.from("room_notification_preferences").upsert({ room_id:R.id, user_id:me.id, muted:cur === "off",
         activity:cur === "all", reminders:cur === "all", mentions:cur !== "off", updated_at:new Date().toISOString() }));
     } catch (e) { cur = was; paint(); oops(e, "Couldn't change that"); } }); }
+/* everyone at their desk: their face behind whatever they're on (a screen, a book, a
+   controller) with the title over it — a glance at what the room is up to */
+function deskHTML(R, m) {
+  const now = couch.id === R.id ? couch.now[m.id] : null, w = now && (now.works || works[now.work_id]), k = w?.kind;
+  const prop = !w ? "" : k === "book" ? `<span class="dprop dbook">${cover(w)}</span>` : k === "game" ? `<span class="dprop dpad"><i></i></span>`
+    : `<span class="dprop dscreen">${cover(w)}</span>`;
+  return `<button class="desk${m.id === me.id ? " mine" : ""}" data-prof="${esc(m.id)}"><small>${esc(m.id === me.id ? "you" : m.handle)}${w ? ` · ${esc(w.title)}` : ""}</small>
+    <span class="dface">${avatar(m)}</span>${prop || `<span class="dnone">nothing on</span>`}</button>`; }
 /* everything about the room that isn't the room itself: who's in it, the code, the way out */
 function openRoomMenu(R) {
   openSheet(`<h3>${esc(R.name)}</h3>
     <p class="sub">${R.members.length} in here · code <b>${esc(R.code)}</b></p>
     <div class="lbl" style="margin-top:14px">The room's colour</div>
     <div class="swatches">${ROOM_COLOURS.map(c => `<button class="${roomColour(R) === c ? "on" : ""}" data-rcol="${c}" style="background:var(--${c})" aria-label="${c}"></button>`).join("")}</div>
-    <div class="chips" id="roomSeats" style="margin-top:12px">${R.members.map(m => `<span class="chip ${m.id===me.id?"on":""}" data-prof="${esc(m.id)}">${esc(m.handle)}</span>`).join("")}<button class="chip" id="invite">+ bring someone in</button></div>
+    <div class="desks" id="roomSeats">${R.members.map(m => deskHTML(R, m)).join("")}</div>
+    <div class="chips" style="margin-top:10px"><button class="chip" id="invite">+ bring someone in</button></div>
     ${pushCan() ? `<div class="lbl" style="margin-top:16px">Notifications from here</div>
     <div class="seg" id="roomNote">${[["all","Everything"],["me","Just for me"],["off","Nothing"]].map(([k, l]) => `<button data-rn="${k}">${l}</button>`).join("")}</div>
     <p class="sub" id="roomNoteSay" style="margin-top:6px"></p>` : ""}
@@ -6625,7 +6793,8 @@ function wireSlips(el, es) { const by = Object.fromEntries(es.map(e => [e.id, e]
   $$("[data-more]", el).forEach(b => b.onclick = ev => { ev.stopPropagation();
     const qd = b.previousElementSibling; qd.classList.toggle("clip"); b.textContent = qd.classList.contains("clip") ? "More" : "Less"; });
   $$("[data-work]", el).forEach(x => x.onclick = () => openWork(x.dataset.work));
-  $$("[data-prof]", el).forEach(x => x.onclick = () => openProfile(x.dataset.prof));
+  $$("[data-prof]", el).forEach(x => x.onclick = () => x.closest("#feedBody") && activeRoom()?.members.some(m => m.id === x.dataset.prof)
+    ? peekPerson(x.dataset.prof, x.querySelector(".av") || x) : openProfile(x.dataset.prof));
   /* It used to be called Same, lived only in the room, and re-rendered the whole feed
      on every tap — which rebuilt the page under your thumb and threw away where you
      were reading. It now appears wherever a review does, and only the button it was,
@@ -6845,6 +7014,10 @@ async function renderRoomFeed(fb, R) {
     $$(".chip[data-prof]", seats).slice(was).forEach((c, i) => {
       c.style.animationDelay = (i * 90) + "ms"; c.classList.add("seat");
       setTimeout(() => { c.classList.remove("seat"); c.style.animationDelay = ""; }, 700 + i * 90); }); })();
+  couch.id = R.id; couch.last = {}; for (const e of es) if (!couch.last[e.user_id] || String(e.created_at) > String(couch.last[e.user_id].created_at)) couch.last[e.user_id] = e;
+  { const db = $("#doorsBody"); if (db) { db.classList.add("washed"); db.style.setProperty("--rc", `var(--${roomColour(R)})`);
+      if (!$(".roomwash", db)) db.insertAdjacentHTML("afterbegin", `<div class="roomwash" aria-hidden="true"></div>`); } }
+  paintHere();
   wireSlips(fb, es); revealIn(fb); wireCaughtUp(fb); rollAll(fb); roomWeeks(R); if (currentTab() === "doors") joinRoomChannel(R); roomMood(es);
   /* presence says who is here; this says what they are actually in the middle of */
   paintRoomNow(R);
@@ -7967,12 +8140,13 @@ async function paintRoomNow(R) {
   /* one each: what somebody is on now, not everything they have ever picked up */
   const seen = new Set(), pick = [];
   for (const r of rows) { if (seen.has(r.user_id)) continue; seen.add(r.user_id); pick.push(r); }
+  if (couch.id === R.id) { couch.now = Object.fromEntries(pick.map(r => [r.user_id, r])); paintHere(); }
   /* how long ago matters as much as what: a pill moved in the last 45 minutes has a live
      dot, and a bar that moved slides from where it was rather than jumping */
   el.innerHTML = pick.map(r => { const w = r.works || works[r.work_id]; if (!w) return "";
     const who = r.user_id === me.id ? "You" : (r.profiles?.handle || "");
     const age = Date.now() - Date.parse(r.updated_at || "");
-    return `<span class="nowpill${age < 45 * 6e4 ? " fresh" : ""}" data-w="${esc(r.work_id)}" data-nk="${esc(r.user_id + "|" + r.work_id)}">${avatar({ id:r.user_id, handle:who,
+    return `<span class="nowpill${age < 45 * 6e4 ? ` fresh st-${KIND_DOING[w.kind] || "watching"}` : ""}" data-w="${esc(r.work_id)}" data-nk="${esc(r.user_id + "|" + r.work_id)}">${avatar({ id:r.user_id, handle:who,
       avatar:r.profiles?.avatar }, "av")}<b>${esc(who)}</b><span>${esc(w.title)} · ${nowLine(r)}${age < 864e5 ? ` · <time data-at="${esc(r.updated_at)}">${relAt(r.updated_at)}</time>` : ""}</span>${progressBar(progressOf(r, w))}</span>`;
   }).join("");
   $$("[data-nk]", el).forEach(x => { const i = $(".pbar i", x); if (!i) return;
@@ -8008,7 +8182,7 @@ function openHand(w) {
        reverse and had nothing at all — you pressed a name and a message said you did */
     if (!REDUCED) [...pick].forEach((id, i) => { const row = $(`[data-hand="${CSS.escape(id)}"]`);
       const face = row && $(".av", row); if (!face) return;
-      setTimeout(() => { flyTo($(".head .co") || $(".head"), face, works[w.id]?.cover);
+      setTimeout(() => { tossTo($(".head .co") || $(".head"), face, works[w.id]?.cover);
         row.classList.remove("given"); void row.offsetWidth; row.classList.add("given"); }, i * 110); });
     try { await handTo([...pick], w, $("#handNote").value.trim());
       closeSheet(); say(pick.size > 1 ? "Handed over" : `Sent to ${people.find(p => p.id === [...pick][0])?.handle || "them"}`); }
@@ -9375,6 +9549,16 @@ async function loadNights(R) {
 const nightVotes = (n, g) => g.votes.filter(v => v.game === "night:" + n.id);
 function nightLeader(n, g) { const vs = nightVotes(n, g);
   return n.options.map(id => ({ id, n:vs.filter(v => v.choice === id).length })).sort((a, b) => b.n - a.n || n.options.indexOf(a.id) - n.options.indexOf(b.id))[0]; }
+/* the faces of whoever's in for the night huddle on the card. Someone new drops in; once
+   everyone's in, they all hop together, once. */
+const nightSeenV = {}, nightHopped = new Set();
+function gatherHTML(R, n, vs) {
+  const ids = [...new Set(vs.map(v => v.voter))], seen = nightSeenV[n.id] || new Set(), first = !nightSeenV[n.id];
+  const all = ids.length >= R.members.length && R.members.length > 1, hop = all && !nightHopped.has(n.id) && !REDUCED;
+  if (hop) nightHopped.add(n.id); nightSeenV[n.id] = new Set(ids);
+  if (!ids.length) return "";
+  return `<div class="ngather${hop ? " allin" : ""}" aria-label="${ids.length} of ${R.members.length} in">${ids.map((id, i) => { const m = R.members.find(x => x.id === id) || { id };
+    return `<span class="${!first && !seen.has(id) && !REDUCED ? "drop" : ""}" style="--i:${i}">${avatar(m)}</span>`; }).join("")}<small>${all ? "everyone's in" : `${ids.length} of ${R.members.length} in`}</small></div>`; }
 function nightHTML(R, n, g) {
   const vs = nightVotes(n, g), mine = vs.find(v => v.voter === me.id)?.choice, lead = nightLeader(n, g);
   const ahead = lead.n && vs.filter(v => v.choice === lead.id).length > Math.max(0, ...n.options.filter(id => id !== lead.id).map(id => vs.filter(v => v.choice === id).length));
@@ -9382,6 +9566,7 @@ function nightHTML(R, n, g) {
   const by = n.created_by === me.id ? "you" : (R.members.find(m => m.id === n.created_by)?.handle || "someone");
   return `<div class="card game nightcard"><div class="h"><span>Watch night</span><span class="tag dim">${esc(date)}</span></div>
     <div class="gprompt" style="font-size:22px">${esc(nightLabel(n.at))}: which one?</div>
+    ${gatherHTML(R, n, vs)}
     <div class="nopts">${n.options.map(id => { const w = works[id] || {}, c = vs.filter(v => v.choice === id).length;
       return `<button class="nopt ${mine === id ? "on" : ""} ${ahead && lead.id === id ? "lead" : ""}" data-nv="${esc(id)}">${cover(w)}<b>${esc(w.title || "")}</b><small>${c} ${c === 1 ? "vote" : "votes"}${mine === id ? " · yours" : ""}</small></button>`; }).join("")}</div>
     <p class="sub gline">${mine ? "" : "<b>Tap one to vote.</b> "}${vs.length} of ${R.members.length} voted · put to the room by ${esc(by)}${n.created_by === me.id ? ` · <button class="linkish" id="nightOff">call it off</button>` : ""}</p></div>`; }
