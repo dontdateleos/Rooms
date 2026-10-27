@@ -2701,6 +2701,43 @@ blockquote.kept.big{margin-top:14px;font-size:18px;padding:6px 0 6px 14px}
 .awnom.won .co{box-shadow:0 0 0 3px var(--butter)}
 .awnom:disabled{cursor:default}
 
+/* ============ simpler, calmer ============ */
+/* the title page's one row of actions */
+.wacts{display:flex;align-items:stretch;gap:8px;margin-top:16px}
+.wacts .wlog{flex:1;width:auto;min-width:0;min-height:56px;padding-block:0}
+#wClubs[hidden]{display:none}
+.wact{flex:none;width:62px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border:0;border-radius:16px;
+  background:color-mix(in srgb,var(--ink) 7%,transparent);color:var(--ink);font:800 10px var(--head);letter-spacing:.01em;cursor:pointer;padding:6px 2px;min-height:56px;border-radius:18px}
+.wact svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+#wMore svg{fill:currentColor;stroke:none}
+.wact span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.wact.on{background:var(--ink);color:var(--cream)}
+.wact.on#wShelf svg{fill:currentColor}
+.wact:disabled{opacity:.6}
+.here-dnf{margin:8px 0 2px}
+.stack.menu .btn.quiet{justify-content:flex-start;padding-inline:6px;font-size:16px}
+.wdetails{margin-top:16px}
+/* the log sheet, in the order it's used */
+.lograte{margin-top:18px}
+.lognote{margin-top:16px}
+.noteacts{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.noteacts .chip{font-size:12.5px;padding:6px 10px}
+.logmore{margin-top:16px}
+.logmore>summary{display:flex;align-items:center;gap:10px}
+.lmsum{flex:1;min-width:0;text-align:right;text-transform:none;letter-spacing:0;font-size:12.5px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.logmore .ticks{margin-top:12px}
+/* calmer cards: a heading, then the thing — no rule under every title, and the little
+   counts in the corner are plain words rather than another pill */
+.card .h{border-bottom:0;padding-bottom:4px;margin-bottom:2px}
+.card .h .tag.dim{background:none;padding:0;color:var(--mute);font-size:11px;letter-spacing:.03em;box-shadow:none}
+/* what the room is on now: one row you can slide, not a stack */
+.nowrow{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin-inline:-18px;padding:2px 18px 4px;scroll-snap-type:x proximity}
+.nowrow::-webkit-scrollbar{display:none}
+.nowrow .nowpill{flex:none;max-width:250px;scroll-snap-align:start}
+.nowrow:empty{display:none}
+.minemenu{border:0;background:none;color:var(--mute);width:34px;height:30px;border-radius:10px;display:grid;place-items:center;cursor:pointer;margin-left:-6px}
+.minemenu svg{width:20px;height:20px;fill:currentColor}
+.minemenu:hover{background:var(--cream2)}
 /* ---------- floating pills take turns ----------
    The update bar, the offline note and toasts all live just above the tab bar. When
    more than one is up, the toast steps above the others rather than hiding behind
@@ -6362,7 +6399,9 @@ function roomStreak(entries, R = null) {
   if (people.size < 2) return "";
   return `<small class="room-streak" title="${sharedDays ? `${sharedDays} ${sharedDays===1?"day":"days"} more than one of you logged` : ""}"><b class="rnum" data-roll="wk:${R?.id || ""}">${people.size}</b> logged this week<span id="wkSlot"></span></small>`;
 }
-function roomMomentsHTML(moments, fresh = new Set()) { if (!moments.length) return "";
+function roomMomentsHTML(moments, fresh = new Set()) {
+  /* a moment is news once: after you've seen it, the feed below says the same thing */
+  moments = moments.filter(m => fresh.has(`${m.kind}:${m.workId}:${m.at}`)); if (!moments.length) return "";
   return `<div class="lbl">Room moments</div><div class="card" style="margin-top:0">${moments.map(m => { const w = works[m.workId] || {}, key = `${m.kind}:${m.workId}:${m.at}`;
     const row = (title, small) => `<div class="row moment-row${fresh.has(key) ? " fresh" : ""}" data-cw="${esc(m.workId)}">${cover(w)}<div class="t"><b>${title}</b><small>${small}</small></div></div>`;
     if (m.kind === "handover") return row(`You logged ${esc(w.title || "a recommendation")}`,
@@ -6970,12 +7009,12 @@ function slipHTML(e, opts = {}) { const w = remember(e.works) || works[e.work_id
   const same = (e.reactions||[]).some(r => r.user_id === me.id), n = (e.reactions||[]).length;
   return `<div class="slip" data-slip="${e.id}" style="animation-delay:-${(avHash(e.id) % 65) / 10}s">
     <div class="who" data-prof="${esc(e.user_id)}" style="cursor:pointer">${avatar(e.profiles)} <b>${esc(mine ? "you" : e.profiles?.handle)}</b> <span>· ${K(w.kind).verb} ${whenE(e)}</span></div>
-    <div class="ttl" data-work="${esc(e.work_id)}"><span class="season-cover">${cover(w)}${seasonEntryStamp(e)}</span><div><b>${esc(w.title)}</b><small>${tag(w.kind)} ${esc(w.year||"")}${dnfOf(e) ? ` ${dnfLine(e)}` : ""}</small></div></div>
+    ${opts.here ? (dnfOf(e) ? `<div class="here-dnf">${dnfLine(e)}</div>` : "") : `<div class="ttl" data-work="${esc(e.work_id)}"><span class="season-cover">${cover(w)}${seasonEntryStamp(e)}</span><div><b>${esc(w.title)}</b><small>${tag(w.kind)} ${esc(w.year||"")}${dnfOf(e) ? ` ${dnfLine(e)}` : ""}</small></div></div>`}
     ${e.note?`<div class="q${String(e.note).length > 210 ? " clip" : ""}">“${noteHTML(e.note)}”</div>${String(e.note).length > 210 ? `<button class="more" data-more="${e.id}">More</button>` : ""}`:""}
     ${lineOf(e) ? `<blockquote class="kept" style="--k:${K(w.kind || "film").colour}">${esc(lineOf(e))}</blockquote>` : ""}
     ${(() => { const t = together(e); return t ? `<div class="loved" style="margin-top:10px"><span class="together">◆ ${t}</span></div>` : ""; })()}
     ${e.loved?.length?`<div class="loved">${e.loved.slice(0,4).map(k => `<span>${esc(k.startsWith("person:")?lc(k.slice(7)):k)}</span>`).join("")}</div>`:""}
-    <div class="foot"><div class="acts">${mine ? `<button class="chip" data-edit-review="${e.id}">Edit</button><button class="chip" data-delete-review="${e.id}">Delete</button>` : `<button data-like="${e.id}" class="lk ${same?"on":""}" aria-pressed="${same}" aria-label="${same ? "Liked — tap to take it back" : "Like this. Hold for faces"}">${myReactHTML(e)}</button><button data-reply="${e.id}" class="lk" aria-label="Reply">${BUBBLE}</button>`
+    <div class="foot"><div class="acts">${mine ? `<button class="minemenu" data-mine-menu="${e.id}" aria-label="Edit or delete">${ICON_MORE}</button>` : `<button data-like="${e.id}" class="lk ${same?"on":""}" aria-pressed="${same}" aria-label="${same ? "Liked — tap to take it back" : "Like this. Hold for faces"}">${myReactHTML(e)}</button><button data-reply="${e.id}" class="lk" aria-label="Reply">${BUBBLE}</button>`
       }${mine && (e.private ?? myEntries.find(x => x.id === e.id)?.private) ? `<span class="tag dim">just me</span>` : mine && e.room_only ? `<span class="tag dim">room only</span>` : ""}</div>${stars(e.score,"sm")}</div>
     <div class="likes" data-likes="${e.id}">${(() => { const l = likeLine(e); return l ? `${rfHTML(e)}<span>${l}</span>` : ""; })()}</div>
     <div class="thread" data-thread="${e.id}">${threadHTML(e)}</div></div>`; }
@@ -7021,6 +7060,10 @@ function wireSlips(el, es) { const by = Object.fromEntries(es.map(e => [e.id, e]
   $$("[data-edit-review]", el).forEach(b => b.onclick = () => { const e = by[b.dataset.editReview];
     if (e?.user_id === me.id) openLog(works[e.work_id] || e.works, e); });
   $$("[data-delete-review]", el).forEach(b => b.onclick = () => deleteReview(by[b.dataset.deleteReview]));
+  $$("[data-mine-menu]", el).forEach(b => b.onclick = async ev => { ev.stopPropagation(); const e = by[b.dataset.mineMenu]; if (!e || e.user_id !== me.id) return;
+    const v = await openAsk(`<h3>${esc(works[e.work_id]?.title || e.works?.title || "Your entry")}</h3><div class="stack menu"><button class="btn quiet" data-mm="edit">Edit it</button><button class="btn quiet" data-mm="del" style="color:var(--bad)">Delete it</button><button class="btn quiet" data-mm="">Not now</button></div>`,
+      done => $$("[data-mm]", $("#askBox")).forEach(x => x.onclick = () => done(x.dataset.mm || null)));
+    if (v === "edit") openLog(works[e.work_id] || e.works, e); else if (v === "del") deleteReview(e); });
   wireThreads(el, by);
   $$("[data-more]", el).forEach(b => b.onclick = ev => { ev.stopPropagation();
     const qd = b.previousElementSibling; qd.classList.toggle("clip"); b.textContent = qd.classList.contains("clip") ? "More" : "Less"; });
@@ -11496,6 +11539,10 @@ function spreadHTML(fr) { const b = [[], [], [], [], []];
   const most = Math.max(...b.map(x => x.length));
   return `<div class="pspread" aria-label="How your people scored it">${b.map((es, i) => `<div class="sb"><span class="sf">${es.slice(0, 3).map(e => avatar(e.profiles)).join("")}${es.length > 3 ? `<em>+${es.length - 3}</em>` : ""}</span>
     <i style="--h:${es.length ? Math.max(10, Math.round(es.length / most * 52)) : 3}px"></i><small>${i + 1}★</small></div>`).join("")}</div>`; }
+/* the title page's action bar: what you do with a thing, one row, under its poster */
+const ICON_MARK = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3.5h10a1 1 0 0 1 1 1V21l-6-4-6 4V4.5a1 1 0 0 1 1-1z"/></svg>`;
+const ICON_PLAY = `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M10 8.5l5.5 3.5-5.5 3.5z"/></svg>`;
+const ICON_MORE = `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5.5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="18.5" cy="12" r="1.6"/></svg>`;
 async function openWork(id) { let w = works[id]; if (!w) { try { const rows = await q(sb.from("works").select("*").eq("id", id).limit(1)); w = remember(rows[0]); } catch {} } if (!w) return;
   const cfg = K(w.kind);
   /* the top of a title's page is lit by its own poster, blurred, the way a streaming app
@@ -11503,35 +11550,54 @@ async function openWork(id) { let w = works[id]; if (!w) { try { const rows = aw
   openSheet(`<div class="whero" aria-hidden="true" style="--wk:${cfg.colour}${w.cover ? `;background-image:url('${esc(blurSrc(w.cover))}')` : ""}"></div>
     <div class="head whead" style="--wk:${cfg.colour}">${cover(w)}<div class="hh"><h3>${esc(w.title)}</h3><p class="sub">${tag(w.kind)} ${esc(w.year||"")}${w.creator?" · "+creatorLinks(w):""}${w.length?` · ${w.length}${cfg.unit.replace(" ", "\u00a0")}`:""}</p>${(w.meta?.genres || []).length ? `<div class="wgenres">${(w.meta.genres).slice(0, 4).map(g =>
       `<button class="wgenre" data-wgenre="${esc(g)}" aria-label="Your favourite ${esc(g)} in Finished">${esc(g)}</button>`).join("")}</div>` : ""}</div></div>
+    <div class="wacts">
+      <button class="btn wlog ${isSoon(w)?"ghost":""}" id="wLog">${logged(w.id)?"Log it again":isSoon(w)?"Log it anyway":cfg.verb.replace(/^./,c=>c.toUpperCase())+" it"}</button>
+      <button class="wact ${activeList()?.items.includes(w.id) ? "on" : ""}" id="wShelf" aria-pressed="${!!activeList()?.items.includes(w.id)}">${ICON_MARK}<span>Up next</span></button>
+      ${isPart(w.id) || isSoon(w) ? "" : `<button class="wact ${nowOf(w.id) ? "on" : ""}" id="wOnIt" aria-pressed="${!!nowOf(w.id)}">${ICON_PLAY}<span>${nowVerb(w.kind)}</span></button>`}
+      <button class="wact" id="wMore" aria-label="More">${ICON_MORE}<span>More</span></button></div>
+    <div class="chips" id="wClubs" hidden style="margin-top:10px"><p class="sub" style="width:100%;margin:0 0 2px">Highlighted clubs have it. Tap one to add or remove it.</p>${myOpenClubs().map(c =>
+      `<button class="chip ${(c.items || []).includes(w.id) ? "on" : ""}" data-addclub="${esc(c.id)}">${esc(c.name)}</button>`).join("")}</div>
     <div class="numbers wnums" id="wNumbers" style="--wk:${cfg.colour}"><div><b>—</b><span>You</span></div><div><b>—</b><span>Your room</span></div><div><b>—</b><span>Following</span></div><div><b>—</b><span>Everyone</span></div></div>
     <div id="wFriends"></div>
     <p class="sumup mine" id="wAgain" hidden></p>
+    <div id="wNow"></div>
     ${w.kind === "film" || w.kind === "tv" ? `<div id="wWatch"></div>` : w.kind === "book" ? `<div id="wBorrow"></div>` : ""}
-    <div class="card"><div class="h"><span>Everyone</span><span class="tag dim" id="wCount">—</span></div><div class="trio" id="wTrio"><div><b>—</b><span>Score</span></div><div><b>—</b><span>Logged it</span></div><div><b>—</b><span>Agree</span></div></div>
+    <div class="card wsay"><div class="h"><span>What people say</span><span class="tag dim" id="wCount">—</span></div>
       <p class="sumup" id="wVerdict" hidden></p>
-      <div class="lbl">What people loved</div><div id="wLoved">${skeleton(2)}</div></div>
+      <div id="wLoved">${skeleton(2)}</div></div>
     <div id="wLines"></div>
     ${isSoon(w) ? `<p class="sub" style="margin-top:12px">Out ${when(w.release)}. It's in Up next until then.</p>` : ""}
-    <div id="wNow"></div>
     ${w.kind !== "tv" && !isPart(w.id) ? `<div id="wSeries"></div>` : ""}
-    <div class="stack"><button class="btn ${isSoon(w)?"ghost":""}" id="wLog">${logged(w.id)?"Log it again":isSoon(w)?"Log it anyway":cfg.verb.replace(/^./,c=>c.toUpperCase())+" it"}</button><button class="btn ghost" id="wShelf">${activeList()?.items.includes(w.id)?"Take it out of Up next":"Add to Up next"}</button>${
-      reachable().length ? `<button class="btn quiet" id="wHand">Tell someone to ${cfg.verb === "read" ? "read" : cfg.verb === "played" ? "play" : "watch"} it</button>` : ""}${
-      myOpenClubs().length ? `<button class="btn quiet" id="wClub">Add it to a club</button>` : ""}${isPart(w.id) ? "" : `<button class="btn quiet" id="wList">Put it on a list</button>`}</div>
-    <div class="chips" id="wClubs" hidden style="margin-top:8px"><p class="sub" style="width:100%;margin:0 0 2px">Highlighted clubs have it. Tap one to add or remove it.</p>${myOpenClubs().map(c =>
-      `<button class="chip ${(c.items || []).includes(w.id) ? "on" : ""}" data-addclub="${esc(c.id)}">${esc(c.name)}</button>`).join("")}</div>
-    <div class="card"><div class="h"><span>Details</span></div>${Object.entries(w.credits||{}).filter(([k,v]) => v).map(([r,n]) => `<div class="kv"><span>${r === "dp" ? "camerawork" : r}</span>${
-      ["director","creator","author","studio"].includes(r) && !isPart(w.id) ? creatorLinks({ creator:n }) : esc(n)}</div>`).join("")}${w.meta?.genres?.length?`<div class="kv"><span>genres</span>${esc(w.meta.genres.join(", "))}</div>`:""}</div>
+    <details class="fold wdetails"><summary>Details</summary><div class="card" style="margin-top:6px">${Object.entries(w.credits||{}).filter(([k,v]) => v).map(([r,n]) => `<div class="kv"><span>${r === "dp" ? "camerawork" : r}</span>${
+      ["director","creator","author","studio"].includes(r) && !isPart(w.id) ? creatorLinks({ creator:n }) : esc(n)}</div>`).join("")}${w.meta?.genres?.length?`<div class="kv"><span>genres</span>${esc(w.meta.genres.join(", "))}</div>`:""}</div></details>
     ${w.kind === "tv" && !isPart(w.id) ? `<details class="fold" id="wParts"><summary>Seasons and episodes</summary>
       <div id="wSeasons"><p class="empty" style="padding:12px 0">Looking</p></div></details>` : ""}
-    <div id="wEntries"></div><div class="stack"><button class="btn soft" id="wCard">Share it</button><button class="btn quiet" id="wClose">Close</button></div>`);
+    <div id="wEntries"></div><div class="stack"><button class="btn quiet" id="wClose">Close</button></div>`);
   $$("[data-wgenre]").forEach(b => b.onclick = () => { cabFacet = "g:" + b.dataset.wgenre;
     P.cabKind = logCount() && CAB_ORDER.includes(w.kind) ? w.kind : ""; saveP(); closeSheet(); switchTab("archive"); });
   $$("[data-creator]", $("#sheetBody")).forEach(b => b.onclick = () => openCreator(b.dataset.creator, w.kind, w.id));
   const wl = $("#wList"); if (wl) wl.onclick = () => openAddToList(w);
   $("#wClose").onclick = closeSheet; $("#wLog").onclick = () => openLog(w); $("#wShelf").onclick = async () => { const b = $("#wShelf"); b.disabled = true;
     const on = activeList()?.items.includes(w.id);
+    window.__hits = Object.assign(window.__hits || {}, { [w.id]:w });
     try { if (on) await removeFromShelf(w.id); else await addToShelf(w.id); } finally {
-      b.textContent = activeList()?.items.includes(w.id) ? "Take it out of Up next" : "Add to Up next"; b.disabled = false; } };
+      const now = !!activeList()?.items.includes(w.id); b.classList.toggle("on", now); b.setAttribute("aria-pressed", String(now)); b.disabled = false;
+      if (now !== on) { buzz(5); say(now ? "In Up next" : "Out of Up next"); } } };
+  const oi = $("#wOnIt"); if (oi) oi.onclick = async () => { oi.disabled = true; const was = !!nowOf(w.id);
+    const ok = was ? await stopNow(w.id) : await startNow(w.id);
+    if (ok) { oi.classList.toggle("on", !was); oi.setAttribute("aria-pressed", String(!was)); paintNow(); buzz(5);
+      if (!was) $("#wNow")?.scrollIntoView({ block:"nearest", behavior:REDUCED ? "auto" : "smooth" }); if (currentTab() === "shelf") renderShelf(); }
+    oi.disabled = false; };
+  /* everything else you might do with it, behind one button */
+  let shareIt = null;
+  $("#wMore").onclick = async () => { const verbTo = cfg.verb === "read" ? "read" : cfg.verb === "played" ? "play" : "watch";
+    const opts = [[isPart(w.id) ? null : "list", "Put it on a list"], [reachable().length ? "hand" : null, `Tell someone to ${verbTo} it`],
+      [myOpenClubs().length ? "club" : null, "Add it to a club"], ["share", "Share it"]].filter(([k]) => k);
+    const v = await openAsk(`<h3>${esc(w.title)}</h3><div class="stack menu">${opts.map(([k, l]) => `<button class="btn quiet" data-more="${k}">${l}</button>`).join("")}<button class="btn quiet" id="moreNo">Not now</button></div>`,
+      done => { $$("[data-more]", $("#askBox")).forEach(b => b.onclick = () => done(b.dataset.more)); $("#moreNo").onclick = () => done(null); });
+    if (v === "list") openAddToList(w); else if (v === "hand") openHand(w);
+    else if (v === "club") { const row = $("#wClubs"); if (row) { row.hidden = false; row.scrollIntoView({ block:"center", behavior:REDUCED ? "auto" : "smooth" }); } }
+    else if (v === "share") { if (shareIt) shareIt(); else say("One moment, still adding it up"); } };
   /* the fold costs nothing until it is opened, which is the whole point of it */
   const pf = $("#wParts");
   if (pf) pf.addEventListener("toggle", () => { if (pf.open && !pf.dataset.done) { pf.dataset.done = "1"; paintParts(w); } });
@@ -11562,9 +11628,9 @@ async function openWork(id) { let w = works[id]; if (!w) { try { const rows = aw
     /* 17 — the arc sweeps to the same number the label counts to */
     const ring = $("#tRing");
     if (ring && agree !== null) requestAnimationFrame(() => { ring.style.strokeDashoffset = String(113 * (1 - agree / 100)); }); }
-  if ($("#wCount")) $("#wCount").textContent = `${es.length} ${es.length===1?"entry":"entries"}`;
+  if ($("#wCount")) $("#wCount").textContent = `${es.length} ${es.length===1?"entry":"entries"}${agree !== null && es.length >= 2 ? ` · ${agree}% agree` : ""}`;
   /* what your score did to the room's average — no backend, both numbers are already here */
-  const trio = $("#wTrio");
+  const trio = $("#wNumbers");
   if (trio && mine.length) {
     const without = avg(es.filter(e => e.user_id !== me.id)), withMe = avg(es), yours = (mine[0].score/2).toFixed(1);
     if (without !== "—" && withMe !== "—") {
@@ -11602,7 +11668,7 @@ async function openWork(id) { let w = works[id]; if (!w) { try { const rows = aw
           ${w.kind === "tv" && pr?.next ? `<p class="sub nownext">Next up: <b>${esc(pr.next)}</b></p>` : ""}
           <input id="nowAt" maxlength="40" placeholder="${w.kind === "tv" ? "Where are you up to? S2 E5" : w.kind === "book" ? "Or say it: p. 120, or 40%" : "Where are you up to?"}" value="${esc(n.at || "")}">
           <div class="stack"><button class="btn quiet" id="nowStop">Put it down</button></div></div>`
-      : `<div class="stack"><button class="btn ghost" id="nowStart">${nowVerb(w.kind)} it</button></div>`;
+      : "";
     const go = $("#nowStart"); if (go) go.onclick = async () => { go.disabled = true;
       if (await startNow(w.id)) { paintNow(); say("On it"); } else go.disabled = false; };
     const stop = $("#nowStop"); if (stop) stop.onclick = async () => { stop.disabled = true;
@@ -11638,7 +11704,7 @@ async function openWork(id) { let w = works[id]; if (!w) { try { const rows = aw
   if (vEl) { const line = reviewOf({ people, agree, top, hot:st.hot, id:w.id, yours:mine.length ? mine[0].score : null });
     if (line) { vEl.innerHTML = line; vEl.hidden = false; } }
   const wf = $("#wFirst"); if (wf) wf.onclick = () => openLog(w);
-  const wc = $("#wCard"); if (wc) wc.onclick = () => openCuts("work", { w, avg:avg(es), n:es.length, agree, top:top.map(([k]) => [k, st.share(k)]) }, "Share " + w.title);
+  shareIt = () => openCuts("work", { w, avg:avg(es), n:es.length, agree, top:top.map(([k]) => [k, st.share(k)]) }, "Share " + w.title);
   if ($("#wLoved")) $("#wLoved").innerHTML = top.length
     ? top.map(([k,c]) => `<div class="bar"><span class="n">${esc(k.startsWith("person:")?lc(k.slice(7)):k)}</span><span class="tr"><i style="width:${st.share(k)}%;background:${cfg.colour}"></i></span><span class="p">${st.hot(k) ? st.share(k) + "%" : c + " of " + st.n}</span></div>`).join("")
     : blank(cfg.colour, "1", es.length ? "Nobody's said why yet" : "Nobody's logged this", es.length
@@ -11658,15 +11724,17 @@ async function openWork(id) { let w = works[id]; if (!w) { try { const rows = aw
       if (rated) show(); else $("#frPeek").onclick = () => { card.classList.remove("veiled"); $("#frPeek").remove(); $$(".hushed").forEach(x => x.classList.remove("hushed")); show(); }; } }
   const myTaste = tasteOf(myEntries);
   P.entrySort = P.entrySort || "popular";
+  let shown = 4;
+  const known = new Set([...rooms.flatMap(r => r.members.map(m => m.id)), ...follows.map(f => f.followee)]);
+  const strangers = others.filter(e => !known.has(e.user_id));
   const paint = () => { const el = $("#wEntries"); if (!el) return;
-    const sorted = sortEntries(others, P.entrySort, myTaste);
-    el.innerHTML = (mine.length ? `<div class="lbl">Yours</div>` + mine.map(e => slipHTML(e)).join("") : "")
-      + (others.length ? `<div class="lbl">What people said</div>
-          <div class="seg">${Object.entries(SORTS).map(([k,l]) => `<button data-es="${k}" class="${P.entrySort===k?"on":""}">${l}</button>`).join("")}</div>
-          ${P.entrySort === "similar" && myTaste.tagged < 3 ? `<p class="empty">Single out what you loved on a few entries and this sorts by the people who go for the same things.</p>` : ""}
-          ${sorted.slice(0,12).map(e => slipHTML(e)).join("")}` : "");
+    const sorted = sortEntries(strangers, "popular", myTaste);
+    el.innerHTML = (mine.length ? `<div class="lbl">Yours</div>` + mine.map(e => slipHTML(e, { here:true })).join("") : "")
+      + (sorted.length ? `<div class="lbl">${known.size ? "Everyone else" : "What people said"}</div>
+          ${sorted.slice(0, shown).map(e => slipHTML(e, { here:true })).join("")}
+          ${sorted.length > shown ? `<button class="linkrow" id="wMoreSaid"><span>${Math.min(sorted.length, 24) - shown} more</span><b>›</b></button>` : ""}` : "");
     wireSlips(el, es); revealIn(el);
-    $$("[data-es]", el).forEach(b => b.onclick = () => { P.entrySort = b.dataset.es; saveP(); paint(); }); };
+    const ms = $("#wMoreSaid", el); if (ms) ms.onclick = () => { shown = 24; paint(); }; };
   paint(); }
 
 /* ============ the bits Letterboxd and Goodreads had ============
@@ -12543,27 +12611,34 @@ function faceEl(name, path) {
 /* ============ THE LOG SHEET ============ */
 function openLog(w, edit = null, preset = 0) { setDoing("logging"); const cfg = K(w.kind); const loved = edit?.loved ? edit.loved.slice() : []; const ctx = Object.assign({}, edit?.context); let score = edit ? edit.score : preset;
   const starRow = () => `<div class="rate">${[0,1,2,3,4].map(i => `<button data-i="${i}" aria-label="${i+1} stars"><svg viewBox="0 0 24 24">${starPath(Math.max(0,Math.min(1,score/2-i)))}</svg></button>`).join("")}</div><div class="hint">Press and drag across the stars</div>`;
+  /* What matters goes first: the stars, what you loved, what you'd say. When, how and
+     who sees it are one folded line underneath that says what it's set to. */
   openSheet(`<div class="head">${cover(w)}<div class="hh"><h3>${esc(w.title)}</h3><p class="sub">${tag(w.kind)} ${esc(w.year||"")}${w.creator?" · "+esc(w.creator):""}</p></div></div>
-    <div class="lbl">Date ${cfg.verb}</div><input type="date" id="wDate" value="${edit?esc(edit.rated_on):today()}">
-    ${/* You told the app when you started. It has said nothing about it since, and the
-          date here says today — right when you have just finished, wrong when you are
-          logging something you put down a fortnight ago. So it offers what it knows. */""}
-    ${(() => { const n = !edit && nowOf(w.id); if (!n) return "";
-      const d = dayNo(today()) - dayNo(n.started_on); if (!(d > 0)) return "";
-      return `<div class="chips" style="margin-top:8px"><button class="chip" id="useStart" type="button">Started ${when(n.started_on)} \u00b7 ${waited(d)}</button></div>`; })()}<div class="lbl">Your rating</div><div class="raterow"><div id="rateWrap">${starRow()}</div><span class="buddy av" id="rateBuddy" aria-hidden="true">${avSVG(avFor(me))}</span></div><div class="ticks" id="tickRow"></div><div id="stopRow"></div><div id="lovedWrap"></div>
-    <div class="lbl">Add a note</div><textarea id="wNote" placeholder="One line, if you want">${edit ? esc(edit.note || "") : esc((P.drafts || {})[w.id]?.note || "")}</textarea>
-    <div class="spoilrow"><button type="button" class="chip" id="wSpoil">Hide a spoiler</button><small>Select the part that gives it away, or tap to hide the whole note.</small></div>
-    ${isPart(w.id) ? "" : `<div class="linewrap" id="lineWrap">${ctx.line ? "" : `<button type="button" class="chip" id="wLineOpen">+ A line you loved</button>`}
-      <div class="linebox" ${ctx.line ? "" : "hidden"}><div class="lbl">A line you loved</div><textarea id="wLine" rows="2" maxlength="300" placeholder="${esc(LINE_HINT[w.kind] || "")}">${esc(ctx.line || "")}</textarea></div></div>`}
-    ${/* room_only has been in the schema since v13 and nothing ever set it, so every
-          entry anybody has ever written is public. Only worth offering when there is a
-          room to keep it in. */""}
-    ${isPart(w.id) ? `<p class="sub" style="margin-top:14px">Seasons and episodes live on the show's page. They never go in anybody's feed \u2014 only the show does.</p>` : ""}
-    ${!isPart(w.id) ? `<div class="lbl">Who sees this</div><div class="seg" id="wWho">${
-      [["all","Everyone"], ["room", rooms.length > 1 ? "My rooms" : "Just the room"], ["me","Just me"]].map(([k,l]) =>
-        `<button data-who="${k}">${l}</button>`).join("")}</div>
-      <p class="sub" id="whoNote"></p>` : ""}
+    <div class="raterow lograte"><div id="rateWrap">${starRow()}</div><span class="buddy av" id="rateBuddy" aria-hidden="true">${avSVG(avFor(me))}</span></div>
+    <div id="lovedWrap"></div>
+    <textarea id="wNote" class="lognote" placeholder="Say something about it, if you want">${edit ? esc(edit.note || "") : esc((P.drafts || {})[w.id]?.note || "")}</textarea>
+    <div class="noteacts"><button type="button" class="chip" id="wSpoil" title="Select the part that gives it away, or tap to hide the whole note">Hide a spoiler</button>${
+      isPart(w.id) || ctx.line ? "" : `<button type="button" class="chip" id="wLineOpen">+ A line you loved</button>`}</div>
+    ${isPart(w.id) ? "" : `<div class="linewrap" id="lineWrap"><div class="linebox" ${ctx.line ? "" : "hidden"}><div class="lbl">A line you loved</div><textarea id="wLine" rows="2" maxlength="300" placeholder="${esc(LINE_HINT[w.kind] || "")}">${esc(ctx.line || "")}</textarea></div></div>`}
+    ${isPart(w.id) ? `<p class="sub" style="margin-top:14px">Seasons and episodes live on the show's page. They never go in anybody's feed — only the show does.</p>` : ""}
+    <details class="fold logmore" id="logMore"><summary><span>When and how</span><span class="lmsum" id="lmSum"></span></summary>
+      <div class="lbl">Date ${cfg.verb}</div><input type="date" id="wDate" value="${edit?esc(edit.rated_on):today()}">
+      ${(() => { const n = !edit && nowOf(w.id); if (!n) return "";
+        const d = dayNo(today()) - dayNo(n.started_on); if (!(d > 0)) return "";
+        return `<div class="chips" style="margin-top:8px"><button class="chip" id="useStart" type="button">Started ${when(n.started_on)} · ${waited(d)}</button></div>`; })()}
+      <div class="ticks" id="tickRow"></div><div id="stopRow"></div>
+      ${!isPart(w.id) ? `<div class="lbl">Who sees this</div><div class="seg" id="wWho">${
+        [["all","Everyone"], ["room", rooms.length > 1 ? "My rooms" : "Just the room"], ["me","Just me"]].map(([k,l]) =>
+          `<button data-who="${k}">${l}</button>`).join("")}</div>
+        <p class="sub" id="whoNote"></p>` : ""}</details>
     <div class="stack"><button class="btn" id="wSave" ${edit||preset?"":"disabled"}>${edit?"Save changes":preset?"Save the entry":"Rate it to save"}</button><button class="btn quiet" id="wCancel">Not now</button></div><p class="msg" id="wMsg"></p>`);
+  /* the folded line says what it's set to, so nothing in there is a surprise */
+  const paintSum = () => { const el = $("#lmSum"); if (!el) return; const d = $("#wDate")?.value || today();
+    const bits = [d === today() ? "Today" : when(d).replace(/^./, c => c.toUpperCase()),
+      ...cfg.ticks.map(([k]) => ctx[k]).filter(Boolean), ctx.with ? "with " + ctx.with : "", ctx.stopped ? "at " + ctx.stopped : "",
+      !isPart(w.id) ? ({ all:"Everyone", room:rooms.length > 1 ? "My rooms" : "Just the room", me:"Just me" })[(() => { try { return who; } catch { return edit ? "room" : P.postTo === "all" ? "all" : "room"; } })()] : ""].filter(Boolean);
+    el.textContent = bits.join(" · "); };
+  $("#wDate").addEventListener("input", () => paintSum());
   /* a note half-written when the phone rang is still there next time — kept a fortnight */
   let dt; if (!edit) { $("#wNote").addEventListener("input", e => { clearTimeout(dt); dt = setTimeout(() => {
       const d = P.drafts = Object.fromEntries(Object.entries(P.drafts || {}).filter(([, v]) => Date.now() - v.at < 14 * 864e5));
@@ -12577,12 +12652,13 @@ function openLog(w, edit = null, preset = 0) { setDoing("logging"); const cfg = 
         /* a name, and one the room reads on your entry — held to the name rule, not the
            review rule, because it is somebody else being called it */
         if (v !== null) { if (willNotName(v)) { say(NAME_NO); } else ctx.with = v; } } else ctx[key] = ctx[key] === val ? null : val; drawTicks(); });
-    drawStop(); };
+    drawStop(); paintSum(); };
   /* gave up on it: where? Prefilled from wherever you'd said you were up to */
   const drawStop = () => { const el = $("#stopRow"); if (!el) return; const gaveUp = Object.values(ctx).some(v => DNF_WORDS.includes(v));
     if (!gaveUp) { delete ctx.stopped; el.innerHTML = ""; return; }
     if (ctx.stopped == null) { const n = nowOf(w.id); if (n?.at) ctx.stopped = String(n.at).slice(0, 30); }
     if ($("#wStop", el)) return;
+    const lm = $("#logMore"); if (lm) lm.open = true;
     el.innerHTML = `<label class="stoprow"><span>Where did you stop?</span><input id="wStop" maxlength="30" placeholder="${esc(STOP_HINT[w.kind] || "")}" value="${esc(ctx.stopped || "")}"></label>`;
     $("#wStop", el).oninput = ev => { const v = ev.target.value.trim(); if (v) ctx.stopped = v; else delete ctx.stopped; }; };
   drawTicks();
@@ -12630,7 +12706,7 @@ function openLog(w, edit = null, preset = 0) { setDoing("logging"); const cfg = 
     n.textContent = who === "me" ? "Only you. It counts in your stats and your year, and never shows to anybody — not even your rooms."
       : who === "room" ? (rooms.length ? `Only ${rooms.length === 1 ? rooms[0].name : "your rooms"} can see this one.` : "Only the people in your rooms will see this — once you've opened one or joined a friend's.")
       : "Anybody with an account can find this, not just people you know.";
-    $$("[data-who]").forEach(b => b.classList.toggle("on", b.dataset.who === who)); };
+    $$("[data-who]").forEach(b => b.classList.toggle("on", b.dataset.who === who)); paintSum(); };
   $$("[data-who]").forEach(b => b.onclick = () => { who = b.dataset.who; roomOnly = who !== "all";
     if (who !== "me") { P.postTo = who; saveP(); } paintWho(); });
   paintWho();
@@ -12680,6 +12756,7 @@ function openLog(w, edit = null, preset = 0) { setDoing("logging"); const cfg = 
       ta.value = v.slice(0, a) + "||" + v.slice(a, b) + "||" + v.slice(b); }
     ta.focus(); say(whole && a === b ? "Not a spoiler any more" : "Hidden until someone taps it"); };
   const lo = $("#wLineOpen"); if (lo) lo.onclick = () => { lo.remove(); const bx = $("#lineWrap .linebox"); bx.hidden = false; $("#wLine").focus(); };
+  paintSum();
   $("#wSave").onclick = async () => { if (!score) return;
     const line = ($("#wLine")?.value || "").trim().replace(/\s+/g, " ");
     if (line && willNotPost(line)) { $("#wMsg").textContent = "That word doesn't go up here. Say it another way."; return; }

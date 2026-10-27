@@ -94,7 +94,7 @@ const BASE = (process.env.BASE || "http://127.0.0.1:8934").replace(/\/$/, "");
       await tap("#roomLists .tlist"); await wait(900); await expect(".tlitems .tlitem", "a list's things"); await closeSheet();
       await tap('[data-rsecbtn]', "Talk"); await wait(700);
       await tap('#feedBody [data-work="film:1"]'); await wait(1200);
-      await tap("#wList"); await wait(700); await expect("[data-addl]", "your lists to add it to"); await closeSheet();
+      await tap("#wMore"); await wait(500); await tap('[data-more="list"]'); await wait(800); await expect("[data-addl]", "your lists to add it to"); await closeSheet();
       await tap('#feedBody [data-work="film:1"]'); await wait(1200);
       await tap(".whead [data-creator]"); await wait(1200); await expect(".crgrid .crw", "the director's films"); await closeSheet(); });
     await step("your page", async () => { await tap("nav button", "You"); await wait(1200); await expect("#tasteCog", "settings"); });
