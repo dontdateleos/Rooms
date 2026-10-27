@@ -44,7 +44,7 @@
      and a pastel is a pastel at midnight. --cream doubles as the light that reads on
      --ink, which is why a dark theme gets both right by swapping two values.
      --veil is the ground behind the blurred header and nav. */
-  --onAccent:#151320;--veil:rgba(255,247,236,.96);
+  --onAccent:#151320;--onInkMute:color-mix(in srgb,var(--cream) 62%,var(--ink));--onInkLine:color-mix(in srgb,var(--cream) 20%,var(--ink));--veil:rgba(255,247,236,.96);
   --apricot:#FFB36B;--pink:#F5A3C7;--butter:#FFE86A;--mint:#9EF0C9;--sky:#8FD3FF;--lilac:#B9A6FF;--good:#17805A;--bad:#C42A66;
   --film:var(--apricot);--tv:var(--pink);--book:var(--butter);--game:var(--mint);
   --head:Outfit,sans-serif;--body:Inter,system-ui,sans-serif}
@@ -175,7 +175,7 @@ html[data-theme="light"] .logo .mark .rm{fill-opacity:.6}
 .hrt{width:19px;height:19px;display:block;fill:none;stroke:currentColor;stroke-width:2;
   stroke-linecap:round;stroke-linejoin:round}
 /* at rest it was disappearing into the rule above it */
-.acts button.lk{color:var(--mute2,#9a94ad)}
+.acts button.lk{color:var(--mute)}
 .acts button.lk.on{color:var(--bad)}
 .likes{font-size:12.5px;font-weight:600;color:var(--mute);margin-top:8px}
 /* ---- ten moments that used to snap ---- */
@@ -438,7 +438,7 @@ a:focus-visible,[tabindex]:focus-visible,.chip:focus-visible,[data-work]:focus-v
 .seg.glide button{position:relative;z-index:1;transition:color .25s}
 .seg.glide button.on{background:none}
 .segglide{position:absolute;top:4px;bottom:4px;left:4px;width:0;border-radius:999px;background:var(--ink);opacity:0;
-  transition:left .38s cubic-bezier(.3,1.25,.5,1),width .38s cubic-bezier(.3,1.25,.5,1)}
+  transition:left var(--m-slow) var(--m-ease),width var(--m-slow) var(--m-ease)}
 /* the prompt's reveal: each answer turns over, last place first */
 .ans.flipin{animation:ansFlip .56s cubic-bezier(.2,1.2,.4,1) both;transform-origin:50% 0}
 @keyframes ansFlip{from{transform:perspective(600px) rotateX(-92deg);opacity:0}to{transform:none;opacity:1}}
@@ -663,6 +663,7 @@ header:has(#meBtn:not([hidden])) .logoword{display:none}
 .slip .q{font-weight:600;font-size:15px;line-height:1.45;margin-top:10px}
 .slip .loved{display:flex;gap:5px;flex-wrap:wrap;margin-top:10px}
 .slip .loved span{font-size:11.5px;font-weight:700;background:var(--cream2);padding:4px 9px;border-radius:999px}
+.slip .loved span.together{background:var(--mint);color:var(--onAccent)}
 .slip .foot{display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:10px;border-top:1px solid var(--line)}
 .acts{display:flex;gap:14px}
 .acts button{background:none;border:0;font-family:var(--head);font-weight:800;font-size:13px;color:var(--mute);cursor:pointer;padding:0}
@@ -857,7 +858,7 @@ header:has(#meBtn:not([hidden])) .logoword{display:none}
 @keyframes heartPop{0%{transform:scale(1)}28%{transform:scale(.82)}62%{transform:scale(1.3)}100%{transform:none}}
 @keyframes halo{0%{transform:translate(-50%,-50%) scale(.5);opacity:.4}
   100%{transform:translate(-50%,-50%) scale(2.1);opacity:0}}
-[data-like].popped{animation:heartPop .5s cubic-bezier(.3,1.7,.5,1);position:relative}
+[data-like].popped{animation:heartPop .4s var(--m-spring);position:relative}
 [data-like].popped:before{content:"";position:absolute;left:50%;top:50%;width:34px;height:34px;border-radius:50%;
   background:var(--bad);animation:halo .5s ease-out both;pointer-events:none}
 
@@ -999,14 +1000,14 @@ nav .in:has(.navpill.set) button.on{background:none}
 .hint{font-size:11px;font-weight:700;color:var(--mute);letter-spacing:.04em;text-transform:uppercase;margin-top:6px}
 .ticks{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
 .tk{font-family:var(--body);font-weight:700;font-size:12.5px;border:2px solid var(--line);background:var(--card);padding:7px 11px;border-radius:999px;cursor:pointer}
-.tk.on{background:var(--butter);border-color:var(--butter)}
+.tk.on{background:var(--butter);border-color:var(--butter);color:var(--onAccent)}
 .custom{display:flex;gap:8px;align-items:center;margin-top:10px}
 .custom button{flex:none;font-family:var(--head);font-weight:800;font-size:13px;background:var(--cream2);border:0;border-radius:999px;padding:12px 16px;cursor:pointer}
 .tagrow{display:flex;justify-content:space-between;align-items:baseline}
 .tagrow .cnt{font-size:11px;font-weight:700;color:var(--mute)}
 
 /* clubs */
-.club{background:var(--card);border-radius:20px;padding:16px;margin-top:12px;cursor:pointer;box-shadow:0 14px 34px -26px rgba(21,19,32,.3)}
+.club{background:var(--card);border-radius:22px;padding:16px;margin-top:12px;cursor:pointer;box-shadow:0 14px 34px -26px rgba(21,19,32,.3)}
 .club .top{display:flex;justify-content:space-between;align-items:center;gap:10px}
 .club b{font-family:var(--head);font-weight:900;font-size:19px;letter-spacing:-.02em;display:block;margin-top:8px}
 .club .tr{height:8px;border-radius:99px;background:var(--cream2);margin-top:10px;overflow:hidden}
@@ -1048,7 +1049,7 @@ nav .in:has(.navpill.set) button.on{background:none}
 .season-haul{display:flex;gap:7px;margin-top:10px}
 .season-haul span{width:28px;height:28px;border-radius:10px;display:grid;place-items:center;background:var(--cream2);border:1px solid var(--line);font-size:13px;color:var(--mute);opacity:.5}
 .season-haul span.on{background:var(--ink);color:var(--cream);border-color:var(--ink);opacity:1}
-.season-picks{background:var(--cream2);border-radius:20px;padding:16px;margin-top:12px}
+.season-picks{background:var(--cream2);border-radius:22px;padding:16px;margin-top:12px}
 .season-picks .h{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
 .season-picks .row{cursor:pointer}.season-picks button.row{width:100%;border:0;background:transparent;text-align:left;font:inherit;padding-left:0;padding-right:0}
 .season-cover{position:relative;width:44px;height:64px;display:block;flex:none}
@@ -1061,9 +1062,9 @@ nav .in:has(.navpill.set) button.on{background:none}
 @keyframes rowIn{0%{opacity:0;transform:translateY(10px)}100%{opacity:1;transform:none}}
 .pal{background:var(--ink);color:var(--cream);border-radius:22px;padding:18px;margin-top:12px}
 .pal .h{display:flex;justify-content:space-between;align-items:center;font-family:var(--head);font-weight:900;font-size:17px;
-  padding-bottom:12px;border-bottom:2px solid #3A3650;margin-bottom:4px}
-.pal .row{border-color:#3A3650}
-.pal .row .t small{color:#A9A3BC}
+  padding-bottom:12px;border-bottom:2px solid var(--onInkLine);margin-bottom:4px}
+.pal .row{border-color:var(--onInkLine)}
+.pal .row .t small{color:var(--onInkMute)}
 .pal .win{font-family:var(--head);font-weight:900;font-size:26px;letter-spacing:-.03em;line-height:1.05;margin:10px 0 2px}
 .pal .win span{color:var(--butter)}
 .ballot .row{cursor:pointer}
@@ -1071,12 +1072,12 @@ nav .in:has(.navpill.set) button.on{background:none}
   font-family:var(--head);font-weight:900;font-size:12px;flex:none}
 .ballot .pick.on{background:var(--ink);color:var(--cream);border-color:var(--ink)}
 .sealed{background:var(--ink);color:var(--cream);border-radius:22px;padding:22px;margin-top:12px;text-align:center}
-.sealed .ic{width:54px;height:54px;border-radius:18px;background:#3A3650;display:grid;place-items:center;margin:0 auto 12px;
+.sealed .ic{width:54px;height:54px;border-radius:18px;background:var(--onInkLine);display:grid;place-items:center;margin:0 auto 12px;
   font-family:var(--head);font-weight:900;font-size:20px;color:var(--butter)}
 .sealed h3{font-size:19px}
-.sealed p{color:#A9A3BC;font-size:14px;margin-top:6px;line-height:1.5}
+.sealed p{color:var(--onInkMute);font-size:14px;margin-top:6px;line-height:1.5}
 .sealed .count{font-family:var(--head);font-weight:900;font-size:40px;letter-spacing:-.04em;margin-top:14px;display:block}
-.sealed .count small{display:block;font-family:var(--body);font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#A9A3BC;margin-top:4px}
+.sealed .count small{display:block;font-family:var(--body);font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--onInkMute);margin-top:4px}
 .sealed .stack{margin-top:16px}
 .cuts{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px}
 .cuts button{background:none;border:2px solid var(--line);border-radius:16px;padding:6px;cursor:pointer;overflow:hidden}
@@ -1091,8 +1092,8 @@ nav .in:has(.navpill.set) button.on{background:none}
 .avgs .club b{color:var(--ink)}
 .avgs .all b{color:var(--mute)}
 .drift{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;padding:3px 8px;border-radius:99px;margin-top:5px}
-.drift.up{background:var(--mint)}.drift.down{background:var(--pink)}.drift.same{background:var(--cream2);color:var(--mute)}
-.verdict{background:var(--butter);border-radius:18px;padding:14px 16px;margin-top:12px;font-weight:600;font-size:14.5px;line-height:1.45}
+.drift.up{background:var(--mint);color:var(--onAccent)}.drift.down{background:var(--pink);color:var(--onAccent)}.drift.same{background:var(--cream2);color:var(--mute)}
+.verdict{background:var(--butter);color:var(--onAccent);border-radius:18px;padding:14px 16px;margin-top:12px;font-weight:600;font-size:14.5px;line-height:1.45}
 .verdict b{font-family:var(--head);font-weight:900}
 
 /* wheel */
@@ -1127,7 +1128,7 @@ nav .in:has(.navpill.set) button.on{background:none}
 .reelnow small{color:var(--mute);font-size:12.5px;font-weight:600}
 /* butter is a pastel in both themes, so what sits on it is the ink that never flips —
    inheriting the page's ink put cream text on yellow in dark mode */
-.result{margin-top:14px;background:var(--butter);border-radius:20px;padding:16px;color:var(--onAccent)}
+.result{margin-top:14px;background:var(--butter);border-radius:22px;padding:16px;color:var(--onAccent)}
 .result .btn{background:var(--onAccent);color:#FFF7EC}
 .result .btn.ghost{background:transparent;color:var(--onAccent);border-color:rgba(21,19,32,.22)}
 .result .btn.quiet{background:transparent;color:var(--onAccent);opacity:.65}
@@ -1178,7 +1179,7 @@ nav button:active{transform:scale(.95)}
 /* your own history with a thing, set apart from the room's view of it */
 .sumup.mine{border-left-color:var(--sky)}
 .dkname .waited{color:var(--bad);font-weight:700}
-.chip.up{background:var(--mint);color:var(--ink)}
+.chip.up{background:var(--mint);color:var(--onAccent)}
 .chip.down{background:var(--cream2);color:var(--mute)}
 
 /* card skins: the swatch is the label, the name is the caption */
@@ -1192,7 +1193,7 @@ nav button:active{transform:scale(.95)}
 .skins b{font-size:11px;font-weight:800;color:var(--mute)}
 .skins button.on b{color:var(--ink)}
 .skins i{font-style:normal;font-size:9px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
-  color:var(--ink);background:var(--butter);border-radius:99px;padding:1px 6px;margin-top:-2px}
+  color:var(--onAccent);background:var(--butter);border-radius:99px;padding:1px 6px;margin-top:-2px}
 .skins button:focus-visible .sw{outline-color:var(--blue)}
 .skinnote{margin-top:8px;font-size:12.5px}
 
@@ -1256,7 +1257,7 @@ nav button:active{transform:scale(.95)}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @keyframes rise{from{transform:translate(var(--slide,0px),12px) scale(.985);opacity:0}
   62%{transform:translate(0,-2px) scale(1.004);opacity:1}to{transform:none;opacity:1}}
-@keyframes pop{0%{transform:scale(1)}40%{transform:scale(1.28)}100%{transform:scale(1)}}
+@keyframes pop{0%{transform:scale(1)}40%{transform:scale(1.08)}100%{transform:scale(1)}}
 @keyframes chipPop{0%{transform:scale(1)}45%{transform:scale(1.1)}100%{transform:scale(1)}}
 @keyframes grow{from{width:0}}
 @keyframes dot{from{transform:scale(.4);opacity:0}to{transform:scale(1);opacity:1}}
@@ -1345,7 +1346,7 @@ svg .comet{transform-box:fill-box;transform-origin:center;animation:cometTurn 4.
 .mk{display:block;border:1.5px solid var(--line);border-radius:14px;padding:8px 12px;background:var(--cream)}
 .mk b{font-family:var(--head);font-weight:800;font-size:13px;display:block}
 .mk small{font-size:10.5px;color:var(--mute);font-weight:600;display:block;margin-top:1px}
-.mk-founder{border-color:var(--bad);background:#FFF1F6}
+.mk-founder{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 10%,var(--card))}
 .mk-founder b{color:var(--bad)}
 .mk-argument,.mk-stillhere{border-color:var(--ink)}
 .here .dot{width:7px;height:7px;border-radius:50%;background:var(--good);flex:none;
@@ -1357,7 +1358,7 @@ svg .comet{transform-box:fill-box;transform-origin:center;animation:cometTurn 4.
 /* an entry that landed while you were looking, warm until it cools */
 .slip.landedNow{animation:landIn .44s cubic-bezier(.2,.9,.25,1) both}
 @keyframes landIn{from{opacity:0;transform:translateY(-10px) scale(.96)}to{opacity:1;transform:none}}
-.slip.warm{background:#FFF1D6;border-color:#F3D9A8;transition:background 2.4s ease,border-color 2.4s ease}
+.slip.warm{background:color-mix(in srgb,var(--butter) 18%,var(--card));transition:background 2.4s ease}
 /* what your rating did to the room */
 .conseq{display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;color:var(--mute);
   padding:9px 0 2px;animation:rise .42s cubic-bezier(.2,1.2,.38,1) both}
@@ -1377,8 +1378,8 @@ section.on > div > *:nth-child(n+5){animation-delay:.12s}
 img.co,.po img,.slot.full img,.ttl img{opacity:0;transform:scale(1.03);
   transition:opacity .42s ease,transform .55s cubic-bezier(.2,.9,.25,1)}
 img.ok{opacity:1;transform:none}
-@keyframes starLand{0%{transform:scale(.5) rotate(-26deg)}55%{transform:scale(1.3) rotate(7deg)}100%{transform:none}}
-.rate button.pop svg{animation:starLand .4s cubic-bezier(.3,1.6,.5,1)}
+@keyframes starLand{0%{transform:scale(.5) rotate(-26deg)}55%{transform:scale(1.14) rotate(4deg)}100%{transform:none}}
+.rate button.pop svg{animation:starLand .4s var(--m-spring)}
 .chip.bump{animation:chipPop .22s cubic-bezier(.3,1.4,.5,1)}
 .bar .tr i{animation:grow .5s cubic-bezier(.2,.9,.25,1) both}
 .tile,.po,.club,.slip{transition:transform .18s cubic-bezier(.2,.9,.25,1)}
@@ -1390,7 +1391,7 @@ nav button .dot{position:absolute;top:-2px;right:0;min-width:16px;height:16px;bo
   font-family:var(--head);font-weight:900;font-size:10px;line-height:16px;padding:0 4px;animation:dot .3s cubic-bezier(.3,1.4,.5,1)}
 .newline{display:flex;align-items:center;gap:10px;margin:18px 0 2px;font-family:var(--head);font-weight:800;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--bad)}
 .newline:before,.newline:after{content:"";height:2px;background:var(--bad);opacity:.35;flex:1}
-.together{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;background:var(--mint);color:var(--ink);padding:4px 9px;border-radius:999px}
+.together{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;background:var(--mint);color:var(--onAccent);padding:4px 9px;border-radius:999px}
 .onb .picks{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
 .onb .slot{aspect-ratio:2/3;border-radius:14px;border:2px dashed var(--line);display:grid;place-items:center;color:var(--mute);font-weight:800;font-size:22px;background:var(--card)}
 .onb .slot.full{border-style:solid;border-color:transparent;padding:0;overflow:hidden;position:relative}
@@ -1672,7 +1673,7 @@ body.demomode .secbar{top:78px}
 .searchline .clearsearch{flex:none;width:auto;padding:9px 12px;font-size:12px}
 .roomactions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
 .roomactions .btn{width:100%;padding:11px 12px;font-size:14px}
-.room-manage{margin-top:10px}.room-manage>button{border:0;background:none;padding:0;cursor:pointer;font:inherit}.room-manage-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}.room-manage-actions[hidden]{display:none}.room-manage-actions .btn{width:100%;padding:11px 12px;font-size:14px}.room-manage-actions .btn.quiet{grid-column:1/-1}.room-streak{display:flex;align-items:center;gap:7px;margin-top:10px;padding:8px 10px;background:var(--cream2);border-radius:12px;color:var(--mute);font-size:12px;font-weight:750}.room-streak i{display:inline-grid;place-items:center;width:19px;height:19px;border-radius:50%;background:var(--mint);color:var(--ink);font-style:normal;font-size:12px}.rec-empty{padding:4px 0}.rec-empty .stack{margin-top:12px}
+.room-manage{margin-top:10px}.room-manage>button{border:0;background:none;padding:0;cursor:pointer;font:inherit}.room-manage-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}.room-manage-actions[hidden]{display:none}.room-manage-actions .btn{width:100%;padding:11px 12px;font-size:14px}.room-manage-actions .btn.quiet{grid-column:1/-1}.room-streak{display:flex;align-items:center;gap:7px;margin-top:10px;padding:8px 10px;background:var(--cream2);border-radius:12px;color:var(--mute);font-size:12px;font-weight:750}.room-streak i{display:inline-grid;place-items:center;width:19px;height:19px;border-radius:50%;background:var(--mint);color:var(--onAccent);font-style:normal;font-size:12px}.rec-empty{padding:4px 0}.rec-empty .stack{margin-top:12px}
 .demoHint{margin-top:8px;color:var(--mute);font-size:12px;font-weight:600;text-align:center}
 .roomhead{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .roomhead .h{flex:1;min-width:0}
@@ -1716,7 +1717,7 @@ body.demomode .secbar{top:78px}
    One rule for the whole app: things move when something happens, then settle, and
    nothing moves on its own. One family of timings and one soft ease-out, with no
    overshoot anywhere a page or a card arrives — a tap's small press is the only spring. */
-:root{--m-ease:cubic-bezier(.2,.8,.2,1);--m-fast:.16s;--m-med:.26s;--m-slow:.36s}
+:root{--m-ease:cubic-bezier(.2,.8,.2,1);--m-spring:cubic-bezier(.3,1.4,.5,1);--m-pop:cubic-bezier(.2,1.2,.4,1);--m-fast:.16s;--m-med:.26s;--m-slow:.36s}
 /* nothing idles: no drifting cards, bobbing faces, perking marks or floating cases */
 .slip{animation:none}
 .av:not(#meAv) svg{animation:none!important}
@@ -1999,6 +2000,7 @@ section.swipenext{display:block}
 .springs :is(.tile,.club,.slip,.sn-tile,.archcard,.sn-late,.linkrow,.ans,.vsit,.tastemini,.pgarrow,.bell,.find):active,
 .springs nav button:active,.springs #add:active,.springs .btn.quiet:active,.springs .btn.ghost:active{transform:none}
 .springs .po:active{transform:none}
+.springs .cog:active{transform:rotate(38deg)}
 /* the tab you're on, tapped again at the top: its icon gives a little turn while it fetches */
 nav button.again .ni-f{animation:tabAgain .6s cubic-bezier(.2,1.2,.4,1)}
 @keyframes tabAgain{0%{transform:rotate(0) scale(1)}35%{transform:rotate(-14deg) scale(.86)}70%{transform:rotate(6deg) scale(1.08)}100%{transform:none}}
@@ -2054,7 +2056,7 @@ html[data-theme="dark"]{--good-t:#35C08C;--bad-t:#FF7AAA}
 .slip .foot .acts .chip{position:relative}
 .slip .foot .acts .chip::after{content:"";position:absolute;inset:-10px -4px}
 /* a face or a cover that's scrolled away stops moving until it's back */
-.zz,.zz *{animation-play-state:paused!important}
+.offscreen,.offscreen *{animation-play-state:paused!important}
 
 /* ---------- eyes, in moments ----------
    A looping blink keeps the phone redrawing every face every frame, even between blinks.
@@ -2111,7 +2113,7 @@ html[data-theme="dark"] .whero{opacity:.5}
 
 /* ---------- toasts ---------- */
 .toast{border-radius:999px;padding:11px 18px;display:flex;align-items:center;gap:9px;
-  transform:translateX(-50%) translateY(14px) scale(.9);transition:opacity .2s ease,transform .45s cubic-bezier(.2,1.35,.4,1)}
+  transform:translateX(-50%) translateY(14px) scale(.9);transition:opacity var(--m-fast) ease,transform .38s var(--m-pop)}
 .toast.on{transform:translateX(-50%) translateY(0) scale(1)}
 /* it can be flicked away, but only the pill itself takes the touch, and not for long */
 @media (pointer:coarse){.toast.on:not(.undo){pointer-events:auto;touch-action:none}}
@@ -2362,7 +2364,7 @@ html.tilt .logo .mark .eyes{translate:calc(var(--tx,0) * 2.4px) calc(var(--ty,0)
 #newPill{position:fixed;left:50%;z-index:6;display:flex;align-items:center;gap:6px;border:0;cursor:pointer;
   background:var(--ink);color:var(--cream);border-radius:99px;padding:5px 13px 5px 6px;font:800 13px/1 var(--head);
   box-shadow:0 10px 24px -10px rgba(0,0,0,.45);translate:-50% -14px;opacity:0;scale:.85;
-  transition:translate .38s cubic-bezier(.3,1.5,.5,1),opacity .2s,scale .38s cubic-bezier(.3,1.5,.5,1)}
+  transition:translate .38s var(--m-pop),opacity var(--m-fast),scale .38s var(--m-pop)}
 #newPill.on{translate:-50% 0;opacity:1;scale:1}
 #newPill .pf{display:flex}#newPill .pf .av{width:22px;height:22px;margin-right:-6px}#newPill .pf .av:last-child{margin-right:2px}
 .caughtup{display:flex;align-items:center;gap:10px;margin:22px 0 14px}
@@ -2374,9 +2376,9 @@ html.tilt .logo .mark .eyes{translate:calc(var(--tx,0) * 2.4px) calc(var(--ty,0)
 .caughtup .ctick{width:28px;height:28px}
 .caughtup .ctick circle{fill:none;stroke:var(--good);stroke-width:2.2}
 .caughtup .ctick path{fill:none;stroke:var(--good);stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:20;stroke-dashoffset:20}
-.caughtup.hit .ctick path{animation:tickDraw .45s cubic-bezier(.3,.9,.3,1) forwards}
+.caughtup.hit .ctick path{animation:ctickDraw .45s cubic-bezier(.3,.9,.3,1) forwards}
 .caughtup.hit .cg{animation:guyNod .7s ease-in-out .3s}
-@keyframes tickDraw{to{stroke-dashoffset:0}}
+@keyframes ctickDraw{to{stroke-dashoffset:0}}
 @keyframes guyNod{25%{transform:rotate(9deg) translateY(1px)}50%{transform:rotate(-7deg)}75%{transform:rotate(4deg)}}
 #feedBody .earlier:is(.slip,.logline){opacity:.86}
 .dsec{position:relative}
@@ -2397,7 +2399,7 @@ html.tilt .logo .mark .eyes{translate:calc(var(--tx,0) * 2.4px) calc(var(--ty,0)
 .likes .rf svg{width:100%;height:100%}
 .reacttray{position:fixed;z-index:80;display:flex;gap:4px;padding:6px;border-radius:20px;background:var(--card);
   box-shadow:0 14px 34px -12px rgba(0,0,0,.5),0 0 0 1px var(--line);transform:translateY(8px) scale(.9);opacity:0;transform-origin:20% 100%;
-  transition:transform .26s cubic-bezier(.3,1.5,.5,1),opacity .15s}
+  transition:transform .26s var(--m-pop),opacity var(--m-fast)}
 .reacttray.on{transform:none;opacity:1}
 .reacttray button{border:0;background:none;padding:4px 6px;border-radius:14px;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;color:var(--mute)}
 .reacttray button svg{width:36px;height:36px;transition:transform .2s cubic-bezier(.3,1.6,.5,1)}
@@ -2516,8 +2518,8 @@ header,nav,.secbar{-webkit-backdrop-filter:blur(22px) saturate(1.2);backdrop-fil
 @keyframes stHop{0%,40%,100%{transform:none}55%{transform:translateY(-8px) scale(1.06,.94)}70%{transform:scale(1.08,.9)}}
 /* ---------- peek ---------- */
 .peekcard{position:fixed;z-index:85;width:min(290px,calc(100vw - 24px));background:var(--card);border-radius:18px;padding:12px;
-  box-shadow:0 22px 44px -18px rgba(0,0,0,.55),0 0 0 1px color-mix(in srgb,var(--ink) 12%,transparent);transform:scale(.3);opacity:0;
-  transition:transform .3s cubic-bezier(.3,1.4,.5,1),opacity .16s}
+  box-shadow:0 22px 44px -18px rgba(0,0,0,.55),0 0 0 1px color-mix(in srgb,var(--ink) 12%,transparent);transform:scale(.85);opacity:0;
+  transition:transform .26s var(--m-pop),opacity var(--m-fast)}
 .peekcard.on{transform:none;opacity:1}
 .pk-h{display:flex;align-items:center;gap:10px}
 .pk-h .av{width:36px;height:36px}
@@ -2562,7 +2564,7 @@ header,nav,.secbar{-webkit-backdrop-filter:blur(22px) saturate(1.2);backdrop-fil
 #tour{position:fixed;inset:0;z-index:110;opacity:0;transition:opacity .2s}
 #tour.on{opacity:1}#tour.out{opacity:0}
 .tr-ring{position:fixed;box-shadow:0 0 0 9999px rgba(10,8,16,.66),0 0 0 3px var(--ink);pointer-events:none;
-  transition:left .38s cubic-bezier(.3,1.2,.5,1),top .38s cubic-bezier(.3,1.2,.5,1),width .38s cubic-bezier(.3,1.2,.5,1),height .38s cubic-bezier(.3,1.2,.5,1),border-radius .38s}
+  transition:left .38s cubic-bezier(.3,1.2,.5,1),top .38s cubic-bezier(.3,1.2,.5,1),width .38s cubic-bezier(.3,1.2,.5,1),height .38s cubic-bezier(.3,1.2,.5,1),border-radius .38s cubic-bezier(.3,1.2,.5,1)}
 .tr-card{position:fixed;left:max(14px,env(safe-area-inset-left,0px));right:max(14px,env(safe-area-inset-right,0px));max-width:420px;margin:0 auto;background:var(--card);
   border-radius:22px;padding:16px;box-shadow:0 24px 50px -20px rgba(0,0,0,.6);display:grid;grid-template-columns:auto 1fr;gap:4px 12px;transition:top .38s cubic-bezier(.3,1.2,.5,1)}
 .tr-card.hop .tr-guy svg{animation:trHop .5s cubic-bezier(.3,1.5,.5,1)}
@@ -2576,6 +2578,23 @@ header,nav,.secbar{-webkit-backdrop-filter:blur(22px) saturate(1.2);backdrop-fil
 .tr-next{width:auto!important;padding:11px 20px!important;margin:0!important}
 @keyframes trHop{40%{transform:translateY(-8px) scale(1.06,.94)}75%{transform:scale(1.05,.95)}}
 @media (prefers-reduced-motion:reduce){.tr-ring,.tr-card,#tour{transition:none}.tr-card.hop .tr-guy svg{animation:none}}
+
+
+/* ---------- floating pills take turns ----------
+   The update bar, the offline note and toasts all live just above the tab bar. When
+   more than one is up, the toast steps above the others rather than hiding behind
+   them, and with a sheet open the update bar moves to the top like the toast does. */
+html:not(.sheetup) body:has(#updBar,.offline.on) .toast{bottom:calc(150px + env(safe-area-inset-bottom))}
+html.sheetup .updbar{bottom:auto;top:calc(14px + env(safe-area-inset-top))}
+html.sheetup body:has(#updBar) .toast{top:calc(70px + env(safe-area-inset-top))}
+/* ---------- reduced motion, everywhere ----------
+   The lists above cover most things one by one, but later rules can win over them.
+   This is the last word: if you've asked your phone for less motion, nothing moves,
+   it just arrives. The wheel keeps a short turn so you can still see where it landed. */
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;animation-delay:0s!important;transition-duration:.01ms!important;transition-delay:0s!important}
+  #wheelG{transition-duration:.5s!important}
+}
 </style>
 </head>
 <body>
@@ -4188,7 +4207,7 @@ function liteWatch(root) { if (!liteObs || !root?.querySelectorAll) return;
   const EYES = ".av .eyes,.logo .mark .eyes,.pgmark .eyes,.season-object .eyes,.season-ghost .eyes,.emptydoor .eyes";
   const tick = () => { setTimeout(tick, 2000 + Math.random() * 1600);
     if (document.hidden) return;
-    const awake = $$(EYES).filter(e => !e.closest(".zz,.av.new") && !e.classList.contains("blink") && !e.classList.contains("look"));
+    const awake = $$(EYES).filter(e => !e.closest(".offscreen,.av.new") && !e.classList.contains("blink") && !e.classList.contains("look"));
     for (let n = Math.max(1, Math.round(awake.length / 8)); n-- > 0 && awake.length;) {
       const e = awake.splice(Math.floor(Math.random() * awake.length), 1)[0], how = Math.random() < .2 ? "look" : "blink";
       setTimeout(() => { e.classList.add(how); e.addEventListener("animationend", () => e.classList.remove(how), { once:true });
@@ -4247,7 +4266,7 @@ document.addEventListener("pointerdown", e => { if (REDUCED) return;
 /* the idle life (blinks, glances, floating covers) only runs where you can see it */
 const SLEEP_SEL = ".av,.co,.slip,.sn-late .po,.season-ghost,.season-object,.emptydoor";
 const sleepObs = !REDUCED && "IntersectionObserver" in window
-  ? new IntersectionObserver(es => es.forEach(en => en.target.classList.toggle("zz", !en.isIntersecting))) : null;
+  ? new IntersectionObserver(es => es.forEach(en => en.target.classList.toggle("offscreen", !en.isIntersecting))) : null;
 function sleepWatch(root) { if (!sleepObs || !root.querySelectorAll) return;
   for (const el of [...(root.matches(SLEEP_SEL) ? [root] : []), ...root.querySelectorAll(SLEEP_SEL)]) {
     if (el.dataset.zz) continue; el.dataset.zz = "1"; sleepObs.observe(el); } }
@@ -5678,8 +5697,9 @@ function landCover() { const t = coverTap; coverTap = null;
    sprung. A touch that turns into a scroll lets go without a sound. */
 (() => { if (REDUCED || !Element.prototype.animate) return;
   document.documentElement.classList.add("springs");
-  const SEL = ".btn,.chip,.pchip,.feedpick,.slip,.club,.po,.tile,.sn-tile,.sn-late,.archcard,.linkrow,.card.look,.ans,.vsit,.tastemini,.twin,nav button,#add,.bell,.find,.pgarrow,.cog";
-  const depth = el => el.matches(".slip,.card,.club,.archcard,.sn-tile,.twin,.tastemini,.linkrow") ? .982 : el.matches("nav button,#add,.bell,.find,.cog,.pgarrow") ? .9 : .955;
+  const SEL = ".btn,.chip,.pchip,.feedpick,.slip,.club,.po,.tile,.sn-tile,.sn-late,.archcard,.linkrow,.card.look,.ans,.vsit,.tastemini,.twin,nav button,#add,.bell,.find,.pgarrow,.cog,"
+    + ".tk,.cfchip,.cabsort,.cabfind,.iconbtn,.tn-log,.tn-spin,.swbtns button,.npchip,.eptalk,.trayact,.seg button,.tfilters button,.wgenre,.facetrow,.drow,.frrow,.sr,.pk-row,.pk-go";
+  const depth = el => el.matches(".slip,.card,.club,.archcard,.sn-tile,.twin,.tastemini,.linkrow,.drow,.frrow,.sr,.pk-row,.facetrow") ? .982 : el.matches("nav button,#add,.bell,.find,.cog,.pgarrow,.cabfind,.iconbtn,.tn-spin") ? .9 : .955;
   let el = null, t = null, x0 = 0, y0 = 0, down = false;
   const stop = n => n.getAnimations().forEach(a => a.id === "press" && a.cancel());
   const press = () => { t = null; if (!el) return; down = true; stop(el);
@@ -11193,7 +11213,7 @@ async function openClub(c) {
       <span class="count">${voters}<small>${voters === 1 ? "ballot in" : "ballots in"}</small></span>
       <div class="stack">
         ${canVote ? `<button class="btn soft" id="palVote">${myVotes ? "Change your ballot" : "Cast your ballot"}</button>` : ""}
-        ${owner && !isSeason(c) ? `<button class="btn ghost" id="closeBallot" style="border-color:#3A3650;color:var(--cream)">Call it — open the results</button>` : ""}
+        ${owner && !isSeason(c) ? `<button class="btn ghost" id="closeBallot" style="border-color:var(--onInkLine);color:var(--cream)">Call it — open the results</button>` : ""}
       </div></div>`;
     const pv2 = $("#palVote"); if (pv2) pv2.onclick = () => openBallot(c);
     const cb = $("#closeBallot"); if (cb) cb.onclick = async () => {
@@ -11203,18 +11223,18 @@ async function openClub(c) {
       catch (e) { alert(e.message); } };
   }
   else if (pbox && pal) { const mine = myVotes;
-    pbox.innerHTML = `<div class="pal"><div class="h"><span>The club's best</span><span class="tag dim" style="background:#3A3650;color:var(--cream)">${pal.voters} ${pal.voters===1?"ballot":"ballots"}</span></div>
+    pbox.innerHTML = `<div class="pal"><div class="h"><span>The club's best</span><span class="tag dim" style="background:var(--onInkLine);color:var(--cream)">${pal.voters} ${pal.voters===1?"ballot":"ballots"}</span></div>
       <div class="win">${esc(works[pal.ranked[0].id]?.title || "")} <span>won</span></div>
       ${pal.ranked.slice(0,6).map((r,i) => `<div class="row" data-pw="${esc(r.id)}"><span class="rk">${i+1}</span>
         <div class="t"><b>${esc(works[r.id]?.title || "")}</b>
-          <div class="tr" style="height:8px;border-radius:99px;background:#3A3650;margin-top:6px;overflow:hidden"><i style="display:block;height:100%;width:${Math.round(r.p/pal.max*100)}%;background:var(--butter)"></i></div></div>
+          <div class="tr" style="height:8px;border-radius:99px;background:var(--onInkLine);margin-top:6px;overflow:hidden"><i style="display:block;height:100%;width:${Math.round(r.p/pal.max*100)}%;background:var(--butter)"></i></div></div>
         <span class="n" style="font-size:16px;color:var(--butter)">${r.p}</span></div>`).join("")}
-      <p class="sub" style="color:#A9A3BC;margin-top:12px">Closed${c.closed_at ? " " + when(String(c.closed_at).slice(0,10)) : isSeason(c) ? " " + when(c.due) : ""} · ${pal.voters} ${pal.voters===1?"ballot":"ballots"}${mine ? " · yours counted" : ""}</p></div>`;
+      <p class="sub" style="color:var(--onInkMute);margin-top:12px">Closed${c.closed_at ? " " + when(String(c.closed_at).slice(0,10)) : isSeason(c) ? " " + when(c.due) : ""} · ${pal.voters} ${pal.voters===1?"ballot":"ballots"}${mine ? " · yours counted" : ""}</p></div>`;
     $$("[data-pw]", pbox).forEach(x => x.onclick = () => openWork(x.dataset.pw));
     pbox.insertAdjacentHTML("beforeend", `<div class="stack"><button class="btn soft" id="clubCard">Save the card</button></div>`);
     $("#clubCard").onclick = () => openCuts("club", { club:c, pal }, "Share the result"); }
   else if (pbox && closed) { pbox.innerHTML = `<div class="pal"><div class="h"><span>The club's best</span></div>
-    <p class="sub" style="color:#A9A3BC;margin-top:8px">It closed with nobody voting. The list stays as it was.</p></div>`; }
+    <p class="sub" style="color:var(--onInkMute);margin-top:8px">It closed with nobody voting. The list stays as it was.</p></div>`; }
   /* everyone's progress through it */
   const people = await clubMembers(c.id); const per = await clubProgress(c); const box = $("#clubWho"); if (!box) return;
   const rowsFor = [{ id:me.id, handle:"you" }, ...people.filter(p => p.id !== me.id)];
