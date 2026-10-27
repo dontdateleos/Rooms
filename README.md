@@ -234,6 +234,8 @@ straight to a vote on your own picks.
 - **Tilt-to-look:** opt-in, off by default.
 
 **Little extras.**
+- **First-run tour:** after the welcome, a six-stop spotlight walks a new person round (their room, +, Rooms, Queue, Challenges, You). Shown once (`prefs.toured`), skippable, and repeatable from settings with "Show me around again".
+- **One favourite each:** when rating, you pick one best thing, one person and one of your own. Picking another in the same group swaps it.
 - **Face reactions (v35):** hold the heart to answer with your own face instead: laughing, gasping or welling up. Stored in `reactions.kind`; before v35 it stays a like.
 - **Your people on a title:** a star-by-star spread with their faces, blurred until you've rated it yourself.
 - **Monday recap:** "Last week in the room" shows Monday to Wednesday, and can be dismissed until next week.

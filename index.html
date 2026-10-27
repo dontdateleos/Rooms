@@ -2555,6 +2555,27 @@ header,nav,.secbar{-webkit-backdrop-filter:blur(22px) saturate(1.2);backdrop-fil
 .desk .dpad i{position:absolute;left:9px;top:8px;width:7px;height:7px;border-radius:2px;background:rgba(0,0,0,.3)}
 .desk .dnone{position:absolute;right:10px;bottom:12px;font-size:11.5px;color:var(--mute)}
 @media (prefers-reduced-motion:reduce){#splash{animation:none;opacity:1}.sp u,.couch .face,.couch .face .av,.couch .face .eyes,.nowpill .av,.nowpill .eyes,.ngather span,.peekcard{animation:none!important;transition:none}}
+
+/* ---------- one favourite each ---------- */
+.lbl .pick1{font:600 11px var(--body);letter-spacing:0;text-transform:none;color:var(--mute);margin-left:6px}
+/* ---------- the tour ---------- */
+#tour{position:fixed;inset:0;z-index:110;opacity:0;transition:opacity .2s}
+#tour.on{opacity:1}#tour.out{opacity:0}
+.tr-ring{position:fixed;box-shadow:0 0 0 9999px rgba(10,8,16,.66),0 0 0 3px var(--ink);pointer-events:none;
+  transition:left .38s cubic-bezier(.3,1.2,.5,1),top .38s cubic-bezier(.3,1.2,.5,1),width .38s cubic-bezier(.3,1.2,.5,1),height .38s cubic-bezier(.3,1.2,.5,1),border-radius .38s}
+.tr-card{position:fixed;left:max(14px,env(safe-area-inset-left,0px));right:max(14px,env(safe-area-inset-right,0px));max-width:420px;margin:0 auto;background:var(--card);
+  border-radius:22px;padding:16px;box-shadow:0 24px 50px -20px rgba(0,0,0,.6);display:grid;grid-template-columns:auto 1fr;gap:4px 12px;transition:top .38s cubic-bezier(.3,1.2,.5,1)}
+.tr-card.hop .tr-guy svg{animation:trHop .5s cubic-bezier(.3,1.5,.5,1)}
+.tr-guy{width:44px;height:44px;grid-row:1 / 3}.tr-guy svg{width:100%;height:100%;display:block}
+.tr-t b{display:block;font:900 19px/1.2 var(--head);letter-spacing:-.02em}
+.tr-t p{margin:4px 0 0;color:var(--mute);font-size:14.5px;line-height:1.45}
+.tr-foot{grid-column:1 / 3;display:flex;align-items:center;gap:10px;margin-top:12px}
+.tr-dots{display:flex;gap:5px;margin-right:auto}.tr-dots i{width:7px;height:7px;border-radius:50%;background:var(--mute);opacity:.35;transition:width .2s,background .2s}
+.tr-dots i.on{width:18px;border-radius:4px;background:var(--ink);opacity:1}
+.tr-skip{border:0;background:none;color:var(--mute);font:700 14px var(--head);padding:10px 8px;cursor:pointer}
+.tr-next{width:auto!important;padding:11px 20px!important;margin:0!important}
+@keyframes trHop{40%{transform:translateY(-8px) scale(1.06,.94)}75%{transform:scale(1.05,.95)}}
+@media (prefers-reduced-motion:reduce){.tr-ring,.tr-card,#tour{transition:none}.tr-card.hop .tr-guy svg{animation:none}}
 </style>
 </head>
 <body>
@@ -5564,7 +5585,7 @@ function letFocus() { if ($("#ask").getAttribute("aria-hidden") === "false") ret
   const f = focusFrom; focusFrom = null; if (f?.isConnected && f !== document.body) f.focus?.({ preventScroll:true }); }
 let addKeep = null;
 function closeSheet() { const sh = $("#sheet"); if (!sh.classList.contains("on")) return;
-  if (myDoing) setDoing(null);
+  if (myDoing) setDoing(null); if (P.tourDue) maybeTour();
   if (addKeep) { P.kinds = addKeep; addKeep = null; }
   sh.setAttribute("aria-hidden", "true"); recede(false); letFocus();
   if (REDUCED) { sh.classList.remove("on", "out"); return; }
@@ -5836,7 +5857,7 @@ async function enter() { hideSplash();
   /* a "season ends in three nights" notification opens on the season */
   const toSeasons = /^#seasons\b/.test(location.hash); if (toSeasons) { history.replaceState(null, "", location.pathname + location.search); P.clubTab = "season"; }
   switchTab(toSeasons ? "clubs" : "doors"); movePill(true); checkNew(); joinMeChannel();
-  if (!P.onboarded && !myEntries.length) setTimeout(openWelcome, 400);
+  if (!P.onboarded && !myEntries.length) setTimeout(openWelcome, 400); else if (P.tourDue) maybeTour();
 }
 function paintMeAv() { const el = $("#meAv"); if (!el) return; el.innerHTML = avSVG(avFor(me));
   /* your week shows on your face in the corner, and only there: a run of low scores and
@@ -5924,7 +5945,53 @@ async function openYearStory(year = storyYear() || String(new Date().getFullYear
    loved (a minute, and your taste, ten and shelf start from them); bring a whole log from
    Letterboxd, Goodreads or Steam, for anyone who already keeps one; or look around first,
    which is allowed and doesn't nag. If an invite brought you, it says whose room you're in. */
-function openWelcome() {
+/* ---------- showing a new person round ----------
+   After the welcome (or straight away if they chose to look around first), one of the
+   logo's rooms points at each part of the app in turn: a lit ring on the thing itself,
+   a line or two, and a tap to go on. Six stops, skippable at any point, and it can be
+   asked for again from settings. */
+const TOUR = [
+  { at:'#hereRow .couch, #hereRow', title:"Your room", body:"Everyone in the room sits up here. Tap a face to see what they're watching, reading or playing.", col:"#F5A3C7", need:"doors" },
+  { at:'#add', title:"Log something", body:"Finished a film, show, book or game? Tap + and drag across the stars. Then pick the one thing you loved most.", col:"#FFB36B" },
+  { at:'nav button[data-tab="doors"]', title:"Rooms", body:"What your friends log lands here. Hold a heart to answer with your face, or tap the bubble to reply.", col:"#F5A3C7" },
+  { at:'nav button[data-tab="library"]', title:"Queue", body:"Up next is everything you mean to get to. Finished is everything you've done, with a diary by month.", col:"#B9A6FF" },
+  { at:'nav button[data-tab="clubs"]', title:"Challenges", body:"Set a goal for the year, and join this month's season with the room.", col:"#FFE86A" },
+  { at:'nav button[data-tab="taste"]', title:"You", body:"Your taste, your year, and your settings. That's the whole tour.", col:"#8FD3FF", last:true },
+];
+function maybeTour() { if (!P.tourDue || !me) return;
+  setTimeout(() => { if (!P.tourDue || $("#sheet").classList.contains("on") || $("#ask").classList.contains("on")) return;
+    P.tourDue = false; P.toured = 1; saveP(); startTour(); }, 700); }
+function startTour() {
+  $("#tour")?.remove();
+  const steps = TOUR.filter(st => (!st.need || currentTab() === st.need) && $(st.at));
+  if (!steps.length) return;
+  const t = document.createElement("div"); t.id = "tour"; t.setAttribute("role", "dialog"); t.setAttribute("aria-label", "A quick look round");
+  t.innerHTML = `<div class="tr-ring"></div><div class="tr-card" aria-live="polite"><span class="tr-guy"></span><div class="tr-t"><b></b><p></p></div>
+    <div class="tr-foot"><span class="tr-dots">${steps.map(() => "<i></i>").join("")}</span><button class="tr-skip" type="button">Skip</button><button class="tr-next btn" type="button">Next</button></div></div>`;
+  document.body.appendChild(t);
+  let i = 0;
+  const show = () => { const st = steps[i], el = $(st.at); if (!el) { next(); return; }
+    el.scrollIntoView?.({ block:"nearest" });
+    const r = el.getBoundingClientRect(), pad = 6, ring = $(".tr-ring", t), card = $(".tr-card", t);
+    Object.assign(ring.style, { left:r.left - pad + "px", top:r.top - pad + "px", width:r.width + pad * 2 + "px", height:r.height + pad * 2 + "px",
+      borderRadius:Math.min(26, Math.max(r.width, r.height) / 2 + pad) + "px" });
+    $(".tr-guy", t).innerHTML = tinyFace(st.last ? "happy" : "ok", st.col);
+    $(".tr-t b", t).textContent = st.title; $(".tr-t p", t).textContent = st.body;
+    $(".tr-next", t).textContent = i === steps.length - 1 ? "Got it" : "Next";
+    $$(".tr-dots i", t).forEach((d, k) => d.classList.toggle("on", k === i));
+    /* the card sits on whichever side of the ring has room */
+    const ch = card.offsetHeight, above = r.top > innerHeight / 2;
+    card.style.top = (above ? Math.max(12, r.top - pad - ch - 14) : Math.min(innerHeight - ch - 12, r.bottom + pad + 14)) + "px";
+    card.classList.remove("hop"); void card.offsetWidth; card.classList.add("hop"); };
+  const end = () => { t.classList.add("out"); setTimeout(() => t.remove(), 220); removeEventListener("keydown", key); };
+  const next = () => { if (++i >= steps.length) { end(); say("You're all set", "good"); } else show(); };
+  const key = e => { if (e.key === "Escape") end(); else if (e.key === "Enter" || e.key === "ArrowRight") next(); };
+  $(".tr-next", t).onclick = ev => { ev.stopPropagation(); next(); };
+  $(".tr-skip", t).onclick = ev => { ev.stopPropagation(); end(); };
+  t.onclick = e => { if (!$(".tr-card", t).contains(e.target)) next(); };
+  addEventListener("keydown", key);
+  requestAnimationFrame(() => { t.classList.add("on"); show(); if (!matchMedia("(pointer:coarse)").matches) $(".tr-next", t).focus({ preventScroll:true }); }); }
+function openWelcome() { if (!P.toured) { P.tourDue = true; saveP(); }
   const R = activeRoom(), invited = R && R.members.length > 1;
   const others = invited ? R.members.filter(m => m.id !== me.id).map(m => m.handle) : [];
   openSheet(`<div class="onb welcome">
@@ -5963,11 +6030,11 @@ function openOnboarding() {
     const kinds = [...new Set(picks.map(w => w.kind))];
     const words = [...new Set(kinds.flatMap(k => K(k).craft))];
     const chosen = new Set();
-    openSheet(`<div class="onb"><h3>What did you love about them?</h3><p class="sub">Pick a few. These become your taste — you can change them any time.</p>
+    openSheet(`<div class="onb"><h3>What do you love most in them?</h3><p class="sub">Just the one. It starts your taste, and every log adds more.</p>
       <div class="chips" id="onbWords" style="margin-top:12px">${words.map(w => `<button class="chip" data-ow="${esc(w)}">${w}</button>`).join("")}</div>
       <div class="stack"><button class="btn blue" id="onbDone" disabled>Build my profile</button><button class="btn quiet" id="onbSkip">Skip</button></div><p class="msg" id="onbMsg2"></p></div>`);
-    $$("[data-ow]").forEach(b => b.onclick = () => { const w = b.dataset.ow; if (chosen.has(w)) chosen.delete(w); else chosen.add(w);
-      b.classList.toggle("on"); b.classList.remove("bump"); void b.offsetWidth; b.classList.add("bump");
+    $$("[data-ow]").forEach(b => b.onclick = () => { const w = b.dataset.ow, had = chosen.has(w); chosen.clear(); if (!had) chosen.add(w);
+      $$("[data-ow]").forEach(x => x.classList.toggle("on", chosen.has(x.dataset.ow))); b.classList.remove("bump"); void b.offsetWidth; b.classList.add("bump");
       $("#onbDone").disabled = chosen.size < 1; });
     $("#onbSkip").onclick = () => finish([]);
     $("#onbDone").onclick = () => finish([...chosen]);
@@ -11832,18 +11899,25 @@ function openLog(w, edit = null, preset = 0) { setDoing("logging"); const cfg = 
   const chip = (key, label, cls = "") => { const who = cls.includes("who") && key.startsWith("person:") ? key.slice(7) : null;
     return `<button class="chip ${cls} ${who?"hasface":""} ${loved.includes(key)?"on":""}" data-lv="${esc(key)}">${
       who ? faceEl(who, faces[who]) : ""}${esc(label)}${stats.hot(key)?`<u>${stats.share(key)}%</u>`:""}</button>`; };
+  const lovedCat = k => k.startsWith("person:") ? "who" : cfg.craft.includes(k) ? "craft" : "own";
   const paintLoved = () => { const el = $("#lovedWrap"); if (!el) return; const people = peopleOf(w);
     const pop = Object.entries(stats.counts).sort((a,b)=>b[1]-a[1]).map(x=>x[0]).filter(stats.hot).slice(0,5); const popSet = new Set(pop);
     const crafts = cfg.craft.filter(c => !popSet.has(c)), persons = people.filter(([n]) => !popSet.has("person:"+n)), mine = myCustomTags(w.kind).filter(t => !popSet.has(t) && !cfg.craft.includes(t));
     const extras = loved.filter(k => !k.startsWith("person:") && !cfg.craft.includes(k) && !mine.includes(k) && !popSet.has(k));
     el.innerHTML = (pop.length ? `<div class="tagrow"><span class="lbl">Loved most often</span><span class="cnt">${stats.n} ${stats.n===1?"entry":"entries"}</span></div><div class="chips">${pop.map(k => chip(k, k.startsWith("person:")?lc(k.slice(7)):k, k.startsWith("person:")?"who":"")).join("")}</div>` : "")
-      + `<div class="lbl">${pop.length ? "Everything else" : "What would you single out?"}</div><div class="chips">${crafts.map(c => chip(c,c)).join("")}</div>`
-      + (persons.length ? `<div class="lbl">${w.kind === "book" ? "Who wrote it" : "Who made it"}</div><div class="chips">${persons.map(([n]) => chip("person:"+n, n, "who")).join("")}</div>` : "")
-      + ((mine.length || extras.length) ? `<div class="lbl">Your own</div><div class="chips">${[...extras, ...mine].map(t => chip(t,t)).join("")}</div>` : "")
+      + `<div class="lbl">${pop.length ? "Everything else" : "The best thing about it"} <small class="pick1">pick one</small></div><div class="chips">${crafts.map(c => chip(c,c)).join("")}</div>`
+      + (persons.length ? `<div class="lbl">${w.kind === "book" ? "Who wrote it" : "Who made it"} <small class="pick1">your favourite</small></div><div class="chips">${persons.map(([n]) => chip("person:"+n, n, "who")).join("")}</div>` : "")
+      + ((mine.length || extras.length) ? `<div class="lbl">Your own <small class="pick1">pick one</small></div><div class="chips">${[...extras, ...mine].map(t => chip(t,t)).join("")}</div>` : "")
       + `<div class="custom"><input id="lvNew" maxlength="28" placeholder="Add your own" autocapitalize="none"><button id="lvAdd">Add</button></div>`;
-    $$("[data-lv]", el).forEach(b => b.onclick = () => { const k = b.dataset.lv, i = loved.indexOf(k); if (i >= 0) loved.splice(i,1); else loved.push(k); b.classList.toggle("on");
+    /* one favourite per kind of thing: a single best part, a single person, one of your own.
+       Choosing another swaps it, so it's a decision rather than a checklist. */
+    $$("[data-lv]", el).forEach(b => b.onclick = () => { const k = b.dataset.lv, i = loved.indexOf(k);
+      if (i >= 0) loved.splice(i,1); else { for (let j = loved.length - 1; j >= 0; j--) if (lovedCat(loved[j]) === lovedCat(k)) loved.splice(j, 1); loved.push(k); }
+      $$("[data-lv]", el).forEach(x => x.classList.toggle("on", loved.includes(x.dataset.lv)));
       b.classList.remove("bump"); void b.offsetWidth; b.classList.add("bump"); buzz(5); });
-    const add = () => { const t = lc($("#lvNew").value.trim()).replace(/\s+/g," "); if (!t || t.length < 2) return; if (!loved.includes(t)) loved.push(t); $("#lvNew").value = ""; paintLoved(); }; $("#lvAdd").onclick = add; $("#lvNew").onkeydown = e => { if (e.key === "Enter") { e.preventDefault(); add(); } }; };
+    const add = () => { const t = lc($("#lvNew").value.trim()).replace(/\s+/g," "); if (!t || t.length < 2) return;
+      for (let j = loved.length - 1; j >= 0; j--) if (lovedCat(loved[j]) === "own") loved.splice(j, 1);
+      if (!loved.includes(t)) loved.push(t); $("#lvNew").value = ""; paintLoved(); }; $("#lvAdd").onclick = add; $("#lvNew").onkeydown = e => { if (e.key === "Enter") { e.preventDefault(); add(); } }; };
   const drawLoved = () => { const el = $("#lovedWrap"); if (!score) { el.innerHTML = ""; return; } if (el.dataset.drawn) return; el.dataset.drawn = "1"; paintLoved();
     tagStats(w.id).then(s => { stats = s; if ($("#lovedWrap")?.dataset.drawn) paintLoved(); }).catch(()=>{});
     /* the names are already there; the photographs arrive when they arrive */
@@ -12384,7 +12458,7 @@ async function openYou() { let top = { items:[] }; try { top = await ensureMyTop
       <div class="stack"><button class="btn" id="savePw">Save the password</button></div><p class="msg" id="pwMsg"></p></div>`}
     <div class="stack"><button class="btn ghost" id="importBtn">Import a log from another app</button>
       <button class="btn ghost" id="bringBtn">Bring another log into this one</button>
-      ${sb.__local?``:`<button class="btn ghost" id="takeout">Download everything</button><button class="btn quiet" id="takeoutCsv">Download your diary as a spreadsheet</button>`}${sb.__local?`<button class="btn ghost" id="backup">Back up the log</button><button class="btn quiet" id="restore">Restore from a backup</button><input type="file" id="restoreFile" accept="application/json" hidden>`:""}<button class="btn quiet" id="signOut">Sign out</button><button class="btn quiet" id="sClose">Done</button></div><p class="msg" id="sMsg"></p>
+      ${sb.__local?``:`<button class="btn ghost" id="takeout">Download everything</button><button class="btn quiet" id="takeoutCsv">Download your diary as a spreadsheet</button>`}${sb.__local?`<button class="btn ghost" id="backup">Back up the log</button><button class="btn quiet" id="restore">Restore from a backup</button><input type="file" id="restoreFile" accept="application/json" hidden>`:""}<button class="btn quiet" id="tourAgain">Show me around again</button><button class="btn quiet" id="signOut">Sign out</button><button class="btn quiet" id="sClose">Done</button></div><p class="msg" id="sMsg"></p>
     ${blocked.size ? `<details class="fold" id="blockFold"><summary>Blocked \u00b7 ${blocked.size}</summary>
       <p class="sub">Neither of you sees the other. Letting somebody back in does not put
         back the following that blocking undid.</p>
@@ -12429,6 +12503,7 @@ async function openYou() { let top = { items:[] }; try { top = await ensureMyTop
     catch (err) { oops(err, "Couldn't reset your shape"); }
     paintAv(); paintMeAv(); refresh(); };
 
+  const ta = $("#tourAgain"); if (ta) ta.onclick = () => { P.tourDue = true; saveP(); closeSheet(); if (currentTab() !== "doors") switchTab("doors"); };
   const fillPush = async () => { const el = $("#pushSlot"); if (!el) return; el.innerHTML = await pushSwitchHTML(); wirePushSwitch(el, fillPush); };
   fillPush();
   $("#ySave").onclick = async () => { const h = lc($("#yHandle").value.trim()), bio = $("#yBio").value.trim(); if (!/^[a-z0-9_]{2,24}$/.test(h)) { $("#yMsg").textContent = "two to twenty-four, lowercase, no spaces"; return; }
