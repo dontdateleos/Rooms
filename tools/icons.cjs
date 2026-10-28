@@ -6,19 +6,19 @@ const { chromium } = require("playwright");
 
 const ROOT = path.join(__dirname, ".."), OUT = path.join(ROOT, "icons");
 const GROUND = "#16131C", TEXT = "#F4EDE2", SUB = "#C9C1D9";
-const font = w => `data:font/woff2;base64,${fs.readFileSync(path.join(ROOT, `vendor/fonts/outfit-${w}-latin.woff2`)).toString("base64")}`;
+/* Outfit is one variable font file covering weights 500 to 900 */
+const FONT = `data:font/woff2;base64,${fs.readFileSync(path.join(ROOT, "vendor/fonts/outfit-500-latin.woff2")).toString("base64")}`;
 
 /* the mark: four rooms, three with the lights off and one lit with someone home */
 const MARK = `<svg viewBox="10 10 80 80" xmlns="http://www.w3.org/2000/svg">
-  <rect x="12" y="12" width="36" height="36" rx="10" fill="#F5A3C7" fill-opacity=".32"/>
-  <rect x="52" y="12" width="36" height="36" rx="10" fill="#FFB36B" fill-opacity=".4"/>
-  <rect x="12" y="52" width="36" height="36" rx="10" fill="#B9A6FF" fill-opacity=".32"/>
-  <rect x="52" y="52" width="36" height="36" rx="10" fill="#8FD3FF"/>
-  <g fill="#151320"><rect x="63" y="63" width="4.6" height="10" rx="2.3"/><rect x="72.4" y="64" width="4.6" height="11" rx="2.3"/></g></svg>`;
+  <rect x="12" y="12" width="37" height="37" rx="11" fill="#F5A3C7" fill-opacity=".48"/>
+  <rect x="51" y="12" width="37" height="37" rx="11" fill="#FFB36B" fill-opacity=".48"/>
+  <rect x="12" y="51" width="37" height="37" rx="11" fill="#B9A6FF" fill-opacity=".48"/>
+  <rect x="51" y="51" width="37" height="37" rx="11" fill="#8FD3FF"/>
+  <g fill="#151320"><rect x="57" y="59.5" width="5.6" height="12.5" rx="2.8"/><rect x="67.8" y="59.5" width="5.6" height="12.5" rx="2.8"/></g></svg>`;
 
 const page = body => `<!doctype html><meta charset="utf-8"><style>
-@font-face{font-family:Outfit;font-weight:700;src:url(${font(700)})}
-@font-face{font-family:Outfit;font-weight:900;src:url(${font(900)})}
+@font-face{font-family:Outfit;font-weight:500 900;src:url(${FONT})}
 html,body{margin:0;background:${GROUND};overflow:hidden}
 svg{display:block;width:100%;height:100%}
 </style>${body}`;

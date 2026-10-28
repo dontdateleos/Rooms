@@ -1,4 +1,4 @@
-const SHELL="rooms-shell-v3", ASSETS=["./","./index.html","./manifest.webmanifest","./vendor/type.css","./vendor/supabase.js"];
+const SHELL="rooms-shell-v4", ASSETS=["./","./index.html","./manifest.webmanifest","./vendor/type.css","./vendor/supabase.js"];
 self.addEventListener("install",e=>e.waitUntil(caches.open(SHELL).then(c=>c.addAll(ASSETS)).then(()=>self.skipWaiting())));
 self.addEventListener("activate",e=>e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==SHELL).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
 /* network first, cache as the fallback for when there is no network. Opening the app asks

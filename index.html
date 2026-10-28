@@ -33,7 +33,7 @@
 <link rel="apple-touch-startup-image" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="./icons/splash-750x1334.png">
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="modulepreload" href="./vendor/supabase.js">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%2316131C'/%3E%3Cg transform='translate%2850 50%29 scale%28.8%29 translate%28-50 -50%29'%3E%3Crect x='12' y='12' width='36' height='36' rx='10' fill='%23F5A3C7' fill-opacity='.32'/%3E%3Crect x='52' y='12' width='36' height='36' rx='10' fill='%23FFB36B' fill-opacity='.4'/%3E%3Crect x='12' y='52' width='36' height='36' rx='10' fill='%23B9A6FF' fill-opacity='.32'/%3E%3Crect x='52' y='52' width='36' height='36' rx='10' fill='%238FD3FF'/%3E%3Cg fill='%23151320'%3E%3Crect x='63' y='63' width='4.6' height='10' rx='2.3'/%3E%3Crect x='72.4' y='64' width='4.6' height='11' rx='2.3'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%2316131C'/%3E%3Cg transform='translate%2850 50%29 scale%28.8%29 translate%28-50 -50%29'%3E%3Crect x='12' y='12' width='37' height='37' rx='11' fill='%23F5A3C7' fill-opacity='0.48'/%3E%3Crect x='51' y='12' width='37' height='37' rx='11' fill='%23FFB36B' fill-opacity='0.48'/%3E%3Crect x='12' y='51' width='37' height='37' rx='11' fill='%23B9A6FF' fill-opacity='0.48'/%3E%3Crect x='51' y='51' width='37' height='37' rx='11' fill='%238FD3FF'/%3E%3Cg fill='%23151320'%3E%3Crect x='57' y='59.5' width='5.6' height='12.5' rx='2.8'/%3E%3Crect x='67.8' y='59.5' width='5.6' height='12.5' rx='2.8'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E">
 <!-- the type is served from here. Fetching it from Google handed fonts.gstatic.com an
      IP address every time somebody opened the app, which bought us nothing and cost a
      paragraph of the privacy policy. Same files, same subsets. -->
@@ -97,9 +97,8 @@ header .wrap{display:flex;align-items:center;justify-content:space-between;heigh
    other people — a room lights up for each friend who's in here right now, it flickers
    on when the app opens, and all four switch on for a moment when you log something.
    Unlit, they sit dim on dark and as a soft tint on cream. */
-.logo .mark .rm{fill-opacity:.32;transition:fill-opacity .45s cubic-bezier(.2,.8,.2,1)}
-.logo .mark .rm[data-r="1"]{fill-opacity:.4}
-html[data-theme="light"] .logo .mark .rm{fill-opacity:.6}
+.logo .mark .rm{fill-opacity:.48;transition:fill-opacity .45s cubic-bezier(.2,.8,.2,1)}
+html[data-theme="light"] .logo .mark .rm{fill-opacity:.7}
 .logo .mark .rm.lit{fill-opacity:1}
 .logo .mark .re{opacity:0;transition:opacity .25s ease .12s}
 .logo .mark .re.lit{opacity:1}
@@ -2827,7 +2826,7 @@ html.sheetup body:has(#updBar) .toast{top:calc(70px + env(safe-area-inset-top))}
 <div id="splash" aria-hidden="true"><div class="sp-in"><b>Rooms</b><i class="sp s1"><u></u><u></u></i><i class="sp s2"><u></u><u></u></i><i class="sp s3"><u></u><u></u></i><i class="sp s4"><u></u><u></u></i></div></div>
 
 <header><h1 class="sr-only">Rooms</h1><div class="wrap">
-  <div class="logo"><svg class="mark" viewBox="10 10 80 80" aria-hidden="true"><rect class="rm" data-r="0" x="12" y="12" width="36" height="36" rx="10" fill="#F5A3C7"/><rect class="rm" data-r="1" x="52" y="12" width="36" height="36" rx="10" fill="#FFB36B"/><rect class="rm" data-r="2" x="12" y="52" width="36" height="36" rx="10" fill="#B9A6FF"/><rect class="rm lit" data-r="3" x="52" y="52" width="36" height="36" rx="10" fill="#8FD3FF"/><g class="eyes re" fill="#151320"><rect x="23" y="23" width="4.6" height="10" rx="2.3"/><rect x="32.4" y="24" width="4.6" height="11" rx="2.3"/></g><g class="eyes re" fill="#151320"><rect x="63" y="23" width="4.6" height="10" rx="2.3"/><rect x="72.4" y="24" width="4.6" height="11" rx="2.3"/></g><g class="eyes re" fill="#151320"><rect x="23" y="63" width="4.6" height="10" rx="2.3"/><rect x="32.4" y="64" width="4.6" height="11" rx="2.3"/></g><g class="eyes re lit" fill="#151320"><rect x="63" y="63" width="4.6" height="10" rx="2.3"/><rect x="72.4" y="64" width="4.6" height="11" rx="2.3"/></g></svg><span class="hdrtitle" id="hdrTitle" aria-hidden="true"></span><span class="logoword">Rooms</span></div>
+  <div class="logo"><svg class="mark" viewBox="10 10 80 80" aria-hidden="true"><rect class="rm" data-r="0" x="12" y="12" width="37" height="37" rx="11" fill="#F5A3C7"/><rect class="rm" data-r="1" x="51" y="12" width="37" height="37" rx="11" fill="#FFB36B"/><rect class="rm" data-r="2" x="12" y="51" width="37" height="37" rx="11" fill="#B9A6FF"/><rect class="rm lit" data-r="3" x="51" y="51" width="37" height="37" rx="11" fill="#8FD3FF"/><g class="eyes re" fill="#151320"><rect x="26.6" y="28" width="5.6" height="12.5" rx="2.8"/><rect x="37.4" y="28" width="5.6" height="12.5" rx="2.8"/></g><g class="eyes re" fill="#151320"><rect x="57" y="28" width="5.6" height="12.5" rx="2.8"/><rect x="67.8" y="28" width="5.6" height="12.5" rx="2.8"/></g><g class="eyes re" fill="#151320"><rect x="26.6" y="59.5" width="5.6" height="12.5" rx="2.8"/><rect x="37.4" y="59.5" width="5.6" height="12.5" rx="2.8"/></g><g class="eyes re lit" fill="#151320"><rect x="57" y="59.5" width="5.6" height="12.5" rx="2.8"/><rect x="67.8" y="59.5" width="5.6" height="12.5" rx="2.8"/></g></svg><span class="hdrtitle" id="hdrTitle" aria-hidden="true"></span><span class="logoword">Rooms</span></div>
   <div class="hr">
     <button class="me" id="meBtn" hidden><span class="av" id="meAv"></span><span id="meName"></span></button>
     <button class="find" id="findBtn" aria-label="Find someone" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></button>
@@ -5745,8 +5744,8 @@ async function pullRefresh() {
   const chip = () => bar ||= (() => { const d = document.createElement("div");
     d.className = "pull"; d.id = "pullBar";
     /* the logo's four rooms, switching on one at a time as you pull */
-    d.innerHTML = `<svg class="pmk" viewBox="10 10 80 80" aria-hidden="true">${[[12,12,"#F5A3C7"],[52,12,"#FFB36B"],[12,52,"#B9A6FF"],[52,52,"#8FD3FF"]]
-      .map(([x, y, c]) => `<rect x="${x}" y="${y}" width="36" height="36" rx="10" fill="${c}"/>`).join("")}</svg><span>Pull down</span>`;
+    d.innerHTML = `<svg class="pmk" viewBox="10 10 80 80" aria-hidden="true">${[[12,12,"#F5A3C7"],[51,12,"#FFB36B"],[12,51,"#B9A6FF"],[51,51,"#8FD3FF"]]
+      .map(([x, y, c]) => `<rect x="${x}" y="${y}" width="37" height="37" rx="11" fill="${c}"/>`).join("")}</svg><span>Pull down</span>`;
     document.body.appendChild(d); return d; })();
   const label = (b, t) => { b.querySelector("span").textContent = t; };
   const lamps = (b, p) => b.querySelectorAll(".pmk rect").forEach((r, i) => r.classList.toggle("on", p >= (i + 1) / 4));
