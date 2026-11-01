@@ -1335,13 +1335,13 @@ svg .comet{transform-box:fill-box;transform-origin:center;animation:cometTurn 4.
 .pull.going{opacity:1;transform:translate(-50%,0)}
 .pull{display:flex;align-items:center;gap:8px}
 .pull .pmk{width:18px;height:18px;flex:none}
-.pull .pmk rect{fill-opacity:.3;transition:fill-opacity .18s}
-.pull .pmk rect.on{fill-opacity:1}
+.pull .pmk .pr{opacity:.3;transition:opacity .18s}
+.pull .pmk .pr.on{opacity:1}
 /* refreshing: the light goes round the four rooms until it's done */
-.pull.going .pmk rect{animation:pullLamp .9s linear infinite}
-.pull.going .pmk rect:nth-child(2){animation-delay:.225s}.pull.going .pmk rect:nth-child(4){animation-delay:.45s}.pull.going .pmk rect:nth-child(3){animation-delay:.675s}
-@keyframes pullLamp{0%,40%{fill-opacity:1}60%,100%{fill-opacity:.3}}
-@media(prefers-reduced-motion:reduce){.pull{transition:none}.pull.going .pmk rect{animation:none;fill-opacity:1}}
+.pull.going .pmk .pr{animation:pullLamp .9s linear infinite}
+.pull.going .pmk .pr:nth-of-type(2){animation-delay:.225s}.pull.going .pmk .pr:nth-of-type(4){animation-delay:.45s}.pull.going .pmk .pr:nth-of-type(3){animation-delay:.675s}
+@keyframes pullLamp{0%,40%{opacity:1}60%,100%{opacity:.3}}
+@media(prefers-reduced-motion:reduce){.pull{transition:none}.pull.going .pmk .pr{animation:none;opacity:1}}
 .mk{display:block;border:1.5px solid var(--line);border-radius:14px;padding:8px 12px;background:var(--cream)}
 .mk b{font-family:var(--head);font-weight:800;font-size:13px;display:block}
 .mk small{font-size:10.5px;color:var(--mute);font-weight:600;display:block;margin-top:1px}
@@ -1829,7 +1829,9 @@ nav .in{padding:5px 12px 5px}
 nav button,nav .in:has(.navpill.set) button.on{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
   padding:6px 2px 4px;border-radius:12px;background:none;font-size:11.5px;letter-spacing:0}
 nav button.on{background:none;color:var(--ink)}
-nav button svg.ni{width:25px;height:25px;flex:none}
+nav button svg.ni,nav button span.ni{width:25px;height:25px;flex:none}
+nav button span.ni svg{display:block;width:100%;height:100%}
+#navMe svg{animation:none!important}
 nav button .ni-f{display:none}
 nav button.on .ni-o{display:none}
 nav button.on .ni-f{display:block;animation:tabPop .28s cubic-bezier(.2,1.2,.4,1)}
@@ -2805,6 +2807,19 @@ html[data-theme="dark"] .sn-tile{box-shadow:inset 0 0 0 1px color-mix(in srgb,va
 .sn-covers .snc .snci{box-shadow:0 6px 12px -6px rgba(0,0,0,.6)}
 
 .cabcount{flex:1;min-width:0;margin:0;font-size:13px;color:var(--mute);font-weight:600}
+/* ---------- lit like the logo ----------
+   The mark's rooms are blocks with a bright top edge and a shaded right side. The number
+   tiles, chart bars and solid buttons are the app's other coloured blocks, so they take
+   the same light, softer. In light mode white barely shows on pale tiles, so the top is
+   stronger there and the side lighter. */
+:root{--blkLit:rgba(255,255,255,.5);--blkSide:rgba(21,19,32,.07)}
+html[data-theme="dark"]{--blkLit:rgba(255,255,255,.09);--blkSide:rgba(0,0,0,.24)}
+.ynk div,.numbers div{box-shadow:inset 0 4px 0 var(--blkLit),inset -5px 0 0 var(--blkSide)}
+.spread i,.pspread i{box-shadow:inset 0 3px 0 rgba(255,255,255,.32),inset -3px 0 0 rgba(0,0,0,.14)}
+.spread i:not(.peak){box-shadow:inset 0 2px 0 var(--blkLit),inset -3px 0 0 var(--blkSide)}
+.btn:not(.quiet):not(.ghost){box-shadow:inset 0 2px 0 rgba(255,255,255,.3),inset 0 -3px 0 rgba(0,0,0,.16)}
+.btn:not(.quiet):not(.ghost):active{box-shadow:inset 0 1px 0 rgba(255,255,255,.3),inset 0 -1px 0 rgba(0,0,0,.16)}
+
 /* ---------- floating pills take turns ----------
    The update bar, the offline note and toasts all live just above the tab bar. When
    more than one is up, the toast steps above the others rather than hiding behind
@@ -2846,11 +2861,11 @@ html.sheetup body:has(#updBar) .toast{top:calc(70px + env(safe-area-inset-top))}
 </main>
 
 <nav id="nav"><div class="in"><span class="navpill" id="navPill"></span>
-  <button data-tab="doors"><svg class="ni ni-o" viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><rect x="3.5" y="3.5" width="7.5" height="7.5" rx="2.4"/><rect x="13" y="3.5" width="7.5" height="7.5" rx="2.4"/><rect x="3.5" y="13" width="7.5" height="7.5" rx="2.4"/><rect x="13" y="13" width="7.5" height="7.5" rx="2.4"/></g></svg><svg class="ni ni-f" viewBox="0 0 24 24" aria-hidden="true"><g fill="currentColor"><rect x="3" y="3" width="8.5" height="8.5" rx="2.6" opacity=".45"/><rect x="12.5" y="3" width="8.5" height="8.5" rx="2.6" opacity=".45"/><rect x="3" y="12.5" width="8.5" height="8.5" rx="2.6" opacity=".45"/><rect x="12.5" y="12.5" width="8.5" height="8.5" rx="2.6"/></g></svg><span>Rooms</span></button>
-  <button data-tab="library"><svg class="ni ni-o" viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><path d="M7 3.5h10"/><path d="M5.5 7h13"/><rect x="4" y="10.5" width="16" height="10" rx="2.8"/></g></svg><svg class="ni ni-f" viewBox="0 0 24 24" aria-hidden="true"><g fill="currentColor"><rect x="6.5" y="2.5" width="11" height="2.4" rx="1.2" opacity=".45"/><rect x="5" y="6" width="14" height="2.6" rx="1.3" opacity=".7"/><rect x="3.5" y="10" width="17" height="11" rx="3"/></g></svg><span>Queue</span></button>
+  <button data-tab="doors"><svg class="ni ni-o" viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><rect x="3.5" y="3.5" width="7.5" height="7.5" rx="2.4"/><rect x="13" y="3.5" width="7.5" height="7.5" rx="2.4"/><rect x="3.5" y="13" width="7.5" height="7.5" rx="2.4"/><rect x="13" y="13" width="7.5" height="7.5" rx="2.4"/></g></svg><svg class="ni ni-f" viewBox="8 8 84 84" aria-hidden="true"><clipPath id="nr0"><rect x="12" y="12" width="37" height="37" rx="11"/></clipPath><g clip-path="url(#nr0)"><rect x="12" y="12" width="37" height="37" fill="#b0758f"/><rect x="12" y="12" width="29" height="37" rx="11" fill="#f9cadf"/><rect x="12" y="20" width="29" height="29" rx="11" fill="#F5A3C7"/><rect x="12" y="31" width="29" height="18" fill="#F5A3C7"/></g><clipPath id="nr1"><rect x="51" y="12" width="37" height="37" rx="11"/></clipPath><g clip-path="url(#nr1)"><rect x="51" y="12" width="37" height="37" fill="#b8814d"/><rect x="51" y="12" width="29" height="37" rx="11" fill="#ffd3a9"/><rect x="51" y="20" width="29" height="29" rx="11" fill="#FFB36B"/><rect x="51" y="31" width="29" height="18" fill="#FFB36B"/></g><clipPath id="nr2"><rect x="12" y="51" width="37" height="37" rx="11"/></clipPath><g clip-path="url(#nr2)"><rect x="12" y="51" width="37" height="37" fill="#8578b8"/><rect x="12" y="51" width="29" height="37" rx="11" fill="#d6cbff"/><rect x="12" y="59" width="29" height="29" rx="11" fill="#B9A6FF"/><rect x="12" y="70" width="29" height="18" fill="#B9A6FF"/></g><clipPath id="nr3"><rect x="51" y="51" width="37" height="37" rx="11"/></clipPath><g clip-path="url(#nr3)"><rect x="51" y="51" width="37" height="37" fill="#6798b8"/><rect x="51" y="51" width="29" height="37" rx="11" fill="#bee5ff"/><rect x="51" y="59" width="29" height="29" rx="11" fill="#8FD3FF"/><rect x="51" y="70" width="29" height="18" fill="#8FD3FF"/></g><g fill="#151320"><rect x="57" y="59.5" width="5.6" height="12.5" rx="2.8"/><rect x="67.8" y="59.5" width="5.6" height="12.5" rx="2.8"/></g></svg><span>Rooms</span></button>
+  <button data-tab="library"><svg class="ni ni-o" viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><path d="M7 3.5h10"/><path d="M5.5 7h13"/><rect x="4" y="10.5" width="16" height="10" rx="2.8"/></g></svg><svg class="ni ni-f" viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="2.5" width="11" height="2.4" rx="1.2" fill="#ffca97"/><rect x="5" y="6" width="14" height="2.6" rx="1.3" fill="#ffbc7d"/><clipPath id="nq"><rect x="3.5" y="10" width="17" height="11" rx="3"/></clipPath><g clip-path="url(#nq)"><rect x="3.5" y="10" width="17" height="11" fill="#b8814d"/><rect x="3.5" y="10" width="14.4" height="11" rx="3" fill="#ffd3a9"/><rect x="3.5" y="12.4" width="14.4" height="8.6" rx="3" fill="#FFB36B"/><rect x="3.5" y="15.4" width="14.4" height="5.6" fill="#FFB36B"/></g></svg><span>Queue</span></button>
   <button id="add" aria-label="Log something"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
-  <button data-tab="clubs"><svg class="ni ni-o" viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><path d="M7.5 4h9v5.5a4.5 4.5 0 0 1-9 0z"/><path d="M7.5 6H5a3 3 0 0 0 3 4.2M16.5 6H19a3 3 0 0 1-3 4.2M12 14v3.5M8.5 20h7"/></g></svg><svg class="ni ni-f" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3.5h10v6a5 5 0 0 1-10 0z" fill="currentColor"/><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 6H5a3 3 0 0 0 3 4.2M16.5 6H19a3 3 0 0 1-3 4.2M12 14v3.5M8.5 20h7"/></g><path d="M12 6.4l.8 1.6 1.7.25-1.25 1.2.3 1.7-1.55-.8-1.55.8.3-1.7-1.25-1.2 1.7-.25z" fill="var(--cream)"/></svg><span>Challenges</span></button>
-  <button data-tab="taste"><svg class="ni ni-o" viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><rect x="4" y="4" width="16" height="16" rx="5.5"/></g><g fill="currentColor"><rect x="9" y="9.6" width="1.9" height="4.4" rx=".95"/><rect x="13.1" y="10" width="1.9" height="4.6" rx=".95"/></g></svg><svg class="ni ni-f" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="6" fill="currentColor"/><g fill="var(--cream)"><rect x="9" y="9.6" width="1.9" height="4.4" rx=".95"/><rect x="13.1" y="10" width="1.9" height="4.6" rx=".95"/></g></svg><span>You</span></button>
+  <button data-tab="clubs"><svg class="ni ni-o" viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><path d="M7.5 4h9v5.5a4.5 4.5 0 0 1-9 0z"/><path d="M7.5 6H5a3 3 0 0 0 3 4.2M16.5 6H19a3 3 0 0 1-3 4.2M12 14v3.5M8.5 20h7"/></g></svg><svg class="ni ni-f" viewBox="0 0 24 24" aria-hidden="true"><clipPath id="nt"><path d="M7 3.5h10v6a5 5 0 0 1-10 0z"/></clipPath><g fill="none" stroke="#b89c35" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 6H5a3 3 0 0 0 3 4.2M16.5 6H19a3 3 0 0 1-3 4.2M12 14v3.5M8.5 20h7"/></g><g clip-path="url(#nt)"><rect x="6" y="3" width="12" height="12" fill="#b89c35"/><path d="M7 3.5h7.6v6a5 5 0 0 1-3.8 4.85A5 5 0 0 1 7 9.5z" fill="#FFD84A"/><rect x="6" y="3" width="8.6" height="2" fill="#ffe896"/></g><path d="M12 6.4l.8 1.6 1.7.25-1.25 1.2.3 1.7-1.55-.8-1.55.8.3-1.7-1.25-1.2 1.7-.25z" fill="#151320" fill-opacity=".8"/></svg><span>Challenges</span></button>
+  <button data-tab="taste"><svg class="ni ni-o" viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><rect x="4" y="4" width="16" height="16" rx="5.5"/></g><g fill="currentColor"><rect x="9" y="9.6" width="1.9" height="4.4" rx=".95"/><rect x="13.1" y="10" width="1.9" height="4.6" rx=".95"/></g></svg><span class="ni ni-f" id="navMe"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="6" fill="currentColor"/><g fill="var(--cream)"><rect x="9" y="9.6" width="1.9" height="4.4" rx=".95"/><rect x="13.1" y="10" width="1.9" height="4.6" rx=".95"/></g></svg></span><span>You</span></button>
 </div></nav>
 <div class="demobar" id="demobar" role="region" aria-label="Demo" hidden>Demo &middot; invented people &middot; nothing is saved</div>
 <div class="offline" id="offline" role="status" aria-live="polite"></div>
@@ -5741,14 +5756,14 @@ async function pullRefresh() {
      forty more of chip, which is how a phone says there is nothing else to pull. */
   const give = raw => raw <= TRIG ? raw : TRIG + Math.sqrt(raw - TRIG) * 5;
   let y0 = null, live = false, dist = 0, bar = null;
+  const PULL_ROOMS = '<clipPath id="pl0"><rect x="12" y="12" width="37" height="37" rx="11"/></clipPath><g clip-path="url(#pl0)" class="pr"><rect x="12" y="12" width="37" height="37" fill="#b0758f"/><rect x="12" y="12" width="29" height="37" rx="11" fill="#f9cadf"/><rect x="12" y="20" width="29" height="29" rx="11" fill="#F5A3C7"/><rect x="12" y="31" width="29" height="18" fill="#F5A3C7"/></g><clipPath id="pl1"><rect x="51" y="12" width="37" height="37" rx="11"/></clipPath><g clip-path="url(#pl1)" class="pr"><rect x="51" y="12" width="37" height="37" fill="#b8814d"/><rect x="51" y="12" width="29" height="37" rx="11" fill="#ffd3a9"/><rect x="51" y="20" width="29" height="29" rx="11" fill="#FFB36B"/><rect x="51" y="31" width="29" height="18" fill="#FFB36B"/></g><clipPath id="pl2"><rect x="12" y="51" width="37" height="37" rx="11"/></clipPath><g clip-path="url(#pl2)" class="pr"><rect x="12" y="51" width="37" height="37" fill="#8578b8"/><rect x="12" y="51" width="29" height="37" rx="11" fill="#d6cbff"/><rect x="12" y="59" width="29" height="29" rx="11" fill="#B9A6FF"/><rect x="12" y="70" width="29" height="18" fill="#B9A6FF"/></g><clipPath id="pl3"><rect x="51" y="51" width="37" height="37" rx="11"/></clipPath><g clip-path="url(#pl3)" class="pr"><rect x="51" y="51" width="37" height="37" fill="#6798b8"/><rect x="51" y="51" width="29" height="37" rx="11" fill="#bee5ff"/><rect x="51" y="59" width="29" height="29" rx="11" fill="#8FD3FF"/><rect x="51" y="70" width="29" height="18" fill="#8FD3FF"/></g>';
   const chip = () => bar ||= (() => { const d = document.createElement("div");
     d.className = "pull"; d.id = "pullBar";
     /* the logo's four rooms, switching on one at a time as you pull */
-    d.innerHTML = `<svg class="pmk" viewBox="10 10 80 80" aria-hidden="true">${[[12,12,"#F5A3C7"],[51,12,"#FFB36B"],[12,51,"#B9A6FF"],[51,51,"#8FD3FF"]]
-      .map(([x, y, c]) => `<rect x="${x}" y="${y}" width="37" height="37" rx="11" fill="${c}"/>`).join("")}</svg><span>Pull down</span>`;
+    d.innerHTML = `<svg class="pmk" viewBox="10 10 80 80" aria-hidden="true">${PULL_ROOMS}</svg><span>Pull down</span>`;
     document.body.appendChild(d); return d; })();
   const label = (b, t) => { b.querySelector("span").textContent = t; };
-  const lamps = (b, p) => b.querySelectorAll(".pmk rect").forEach((r, i) => r.classList.toggle("on", p >= (i + 1) / 4));
+  const lamps = (b, p) => b.querySelectorAll(".pmk .pr").forEach((r, i) => r.classList.toggle("on", p >= (i + 1) / 4));
   const off = () => { const b = chip(); b.classList.remove("on","ready","going"); b.style.removeProperty("--p"); lamps(b, 0); };
   addEventListener("touchstart", e => {
     if (e.touches.length !== 1 || pulling) return;
@@ -6135,6 +6150,8 @@ async function enter() { hideSplash();
   if (!P.onboarded && !myEntries.length) setTimeout(openWelcome, 400); else if (P.tourDue) maybeTour();
 }
 function paintMeAv() { const el = $("#meAv"); if (!el) return; el.innerHTML = avSVG(avFor(me));
+  /* the You tab, when you're on it, is your own face */
+  const nm = $("#navMe"); if (nm) nm.innerHTML = avSVG({ ...avFor(me), ring:"", founder:false });
   /* your week shows on your face in the corner, and only there: a run of low scores and
      nothing loved makes it unimpressed until you love something again */
   { const wk = weekMood(); if (wk !== "ok") { const g = $(".eyes", el); g.dataset.orig = g.innerHTML; g.dataset.mood = wk;
