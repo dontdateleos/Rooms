@@ -187,7 +187,7 @@ offline and App Review sees an app. `npm run ios` builds it and opens Xcode.
    Xcode opens on the project.
 4. In Xcode, click **App** at the top of the left-hand list, then **Signing & Capabilities**.
    Under **Team**, choose **Add an Account…**, sign in with your Apple ID, and pick it.
-   If it says the bundle identifier `com.bullrun.rooms` isn't available, change it to
+   If it says the bundle identifier `com.touringgroup.rooms` isn't available, change it to
    something only you would use (and change `appId` in `capacitor.config.json` to match).
 5. Plug the iPhone in, unlock it and tap **Trust**. On the phone, turn on
    **Settings → Privacy & Security → Developer Mode** (it restarts).

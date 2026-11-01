@@ -43,7 +43,7 @@ jobs:
           echo "simulator $DEV"
           xcrun simctl boot "$DEV"; xcrun simctl bootstatus "$DEV" -b
           xcrun simctl install "$DEV" "$APP"
-          xcrun simctl launch "$DEV" com.bullrun.rooms
+          xcrun simctl launch "$DEV" com.touringgroup.rooms
           sleep 15
           xcrun simctl io "$DEV" screenshot launch.png
           sips -Z 520 -s format jpeg -s formatOptions 55 launch.png --out launch-small.jpg >/dev/null
