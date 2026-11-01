@@ -1331,7 +1331,7 @@ svg .comet{transform-box:fill-box;transform-origin:center;animation:cometTurn 4.
   font-family:var(--head);font-weight:800;font-size:12.5px;letter-spacing:.01em;
   box-shadow:0 8px 20px -10px rgba(21,19,32,.6);transition:opacity .16s,transform .16s}
 .pull.on{opacity:calc(.35 + var(--p,0) * .65);transform:translate(-50%,calc(-140% + var(--p,0) * 140%))}
-.pull.ready{background:var(--blue)}
+.pull.ready{background:var(--blue);color:#fff}
 .pull.going{opacity:1;transform:translate(-50%,0)}
 .pull{display:flex;align-items:center;gap:8px}
 .pull .pmk{width:18px;height:18px;flex:none}
@@ -5117,7 +5117,9 @@ function newPill(row) {
   if (fresh) requestAnimationFrame(() => el.classList.add("on")); else if (!REDUCED) el.animate([{ scale:1 }, { scale:1.08 }, { scale:1 }], { duration:300, easing:"cubic-bezier(.3,1.5,.5,1)" }); }
 function hidePill() { const el = $("#newPill"); pillN = 0; pillWho = []; if (!el) return; el.classList.remove("on"); setTimeout(() => { if (!el.classList.contains("on")) el.remove(); }, 260); }
 addEventListener("scroll", () => { if (!pillN) return; const top = $("#talkTop");
-  if (!top || currentTab() !== "doors" || top.getBoundingClientRect().top > 0) hidePill(); }, { passive:true });
+  if (!top || !top.offsetParent || currentTab() !== "doors" || top.getBoundingClientRect().top > 0) hidePill(); }, { passive:true });
+/* the pill points up the Talk feed, so it goes when you leave Talk or the Rooms tab */
+document.addEventListener("click", e => { if (pillN && e.target.closest?.("nav button, [data-rsecbtn]:not([data-rsecbtn='talk'])")) hidePill(); }, true);
 /* the slip that just landed came from somebody: their face leaves the row of who's here
    and lands on it, and the three dots they had stop */
 function faceToSlip(row) {
