@@ -10,11 +10,12 @@ const GROUND = "#16131C", TEXT = "#F4EDE2", SUB = "#C9C1D9";
 const FONT = `data:font/woff2;base64,${fs.readFileSync(path.join(ROOT, "vendor/fonts/outfit-500-latin.woff2")).toString("base64")}`;
 
 /* the mark: four rooms, three with the lights off and one lit with someone home */
+/* each room is drawn like the faces: a lit top, a shaded side */
 const MARK = `<svg viewBox="10 10 80 80" xmlns="http://www.w3.org/2000/svg">
-  <rect x="12" y="12" width="37" height="37" rx="11" fill="#F5A3C7" fill-opacity=".48"/>
-  <rect x="51" y="12" width="37" height="37" rx="11" fill="#FFB36B" fill-opacity=".48"/>
-  <rect x="12" y="51" width="37" height="37" rx="11" fill="#B9A6FF" fill-opacity=".48"/>
-  <rect x="51" y="51" width="37" height="37" rx="11" fill="#8FD3FF"/>
+  <clipPath id="i28"><rect x="12" y="12" width="37" height="37" rx="11"/></clipPath><g opacity=".48" clip-path="url(#i28)"><rect x="12" y="12" width="37" height="37" fill="#b0758f"/><rect x="12" y="12" width="29" height="37" rx="11" fill="#f9cadf"/><rect x="12" y="20" width="29" height="29" rx="11" fill="#F5A3C7"/><rect x="12" y="31" width="29" height="18" fill="#F5A3C7"/></g>
+  <clipPath id="i29"><rect x="51" y="12" width="37" height="37" rx="11"/></clipPath><g opacity=".48" clip-path="url(#i29)"><rect x="51" y="12" width="37" height="37" fill="#b8814d"/><rect x="51" y="12" width="29" height="37" rx="11" fill="#ffd3a9"/><rect x="51" y="20" width="29" height="29" rx="11" fill="#FFB36B"/><rect x="51" y="31" width="29" height="18" fill="#FFB36B"/></g>
+  <clipPath id="i30"><rect x="12" y="51" width="37" height="37" rx="11"/></clipPath><g opacity=".48" clip-path="url(#i30)"><rect x="12" y="51" width="37" height="37" fill="#8578b8"/><rect x="12" y="51" width="29" height="37" rx="11" fill="#d6cbff"/><rect x="12" y="59" width="29" height="29" rx="11" fill="#B9A6FF"/><rect x="12" y="70" width="29" height="18" fill="#B9A6FF"/></g>
+  <clipPath id="i31"><rect x="51" y="51" width="37" height="37" rx="11"/></clipPath><g clip-path="url(#i31)"><rect x="51" y="51" width="37" height="37" fill="#6798b8"/><rect x="51" y="51" width="29" height="37" rx="11" fill="#bee5ff"/><rect x="51" y="59" width="29" height="29" rx="11" fill="#8FD3FF"/><rect x="51" y="70" width="29" height="18" fill="#8FD3FF"/></g>
   <g fill="#151320"><rect x="57" y="59.5" width="5.6" height="12.5" rx="2.8"/><rect x="67.8" y="59.5" width="5.6" height="12.5" rx="2.8"/></g></svg>`;
 
 const page = body => `<!doctype html><meta charset="utf-8"><style>
