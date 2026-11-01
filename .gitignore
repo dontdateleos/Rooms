@@ -8,3 +8,5 @@ node_modules/
 
 # the iPhone app's copy of the page, built by tools/build-www.mjs (ios/ has its own ignores)
 www/
+# the App Store screenshots raw screens (made again by tools/store-shots/raw.cjs)
+tools/store-shots/raw-*.png
