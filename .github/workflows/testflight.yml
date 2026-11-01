@@ -7,8 +7,9 @@
 #   ASC_KEY_ID            App Store Connect → Users and Access → Integrations → the key's Key ID
 #   ASC_ISSUER_ID         the Issuer ID shown above the list of keys on that same page
 #   ASC_KEY_P8            the whole of the AuthKey_XXXX.p8 file, BEGIN and END lines included
-# The key needs the Admin role: Xcode uses it to make the signing certificate and profile
-# itself, so there are no certificates to export or keep track of.
+# The key needs the Admin role: each run makes its own distribution certificate and App Store
+# profile through the API (tools/asc-sign.mjs) and revokes them at the end, so there are no
+# certificates to export or keep track of, and no iPhone has to be registered first.
 name: Send to TestFlight
 on:
   workflow_dispatch:
@@ -68,7 +69,36 @@ jobs:
       - run: npm ci
       - name: Build the page into the app
         run: npm run sync
-      - name: Archive, signed
+      - name: Make this run's signing certificate and profile
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          GITHUB_RUN_NUMBER: ${{ github.run_number }}
+        run: node tools/asc-sign.mjs make
+      - name: Archive, signed for the App Store
+        env:
+          TEAM: ${{ secrets.APPLE_TEAM_ID || 'M6AXSFYX2W' }}
+        run: |
+          set -o pipefail
+          # the app target signs by hand with this run's profile; set in the project file rather
+          # than on the command line, which would reach the Swift packages too and stop the build
+          python3 - <<'PY'
+          import os
+          p = "ios/App/App.xcodeproj/project.pbxproj"; s = open(p).read()
+          old = "CODE_SIGN_STYLE = Automatic;"
+          new = ('CODE_SIGN_STYLE = Manual;\n\t\t\t\tCODE_SIGN_IDENTITY = "Apple Distribution";\n'
+                 f'\t\t\t\tPROVISIONING_PROFILE_SPECIFIER = "{os.environ["ASC_PROFILE_NAME"]}";')
+          assert s.count(old) == 2; open(p, "w").write(s.replace(old, new))
+          PY
+          # every upload needs a build number higher than the last; this workflow's run count is
+          BUILD=$((100 + ${{ github.run_number }}))
+          echo "build $BUILD"
+          xcodebuild archive -project ios/App/App.xcodeproj -scheme App -configuration Release \
+            -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/Rooms.xcarchive" \
+            DEVELOPMENT_TEAM="$TEAM" CURRENT_PROJECT_VERSION="$BUILD" \
+            OTHER_CODE_SIGN_FLAGS="--keychain $ROOMS_KEYCHAIN" | tail -60
+      - name: Upload to App Store Connect
         env:
           TEAM: ${{ secrets.APPLE_TEAM_ID || 'M6AXSFYX2W' }}
           KEY_ID: ${{ secrets.ASC_KEY_ID }}
@@ -77,21 +107,6 @@ jobs:
         run: |
           set -o pipefail
           printf '%s\n' "$P8" > "$RUNNER_TEMP/AuthKey.p8"
-          # every upload needs a build number higher than the last; this workflow's run count is
-          BUILD=$((100 + ${{ github.run_number }}))
-          echo "build $BUILD"
-          xcodebuild archive -project ios/App/App.xcodeproj -scheme App -configuration Release \
-            -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/Rooms.xcarchive" \
-            DEVELOPMENT_TEAM="$TEAM" CODE_SIGN_STYLE=Automatic CURRENT_PROJECT_VERSION="$BUILD" \
-            -allowProvisioningUpdates -authenticationKeyPath "$RUNNER_TEMP/AuthKey.p8" \
-            -authenticationKeyID "$KEY_ID" -authenticationKeyIssuerID "$ISSUER" | tail -60
-      - name: Upload to App Store Connect
-        env:
-          TEAM: ${{ secrets.APPLE_TEAM_ID || 'M6AXSFYX2W' }}
-          KEY_ID: ${{ secrets.ASC_KEY_ID }}
-          ISSUER: ${{ secrets.ASC_ISSUER_ID }}
-        run: |
-          set -o pipefail
           cat > "$RUNNER_TEMP/export.plist" <<PLIST
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -99,15 +114,24 @@ jobs:
             <key>method</key><string>app-store-connect</string>
             <key>destination</key><string>upload</string>
             <key>teamID</key><string>$TEAM</string>
-            <key>signingStyle</key><string>automatic</string>
+            <key>signingStyle</key><string>manual</string>
+            <key>signingCertificate</key><string>Apple Distribution</string>
+            <key>provisioningProfiles</key><dict><key>com.touringgroup.rooms</key><string>$ASC_PROFILE_NAME</string></dict>
             <key>uploadSymbols</key><true/>
           </dict></plist>
           PLIST
           xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/Rooms.xcarchive" \
             -exportOptionsPlist "$RUNNER_TEMP/export.plist" -exportPath "$RUNNER_TEMP/export" \
-            -allowProvisioningUpdates -authenticationKeyPath "$RUNNER_TEMP/AuthKey.p8" \
+            -authenticationKeyPath "$RUNNER_TEMP/AuthKey.p8" \
             -authenticationKeyID "$KEY_ID" -authenticationKeyIssuerID "$ISSUER" | tail -40
           echo "::notice::Uploaded. It appears in TestFlight once Apple has processed it, usually 10-20 minutes."
+      - name: Revoke this run's certificate and profile
+        if: always()
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+        run: node tools/asc-sign.mjs cleanup
       - name: Forget the key
         if: always()
         run: rm -f "$RUNNER_TEMP/AuthKey.p8"
