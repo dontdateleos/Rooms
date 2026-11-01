@@ -353,7 +353,7 @@ export function demoSeed() {
     /* where a few of Up next's things stream, for the services filter; Thief has just
        arrived on Netflix (it wasn't anywhere the last time the app looked) */
     services:["netflix","stan"],
-    providers:{ "film:2":["Netflix"], "film:4":["Stan","Prime Video"], "tv:2":["Max"], "film:9":["Netflix"], "film:1":["Prime Video"] },
+    providers:{ "film:2":["Netflix"], "film:4":["Stan","Prime Video"], "tv:2":["Max"], "film:9":["Netflix"], "film:1":["Prime Video"], "tv:30":["Netflix"], "film:3":["Stan"] },
     providersBefore:{ "film:2":[], "film:4":["Stan","Prime Video"], "tv:2":["Max"] },
 
     follows:[{ follower:"me", followee:"u-rue" }, { follower:"me", followee:"u-ali" },

@@ -2829,6 +2829,16 @@ html[data-theme="dark"]{--blkLit:rgba(255,255,255,.09);--blkSide:rgba(0,0,0,.24)
 .recno:hover{background:var(--cream2)}
 .recaway{margin:10px 0 2px;font-size:11.5px;line-height:1.4;color:var(--mute)}
 .recaway b{color:var(--ink);font-weight:700}
+.recpred{font-weight:700;color:var(--ink);opacity:.75}
+.recdeck{display:block;margin:10px 0 2px;font-size:12.5px;font-weight:700}
+.tdeck{display:flex;flex-direction:column;align-items:center;text-align:center;gap:4px;padding:6px 0 14px}
+.tdeck .tdcov{width:132px;aspect-ratio:2/3;border-radius:12px;overflow:hidden;margin-bottom:8px;box-shadow:0 14px 30px -16px rgba(0,0,0,.5)}
+.tdeck .tdcov .co,.tdeck .tdcov img{width:100%;height:100%;object-fit:cover;display:block;border-radius:0}
+.tdeck b{font:800 19px/1.2 var(--head);letter-spacing:-.02em;max-width:280px}
+.tdeck small{display:flex;gap:6px;align-items:center;color:var(--mute);font-weight:600;font-size:12px}
+.tdeck .tdof{font-size:11px;color:var(--mute);font-weight:700;letter-spacing:.04em;margin-top:2px}
+.tdbtns{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.tdbtns .btn{padding:12px 6px;font-size:14px}
 
 /* ---------- floating pills take turns ----------
    The update bar, the offline note and toasts all live just above the tab bar. When
@@ -10026,18 +10036,19 @@ function wireNights(R, el, night, past, again, g) {
   const plan = $("#nightPlan", el); if (plan) plan.onclick = () => openPlanNight(R, again);
   if (past) fillNightScores(R, past, g); }
 /* planning one: when, then what — from your shelf, or anything you search for */
-function openPlanNight(R, onDone) {
+function openPlanNight(R, onDone, pre = []) {
   const ymd = n => { const d = new Date(); d.setDate(d.getDate() + n); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
   const toDay = wd => (wd - new Date().getDay() + 7) % 7 || 7;          /* the next Friday or Saturday */
   const dates = [["Tonight", ymd(0)], ["Tomorrow", ymd(1)], ["Friday", ymd(toDay(5))], ["Saturday", ymd(toDay(6))]]
     .filter(([, d], i, a) => a.findIndex(x => x[1] === d) === i);
-  let at = dates[0][1]; const picks = [];
+  let at = dates[0][1]; const picks = pre.filter(Boolean).slice(0, 3);
   const L = activeList(), shelf = (L ? L.items : []).map(id => works[id]).filter(w => w && (w.kind === "film" || w.kind === "tv") && !logged(w.id) && !isSoon(w));
   openSheet(`<h3>Plan a watch night</h3><p class="sub">The room votes on these until the night.</p>
     <div class="lbl">When</div><div class="chips" id="npWhen">${dates.map(([l, d]) => `<button class="chip ${d === at ? "on" : ""}" data-nd="${d}">${l}</button>`).join("")}<input type="date" id="npDate" min="${ymd(0)}" style="width:auto;margin:0"></div>
     <div class="lbl">Two or three options</div><div class="npicked" id="npPicked"></div>
     <input id="npFind" type="search" placeholder="Search films and TV" autocomplete="off" style="margin-top:8px">
     <div class="msg" id="npMsg"></div><div id="npResults"></div>
+    <div id="npRoom"></div>
     ${shelf.length ? `<div class="lbl">From Up next</div><div id="npShelf">${shelf.slice(0, 12).map(w => `<div class="row" data-np="${esc(w.id)}">${cover(w)}<div class="t"><b>${esc(w.title)}</b><small>${tag(w.kind)} ${esc(w.year || "")}</small></div><span class="chip">Add</span></div>`).join("")}</div>` : ""}
     <div class="stack"><button class="btn" id="npGo" disabled>Put it to the room</button><button class="btn quiet" id="npClose">Not now</button></div><p class="msg" id="npErr"></p>`);
   const paint = () => { $("#npPicked").innerHTML = picks.length ? picks.map(w => `<button class="npchip" data-unp="${esc(w.id)}">${cover(w)}<span>${esc(w.title)}</span><b aria-label="Remove">×</b></button>`).join("")
@@ -10049,7 +10060,12 @@ function openPlanNight(R, onDone) {
   paint();
   $$("[data-nd]").forEach(b => b.onclick = () => { at = b.dataset.nd; $("#npDate").value = ""; $$("[data-nd]").forEach(x => x.classList.toggle("on", x === b)); });
   $("#npDate").onchange = e => { if (!e.target.value) return; at = e.target.value; $$("[data-nd]").forEach(x => x.classList.remove("on")); };
-  $$("[data-np]").forEach(r => r.onclick = () => { const i = picks.findIndex(w => w.id === r.dataset.np); if (i >= 0) { picks.splice(i, 1); paint(); } else add(works[r.dataset.np]); });
+  const wireNp = () => $$("[data-np]").forEach(r => r.onclick = () => { const i = picks.findIndex(w => w.id === r.dataset.np); if (i >= 0) { picks.splice(i, 1); paint(); } else add(works[r.dataset.np]); });
+  wireNp();
+  /* what suits all of you, above your own Up next */
+  roomPicks(R).then(rs => { const box = $("#npRoom"); if (!box || !rs.length) return;
+    box.innerHTML = `<div class="lbl">For all of you</div>${rs.slice(0, 4).map(x => `<div class="row" data-np="${esc(x.w.id)}">${cover(x.w)}<div class="t"><b>${esc(x.w.title)}</b><small>${tag(x.w.kind)} ${esc(x.w.year || "")}</small></div><span class="chip">Add</span></div>`).join("")}`;
+    wireNp(); paint(); }).catch(() => {});
   let t; $("#npFind").oninput = e => { clearTimeout(t); const v = e.target.value.trim(); if (!v) { $("#npResults").innerHTML = ""; return; }
     t = setTimeout(() => { const keep = P.kinds; P.kinds = ["film", "tv"];
       doSearch(v, async r => { try { add(await ensureWork(window.__hits[r.dataset.add])); $("#npFind").value = ""; $("#npResults").innerHTML = ""; } catch (err) { $("#npMsg").textContent = err.message; } },
@@ -10168,7 +10184,7 @@ async function paintGames(R, es) {
   if (past) await fillWorks(past.options).catch(() => {});
   const swNow = swipeState(R, g);
   if (swNow.deck.length) await fillWorks(swNow.matches).catch(() => {});
-  el.innerHTML = pickFlowHTML(R, g, night) + promptHTML(R, g) + bracketHTML(R, br, g) + (!night && past ? nightAfterHTML(R, past, g) : "");
+  el.innerHTML = pickFlowHTML(R, g, night) + `<div id="roomPicks"></div>` + promptHTML(R, g) + bracketHTML(R, br, g) + (!night && past ? nightAfterHTML(R, past, g) : "");
   /* the Play tab gets a dot while there's something waiting on you */
   const s = promptState(R, g, gameWeek()), bst = br ? bracketState(R, br, g.votes) : null;
   const todo = (!s.voting && !s.mine) || (s.voting && !s.revealed && !s.myVote) || !!bst?.current?.matches.some(mt => !mt.mine)
@@ -10202,6 +10218,7 @@ async function paintGames(R, es) {
     catch (e) { oops(e, "Couldn't vote"); } again(); });
   $$("[data-gw]", el).forEach(x => x.onclick = () => openWork(x.dataset.gw));
   wireNights(R, el, night, past, again, g); wireSwipe(R, el, g, again);
+  paintRoomPicks(R, $("#roomPicks", el), !night, again);
   if (gameFocus) { const want = gameFocus; gameFocus = null;
     const card = $$(".card.game", el).find(c => ($(".h span", c)?.textContent || "").toLowerCase().includes(want.toLowerCase()));
     if (card) setTimeout(() => card.scrollIntoView({ block:"center", behavior:REDUCED ? "auto" : "smooth" }), 250); }
@@ -10286,9 +10303,11 @@ async function recsFromPeople(mine) {
     for (const e of all) { if (mine[e.work_id]) continue;
       /* above their own usual, and good in plain terms too */
       const v = (e.score - tm) / 4 + (e.score >= 8 ? .5 : e.score >= 7 ? .2 : -.3);
-      const c = out[e.work_id] ||= { s:0, who:[] };
+      const c = out[e.work_id] ||= { s:0, who:[], num:0, den:0 };
+      /* your likely score: your usual, moved the way the close ones moved off theirs */
+      c.num += sim * (e.score - tm); c.den += sim;
       c.s += sim * v; if (e.score >= 7) c.who.push({ id:uid, p:who[uid] || { id:uid }, score:e.score, w:sim * v, n, close, cold:cold[0]?.title || "" }); } }
-  for (const c of Object.values(out)) c.who.sort((a, b) => b.w - a.w);
+  for (const c of Object.values(out)) { c.who.sort((a, b) => b.w - a.w); c.pred = c.den >= .3 ? Math.max(1, Math.min(10, myMean + c.num / c.den)) : null; }
   return out; }
 
 /* like the ones you loved: the seeds, then whatever each one's source says goes with it */
@@ -10383,8 +10402,12 @@ async function loadRecs() {
       : .8 * l >= .7 * c && loved.out[id] ? { t:"loved", title:loved.out[id].from[0].title, also:people[id]?.who[0]?.p?.handle || "" }
       : made[id] ? { t:"creator", name:made[id].by.name, loved:made[id].by.loved } : null;
     if (!why) continue;
-    rows.push({ r:{ id, kind:w.kind, title:w.title, year:w.year || "", cover:w.cover || "", creator:w.creator || "" }, s, why, key:why.t === "people" ? "p:" + why.who[0].id : why.t === "loved" ? "l:" + why.title : "c:" + why.name }); }
+    rows.push({ r:{ id, kind:w.kind, title:w.title, year:w.year || "", cover:w.cover || "", creator:w.creator || "" }, s, why, pred:people[id]?.pred ?? null, key:why.t === "people" ? "p:" + why.who[0].id : why.t === "loved" ? "l:" + why.title : "c:" + why.name }); }
   rows.sort((a, b) => b.s - a.s);
+  /* something you can put on tonight beats something you'd have to go and find */
+  if (myServices().length) { await Promise.allSettled(rows.filter(x => x.r.kind === "film" || x.r.kind === "tv").slice(0, 24).map(async x => {
+      const k = svcKey(onMine(await watchOn(x.r))[0]?.name || ""); if (k) { x.r.on = svcName(k); x.s += .3; } }));
+    rows.sort((a, b) => b.s - a.s); }
   /* mix it: no more than two for the same reason up front, and a medium already shown
      twice has to beat the others by a clear margin to get a third */
   const pickd = [], perKey = {}, perKind = {};
@@ -10415,6 +10438,114 @@ const recWhy = (x, said = new Set()) => { const y = x.why;
     return `<span class="rf">${y.who.map(p => avatar(p)).join("")}</span><span>${loved}${back}</span>`; }
   if (y.t === "loved") return `<span>Because you loved ${esc(y.title)}${y.also ? ` · ${esc(y.also)} loved it too` : ""}</span>`;
   return `<span>More from ${esc(y.name)}${y.loved >= 2 ? ` · you loved ${y.loved}&nbsp;of&nbsp;theirs` : ""}</span>`; };
+/* ---------- a guess, then the truth ----------
+   Where the people who rate like you have scored something, the card says what you'd
+   probably give it. The guess is kept, and when you log the thing the app says how close
+   it got; over time that tally is the honest answer to "are these any good". */
+const starTxt = v => { const h = Math.max(1, Math.min(10, Math.round(v))); return (h % 2 ? (h / 2).toFixed(1) : String(h / 2)) + "★"; };
+function keepGuesses(rs) { const g = P.recGuess ||= {}; let n = 0;
+  for (const x of rs) if (x.pred != null && g[x.r.id] == null) { g[x.r.id] = Math.round(x.pred * 10) / 10; n++; }
+  const keys = Object.keys(g); if (keys.length > 150) keys.slice(0, keys.length - 150).forEach(k => delete g[k]);
+  if (n) saveP(); }
+function checkGuess(w, score) { const g = P.recGuess?.[w.id]; if (g == null) return; delete P.recGuess[w.id];
+  const t = P.recTally ||= { n:0, near:0 }, near = Math.abs(g - score) <= 1; t.n++; if (near) t.near++; saveP();
+  setTimeout(() => say(`We guessed ${starTxt(g)} · you gave it ${starTxt(score)}${near ? ". Close!" : ""}`, near ? "good" : ""), 2600); }
+
+/* ---------- a quick taste test ----------
+   Suggestions are only as good as what they've got to go on, and a new account has
+   nothing. Twenty well-known things, a tap each — loved it, liked it, not for me, or
+   haven't seen it — and the card has something to work with in a minute. They're
+   logged as seen some time ago, so they never turn up in anyone's feed. */
+async function tasteDeckPool() {
+  const kinds = (P.kinds?.length ? P.kinds : CAB_ORDER).filter(k => CAB_ORDER.includes(k)), by = {};
+  const shelved = new Set(lists.flatMap(l => l.items)), skip = new Set(P.deckSkip || []);
+  const ok = w => w?.id && w.title && !logged(w.id) && !shelved.has(w.id) && !skip.has(w.id) && !isPart(w.id);
+  if (DEMO) Object.values(works).filter(w => ok(w) && kinds.includes(w.kind) && !isSoon(w)).forEach(w => (by[w.kind] ||= []).push(w));
+  else await Promise.allSettled([
+    kinds.includes("film") && Promise.all([1, 2].map(pg => tmdb("discover/movie", { sort_by:"vote_count.desc", page:String(pg) }))).then(ds => by.film = ds.flatMap(d => d.results || [])
+      .map(r => ({ id:"film:" + r.id, kind:"film", title:r.title, year:(r.release_date || "").slice(0, 4), cover:TMDB_IMG(r.poster_path) }))),
+    kinds.includes("tv") && Promise.all([1, 2].map(pg => tmdb("discover/tv", { sort_by:"vote_count.desc", page:String(pg) }))).then(ds => by.tv = ds.flatMap(d => d.results || [])
+      .map(r => ({ id:"tv:" + r.id, kind:"tv", title:r.name, year:(r.first_air_date || "").slice(0, 4), cover:TMDB_IMG(r.poster_path) }))),
+    kinds.includes("book") && ol("/search.json", { q:'subject:"fiction"', sort:"editions", limit:"60", fields:"key,title,author_name,first_publish_year,cover_i" }).then(d => by.book = (d.docs || [])
+      .filter(b => b.cover_i && +b.first_publish_year >= 1900).map(b => ({ id:"book:" + String(b.key).replace("/works/", ""), kind:"book", title:b.title, year:String(b.first_publish_year || ""),
+        creator:(b.author_name || [])[0] || "", cover:`https://covers.openlibrary.org/b/id/${b.cover_i}-M.jpg` }))),
+    kinds.includes("game") && igdb("games", "fields name,first_release_date,cover.image_id,total_rating_count; where total_rating_count > 300 & cover != null & version_parent = null; sort total_rating_count desc; limit 60;")
+      .then(g => by.game = (g || []).map(x => ({ id:"game:" + x.id, kind:"game", title:x.name, year:x.first_release_date ? String(new Date(x.first_release_date * 1000).getFullYear()) : "",
+        cover:`https://images.igdb.com/igdb/image/upload/t_cover_big/${x.cover.image_id}.jpg` })))].filter(Boolean));
+  /* the best known few of each, shuffled, then taken in turn so no medium bunches up */
+  const piles = kinds.map(k => (by[k] || []).filter(ok).slice(0, 30).sort(() => Math.random() - .5)), out = [];
+  for (let i = 0; out.length < 20 && piles.some(p => p[i]); i++) for (const p of piles) if (p[i] && out.length < 20) out.push(p[i]);
+  window.__hits = Object.assign(window.__hits || {}, Object.fromEntries(out.map(w => [w.id, w])));
+  return out; }
+async function openTasteDeck() {
+  openSheet(`<h3>Quick taste test</h3><p class="sub">Tap what you thought of each. Skip anything you haven't seen.</p>${skeleton(1)}`);
+  const pool = await tasteDeckPool().catch(() => []);
+  if (!pool.length) { $("#sheetBody").innerHTML = `<h3>Quick taste test</h3><p class="empty">Couldn't load any titles just now. Try again in a bit.</p><div class="stack"><button class="btn quiet" id="tdClose">Close</button></div>`;
+    $("#tdClose").onclick = closeSheet; return; }
+  let i = 0, rated = 0, chain = Promise.resolve();
+  $("#sheetBody").innerHTML = `<h3>Quick taste test</h3><p class="sub">Tap what you thought of each. Skip anything you haven't seen.</p>
+    <div class="tdeck" id="tdCard"></div>
+    <div class="tdbtns"><button class="btn soft" data-td="9">Loved it</button><button class="btn ghost" data-td="7">Liked it</button><button class="btn ghost" data-td="4">Not for me</button></div>
+    <button class="btn quiet" data-td="0">Haven't seen it</button>
+    <div class="stack"><button class="btn" id="tdDone"><span>Done · <span id="tdN">0</span> rated</span></button></div>`;
+  const show = () => { const w = pool[i]; if (!w) { finish(); return; }
+    $("#tdCard").innerHTML = `<div class="tdcov">${tileCover(w, "co")}</div><b>${esc(w.title)}</b><small>${tag(w.kind)} ${esc(w.year || "")}</small><span class="tdof">${i + 1} of ${pool.length}</span>`;
+    if (!REDUCED) $("#tdCard").animate([{ opacity:0, transform:"translateY(8px) scale(.98)" }, { opacity:1, transform:"none" }], { duration:220, easing:"cubic-bezier(.2,.9,.25,1)" }); };
+  const finish = async () => { const b = $("#tdDone"); if (b) b.disabled = true; await chain.catch(() => {});
+    if (rated) { await loadMine(); recs = null; }
+    closeSheet(); if (rated) { say(`${rated} rated · your picks are catching up`, "good"); if (currentTab() === "taste") renderTaste(); } };
+  $$("[data-td]").forEach(b => b.onclick = () => { const w = pool[i], v = +b.dataset.td; if (!w) return;
+    if (v) { rated++; $("#tdN").textContent = rated;
+      chain = chain.then(async () => { const full = await ensureWork(w).catch(() => w);
+        await saveEntry({ user_id:me.id, work_id:full.id, rated_on:today(), score:v, note:null, loved:null, context:{ before:true, quick:true }, breakdown:null, room_only:false }); })
+        .catch(err => console.warn("taste test", err)); }
+    else { P.deckSkip = [...(P.deckSkip || []), w.id].slice(-400); saveP(); }
+    i++; show(); });
+  $("#tdDone").onclick = finish;
+  show(); }
+
+/* ---------- something for all of you ----------
+   For a room's watch night: what's most likely to suit everybody, not just you. Each
+   person who hasn't seen a thing gets a guess from the members whose scores move with
+   theirs; the room's number leans on the least happy person as well as the average, so
+   one sure hater sinks it. Mostly things most of you haven't seen, since that's the point
+   of watching together. */
+const corr = (A, B) => { const ma = A.mean, mb = B.mean; let dot = 0, na = 0, nb = 0, n = 0;
+  for (const [id, a] of Object.entries(A.s)) { const b = B.s[id]; if (b == null) continue; dot += (a - ma) * (b - mb); na += (a - ma) ** 2; nb += (b - mb) ** 2; n++; }
+  const r = na && nb ? dot / Math.sqrt(na * nb) : 0; return (n / (n + 6)) * r + (6 / (n + 6)) * .15; };
+async function roomPicks(R) {
+  const mem = R.members || [], ids = mem.map(m => m.id); if (ids.length < 2) return [];
+  let es = []; try { es = notApart(await wholeEntries(f => { let x = sb.from("entries").select("user_id,work_id,score,rated_on,created_at,context,works(*)");
+    if (f) x = x.eq("part", false); return x.in("user_id", ids).limit(5000); })); } catch { return []; }
+  const lat = {}; for (const e of es) { remember(e.works); const k = e.user_id + "|" + e.work_id; if (!lat[k] || newestFirst(e, lat[k]) < 0) lat[k] = e; }
+  const U = Object.fromEntries(ids.map(id => [id, { s:{}, mean:7 }]));
+  for (const e of Object.values(lat)) if (U[e.user_id]) U[e.user_id].s[e.work_id] = tasteScore(e);
+  for (const u of Object.values(U)) { const v = Object.values(u.s); if (v.length) u.mean = v.reduce((a, b) => a + b, 0) / v.length; }
+  const sim = {}; for (const a of ids) for (const b of ids) if (a < b) sim[a + "|" + b] = sim[b + "|" + a] = corr(U[a], U[b]);
+  const cands = new Set(Object.values(lat).filter(e => e.score >= 8 && !dnfOf(e)).map(e => e.work_id));
+  const out = [];
+  for (const id of cands) { const w = works[id]; if (!w?.title || (w.kind !== "film" && w.kind !== "tv") || isPart(id) || isSoon(w) || unreleased(w)) continue;
+    const seen = ids.filter(u => U[u].s[id] != null), unseen = ids.filter(u => U[u].s[id] == null);
+    if (unseen.length < Math.max(1, Math.ceil(ids.length / 2))) continue;
+    const each = ids.map(u => { if (U[u].s[id] != null) return U[u].s[id];
+      let num = 0, den = 0; for (const v of seen) { const s = Math.max(0, sim[u + "|" + v]); num += s * (U[v].s[id] - U[v].mean); den += s; }
+      return Math.max(1, Math.min(10, U[u].mean + (den >= .2 ? num / den : .3 * seen.reduce((a, v) => a + U[v].s[id] - U[v].mean, 0) / seen.length))); });
+    const avg = each.reduce((a, b) => a + b, 0) / each.length, low = Math.min(...each);
+    out.push({ w, group:.6 * avg + .4 * low, mine:U[me.id]?.s[id] == null ? each[ids.indexOf(me.id)] : null,
+      fans:seen.filter(u => U[u].s[id] >= 8).map(u => mem.find(m => m.id === u) || { id:u }), unseen:unseen.length }); }
+  return out.sort((a, b) => b.group - a.group).slice(0, 5); }
+const roomPickWhy = (x, n) => { const names = x.fans.map(p => p.id === me.id ? "you" : esc(p.handle || "someone"));
+  const loved = names.length === 1 ? `${names[0]} loved it` : `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]} loved it`;
+  return `<span class="rf">${x.fans.slice(0, 3).map(p => avatar(p)).join("")}</span><span>${loved} · ${x.unseen === n - x.fans.length ? (x.unseen === n - 1 ? "nobody else has seen it" : `${x.unseen} of you haven't seen it`) : `${x.unseen} of you haven't seen it`}${x.mine != null ? ` · you'd likely give it ${starTxt(x.mine)}` : ""}</span>`; };
+async function paintRoomPicks(R, el, canPlan, again) {
+  if (!el) return; const rs = await roomPicks(R).catch(() => []); if (!rs.length || !el.isConnected) { el.innerHTML = ""; return; }
+  const n = (R.members || []).length;
+  el.innerHTML = `<div class="card"><div class="h"><span>Something for all of you</span><span class="tag dim">what suits the room</span></div>
+    ${rs.map(x => `<div class="row rec" data-rpw="${esc(x.w.id)}">${cover(x.w)}<div class="t"><b>${esc(x.w.title)}</b><small>${tag(x.w.kind)} ${esc(x.w.year || "")}${(() => { const k = svcMine(x.w.id)[0]; return k ? ` <span class="onsvc">on ${esc(svcName(k))}</span>` : ""; })()}</small>
+      <small class="recwhy">${roomPickWhy(x, n)}</small></div>${canPlan ? `<button class="chip" data-rpplan="${esc(x.w.id)}">Plan it</button>` : ""}</div>`).join("")}</div>`;
+  $$("[data-rpw]", el).forEach(r => r.onclick = () => openWork(r.dataset.rpw));
+  $$("[data-rpplan]", el).forEach(b => b.onclick = ev => { ev.stopPropagation(); openPlanNight(R, again, [works[b.dataset.rpplan]]); });
+  svcFill(rs.map(x => x.w)).then(c => { if (c && el.isConnected) paintRoomPicks(R, el, canPlan, again); }).catch(() => {}); }
 /* Taste, kept to what you'd glance at: who you are, the gist of what pulls you in, and
    three things to try. Everything else it used to stack up — the full breakdown, the
    charts, your ten, second thoughts, whose word is good, your year — is one tap away in
@@ -10545,17 +10676,29 @@ async function renderTaste() { const body = $("#tasteBody"); const t = tasteOf(m
   /* silence is right when there's nothing left to offer; it isn't when you haven't rated
      anything highly yet, because then this is the only thing saying the feature exists */
   if (!rs.length) { if (myEntries.some(e => e.score >= 8)) $("#recCard")?.remove();
-    else rb.innerHTML = `<p class="empty">Rate something four stars or more and things like it start turning up here.</p>`; return; }
+    else { rb.innerHTML = `<p class="empty">Rate something four stars or more and things like it start turning up here.</p><button class="btn soft" id="recDeck0" style="margin-top:6px">Quick taste test</button>`;
+      $("#recDeck0").onclick = openTasteDeck; } return; }
   window.__hits = Object.assign(window.__hits||{}, Object.fromEntries(rs.map(x => [x.r.id, x.r])));
   const coldSaid = new Set();
-  rb.innerHTML = rs.map(x => `<div class="row rec" data-recw="${esc(x.r.id)}">${cover(x.r)}<div class="t"><b>${esc(x.r.title)}</b><small>${tag(x.r.kind)} ${esc(x.r.year||"")}</small><small class="recwhy">${recWhy(x, coldSaid)}</small></div>
-    <button class="chip" data-rec="${esc(x.r.id)}">Add</button><button class="recno" data-recno="${esc(x.r.id)}" aria-label="Not for me">×</button></div>`).join("")
+  rb.innerHTML = rs.map(x => `<div class="row rec" data-recw="${esc(x.r.id)}">${cover(x.r)}<div class="t"><b>${esc(x.r.title)}</b><small>${tag(x.r.kind)} ${esc(x.r.year||"")}${x.r.on ? ` <span class="onsvc">on ${esc(x.r.on)}</span>` : ""}${x.pred != null ? ` <span class="recpred">likely ${starTxt(x.pred)}</span>` : ""}</small><small class="recwhy">${recWhy(x, coldSaid)}</small></div>
+    <button class="chip" data-rec="${esc(x.r.id)}">Add</button><button class="recno" data-recno="${esc(x.r.id)}" aria-label="Seen it, or not for me">×</button></div>`).join("")
     + (() => { const a = recAway; if (!a || (!a.lows.length && !a.genres.length)) return "";
         const bits = [a.lows.length ? `more like ${a.lows.map(t => `<b>${esc(t)}</b>`).join(" and ")}` : "", a.genres.length ? `less ${esc(a.genres[0])}` : ""].filter(Boolean);
-        return `<p class="recaway">Steering clear of ${bits.join(", and ")}, from what you rated lower.</p>`; })();
+        return `<p class="recaway">Steering clear of ${bits.join(", and ")}, from what you rated lower.</p>`; })()
+    + (P.recTally?.n >= 3 ? `<p class="recaway">Our guesses have landed within half a star ${P.recTally.near} of ${P.recTally.n} times.</p>` : "")
+    + (Object.keys(myLatestById()).length < 25 ? `<button class="linky recdeck" id="recDeck">Rate a quick twenty to sharpen these ›</button>` : "");
+  keepGuesses(rs);
+  const dk = $("#recDeck", rb); if (dk) dk.onclick = openTasteDeck;
   const drop = id => { recs = (recs || []).filter(e => e.r.id !== id); try { const c = JSON.parse(localStorage.getItem(REC_KEY) || "null"); if (c) { c.list = c.list.filter(e => e.r.id !== id); c.sig = recSig(); localStorage.setItem(REC_KEY, JSON.stringify(c)); } } catch {} };
   $$("[data-rec]", rb).forEach(x => x.onclick = async ev => { ev.stopPropagation(); await addToShelf(x.dataset.rec); drop(x.dataset.rec); renderTaste(); });
-  $$("[data-recno]", rb).forEach(x => x.onclick = ev => { ev.stopPropagation(); const id = x.dataset.recno; const row = x.closest(".row");
+  $$("[data-recno]", rb).forEach(x => x.onclick = async ev => { ev.stopPropagation(); const id = x.dataset.recno; const row = x.closest(".row");
+    const t = rs.find(e => e.r.id === id)?.r || window.__hits?.[id] || works[id];
+    /* "not for me" and "I've already seen it" are different answers: the second one is a
+       rating waiting to happen, and it would be wrong to file it as a dislike */
+    const v = await openAsk(`<h3>${esc(t?.title || "This one")}</h3><div class="stack menu"><button class="btn quiet" data-rn="seen">I've seen it · rate it</button><button class="btn quiet" data-rn="no">Not for me</button><button class="btn quiet" data-rn="">Never mind</button></div>`,
+      done => $$("[data-rn]", $("#askBox")).forEach(b => b.onclick = () => done(b.dataset.rn || null)));
+    if (v === "seen") { try { openLog(await ensureWork(t)); } catch (err) { oops(err, "Couldn't open that"); } return; }
+    if (v !== "no") return;
     recDismiss(id); drop(id); say("Got it, not that one");
     if (row && !REDUCED) { row.animate([{ opacity:1, transform:"none" }, { opacity:0, transform:"translateX(24px)" }], { duration:220, easing:"ease-in" }).onfinish = () => renderTaste(); } else renderTaste(); });
   $$("[data-recw]", rb).forEach(x => x.onclick = () => openWork(x.dataset.recw)); }
@@ -13101,7 +13244,7 @@ function openLog(w, edit = null, preset = 0) { setDoing("logging"); const cfg = 
       /* a rewatch doesn't ask again — only the first time this work stands in the archive */
       const firstTime = who !== "me" && myEntries.filter(x => x.work_id === w.id && !x.private).length === 1
         && (!edit?.id || wasPrivate) && !(await ensureRankCache([w.kind]).then(() => (rankCache[w.kind] || []).includes(w.id)).catch(() => false));
-      justSwept = w.id; inkWash(w.kind); logoCheer(); setDoing(null); meReact(score); recs = null; delete tagCache[w.id]; if (P.picked === w.id) { P.picked = null; saveP(); }
+      justSwept = w.id; inkWash(w.kind); logoCheer(); setDoing(null); meReact(score); recs = null; if (!edit?.id) checkGuess(w, score); delete tagCache[w.id]; if (P.picked === w.id) { P.picked = null; saveP(); }
       const saved = (edit ? myEntries.find(x => x.id === edit.id) : myEntries.find(x => x.work_id === w.id)) || e;
       /* rate it, place it, done: the placing happens in this sheet, and the end is a toast
          saying where it landed rather than a second sheet to close */
