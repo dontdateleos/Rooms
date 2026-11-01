@@ -150,8 +150,7 @@ Things that keep this true:
 
 ## 5. Before you can submit
 
-- [ ] Fill the two blanks in `privacy.html` (company name, contact email) — `policy.test.mjs`
-      is red until you do.
+- [x] Fill the two blanks in `privacy.html` (company name, contact email).
 - [ ] Accept Supabase's data processing agreement. The privacy page says a signed one
       exists; make that true.
 - [ ] Run schema **v17** to **v22** in the SQL editor.
