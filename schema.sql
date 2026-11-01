@@ -1443,8 +1443,11 @@ grant execute on function push_gone(text) to service_role;
 
 -- saving this phone's address: one phone, one person — whoever is signed in on it now. Only
 -- the real push services' addresses are taken, so the worker never posts anywhere else.
+-- v38: or the iPhone app's Apple push token, kept as apns:<hex>, which the worker sends to
+-- Apple's own push service (the keys columns are unused for those and hold a dash).
 alter table push_subs drop constraint if exists push_subs_endpoint_host;
-alter table push_subs add constraint push_subs_endpoint_host check (endpoint ~ '^https://(fcm\.googleapis\.com|updates\.push\.services\.mozilla\.com|web\.push\.apple\.com|[a-z0-9.-]+\.push\.apple\.com|[a-z0-9.-]+\.notify\.windows\.com)/');
+alter table push_subs add constraint push_subs_endpoint_host check (endpoint ~ '^https://(fcm\.googleapis\.com|updates\.push\.services\.mozilla\.com|web\.push\.apple\.com|[a-z0-9.-]+\.push\.apple\.com|[a-z0-9.-]+\.notify\.windows\.com)/'
+  or endpoint ~ '^apns:[0-9a-f]{64,200}$');
 create or replace function push_save(p_endpoint text, p_p256dh text, p_auth text)
 returns void language sql security definer set search_path = public as $$
   insert into push_subs (endpoint, user_id, p256dh, auth) values (p_endpoint, auth.uid(), p_p256dh, p_auth)

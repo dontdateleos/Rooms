@@ -12,6 +12,9 @@
 #   SUPABASE_SERVICE_KEY   Supabase → Project Settings → API → service_role (secret)
 #   CONTACT                an email address for the app (Open Library and push services
 #                          ask for one)
+# For the iPhone app's notifications (Certificates, Identifiers & Profiles → Keys → + → tick
+# "Apple Push Notifications service"): APNS_KEY_P8 (the whole .p8 file), APNS_KEY_ID, and
+# APPLE_TEAM_ID (shared with the TestFlight workflow).
 # Optional: CLOUDFLARE_ACCOUNT_ID (if your token can see more than one account) and ORIGIN
 # (only if it isn't set on the worker already). Anything not set is skipped, not failed.
 name: Deploy the backend
@@ -51,6 +54,9 @@ jobs:
           SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
           CONTACT: ${{ secrets.CONTACT }}
           ORIGIN_VALUE: ${{ secrets.ORIGIN }}
+          APNS_KEY_P8: ${{ secrets.APNS_KEY_P8 }}
+          APNS_KEY_ID: ${{ secrets.APNS_KEY_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
           if [ -z "$CLOUDFLARE_API_TOKEN" ]; then echo "::notice::CLOUDFLARE_API_TOKEN isn't set, so the worker was left alone."; exit 0; fi
           [ -z "$CLOUDFLARE_ACCOUNT_ID" ] && unset CLOUDFLARE_ACCOUNT_ID
@@ -71,5 +77,9 @@ jobs:
           [ -n "$SERVICE_KEY" ] && put SUPABASE_SERVICE_KEY "$SERVICE_KEY"
           [ -n "$CONTACT" ] && put CONTACT "$CONTACT"
           [ -n "$ORIGIN_VALUE" ] && put ORIGIN "$ORIGIN_VALUE"
+          # the iPhone app's notifications: Apple's push key, its id, and the team it belongs to
+          [ -n "$APNS_KEY_P8" ] && put APNS_KEY_P8 "$APNS_KEY_P8"
+          [ -n "$APNS_KEY_ID" ] && put APNS_KEY_ID "$APNS_KEY_ID"
+          [ -n "$APPLE_TEAM_ID" ] && put APPLE_TEAM_ID "$APPLE_TEAM_ID"
           has ORIGIN || [ -n "$ORIGIN_VALUE" ] || echo "::warning::The worker has no ORIGIN yet — add an ORIGIN secret (https://dontdateleos.github.io) and run this again."
           echo "::notice::The worker is deployed."

@@ -4595,10 +4595,28 @@ const inviteLink = code => inviteViaWorker ? `${proxy()}/i/${code}${homePath()}`
    The phone has to say yes first (and on an iPhone, Rooms has to be on the Home Screen).
    Sending goes through the worker, as you: it can only reach people you share a room
    with, and each person's phone decides whether to show it. */
-const pushCan = () => !DEMO && !sb?.__local && "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+const pushCan = () => !DEMO && !sb?.__local && (NATIVE || ("serviceWorker" in navigator && "PushManager" in window && "Notification" in window));
+/* In the iPhone app they come through Apple's push service instead: the phone hands over a
+   token, saved as apns:<token> in the same table, and the worker sends to Apple with it.
+   The switch, the bell's question and the start-up check all go through these three. */
+const NPUSH = () => NATIVE ? plug("PushNotifications") : null;
+async function pushPerm() { if (!pushCan()) return "default";
+  if (!NATIVE) return Notification.permission;
+  const r = await NPUSH().checkPermissions().catch(() => ({})); return r.receive === "granted" ? "granted" : r.receive === "denied" ? "denied" : "default"; }
+let apnsWait = null;
+if (NATIVE && !DEMO) { const N = NPUSH();
+  N?.addListener("registration", t => { apnsWait?.res(t.value); apnsWait = null; });
+  N?.addListener("registrationError", e => { apnsWait?.rej(new Error(e?.error || "Apple didn't hand over an address")); apnsWait = null; });
+  /* tapped a notification: go where it points, the way a tapped link to the website would */
+  N?.addListener("pushNotificationActionPerformed", a => { const u = a?.notification?.data?.url || ""; const h = u.indexOf("#"); if (h >= 0) location.hash = u.slice(h); });
+  /* one arriving while you're in the app: a toast rather than a banner over what you're doing */
+  N?.addListener("pushNotificationReceived", n => { if (n?.title) say(n.body ? `${n.title} · ${n.body}` : n.title); }); }
+const apnsToken = () => new Promise((res, rej) => { apnsWait = { res, rej }; NPUSH().register().catch(rej);
+  setTimeout(() => { if (apnsWait) { apnsWait = null; rej(new Error("Apple didn't answer. Try again in a moment.")); } }, 15000); });
+const apnsSave = async tok => { await q(sb.rpc("push_save", { p_endpoint:"apns:" + tok, p_p256dh:"-", p_auth:"-" })); P.apnsToken = tok; saveP(); };
 /* an iPhone (or an iPad, which says it's a Mac) only gets notifications once Rooms is on the
    Home Screen — and in a Safari tab it has no Notification at all, so ask this first */
-const pushNeedsHome = () => !DEMO && (/iP(hone|ad|od)/.test(navigator.userAgent) || (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1))
+const pushNeedsHome = () => !DEMO && !NATIVE && (/iP(hone|ad|od)/.test(navigator.userAgent) || (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1))
   && !(navigator.standalone || matchMedia("(display-mode: standalone)").matches);
 let pushKeyP = null;
 const pushKey = () => pushKeyP ||= fetch(`${proxy()}/push/key`).then(r => r.ok ? r.json() : {}).then(j => j.key || null).catch(() => null);
@@ -4608,6 +4626,9 @@ async function pushSave(sub) { const j = sub.toJSON();
   await q(sb.rpc("push_save", { p_endpoint:j.endpoint, p_p256dh:j.keys.p256dh, p_auth:j.keys.auth })); }
 const subKey = sub => sub?.options?.applicationServerKey && btoa(String.fromCharCode(...new Uint8Array(sub.options.applicationServerKey))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 async function pushOn() {
+  if (NATIVE) { const r = await NPUSH().requestPermissions().catch(() => ({}));
+    if (r.receive !== "granted") throw new Error("Your phone said no. You can allow it in Settings → Notifications → Rooms.");
+    await apnsSave(await apnsToken()); P.pushAsked = true; saveP(); return true; }
   const key = await pushKey(); if (!key) throw new Error("Notifications aren't switched on for this app yet.");
   if (await Notification.requestPermission() !== "granted") throw new Error("Your phone said no. You can allow it in the phone's settings for Rooms.");
   const reg = await navigator.serviceWorker.ready;
@@ -4615,12 +4636,18 @@ async function pushOn() {
   if (sub && subKey(sub) && subKey(sub) !== key) { await sub.unsubscribe().catch(() => {}); sub = null; }
   sub ||= await reg.pushManager.subscribe({ userVisibleOnly:true, applicationServerKey:keyBytes(key) });
   await pushSave(sub); P.pushAsked = true; saveP(); return true; }
-async function pushOff() { const sub = await pushSub(); if (!sub) return;
+async function pushOff() {
+  if (NATIVE) { const t = P.apnsToken; P.apnsToken = null; saveP();
+    if (t) try { await q(sb.from("push_subs").delete().eq("endpoint", "apns:" + t)); } catch {}
+    await NPUSH().unregister().catch(() => {}); return; }
+  const sub = await pushSub(); if (!sub) return;
   try { await q(sb.from("push_subs").delete().eq("endpoint", sub.endpoint)); } catch {}
   await sub.unsubscribe().catch(() => {}); }
 /* on every start: a phone that said yes stays on the list, and moves to a new key if the
    worker's ever changed it */
 async function pushKeepUp() { try {
+  /* the app: Apple can change the token, and a phone can change hands, so it's handed over again */
+  if (NATIVE) { if (pushCan() && P.apnsToken && me?.id && await pushPerm() === "granted") await apnsSave(await apnsToken()); return; }
   if (!pushCan() || Notification.permission !== "granted" || !me?.id || sb.__local) return;
   let sub = await pushSub(); if (!sub) return; const key = await pushKey(); if (!key) return;
   const had = subKey(sub);
@@ -4643,10 +4670,10 @@ addEventListener("hashchange", () => { if (!me?.id) return;
 /* the switch, wherever it's shown */
 async function pushSwitchHTML() {
   if (pushNeedsHome()) return `<p class="sub">To get notifications on an iPhone, add Rooms to your Home Screen first: Share → Add to Home Screen, then open it from there.</p>`;
-  if (!pushCan() || !await pushKey()) return "";
-  const on = Notification.permission === "granted" && !!(await pushSub());
-  return `<div class="pushrow"><div><b>Notifications on this phone</b><small>${on ? "On — watch nights, picks for you, new people in your rooms." : Notification.permission === "denied" ? "Blocked in your phone's settings." : "Off"}</small></div>
-    <button class="chip ${on ? "on" : ""}" id="pushToggle" ${Notification.permission === "denied" ? "disabled" : ""}>${on ? "On" : "Turn on"}</button></div>`; }
+  if (!pushCan() || (!NATIVE && !await pushKey())) return "";
+  const perm = await pushPerm(), on = perm === "granted" && (NATIVE ? !!P.apnsToken : !!(await pushSub()));
+  return `<div class="pushrow"><div><b>Notifications on this phone</b><small>${on ? "On — watch nights, picks for you, new people in your rooms." : perm === "denied" ? "Blocked in your phone's settings." : "Off"}</small></div>
+    <button class="chip ${on ? "on" : ""}" id="pushToggle" ${perm === "denied" ? "disabled" : ""}>${on ? "On" : "Turn on"}</button></div>`; }
 function wirePushSwitch(root, after) { const b = $("#pushToggle", root); if (!b) return;
   b.onclick = async () => { b.disabled = true; const on = b.classList.contains("on");
     try { if (on) { await pushOff(); say("Notifications off"); } else { await pushOn(); say("Notifications on", "good"); } }
@@ -5437,7 +5464,7 @@ function openNotes() {
 async function pushAsk() {
   if (P.pushAsked) return;
   const home = pushNeedsHome();
-  if (!home && (!pushCan() || Notification.permission !== "default" || !await pushKey())) return;
+  if (!home && (!pushCan() || await pushPerm() !== "default" || (!NATIVE && !await pushKey()))) return;
   const body = $("#noteBody"); if (!body) return;
   body.insertAdjacentHTML("afterbegin", `<div class="pushask" id="pushAsk"><b>Hear about it when the app's closed?</b>
     <small>${home ? "On an iPhone, add Rooms to your Home Screen first (Share → Add to Home Screen) and open it from there." : "Watch nights, picks people hand you, and someone new in your rooms. Nothing else."}</small>

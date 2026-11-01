@@ -278,6 +278,36 @@ async function encryptFor(sub, payload) {
   return cat(salt, rs, new Uint8Array([asPub.length]), asPub, sealed); }
 /* a sender who sends too much is told to wait, per copy of the worker — enough to stop a loop */
 const SENT = new Map();
+/* ---------- the iPhone app ----------
+   The App Store app gets its notifications from Apple's push service rather than the web's.
+   One key does it (Certificates, Identifiers & Profiles → Keys, with APNs ticked): the
+   request is signed as the team with it, and addressed to the app's bundle id. A build run
+   straight from Xcode talks to Apple's test service instead, so a token the live one doesn't
+   recognise gets one more try there. */
+let apnsTok = null;
+async function apnsJWT(env) {
+  if (apnsTok && Date.now() - apnsTok.at < 50 * 60e3) return apnsTok.v;    /* Apple wants a fresh one within the hour */
+  const der = Uint8Array.from(atob(env.APNS_KEY_P8.replace(/-----[^-]+-----|\s/g, "")), c => c.charCodeAt(0));
+  const key = await crypto.subtle.importKey("pkcs8", der, { name:"ECDSA", namedCurve:"P-256" }, false, ["sign"]);
+  const head = b64u(enc(JSON.stringify({ alg:"ES256", kid:env.APNS_KEY_ID })));
+  const body = b64u(enc(JSON.stringify({ iss:env.APPLE_TEAM_ID, iat:Math.floor(Date.now() / 1000) })));
+  const sig = await crypto.subtle.sign({ name:"ECDSA", hash:"SHA-256" }, key, enc(`${head}.${body}`));
+  apnsTok = { v:`${head}.${body}.${b64u(sig)}`, at:Date.now() }; return apnsTok.v; }
+const apnsReady = env => !!(env.APNS_KEY_P8 && env.APNS_KEY_ID && env.APPLE_TEAM_ID);
+async function apnsSend(env, token, note) {
+  const body = JSON.stringify({ aps:{ alert:{ title:note.title, body:note.body }, sound:"default", ...(note.tag ? { "thread-id":note.tag } : {}) }, url:note.url || "" });
+  for (const host of ["api.push.apple.com", "api.sandbox.push.apple.com"]) {
+    const res = await fetch(`https://${host}/3/device/${token}`, { method:"POST", body, headers:{
+      authorization:`bearer ${await apnsJWT(env)}`, "apns-topic":env.APNS_TOPIC || "com.touringgroup.rooms",
+      "apns-push-type":"alert", "apns-expiration":String(Math.floor(Date.now() / 1000) + 86400),
+      ...(note.tag ? { "apns-collapse-id":note.tag.slice(0, 64) } : {}) } });
+    if (res.ok) return { ok:true };
+    const reason = (await res.json().catch(() => ({}))).reason || "";
+    if (reason === "BadDeviceToken" && host === "api.push.apple.com") continue;
+    if (reason === "ExpiredProviderToken") apnsTok = null;
+    return { ok:false, gone:res.status === 410 || reason === "Unregistered" || reason === "BadDeviceToken" }; }
+  return { ok:false }; }
+
 async function pushSend(request, env, ctx, cors) {
   if (!env.VAPID_PUBLIC || !env.VAPID_PRIVATE || !env.SUPABASE_SERVICE_KEY) return json({ error:"notifications aren't set up on the worker" }, 501, cors);
   const auth = request.headers.get("Authorization") || "";
@@ -312,9 +342,11 @@ const PUSH_HOSTS = /^https:\/\/(fcm\.googleapis\.com|updates\.push\.services\.mo
 const svcRpc = (env, fn, args) => fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, { method:"POST",
   headers:{ "Content-Type":"application/json", apikey:env.SUPABASE_SERVICE_KEY, Authorization:`Bearer ${env.SUPABASE_SERVICE_KEY}` }, body:JSON.stringify(args) });
 async function deliver(env, targets, note, ctx) {
-  const subs = (targets || []).filter(s => PUSH_HOSTS.test(s.endpoint)).slice(0, 200);
+  const subs = (targets || []).filter(s => PUSH_HOSTS.test(s.endpoint) || (/^apns:[0-9a-f]{64,200}$/.test(s.endpoint) && apnsReady(env))).slice(0, 200);
   const payload = JSON.stringify(note);
+  const forget = async s => { const gone = svcRpc(env, "push_gone", { p_endpoint:s.endpoint }).catch(() => {}); if (ctx) ctx.waitUntil(gone); else await gone; };
   const results = await Promise.all(subs.map(async s => {
+    if (s.endpoint.startsWith("apns:")) { try { const r = await apnsSend(env, s.endpoint.slice(5), note); if (r.gone) await forget(s); return r.ok; } catch { return false; } }
     try { const res = await fetch(s.endpoint, { method:"POST", body:await encryptFor(s, payload), headers:{
         "Content-Encoding":"aes128gcm", "Content-Type":"application/octet-stream", TTL:"86400", Urgency:"normal",
         ...(note.tag ? { Topic:note.tag.replace(/[^\w-]/g, "").slice(0, 32) } : {}),

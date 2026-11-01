@@ -202,5 +202,13 @@ and Run again.
 
 **What the app does differently from the website** (search the page for `NATIVE`): the phone's
 own haptics, share sheet and status bar; links it hands out point at the website; cards and
-exports go to the share sheet, since an app can't download. Still to come: notifications
-through Apple's push service, barcode scanning, and links that open the app.
+exports go to the share sheet, since an app can't download; notifications come through Apple's
+push service (below). Still to come: barcode scanning, and links that open the app.
+
+**Notifications in the app** need one key from Apple, made once:
+1. developer.apple.com → Certificates, Identifiers & Profiles → **Keys** → **+**.
+2. Name it `Rooms push`, tick **Apple Push Notifications service (APNs)**, Continue → Register.
+3. Download the `.p8` (once only) and note its **Key ID**.
+4. In GitHub → Settings → Secrets and variables → Actions, add `APNS_KEY_P8` (the whole file)
+   and `APNS_KEY_ID`. `APPLE_TEAM_ID` is the one the TestFlight workflow already uses.
+5. Actions → **Deploy the backend** → Run workflow. It hands the key to the worker.
