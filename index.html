@@ -3102,8 +3102,8 @@ const avatar = (p, cls = "") => { const who = String(p?.id || p?.handle || "");
    in the same 100-unit box as the capsule eyes, in the eyes' own colour, so any shape and
    any colour can wear them. */
 const MOOD_EYES = {
-  sad:   c => `<rect x="39" y="55" width="8" height="10" rx="4"/><rect x="55" y="55" width="8" height="10" rx="4"/>
-    <path d="M35 50 L46 45 M56 45 L67 50" stroke="${c}" stroke-width="4" stroke-linecap="round" fill="none"/>`,
+  /* no brows on any face: sad is the eyes gone small and dropped, looking at the floor */
+  sad:   () => `<rect x="39" y="58" width="8" height="9" rx="4"/><rect x="55" y="58" width="8" height="9" rx="4"/>`,
   meh:   () => `<rect x="37" y="54" width="11" height="5" rx="2.5"/><rect x="54" y="54" width="11" height="5" rx="2.5"/>`,
   happy: c => `<path d="M37 59 q5.5 -10 11 0 M54 59 q5.5 -10 11 0" stroke="${c}" stroke-width="5.5" stroke-linecap="round" fill="none"/>`,
   love:  c => `<path d="M37 59 q5.5 -10 11 0 M54 59 q5.5 -10 11 0" stroke="${c}" stroke-width="5.5" stroke-linecap="round" fill="none"/>
