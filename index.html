@@ -2827,6 +2827,8 @@ html[data-theme="dark"]{--blkLit:rgba(255,255,255,.09);--blkSide:rgba(0,0,0,.24)
 .row.rec .recwhy span{min-width:0}
 .recno{border:0;background:none;color:var(--mute);width:28px;height:28px;border-radius:50%;font-size:18px;line-height:1;cursor:pointer;flex:none;margin-left:-4px}
 .recno:hover{background:var(--cream2)}
+.recaway{margin:10px 0 2px;font-size:11.5px;line-height:1.4;color:var(--mute)}
+.recaway b{color:var(--ink);font-weight:700}
 
 /* ---------- floating pills take turns ----------
    The update bar, the offline note and toasts all live just above the tab bar. When
@@ -10216,10 +10218,14 @@ const fourHTML = items => `<div class="four">${[0,1,2,3].map(i => { const w = wo
    · things like the ones you loved most: the seeds are your highest scores weighted
      toward recent ones, a few of each medium, looked up all at once.
    · more from the directors, authors and studios you rate well across several things.
+   What you rated low counts as much as what you loved. The genres you score below your
+   usual pull things down, things like the ones you rated lowest or walked out of are
+   pushed away, a director or author you've gone cold on twice stops being suggested,
+   and a friend who disliked the same things you did is worth listening to.
    Anything you've logged, shelved, walked out of or said "not for me" to stays out. One
    source can't fill the list on its own, and the result is kept for half a day so the
    card doesn't reshuffle every time you look. */
-let recs = null;
+let recs = null, recAway = null;
 const REC_KEY = "rooms.recs", REC_TTL = 12 * 36e5;
 const recNo = () => new Set(P.recNo || []);
 function recDismiss(id) { P.recNo = [...new Set([...(P.recNo || []), id])].slice(-400); saveP(); }
@@ -10232,6 +10238,22 @@ const recSig = () => [me?.id, myEntries.length, myEntries.reduce((a, e) => a + e
   myEntries.reduce((m, e) => String(e.created_at || "") > m ? String(e.created_at) : m, ""), follows.length, rooms.length, (P.recNo || []).length].join("|");
 const yearNow = () => new Date().getFullYear();
 const unreleased = w => (w.release && w.release > new Date().toISOString().slice(0, 10)) || (+w.year > yearNow());
+/* a walk-out counts as a low score whatever number went with it */
+const tasteScore = e => dnfOf(e) ? Math.min(e.score, 4) : e.score;
+const genresOf = w => [...new Set((w?.meta?.genres || w?.genres || []).map(g => lc(g)).filter(g => g && g.length <= 26))];
+/* how far above or below your usual each genre sits, pulled toward nothing until there
+   are a few of it: one bad horror film shouldn't put you off horror */
+function genreTaste(mine) { const all = Object.values(mine); if (all.length < 5) return {};
+  const mean = all.reduce((a, e) => a + tasteScore(e), 0) / all.length, g = {};
+  for (const e of all) for (const k of genresOf(works[e.work_id])) { const x = g[k] ||= { d:0, n:0 }; x.d += tasteScore(e) - mean; x.n++; }
+  return Object.fromEntries(Object.entries(g).map(([k, x]) => [k, { aff:x.d / (x.n + 3), n:x.n }])); }
+const genreAdj = (w, gt) => { const gs = genresOf(w).filter(g => gt[g]); return gs.length ? gs.reduce((a, g) => a + gt[g].aff, 0) / gs.length : 0; };
+let tmdbGenreMap = null;
+async function tmdbGenreNames() { if (tmdbGenreMap) return tmdbGenreMap;
+  try { const c = JSON.parse(localStorage.getItem("rooms.tmdbg") || "null"); if (c) return (tmdbGenreMap = c); } catch {}
+  const m = {}; for (const k of ["movie", "tv"]) { try { (await tmdb(`genre/${k}/list`)).genres?.forEach(g => m[g.id] = g.name); } catch {} }
+  if (Object.keys(m).length) { tmdbGenreMap = m; try { localStorage.setItem("rooms.tmdbg", JSON.stringify(m)); } catch {} }
+  return m; }
 
 /* people: how closely each person's scores track yours, and what the close ones loved */
 async function recsFromPeople(mine) {
@@ -10243,16 +10265,19 @@ async function recsFromPeople(mine) {
   const theirs = {}, who = {};
   for (const e of es) { remember(e.works); if (e.profiles) who[e.user_id] = e.profiles;
     const u = theirs[e.user_id] ||= {}, c = u[e.work_id]; if (!c || newestFirst(e, c) < 0) u[e.work_id] = e; }
-  const mineAll = Object.values(mine).filter(e => !dnfOf(e)); if (!mineAll.length) return {};
-  const myMean = mineAll.reduce((a, e) => a + e.score, 0) / mineAll.length;
+  const mineAll = Object.values(mine); if (!mineAll.length) return {};
+  const myMean = mineAll.reduce((a, e) => a + tasteScore(e), 0) / mineAll.length;
   const word = Object.fromEntries(whoseWord().map(b => [b.id, b.delta]));
   const out = {};
   for (const [uid, ws] of Object.entries(theirs)) {
     const all = Object.values(ws).filter(e => !dnfOf(e)); if (all.length < 3) continue;
     const tm = all.reduce((a, e) => a + e.score, 0) / all.length;
-    let dot = 0, na = 0, nb = 0, n = 0, close = 0;
-    for (const e of all) { const m = mine[e.work_id]; if (!m || dnfOf(m)) continue;
-      const a = m.score - myMean, b = e.score - tm; dot += a * b; na += a * a; nb += b * b; n++; if (Math.abs(m.score - e.score) <= 2) close++; }
+    let dot = 0, na = 0, nb = 0, n = 0, close = 0; const cold = [];
+    for (const e of all) { const m = mine[e.work_id]; if (!m) continue;
+      const ms = tasteScore(m), a = ms - myMean, b = e.score - tm; dot += a * b; na += a * a; nb += b * b; n++; if (Math.abs(ms - e.score) <= 2) close++;
+      /* the low ones you share: both well under your own usual, or both plainly low */
+      if ((a <= -3 && b <= -3) || (ms <= 4 && e.score <= 4)) cold.push({ title:works[e.work_id]?.title, d:a + b }); }
+    cold.sort((x, y) => x.d - y.d);
     const r = na && nb ? dot / Math.sqrt(na * nb) : 0;
     /* six things in common before their record outweighs the starting trust */
     let sim = (n / (n + 6)) * r + (6 / (n + 6)) * .15;
@@ -10262,14 +10287,15 @@ async function recsFromPeople(mine) {
       /* above their own usual, and good in plain terms too */
       const v = (e.score - tm) / 4 + (e.score >= 8 ? .5 : e.score >= 7 ? .2 : -.3);
       const c = out[e.work_id] ||= { s:0, who:[] };
-      c.s += sim * v; if (e.score >= 7) c.who.push({ id:uid, p:who[uid] || { id:uid }, score:e.score, w:sim * v, n, close }); } }
+      c.s += sim * v; if (e.score >= 7) c.who.push({ id:uid, p:who[uid] || { id:uid }, score:e.score, w:sim * v, n, close, cold:cold[0]?.title || "" }); } }
   for (const c of Object.values(out)) c.who.sort((a, b) => b.w - a.w);
   return out; }
 
 /* like the ones you loved: the seeds, then whatever each one's source says goes with it */
 async function similarTo(w) { const raw = w.id.split(":")[1];
-  if (w.kind === "film" || w.kind === "tv") { const d = await tmdb(`${w.kind === "film" ? "movie" : "tv"}/${raw}/recommendations`);
+  if (w.kind === "film" || w.kind === "tv") { const [d, gm] = await Promise.all([tmdb(`${w.kind === "film" ? "movie" : "tv"}/${raw}/recommendations`), tmdbGenreNames()]);
     return (d.results || []).slice(0, 12).map(r => ({ id:`${w.kind}:${r.id}`, kind:w.kind, title:r.title || r.name, year:String(r.release_date || r.first_air_date || "").slice(0, 4),
+      genres:(r.genre_ids || []).map(i => gm[i]).filter(Boolean),
       cover:TMDB_IMG(r.poster_path), ...(r.release_date || r.first_air_date ? { release:r.release_date || r.first_air_date } : {}) })); }
   if (w.kind === "book") {
     /* the book's own subjects, minus the shelving labels every book has, then the best
@@ -10280,11 +10306,11 @@ async function similarTo(w) { const raw = w.id.split(":")[1];
     const rows = [];
     for (const s of subs) { try { const r = await ol("/search.json", { q:`subject:"${s.replace(/"/g, "")}"`, sort:"rating", limit:"10", fields:"key,title,author_name,first_publish_year,cover_i" });
       for (const b of r.docs || []) if (!(b.author_name || []).some(a => lc(a) === lc(String(w.creator || "").split(/,\s*/)[0])))
-        rows.push({ id:"book:" + String(b.key).replace("/works/", ""), kind:"book", title:b.title, year:String(b.first_publish_year || ""), creator:(b.author_name || [])[0] || "",
+        rows.push({ id:"book:" + String(b.key).replace("/works/", ""), kind:"book", title:b.title, year:String(b.first_publish_year || ""), creator:(b.author_name || [])[0] || "", genres:[s],
           cover:b.cover_i ? `https://covers.openlibrary.org/b/id/${b.cover_i}-M.jpg` : "" }); } catch {} }
     return rows; }
-  if (w.kind === "game") { const g = await igdb("games", `where id = ${+raw}; fields similar_games.name,similar_games.first_release_date,similar_games.cover.image_id;`);
-    return (g?.[0]?.similar_games || []).slice(0, 12).map(x => ({ id:"game:" + x.id, kind:"game", title:x.name, year:x.first_release_date ? String(new Date(x.first_release_date * 1000).getFullYear()) : "",
+  if (w.kind === "game") { const g = await igdb("games", `where id = ${+raw}; fields similar_games.name,similar_games.first_release_date,similar_games.cover.image_id,similar_games.genres.name,similar_games.themes.name;`);
+    return (g?.[0]?.similar_games || []).slice(0, 12).map(x => ({ id:"game:" + x.id, kind:"game", title:x.name, genres:[...(x.genres || []), ...(x.themes || [])].map(y => y.name), year:x.first_release_date ? String(new Date(x.first_release_date * 1000).getFullYear()) : "",
       cover:x.cover?.image_id ? `https://images.igdb.com/igdb/image/upload/t_cover_big/${x.cover.image_id}.jpg` : "" })); }
   return []; }
 async function recsFromLoved(mine) {
@@ -10300,42 +10326,60 @@ async function recsFromLoved(mine) {
   for (const c of Object.values(out)) c.from.sort((a, b) => b.v - a.v);
   return { out, reached }; }
 
+/* the other direction: what goes with the things you rated lowest or walked out of */
+async function recsAwayFrom(mine) {
+  const fresh = e => 1 / (1 + daysAgo(String(e.rated_on || e.created_at || "").slice(0, 10)) / 240);
+  const lows = Object.values(mine).filter(e => tasteScore(e) <= 5 && works[e.work_id]?.title)
+    .map(e => ({ e, w:(6 - tasteScore(e)) * fresh(e) + (dnfOf(e) ? .5 : 0) })).sort((a, b) => b.w - a.w).slice(0, 6);
+  const out = {}; if (DEMO || !lows.length) return { out, lows };
+  const got = await Promise.allSettled(lows.map(({ e }) => similarTo(works[e.work_id])));
+  got.forEach((g, i) => { if (g.status !== "fulfilled") return; const L = lows[i];
+    g.value.forEach((r, j) => { const c = out[r.id] ||= { s:0 }; c.s += L.w * (1 - j / 16); }); });
+  return { out, lows }; }
+
 /* more from the people who made the things you rate well */
 async function recsFromCreators(mine) {
   const by = {};
-  for (const e of Object.values(mine)) { const w = works[e.work_id]; if (!w?.creator || dnfOf(e)) continue;
+  for (const e of Object.values(mine)) { const w = works[e.work_id]; if (!w?.creator) continue;
     const kind = w.kind === "tv" ? "film" : w.kind;
     for (const name of String(w.creator).split(/,\s*/).slice(0, 2)) { const c = by[kind + "|" + name] ||= { name, kind:w.kind, n:0, sum:0, loved:0 };
-      c.n++; c.sum += e.score; if (e.score >= 8) c.loved++; } }
+      c.n++; c.sum += tasteScore(e); if (e.score >= 8 && !dnfOf(e)) c.loved++; } }
+  const cold = new Set(Object.values(by).filter(c => c.n >= 2 && c.sum / c.n <= 5.5).map(c => c.name));
   const top = Object.values(by).map(c => ({ ...c, avg:c.sum / c.n })).filter(c => c.n >= 2 && c.avg >= 7.5)
     .sort((a, b) => b.loved - a.loved || b.avg - a.avg).slice(0, 4);
   const got = await Promise.allSettled(top.map(c => creatorWorks(c.name, c.kind)));
   const out = {};
   got.forEach((g, i) => { if (g.status !== "fulfilled") return; const c = top[i], weight = (c.avg - 6) / 4 * Math.min(c.n, 4) / 4;
     for (const r of g.value.rows || []) { if (mine[r.id]) continue; const x = out[r.id] ||= { s:0, r, by:null }; if (weight > x.s) { x.s = weight; x.by = c; } } });
-  return out; }
+  Object.defineProperty(out, "cold", { value:cold }); return out; }
 
 async function loadRecs() {
   if (recs) return recs;
   try { const c = JSON.parse(localStorage.getItem(REC_KEY) || "null");
     if (c && c.sig === recSig() && Date.now() - c.at < REC_TTL) { c.list.forEach(x => { window.__hits = Object.assign(window.__hits || {}, { [x.r.id]:x.r }); });
-      return (recs = c.list); } } catch {}
+      recAway = c.away || null; return (recs = c.list); } } catch {}
   const mine = myLatestById();
-  const [people, loved, made] = await Promise.all([recsFromPeople(mine).catch(() => ({})), recsFromLoved(mine).catch(() => ({ out:{}, reached:false })), recsFromCreators(mine).catch(() => ({}))]);
+  const [people, loved, made, away] = await Promise.all([recsFromPeople(mine).catch(() => ({})), recsFromLoved(mine).catch(() => ({ out:{}, reached:false })),
+    recsFromCreators(mine).catch(() => ({})), recsAwayFrom(mine).catch(() => ({ out:{}, lows:[] }))]);
+  const gt = genreTaste(mine), cold = made.cold || new Set();
   const shelved = new Set(lists.flatMap(l => l.items)), no = recNo();
   const ok = id => id && !mine[id] && !logged(id) && !shelved.has(id) && !no.has(id) && !isPart(id);
   /* each source on its own 0–1 scale, so none wins just by counting differently */
   const norm = o => { const m = Math.max(1e-6, ...Object.values(o).map(x => x.s)); return id => Math.max(-1, (o[id]?.s || 0) / m); };
-  const nP = norm(people), nL = norm(loved.out), nC = norm(made);
+  const nP = norm(people), nL = norm(loved.out), nC = norm(made), nA = norm(away.out);
   const ids = new Set([...Object.keys(people).filter(id => people[id].who.length), ...Object.keys(loved.out), ...Object.keys(made)]);
   const rows = [];
   for (const id of ids) { if (!ok(id)) continue;
     const w = works[id]?.title ? works[id] : (loved.out[id]?.r || made[id]?.r); if (!w?.title || unreleased(w)) continue;
     const p = nP(id), l = nL(id), c = nC(id), srcs = [p > .05, l > .05, c > .05].filter(Boolean).length;
     if (!srcs) continue;
-    const s = p + .8 * l + .7 * c + .25 * (srcs - 1);
+    /* and then what you rated low: things like those, genres you score under your usual,
+       makers you've gone cold on */
+    const g = Math.max(-3, Math.min(3, genreAdj(w, gt))), byCold = String(w.creator || "").split(/,\s*/).some(n => cold.has(n));
+    const s = p + .8 * l + .7 * c + .25 * (srcs - 1) - .6 * Math.max(0, nA(id)) + .12 * g - (byCold ? .5 : 0);
+    if (s <= .05) continue;
     /* the reason shown is whichever source says the most about it */
-    const why = p >= .8 * l && p >= .7 * c && people[id]?.who.length ? { t:"people", who:people[id].who.slice(0, 3).map(x => ({ id:x.id, handle:x.p.handle || "", avatar:x.p.avatar || null, n:x.n, close:x.close })) }
+    const why = p >= .8 * l && p >= .7 * c && people[id]?.who.length ? { t:"people", who:people[id].who.slice(0, 3).map(x => ({ id:x.id, handle:x.p.handle || "", avatar:x.p.avatar || null, n:x.n, close:x.close, cold:x.cold })) }
       : .8 * l >= .7 * c && loved.out[id] ? { t:"loved", title:loved.out[id].from[0].title, also:people[id]?.who[0]?.p?.handle || "" }
       : made[id] ? { t:"creator", name:made[id].by.name, loved:made[id].by.loved } : null;
     if (!why) continue;
@@ -10356,13 +10400,19 @@ async function loadRecs() {
   pickd.forEach(x => { window.__hits = Object.assign(window.__hits || {}, { [x.r.id]:x.r }); });
   /* kept for the visit either way; kept for half a day only when the lookups answered,
      so a bad connection doesn't leave you with the friends-only half of it until tomorrow */
+  recAway = { lows:away.lows.slice(0, 2).map(x => works[x.e.work_id]?.title).filter(Boolean),
+    genres:Object.entries(gt).filter(([, x]) => x.n >= 2 && x.aff <= -1).sort((a, b) => a[1].aff - b[1].aff).slice(0, 1).map(([k]) => k) };
   if (pickd.length || loved.reached) recs = pickd;
-  if (loved.reached) try { localStorage.setItem(REC_KEY, JSON.stringify({ sig:recSig(), at:Date.now(), list:pickd })); } catch {}
+  if (loved.reached) try { localStorage.setItem(REC_KEY, JSON.stringify({ sig:recSig(), at:Date.now(), list:pickd, away:recAway })); } catch {}
   return pickd; }
-const recWhy = x => { const y = x.why;
+/* a shared low is the more striking thing to say, so it's said once a card and the
+   agreement count covers the rest */
+const recWhy = (x, said = new Set()) => { const y = x.why;
   if (y.t === "people") { const names = y.who.map(p => esc(p.handle || "someone")); const lead = y.who[0];
-    const said = names.length === 1 ? `${names[0]} loved it` : `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]} loved it`;
-    return `<span class="rf">${y.who.map(p => avatar(p)).join("")}</span><span>${said}${lead.n >= 4 ? ` · you agree on ${lead.close}&nbsp;of&nbsp;${lead.n}` : ""}</span>`; }
+    const loved = names.length === 1 ? `${names[0]} loved it` : `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]} loved it`;
+    const cold = lead.cold && !said.has(lead.cold) ? (said.add(lead.cold), lead.cold) : "";
+    const back = cold ? ` · ${names.length > 1 ? `you and ${names[0]} both` : "you both"} went cold on ${esc(cold)}` : lead.n >= 4 ? ` · you agree on ${lead.close}&nbsp;of&nbsp;${lead.n}` : "";
+    return `<span class="rf">${y.who.map(p => avatar(p)).join("")}</span><span>${loved}${back}</span>`; }
   if (y.t === "loved") return `<span>Because you loved ${esc(y.title)}${y.also ? ` · ${esc(y.also)} loved it too` : ""}</span>`;
   return `<span>More from ${esc(y.name)}${y.loved >= 2 ? ` · you loved ${y.loved}&nbsp;of&nbsp;theirs` : ""}</span>`; };
 /* Taste, kept to what you'd glance at: who you are, the gist of what pulls you in, and
@@ -10497,8 +10547,12 @@ async function renderTaste() { const body = $("#tasteBody"); const t = tasteOf(m
   if (!rs.length) { if (myEntries.some(e => e.score >= 8)) $("#recCard")?.remove();
     else rb.innerHTML = `<p class="empty">Rate something four stars or more and things like it start turning up here.</p>`; return; }
   window.__hits = Object.assign(window.__hits||{}, Object.fromEntries(rs.map(x => [x.r.id, x.r])));
-  rb.innerHTML = rs.map(x => `<div class="row rec" data-recw="${esc(x.r.id)}">${cover(x.r)}<div class="t"><b>${esc(x.r.title)}</b><small>${tag(x.r.kind)} ${esc(x.r.year||"")}</small><small class="recwhy">${recWhy(x)}</small></div>
-    <button class="chip" data-rec="${esc(x.r.id)}">Add</button><button class="recno" data-recno="${esc(x.r.id)}" aria-label="Not for me">×</button></div>`).join("");
+  const coldSaid = new Set();
+  rb.innerHTML = rs.map(x => `<div class="row rec" data-recw="${esc(x.r.id)}">${cover(x.r)}<div class="t"><b>${esc(x.r.title)}</b><small>${tag(x.r.kind)} ${esc(x.r.year||"")}</small><small class="recwhy">${recWhy(x, coldSaid)}</small></div>
+    <button class="chip" data-rec="${esc(x.r.id)}">Add</button><button class="recno" data-recno="${esc(x.r.id)}" aria-label="Not for me">×</button></div>`).join("")
+    + (() => { const a = recAway; if (!a || (!a.lows.length && !a.genres.length)) return "";
+        const bits = [a.lows.length ? `more like ${a.lows.map(t => `<b>${esc(t)}</b>`).join(" and ")}` : "", a.genres.length ? `less ${esc(a.genres[0])}` : ""].filter(Boolean);
+        return `<p class="recaway">Steering clear of ${bits.join(", and ")}, from what you rated lower.</p>`; })();
   const drop = id => { recs = (recs || []).filter(e => e.r.id !== id); try { const c = JSON.parse(localStorage.getItem(REC_KEY) || "null"); if (c) { c.list = c.list.filter(e => e.r.id !== id); c.sig = recSig(); localStorage.setItem(REC_KEY, JSON.stringify(c)); } } catch {} };
   $$("[data-rec]", rb).forEach(x => x.onclick = async ev => { ev.stopPropagation(); await addToShelf(x.dataset.rec); drop(x.dataset.rec); renderTaste(); });
   $$("[data-recno]", rb).forEach(x => x.onclick = ev => { ev.stopPropagation(); const id = x.dataset.recno; const row = x.closest(".row");

@@ -192,6 +192,11 @@ const LOG = [
   ["me","film:31",9,18,"Not a jump scare in it and I didn't sleep.",["the acting"]],
   ["me","book:30",8,11,"",[]],
   ["me","film:32",8,4,"",["the look"]],
+  /* one jord didn't get on with, and two friends who felt the same, so the suggestions
+     have a low score to steer by and a shared one to point at */
+  ["me","film:43",4,26,"Looked incredible. Couldn't tell you a single thing that happened.",[]],
+  ["u-cass","film:43",3,33,"",[]],
+  ["u-mo","film:43",5,58,"",[]],
   ["u-mo","film:30",10,20,"The blood test. Every time.",["the writing"]],
   ["u-mo","tv:30",9,13,"",[]],
   ["u-mo","film:31",8,8,"",[]],
