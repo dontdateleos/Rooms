@@ -47,6 +47,8 @@ export default {
     const allowed = (env.ORIGIN || "").split(",").map(s => s.trim()).filter(Boolean);
     if (!allowed.length)
       return json({ error: "worker not configured: wrangler secret put ORIGIN" }, 503);
+    /* the iPhone app: the same page, served from inside the app at Capacitor's own address */
+    allowed.push("capacitor://localhost");
 
     const from = request.headers.get("Origin");
     if (!from || !allowed.includes(from))

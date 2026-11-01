@@ -153,7 +153,7 @@ Things that keep this true:
 - [x] Fill the two blanks in `privacy.html` (company name, contact email).
 - [ ] Accept Supabase's data processing agreement. The privacy page says a signed one
       exists; make that true.
-- [ ] Run schema **v17** to **v22** in the SQL editor.
+- [ ] Run the whole of `schema.sql` (now v37) in the SQL editor, or let the backend workflow do it.
 - [ ] Set yourself a way of seeing new reports. Nothing notifies you today.
 - [ ] Decide what goes in `settings` before the first build. Anything you might want to
       change in a hurry belongs there, because after the first release a one-word change
@@ -162,8 +162,45 @@ Things that keep this true:
       (refused in a name only) and `report_reasons` (the wording on the report form). None
       can weaken what shipped — extra patterns are added to the bundled lists, never
       substituted, and a bad row is ignored, not obeyed.
-- [ ] 1024×1024 icon, no alpha channel, no rounded corners.
-- [ ] Wrap it — Capacitor — and get it running on a real device.
+- [x] 1024×1024 icon, no alpha channel, no rounded corners. Drawn by `tools/icons.cjs` straight into the Xcode project.
+- [x] Wrap it — Capacitor. The Xcode project is in `ios/`. Getting it on a real device: section 6.
 - [ ] Watch the 34 animations on real hardware. A phone is not a headless Chromium.
 - [ ] Apple Developer Program membership, $99/yr.
 - [ ] Privacy policy URL in App Store Connect, pointing at the published `privacy.html`.
+
+
+## 6. Running it on your iPhone
+
+The app is the same page as the website, bundled inside a Capacitor app (`ios/`), so it opens
+offline and App Review sees an app. `npm run ios` builds it and opens Xcode.
+
+**Once, on the Mac**
+1. Install **Xcode** from the Mac App Store, open it once and let it install the iOS parts.
+2. Install **Node** (the LTS from nodejs.org) if `node -v` in Terminal says it isn't there.
+3. In Terminal:
+   ```
+   git clone https://github.com/dontdateleos/Rooms.git
+   cd Rooms
+   npm install
+   npm run ios
+   ```
+   Xcode opens on the project.
+4. In Xcode, click **App** at the top of the left-hand list, then **Signing & Capabilities**.
+   Under **Team**, choose **Add an Account…**, sign in with your Apple ID, and pick it.
+   If it says the bundle identifier `com.bullrun.rooms` isn't available, change it to
+   something only you would use (and change `appId` in `capacitor.config.json` to match).
+5. Plug the iPhone in, unlock it and tap **Trust**. On the phone, turn on
+   **Settings → Privacy & Security → Developer Mode** (it restarts).
+6. Pick the iPhone at the top of the Xcode window and press **▶ Run**. The first time, the
+   phone asks you to trust the developer: **Settings → General → VPN & Device Management**.
+
+A free Apple ID is enough to run it on your own phone (it lapses after a week; Run again).
+TestFlight and the App Store need the paid membership.
+
+**After a change:** `git pull`, then `npm run ios` (or `npm run sync` with Xcode already open)
+and Run again.
+
+**What the app does differently from the website** (search the page for `NATIVE`): the phone's
+own haptics, share sheet and status bar; links it hands out point at the website; cards and
+exports go to the share sheet, since an app can't download. Still to come: notifications
+through Apple's push service, barcode scanning, and links that open the app.

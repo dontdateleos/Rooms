@@ -5,3 +5,6 @@
 rooms-*.json
 .DS_Store
 node_modules/
+
+# the iPhone app's copy of the page, built by tools/build-www.mjs (ios/ has its own ignores)
+www/

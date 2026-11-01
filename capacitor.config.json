@@ -1,0 +1,21 @@
+{
+  "appId": "com.bullrun.rooms",
+  "appName": "Rooms",
+  "webDir": "www",
+  "ios": {
+    "contentInset": "never",
+    "backgroundColor": "#16131C",
+    "preferredContentMode": "mobile"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 500,
+      "launchAutoHide": true,
+      "backgroundColor": "#16131C",
+      "showSpinner": false
+    },
+    "Keyboard": {
+      "resize": "native"
+    }
+  }
+}

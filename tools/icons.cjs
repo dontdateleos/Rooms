@@ -5,6 +5,7 @@ const fs = require("fs"), path = require("path");
 const { chromium } = require("playwright");
 
 const ROOT = path.join(__dirname, ".."), OUT = path.join(ROOT, "icons");
+const IOS = path.join(ROOT, "ios/App/App/Assets.xcassets");
 const GROUND = "#16131C", TEXT = "#F4EDE2", SUB = "#C9C1D9";
 /* Outfit is one variable font file covering weights 500 to 900 */
 const FONT = `data:font/woff2;base64,${fs.readFileSync(path.join(ROOT, "vendor/fonts/outfit-500-latin.woff2")).toString("base64")}`;
@@ -39,19 +40,54 @@ const og = () => page(`<div style="width:1200px;height:630px;position:relative">
   <div style="position:absolute;left:470px;top:468px;display:flex;gap:14px">${["#F5A3C7", "#9EF0C9", "#B9A6FF", "#8FD3FF", "#FFB36B", "#FFE86A"]
     .map(c => `<span style="width:54px;height:76px;border-radius:12px 12px 4px 4px;background:${c}"></span>`).join("")}</div></div>`);
 
+/* the App Store's icon: the full square, edge to edge, since iOS rounds the corners itself;
+   and the launch screen, the mark alone in the middle of a big square that iOS crops */
+const appIcon = size => page(`<div style="width:${size}px;height:${size}px;display:grid;place-items:center">
+  <div style="width:${size * .62}px;height:${size * .62}px">${MARK}</div></div>`);
+const launch = size => page(`<div style="width:${size}px;height:${size}px;display:grid;place-items:center">
+  <div style="width:${size * .1}px;height:${size * .1}px">${MARK}</div></div>`);
+
+/* App Store Connect refuses an icon with an alpha channel, even a fully opaque one, and a
+   browser screenshot always has one. So the iOS images are re-encoded as plain RGB here,
+   with nothing but Node: undo the PNG row filters, drop every fourth byte, write it back. */
+const zlib = require("zlib");
+const CRC = Array.from({ length:256 }, (_, n) => { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; return c >>> 0; });
+const crc32 = buf => { let c = 0xffffffff; for (const b of buf) c = CRC[(c ^ b) & 255] ^ (c >>> 8); return (c ^ 0xffffffff) >>> 0; };
+const chunk = (type, data) => { const len = Buffer.alloc(4), crc = Buffer.alloc(4), td = Buffer.concat([Buffer.from(type), data]);
+  len.writeUInt32BE(data.length); crc.writeUInt32BE(crc32(td)); return Buffer.concat([len, td, crc]); };
+function dropAlpha(png) {
+  let pos = 8, w = 0, h = 0, ct = 0; const idat = [];
+  while (pos < png.length) { const len = png.readUInt32BE(pos), type = png.toString("ascii", pos + 4, pos + 8), data = png.subarray(pos + 8, pos + 8 + len);
+    if (type === "IHDR") { w = data.readUInt32BE(0); h = data.readUInt32BE(4); ct = data[9]; if (data[8] !== 8 || data[12]) throw new Error("unexpected PNG"); }
+    if (type === "IDAT") idat.push(data); pos += 12 + len; }
+  if (ct === 2) return png;
+  const bpp = 4, stride = w * bpp, raw = zlib.inflateSync(Buffer.concat(idat)), px = Buffer.alloc(h * stride);
+  for (let y = 0; y < h; y++) { const f = raw[y * (stride + 1)], src = raw.subarray(y * (stride + 1) + 1, (y + 1) * (stride + 1)), row = y * stride;
+    for (let x = 0; x < stride; x++) { const a = x >= bpp ? px[row + x - bpp] : 0, b = y ? px[row - stride + x] : 0, c = x >= bpp && y ? px[row - stride + x - bpp] : 0;
+      const pr = () => { const p = a + b - c, pa = Math.abs(p - a), pb = Math.abs(p - b), pc = Math.abs(p - c); return pa <= pb && pa <= pc ? a : pb <= pc ? b : c; };
+      px[row + x] = (src[x] + [0, a, b, (a + b) >> 1, pr()][f]) & 255; } }
+  const out = Buffer.alloc(h * (w * 3 + 1));
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) px.copy(out, y * (w * 3 + 1) + 1 + x * 3, y * stride + x * 4, y * stride + x * 4 + 3);
+  const ihdr = Buffer.alloc(13); ihdr.writeUInt32BE(w, 0); ihdr.writeUInt32BE(h, 4); ihdr[8] = 8; ihdr[9] = 2;
+  return Buffer.concat([png.subarray(0, 8), chunk("IHDR", ihdr), chunk("IDAT", zlib.deflateSync(out, { level:9 })), chunk("IEND", Buffer.alloc(0))]); }
+
 const JOBS = [
   ["rooms-180.png", 180, 180, icon(180, .6)], ["rooms-192.png", 192, 192, icon(192, .6)], ["rooms-512.png", 512, 512, icon(512, .6)],
   ["rooms-mask-192.png", 192, 192, icon(192, .46)], ["rooms-mask-512.png", 512, 512, icon(512, .46)],
   ...[[750, 1334], [828, 1792], [1125, 2436], [1170, 2532], [1179, 2556], [1206, 2622], [1290, 2796], [1320, 2868]]
     .map(([w, h]) => [`splash-${w}x${h}.png`, w, h, splash(w, h)]),
-  ["og.png", 1200, 630, og()]];
+  ["og.png", 1200, 630, og()],
+  /* the iPhone app's, once the Xcode project exists (npx cap add ios) */
+  ...(fs.existsSync(IOS) ? [["AppIcon.appiconset/AppIcon-512@2x.png", 1024, 1024, appIcon(1024), IOS],
+    ...["", "-1", "-2"].map(n => [`Splash.imageset/splash-2732x2732${n}.png`, 2732, 2732, launch(2732), IOS])] : [])];
 
 (async () => {
   const browser = await chromium.launch(), p = await browser.newPage();
-  for (const [name, w, h, html] of JOBS) {
+  for (const [name, w, h, html, dir = OUT] of JOBS) {
     await p.setViewportSize({ width: w, height: h });
     await p.setContent(html); await p.evaluate(() => document.fonts.ready);
-    await p.screenshot({ path: path.join(OUT, name) });
+    const shot = await p.screenshot();
+    fs.writeFileSync(path.join(dir, name), dir === IOS ? dropAlpha(shot) : shot);
     console.log("drew", name);
   }
   await browser.close();

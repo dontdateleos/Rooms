@@ -1,0 +1,25 @@
+{
+  "name": "rooms",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Rooms: what your friends are watching, reading and playing. The web app, and the iPhone app wrapped around it.",
+  "scripts": {
+    "build": "node tools/build-www.mjs",
+    "sync": "npm run build && npx cap sync ios",
+    "ios": "npm run sync && npx cap open ios"
+  },
+  "dependencies": {
+    "@capacitor/app": "^8.1.2",
+    "@capacitor/core": "^8.6.0",
+    "@capacitor/filesystem": "^8.1.5",
+    "@capacitor/haptics": "^8.0.2",
+    "@capacitor/ios": "^8.6.0",
+    "@capacitor/keyboard": "^8.0.6",
+    "@capacitor/share": "^8.0.3",
+    "@capacitor/splash-screen": "^8.0.2",
+    "@capacitor/status-bar": "^8.0.4"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.6.0"
+  }
+}

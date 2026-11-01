@@ -2898,6 +2898,25 @@ html.sheetup body:has(#updBar) .toast{top:calc(70px + env(safe-area-inset-top))}
 /* ============ Rooms — one log for film, tv, books and games ============
    scores are half-stars 1..10 (10 = five). work ids: film:496243 · tv:1396 · book:OL27448W · game:1942 */
 const SUPABASE_URL = "https://caaxycmobhssxclrakim.supabase.co";
+/* ---------- inside the iPhone app ----------
+   The App Store build is this same page running in Capacitor's web view, with Capacitor's
+   runtime loaded ahead of it (tools/build-www.mjs adds it; the website never has it). A few
+   things a website does can't happen there, so they go through the app instead: the
+   phone's own haptics and share sheet, the status bar's colour, saving a card. Links the
+   app hands out point at the website, because the app's own address means nothing to
+   anyone who receives one. */
+const NATIVE = !!window.Capacitor?.isNativePlatform?.();
+const SITE = "https://dontdateleos.github.io/Rooms/";
+const homeUrl = () => NATIVE ? SITE : location.origin + location.pathname;
+const homePath = () => NATIVE ? new URL(SITE).pathname : location.pathname;
+const plugs = {};
+const plug = name => NATIVE && window.Capacitor.registerPlugin ? (plugs[name] ||= window.Capacitor.registerPlugin(name)) : null;
+const canShareText = () => NATIVE || !!navigator.share;
+const shareText = text => NATIVE ? plug("Share").share({ text }) : navigator.share({ text });
+if (NATIVE) { document.documentElement.classList.add("native");
+  /* light text on the dark theme, dark text on the light one */
+  const bar = () => plug("StatusBar")?.setStyle({ style:document.documentElement.dataset.theme === "light" ? "LIGHT" : "DARK" }).catch(() => {});
+  new MutationObserver(bar).observe(document.documentElement, { attributes:true, attributeFilter:["data-theme"] }); bar(); }
 const SUPABASE_ANON_KEY = "sb_publishable_zvZhatlvUg6F_CDzTmxX9A_Vlv0n3PX";
 /* When the app breaks on somebody's phone, it says so — a line in client_errors (read it in
    the Supabase dashboard), so it can be fixed before they mention it. Five a visit at most,
@@ -4569,8 +4588,8 @@ const dropInvite = () => { try { localStorage.removeItem(INVITE_KEY); } catch {}
 /* Through the worker when it's up to date, so the link shows the room's name in a chat;
    straight to the app otherwise. The worker only ever forwards to this app's own address. */
 let inviteViaWorker = false;
-if (!DEMO) setTimeout(() => fetch(`${proxy()}/i/PING${location.pathname}`, { method:"HEAD" }).then(r => { inviteViaWorker = r.ok && /text\/html/.test(r.headers.get("Content-Type") || ""); }).catch(() => {}), 4000);
-const inviteLink = code => inviteViaWorker ? `${proxy()}/i/${code}${location.pathname}` : `${location.origin}${location.pathname}#join=${code}`;
+if (!DEMO) setTimeout(() => fetch(`${proxy()}/i/PING${homePath()}`, { method:"HEAD" }).then(r => { inviteViaWorker = r.ok && /text\/html/.test(r.headers.get("Content-Type") || ""); }).catch(() => {}), 4000);
+const inviteLink = code => inviteViaWorker ? `${proxy()}/i/${code}${homePath()}` : `${homeUrl()}#join=${code}`;
 /* ---------- notifications on your phone ----------
    The bell only knows what happened while the app is open; these reach you when it isn't.
    The phone has to say yes first (and on an iPhone, Rooms has to be on the Home Screen).
@@ -4611,7 +4630,7 @@ async function pushKeepUp() { try {
 async function notify({ room = null, to = null, title, body = "", tag = "", sec = "", kind = room ? "activity" : null }) {
   if (DEMO || sb.__local || (!room && !to)) return;
   try { const { data } = await sb.auth.getSession(); const tok = data?.session?.access_token; if (!tok) return;
-    const url = `${location.origin}${location.pathname}${room ? `#room=${room}${sec ? "&sec=" + sec : ""}` : ""}`;
+    const url = `${homeUrl()}${room ? `#room=${room}${sec ? "&sec=" + sec : ""}` : ""}`;
     fetch(`${proxy()}/push/send`, { method:"POST", headers:{ "Content-Type":"application/json", Authorization:`Bearer ${tok}` },
       body:JSON.stringify({ room, to, title, body, url, tag, kind }) }).catch(() => {}); } catch {} }
 /* opened from a notification: go to the room it was about */
@@ -5942,6 +5961,8 @@ addEventListener("keydown", e => { if (e.key !== "Escape") return;
 /* haptics: Android has vibrate; an iPhone ticks when a switch is flipped, so flip one
    nobody can see */
 function buzz(p) { try {
+  /* in the app, the real thing: a light tap for a touch, a firmer one for a pattern */
+  if (NATIVE) { const H = plug("Haptics"); if (Array.isArray(p)) H?.notification({ type:"SUCCESS" }).catch(() => {}); else H?.impact({ style:(+p || 0) > 12 ? "MEDIUM" : "LIGHT" }).catch(() => {}); return; }
   if (navigator.vibrate) { navigator.vibrate(p); return; }
   if (!/iP(hone|od|ad)/.test(navigator.userAgent)) return;
   const l = buzz.l || (buzz.l = (() => { const l = document.createElement("label"), i = document.createElement("input");
@@ -6089,7 +6110,7 @@ function renderAuth() { hideSplash();
 
   $("#send").onclick = async () => { const email = $("#email").value.trim(); if (!email) return;
     $("#send").disabled = true; $("#authMsg").textContent = "sending";
-    try { await q(sb.auth.signInWithOtp({ email, options:{ emailRedirectTo: location.origin + location.pathname } }));
+    try { await q(sb.auth.signInWithOtp({ email, options:{ emailRedirectTo: homeUrl() } }));
       $("#authMsg").textContent = "Sent. Enter the code below, or tap the link if you're in a browser.";
       askCode(email); }
     catch (e) { $("#authMsg").textContent = e.message; }
@@ -7268,8 +7289,8 @@ function openInvite(R) {
       <div class="bigcode" id="bigCode">${esc(R.code)}</div>
       <p class="sub" style="margin-top:2px">They put this into <b>Join with a code</b>.</p></div>
     <div class="stack">
-      ${navigator.share ? `<button class="btn blue" id="invShare">Send the link</button>` : ""}
-      <button class="btn ${navigator.share ? "ghost" : "blue"}" id="invCopy">Copy the link</button>
+      ${canShareText() ? `<button class="btn blue" id="invShare">Send the link</button>` : ""}
+      <button class="btn ${canShareText() ? "ghost" : "blue"}" id="invCopy">Copy the link</button>
       <button class="btn quiet" id="invCode">Copy just the code</button>
       <button class="btn quiet" id="invClose">Done</button></div><p class="msg" id="invMsg"></p>`);
   $("#invClose").onclick = closeSheet;
@@ -7284,7 +7305,7 @@ function openInvite(R) {
     r.selectNodeContents($("#bigCode")); sel.removeAllRanges(); sel.addRange(r);
     $("#invMsg").textContent = "Couldn't copy it for you \u2014 it's selected, copy it from there."; };
   const sh = $("#invShare");
-  if (sh) sh.onclick = async () => { try { await navigator.share({ text:inviteText(R) }); }
+  if (sh) sh.onclick = async () => { try { await shareText(inviteText(R)); }
     catch { /* they closed the share sheet; nothing to say about that */ } };
   $("#invCopy").onclick = e => copy(inviteText(R), e.currentTarget, "Invite copied");
   $("#invCode").onclick = e => copy(R.code, e.currentTarget, "Code copied");
@@ -10923,7 +10944,13 @@ function cardStars(x, half, left, y, size = 44, gap = 14) {
     x.fillStyle = x.__empty; x.fill(p);
     if (f > 0) { x.save(); x.beginPath(); x.rect(0, 0, f >= 1 ? 24 : 12, 24); x.clip(); x.fillStyle = x.__star; x.fill(p); x.restore(); }
     x.restore(); } }
-async function cardOut(c, name) { const blob = await new Promise(r => c.toBlob(r, "image/png"));
+async function cardOut(c, name) {
+  /* the app can't download a file: it writes the picture to its cache and hands that to
+     the share sheet, which is where "Save Image" lives on a phone anyway */
+  if (NATIVE) { try { const data = c.toDataURL("image/png").split(",")[1];
+      const { uri } = await plug("Filesystem").writeFile({ path:name, data, directory:"CACHE" });
+      await plug("Share").share({ files:[uri] }); } catch (e) { if (!/cancel/i.test(String(e?.message || e))) oops(e, "Couldn't share that"); } return; }
+  const blob = await new Promise(r => c.toBlob(r, "image/png"));
   const file = new File([blob], name, { type:"image/png" });
   if (navigator.canShare?.({ files:[file] })) { try { await navigator.share({ files:[file] }); return; } catch {} }
   const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); }
@@ -13820,14 +13847,13 @@ async function openYou() { let top = { items:[] }; try { top = await ensureMyTop
   $("#sClose").onclick = closeSheet; $("#signOut").onclick = async () => { await pushOff().catch(() => {}); await sb.auth.signOut(); location.reload(); };
   /* a CSV Letterboxd can import as it is (films come back with their TMDB ids), with every
      other medium alongside in the same columns */
-  const tc = $("#takeoutCsv"); if (tc) tc.onclick = () => { const cell = v => { const t = String(v ?? ""); return /[",\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t; };
+  const tc = $("#takeoutCsv"); if (tc) tc.onclick = async () => { const cell = v => { const t = String(v ?? ""); return /[",\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t; };
     const firsts = {}; myEntries.slice().sort((a, b) => String(a.rated_on || "").localeCompare(String(b.rated_on || ""))).forEach(e => { if (!(e.work_id in firsts)) firsts[e.work_id] = e.id; });
     const rows = myEntries.filter(e => !isPart(e.work_id) && works[e.work_id]).map(e => { const w = works[e.work_id];
       return [w.kind === "film" ? w.id.split(":")[1] : "", w.title, w.year || "", w.creator || "", (e.score / 2).toFixed(1).replace(/\.0$/, ""), isBefore(e) ? "" : e.rated_on || "",
         firsts[e.work_id] !== e.id, (e.loved || []).join(", "), noteText(e.note || ""), K(w.kind).label]; });
     const csv = [["tmdbID", "Title", "Year", "Directors", "Rating", "WatchedDate", "Rewatch", "Tags", "Review", "Medium"], ...rows].map(r => r.map(cell).join(",")).join("\n");
-    const url = URL.createObjectURL(new Blob([csv], { type:"text/csv" })), a = document.createElement("a");
-    a.href = url; a.download = `rooms-diary-${me.handle}-${today()}.csv`; a.click(); setTimeout(() => URL.revokeObjectURL(url), 4000);
+    await saveText(`rooms-diary-${me.handle}-${today()}.csv`, csv, "text/csv");
     say(`${rows.length} ${rows.length === 1 ? "log" : "logs"} downloaded`, "good"); };
   const tk = $("#takeout"); if (tk) tk.onclick = async () => { tk.disabled = true; const was = tk.textContent; tk.textContent = "Gathering…";
     try { const all = await exportEverything();
@@ -13835,7 +13861,7 @@ async function openYou() { let top = { items:[] }; try { top = await ensureMyTop
       say(`${all.entries.length} ${all.entries.length === 1 ? "entry" : "entries"} downloaded`, "good"); }
     catch (e) { oops(e, "Couldn't build the file"); }
     finally { tk.textContent = was; tk.disabled = false; } };
-  const bk = $("#backup"); if (bk) bk.onclick = () => { const blob = new Blob([localStorage.getItem("rooms.db")||"{}"], { type:"application/json" }); const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `rooms-${me.handle}-${today()}.json`; a.click(); };
+  const bk = $("#backup"); if (bk) bk.onclick = () => saveText(`rooms-${me.handle}-${today()}.json`, localStorage.getItem("rooms.db") || "{}", "application/json");
   const rs = $("#restore"); if (rs) rs.onclick = () => $("#restoreFile").click(); const rf = $("#restoreFile"); if (rf) rf.onchange = async () => { const f = rf.files[0]; if (!f) return; try { const j = JSON.parse(await f.text()); if (!j.entries || !j.works) throw new Error("That isn't a Rooms backup"); if (!await askYesNo({ title:"Replace this log?", sub:`Everything here goes, and the backup's ${j.entries.length} ${j.entries.length === 1 ? "entry" : "entries"} take its place. Bring another log into this one, below, adds instead of replacing.`, ok:"Replace it", bad:true })) return; localStorage.setItem("rooms.db", JSON.stringify(j)); location.reload(); } catch (e) { $("#sMsg").textContent = e.message; } }; }
 
 /* ---------- everything you have ever put in, in one file ----------
@@ -13898,11 +13924,15 @@ async function exportEverything() {
     theme_lists: myThemeLists, theme_list_items: myListItems, theme_list_likes: myListLikes,
   };
 }
-function downloadJSON(obj, name) {
-  const url = URL.createObjectURL(new Blob([JSON.stringify(obj, null, 1)], { type:"application/json" }));
+/* a file for you to keep: downloaded on the website; in the app, which can't download,
+   written to its cache and handed to the share sheet (Save to Files, AirDrop, Mail) */
+async function saveText(name, text, type) {
+  if (NATIVE) { try { const { uri } = await plug("Filesystem").writeFile({ path:name, data:text, directory:"CACHE", encoding:"utf8" });
+      await plug("Share").share({ files:[uri] }); } catch (e) { if (!/cancel/i.test(String(e?.message || e))) oops(e, "Couldn't save that"); } return; }
+  const url = URL.createObjectURL(new Blob([text], { type }));
   const a = document.createElement("a"); a.href = url; a.download = name; a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 4000);
-}
+  setTimeout(() => URL.revokeObjectURL(url), 4000); }
+const downloadJSON = (obj, name) => saveText(name, JSON.stringify(obj, null, 1), "application/json");
 
 /* a small hook so the card renderers can be exercised by the test harness */
 window.__rooms = { blank, kindBlank, playMatch, coach, logoCheer, logoHere, openYearStory, storyYear, openWelcome, openOnboarding, openImport, pullRefresh, openFind, setFollow, isFollowing, get follows(){return follows}, openNotes, noteList, noteRow, markNotesSeen, noteCount, newHands, noteSeen, get unseen(){return unseen}, nowVerb, openAdd, RINGS, MARK_RING, ringFromMarks, ringCache, myRing, spanOf, reelIndexNow, memories, dueReview, memForget, MEM_MIN, MEM_DAYS, whoseWord, wordPending, HAND_FLOOR, loadHand, handTo, answerHand, reachable, cameFrom, openHand, get handIn(){return handIn}, get handOut(){return handOut}, get handAll(){return handAll}, reelTo, markReel, REEL, reelCopies, get reelAt(){return reelAt}, facesFor, faceEl, faceMap, FACE_IMG, paintLog, wireLog, openWholeLog, openLog, likeLine, knownName, AV_SHAPES, AV_EYES, AV_COLS, avSVG, avFor, get me(){return me}, get entries(){return myEntries}, get works(){return works}, get rooms(){return rooms},
