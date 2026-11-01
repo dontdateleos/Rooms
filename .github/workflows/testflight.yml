@@ -3,7 +3,7 @@
 # up in the TestFlight app on any phone whose Apple ID is on the team.
 #
 # Once, in GitHub → the repo → Settings → Secrets and variables → Actions → New secret:
-#   APPLE_TEAM_ID         developer.apple.com → Account → Membership details → Team ID
+#   (the Team ID, M6AXSFYX2W, isn't secret and is set in the project; APPLE_TEAM_ID overrides it)
 #   ASC_KEY_ID            App Store Connect → Users and Access → Integrations → the key's Key ID
 #   ASC_ISSUER_ID         the Issuer ID shown above the list of keys on that same page
 #   ASC_KEY_P8            the whole of the AuthKey_XXXX.p8 file, BEGIN and END lines included
@@ -21,7 +21,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Check the Apple secrets are set
         env:
-          TEAM: ${{ secrets.APPLE_TEAM_ID }}
+          TEAM: ${{ secrets.APPLE_TEAM_ID || 'M6AXSFYX2W' }}
           KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ISSUER: ${{ secrets.ASC_ISSUER_ID }}
           P8: ${{ secrets.ASC_KEY_P8 }}
@@ -42,7 +42,7 @@ jobs:
         run: npm run sync
       - name: Archive, signed
         env:
-          TEAM: ${{ secrets.APPLE_TEAM_ID }}
+          TEAM: ${{ secrets.APPLE_TEAM_ID || 'M6AXSFYX2W' }}
           KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ISSUER: ${{ secrets.ASC_ISSUER_ID }}
           P8: ${{ secrets.ASC_KEY_P8 }}
@@ -59,7 +59,7 @@ jobs:
             -authenticationKeyID "$KEY_ID" -authenticationKeyIssuerID "$ISSUER" | tail -60
       - name: Upload to App Store Connect
         env:
-          TEAM: ${{ secrets.APPLE_TEAM_ID }}
+          TEAM: ${{ secrets.APPLE_TEAM_ID || 'M6AXSFYX2W' }}
           KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ISSUER: ${{ secrets.ASC_ISSUER_ID }}
         run: |

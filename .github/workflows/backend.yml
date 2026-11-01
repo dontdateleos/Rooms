@@ -13,8 +13,8 @@
 #   CONTACT                an email address for the app (Open Library and push services
 #                          ask for one)
 # For the iPhone app's notifications (Certificates, Identifiers & Profiles → Keys → + → tick
-# "Apple Push Notifications service"): APNS_KEY_P8 (the whole .p8 file), APNS_KEY_ID, and
-# APPLE_TEAM_ID (shared with the TestFlight workflow).
+# "Apple Push Notifications service"): APNS_KEY_P8 (the whole .p8 file) and APNS_KEY_ID. The
+# Team ID is filled in already (it isn't secret); an APPLE_TEAM_ID secret overrides it.
 # Optional: CLOUDFLARE_ACCOUNT_ID (if your token can see more than one account) and ORIGIN
 # (only if it isn't set on the worker already). Anything not set is skipped, not failed.
 name: Deploy the backend
@@ -56,7 +56,7 @@ jobs:
           ORIGIN_VALUE: ${{ secrets.ORIGIN }}
           APNS_KEY_P8: ${{ secrets.APNS_KEY_P8 }}
           APNS_KEY_ID: ${{ secrets.APNS_KEY_ID }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID || 'M6AXSFYX2W' }}
         run: |
           if [ -z "$CLOUDFLARE_API_TOKEN" ]; then echo "::notice::CLOUDFLARE_API_TOKEN isn't set, so the worker was left alone."; exit 0; fi
           [ -z "$CLOUDFLARE_ACCOUNT_ID" ] && unset CLOUDFLARE_ACCOUNT_ID

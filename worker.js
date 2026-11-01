@@ -290,10 +290,12 @@ async function apnsJWT(env) {
   const der = Uint8Array.from(atob(env.APNS_KEY_P8.replace(/-----[^-]+-----|\s/g, "")), c => c.charCodeAt(0));
   const key = await crypto.subtle.importKey("pkcs8", der, { name:"ECDSA", namedCurve:"P-256" }, false, ["sign"]);
   const head = b64u(enc(JSON.stringify({ alg:"ES256", kid:env.APNS_KEY_ID })));
-  const body = b64u(enc(JSON.stringify({ iss:env.APPLE_TEAM_ID, iat:Math.floor(Date.now() / 1000) })));
+  const body = b64u(enc(JSON.stringify({ iss:appleTeam(env), iat:Math.floor(Date.now() / 1000) })));
   const sig = await crypto.subtle.sign({ name:"ECDSA", hash:"SHA-256" }, key, enc(`${head}.${body}`));
   apnsTok = { v:`${head}.${body}.${b64u(sig)}`, at:Date.now() }; return apnsTok.v; }
-const apnsReady = env => !!(env.APNS_KEY_P8 && env.APNS_KEY_ID && env.APPLE_TEAM_ID);
+/* the team isn't a secret (it's printed in every app the team ships), so it has a default */
+const appleTeam = env => env.APPLE_TEAM_ID || "M6AXSFYX2W";
+const apnsReady = env => !!(env.APNS_KEY_P8 && env.APNS_KEY_ID);
 async function apnsSend(env, token, note) {
   const body = JSON.stringify({ aps:{ alert:{ title:note.title, body:note.body }, sound:"default", ...(note.tag ? { "thread-id":note.tag } : {}) }, url:note.url || "" });
   for (const host of ["api.push.apple.com", "api.sandbox.push.apple.com"]) {
