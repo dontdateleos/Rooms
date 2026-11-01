@@ -1,0 +1,56 @@
+# Builds the iPhone app on one of GitHub's Macs, so nobody needs Xcode open to know it still
+# compiles: on every push that touches the app, or by hand from the Actions tab ("iPhone app"
+# → Run workflow). It launches the build in an iPhone simulator and takes a screenshot, kept
+# as an artifact (and printed into the log, small, so it can be read without downloading).
+# No signing here: this proves the app builds and starts. Sending builds to TestFlight is a
+# later step that needs Apple's keys as repo secrets.
+name: iPhone app
+on:
+  push:
+    branches: [main]
+    paths: [index.html, demo.js, privacy.html, vendor/**, icons/**, ios/**, package.json, package-lock.json, capacitor.config.json, tools/build-www.mjs, .github/workflows/ios.yml]
+  workflow_dispatch:
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use the newest Xcode on the runner
+        run: |
+          X=$(ls -d /Applications/Xcode_*.app | grep -v -i beta | sort -V | tail -1)
+          sudo xcode-select -s "$X"
+          xcodebuild -version
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - name: Build the page into the app
+        run: npm run sync
+      - name: Build for the simulator
+        run: |
+          set -o pipefail
+          xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Debug \
+            -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build CODE_SIGNING_ALLOWED=NO build | tail -40
+      - name: Launch it on an iPhone and take a picture
+        run: |
+          APP=$(find build/Build/Products -name "App.app" -path "*iphonesimulator*" | head -1)
+          DEV=$(xcrun simctl list devices available -j | python3 -c "import json,sys; d=json.load(sys.stdin)['devices']; print(next(x['udid'] for r,v in sorted(d.items(), reverse=True) if 'iOS' in r for x in v if x['name'].startswith('iPhone')))")
+          echo "simulator $DEV"
+          xcrun simctl boot "$DEV"; xcrun simctl bootstatus "$DEV" -b
+          xcrun simctl install "$DEV" "$APP"
+          xcrun simctl launch "$DEV" com.bullrun.rooms
+          sleep 15
+          xcrun simctl io "$DEV" screenshot launch.png
+          sips -Z 520 -s format jpeg -s formatOptions 55 launch.png --out launch-small.jpg >/dev/null
+          echo "----- SCREENSHOT BEGIN -----"; base64 -i launch-small.jpg | fold -w 76; echo "----- SCREENSHOT END -----"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: iphone-launch
+          path: launch.png
+          if-no-files-found: ignore
