@@ -62,6 +62,7 @@ top of `tools/store-shots/raw.cjs`.
 | Category | Primary **Entertainment**, secondary **Social Networking** |
 | Price | Free |
 | Support URL | https://dontdateleos.github.io/Rooms/privacy.html (it has the contact address) |
+| Contact email | joinroomsapp@gmail.com |
 | Marketing URL | https://dontdateleos.github.io/Rooms/site.html |
 | Privacy Policy URL | https://dontdateleos.github.io/Rooms/privacy.html |
 | Copyright | 2026 Touring Group |
