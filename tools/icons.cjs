@@ -10,10 +10,10 @@ const GROUND = "#16131C", TEXT = "#F4EDE2", SUB = "#C9C1D9";
 /* Outfit is one variable font file covering weights 500 to 900 */
 const FONT = `data:font/woff2;base64,${fs.readFileSync(path.join(ROOT, "vendor/fonts/outfit-500-latin.woff2")).toString("base64")}`;
 
-/* the mark: you up front, and three quiet rooms behind */
+/* the mark ("soft & round"): you up front in pink, and three quiet rooms behind */
 /* shaded like the app's faces: the rooms behind solid and darker, yours with a lighter lid */
 const MARK = `<svg viewBox="10 10 80 80" xmlns="http://www.w3.org/2000/svg">
-  <rect x="13" y="13" width="31" height="31" rx="10" fill="#c4829f"/><rect x="46" y="12" width="31" height="31" rx="10" fill="#cc8f56"/><rect x="12" y="46" width="31" height="31" rx="10" fill="#9485cc"/><rect x="35" y="35" width="53" height="53" rx="16" fill="#8FD3FF"/><path d="M51 35H72A16 16 0 0 1 88 51H35A16 16 0 0 1 51 35Z" fill="#b1e0ff"/><g  fill="#151320"><rect x="44.93" y="57.55" width="7.55" height="16.9" rx="3.77"/><rect x="59.52" y="57.95" width="7.55" height="16.9" rx="3.77"/></g>
+  <rect x="12" y="12" width="34" height="34" rx="14" fill="#6798b8"/><rect x="54" y="12" width="34" height="34" rx="14" fill="#cc8f56"/><rect x="12" y="54" width="34" height="34" rx="14" fill="#9485cc"/><rect x="41" y="41" width="47" height="47" rx="19" fill="#F7B3CF"/><path d="M41.64 55.1A19 19 0 0 1 60 41H69A19 19 0 0 1 87.36 55.1Z" fill="#fbd6e5"/><g fill="#151320"><rect x="49.46" y="60.97" width="6.7" height="14.99" rx="3.35"/><rect x="62.39" y="61.35" width="6.7" height="14.99" rx="3.35"/></g>
 </svg>`;
 
 const page = body => `<!doctype html><meta charset="utf-8"><style>
