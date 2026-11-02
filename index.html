@@ -2545,7 +2545,16 @@ html.play .spm .syl{animation:spLook .35s cubic-bezier(.3,1.3,.5,1) .95s both}
    Everyone in the room, side by side at the top of it (it was a couch; the faces say it
    better on their own). Still called .couch in the code. */
 .couch{position:relative;display:inline-flex;align-items:flex-end;gap:2px;padding:0;margin-right:4px}
-.roomline .here .couch .face .av svg{width:31px;height:31px}
+.roomline .here .couch .face .av svg{width:24px;height:24px}
+/* fewer, smaller faces on the Rooms page: the room's row of faces stays (smaller), the strip
+   below it, the week's recap and a question say the name instead, and posts get a small face */
+.nowpill .av,#tab-doors .rline .av,#tab-doors .askq .av{display:none}
+.nowpill{padding-left:12px}
+.nowpill.fresh{padding-left:22px}
+.nowpill.fresh::before{left:9px;top:50%;margin-top:-3.5px}
+#tab-doors .slip .who .av{width:22px;height:22px}
+#tab-doors .ll-who .av svg{width:22px;height:22px}
+#tab-doors .thread .rep .av svg{width:18px;height:18px}
 .rl-l:has(.couch){padding-block:7px;margin-block:-7px}
 
 .here .couch .face{margin:0;position:relative;z-index:1;background:none;box-shadow:none;border-radius:0;transition:transform .35s cubic-bezier(.3,1.4,.5,1),opacity .3s}
