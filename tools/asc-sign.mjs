@@ -24,7 +24,15 @@ function token() {
   const body = b64u(JSON.stringify({ iss:ASC_ISSUER_ID.trim(), iat:now, exp:now + 1100, aud:"appstoreconnect-v1" }));
   const sig = sign("sha256", Buffer.from(`${head}.${body}`), { key:createPrivateKey(ASC_KEY_P8.trim()), dsaEncoding:"ieee-p1363" });
   return `${head}.${body}.${b64u(sig)}`; }
-async function api(method, path, body) {
+/* Apple's API now and then answers 500 (or 429) for a request that is fine; making the
+   profile failed that way once. Those are tried again a few times before giving up. */
+async function api(method, path, body, tries = 4) {
+  for (let i = 1; ; i++) {
+    try { return await apiOnce(method, path, body); }
+    catch (e) { if (i >= tries || !/→ (5\d\d|429):/.test(e.message)) throw e;
+      console.log(`${e.message.slice(0, 120)} — trying again (${i} of ${tries - 1})`);
+      await new Promise(r => setTimeout(r, 5000 * i * i)); } } }
+async function apiOnce(method, path, body) {
   const r = await fetch(`https://api.appstoreconnect.apple.com${path}`, { method,
     headers:{ Authorization:`Bearer ${token()}`, "Content-Type":"application/json" }, body:body ? JSON.stringify(body) : undefined });
   const text = await r.text(); const j = text ? JSON.parse(text) : {};
