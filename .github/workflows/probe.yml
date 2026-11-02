@@ -1,0 +1,23 @@
+# Tries "find similar" on the live site with real search results (tools/like-probe.cjs).
+# Run it by hand from the Actions tab after a change to the matching.
+name: Probe the live site
+on:
+  workflow_dispatch:
+    inputs:
+      queries:
+        description: "Searches to try, separated by |"
+        required: false
+        default: ""
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-save playwright@1.48.2 && npx playwright install --with-deps chromium
+      - run: node tools/like-probe.cjs
+        env:
+          QUERIES: ${{ inputs.queries }}

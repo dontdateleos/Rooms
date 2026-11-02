@@ -2691,6 +2691,11 @@ blockquote.kept.big{margin-top:14px;font-size:18px;padding:6px 0 6px 14px}
 .likes .srow{display:flex;gap:10px;overflow-x:auto;padding:10px 2px 4px;scrollbar-width:none}
 .likes .srow::-webkit-scrollbar{display:none}
 .lpart{width:72px}
+.lkinds{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.lkinds .chip{padding:5px 11px;font-size:12.5px}
+.tskel{display:block;background:var(--line);animation:tskel 1.2s ease-in-out infinite alternate}
+@keyframes tskel{from{opacity:.35}to{opacity:.8}}
+@media (prefers-reduced-motion:reduce){.tskel{animation:none}}
 .lpart .co{width:72px;height:106px;border-radius:10px;object-fit:cover}
 .lpart small{font:600 11px/1.25 var(--body);width:100%;text-align:center;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;color:var(--mute)}
 .snext{display:flex;align-items:center;gap:10px;margin-top:10px;padding:10px 12px;border-radius:14px;background:var(--cream2)}
@@ -9280,8 +9285,10 @@ async function byPerson(term) {
   return { name:who.name, role: directed.length ? "Directed by" : wrote.length ? "Written by" : "With", rows }; }
 async function doSearch(term, onPick, resEl, msgEl, box, acts = null) {
   /* "like Heat", "similar to Heat", "more like Heat": find Heat, then show what goes with it */
-  const likeOf = term.match(/^\s*(?:more\s+)?(?:like|similar\s+to)\s+(.{2,})$/i);
-  if (likeOf) return likeSearch(likeOf[1].trim(), onPick, resEl, msgEl, box, acts);
+  /* and "games like Heat", "books similar to Severance": the word in front says which medium */
+  const likeOf = term.match(/^\s*(?:(films?|movies?|tv|shows?|series|books?|novels?|games?)\s+)?(?:more\s+)?(?:like|similar\s+to)\s+(.{2,})$/i);
+  if (likeOf) { const want = likeOf[1] ? [{ f:"film", m:"film", t:"tv", s:"tv", b:"book", n:"book", g:"game" }[lc(likeOf[1])[0]] || "film"] : null;
+    return likeSearch(likeOf[2].trim(), onPick, resEl, msgEl, box, acts, want); }
   /* the face is the spinner: it looks up and about while the sources answer, and the
      line it sits in is replaced by whatever they said */
   msgEl.innerHTML = `<span class="thinker">${tinyFace("ok", "#B9A6FF")}</span>Searching ${esc(P.kinds.map(k => K(k).label.toLowerCase()).join(", "))}`;
@@ -9321,20 +9328,23 @@ function paintHits(resEl, groups, onPick, box, acts) {
       $$(".pick.open", resEl).forEach(o => o.classList.remove("open"));
       r.classList.toggle("open", !was); };
     $$("[data-act]", r).forEach(b => b.onclick = ev => { ev.stopPropagation(); onPick(r, b.dataset.act); box?.focus(); }); }); }
-async function likeSearch(term, onPick, resEl, msgEl, box, acts) {
+async function likeSearch(term, onPick, resEl, msgEl, box, acts, want = null) {
   msgEl.innerHTML = `<span class="thinker">${tinyFace("ok", "#B9A6FF")}</span>Finding things like “${esc(term)}”`;
-  /* the one you mean: something of yours by that name first, then the sources' best match */
-  const t0 = lc(term);
-  let seed = Object.values(works).find(w => w?.title && !isPart(w.id) && P.kinds.includes(w.kind) && lc(w.title) === t0);
-  if (!seed) { const done = await Promise.all(P.kinds.map(k => SOURCES[k](term).catch(() => [])));
-    const all = done.flat(); seed = all.find(h => lc(h.title) === t0) || all[0]; }
-  if (!seed) { msgEl.textContent = ""; resEl.innerHTML = blank("var(--cream2)","?", `Nothing called “${esc(term)}”`, "Check the spelling, or turn on another medium above.", []); return; }
-  let rows = []; try { rows = await similarTo(seed); } catch {}
-  const seen = new Set([seed.id]); rows = rows.filter(r => r.id && !seen.has(r.id) && seen.add(r.id)).map(r => works[r.id]?.title ? works[r.id] : r);
+  /* the one you mean, in any medium: something of yours by that name first, then the sources'
+     exact match (films, then shows, books, games); asking for "games like X" looks for X elsewhere */
+  const t0 = lc(term), order = ["film", "tv", "book", "game"].sort((a, b) => (want?.includes(a) ? 1 : 0) - (want?.includes(b) ? 1 : 0));
+  let seed = Object.values(works).filter(w => w?.title && !isPart(w.id) && lc(w.title) === t0).sort((a, b) => order.indexOf(a.kind) - order.indexOf(b.kind))[0];
+  if (!seed) { const found = await Promise.all(order.map(k => SOURCES[k](term).catch(() => [])));
+    seed = found.map(r => r.find(h => lc(h.title) === t0)).find(Boolean) || found.find(r => r.length)?.[0]; }
+  if (!seed) { msgEl.textContent = ""; resEl.innerHTML = blank("var(--cream2)","?", `Nothing called “${esc(term)}”`, "Check the spelling and try again.", []); return; }
+  const kinds = want || P.kinds, per = kinds.length > 1 ? 6 : 12;
+  const got = await Promise.all(kinds.map(k => crossLike(seed, k).catch(() => [])));
   msgEl.textContent = "";
-  if (!rows.length) { resEl.innerHTML = blank("var(--cream2)","?", `Nothing to match “${esc(seed.title)}” with yet`, "Its source doesn't know what goes with it. Try another title.", []); return; }
-  window.__hits = Object.assign(window.__hits || {}, Object.fromEntries([seed, ...rows].map(h => [h.id, h])));
-  paintHits(resEl, [{ label:`Like ${seed.title}${seed.year ? " (" + seed.year + ")" : ""}`, hits:rows }], onPick, box, acts); }
+  const named = `${seed.title}${seed.year ? " (" + seed.year + ")" : ""}`;
+  const groups = kinds.map((k, i) => ({ label:`${KIND_PLURAL[k]} like ${named}`, hits:got[i].slice(0, per).map(r => works[r.id]?.title ? works[r.id] : r) })).filter(g => g.hits.length);
+  if (!groups.length) { resEl.innerHTML = blank("var(--cream2)","?", `Nothing to match ${esc(named)} with yet`, "Try another title, or turn on another medium above.", []); return; }
+  window.__hits = Object.assign(window.__hits || {}, Object.fromEntries([seed, ...groups.flatMap(g => g.hits)].filter(h => !works[h.id]).map(h => [h.id, h])));
+  paintHits(resEl, groups, onPick, box, acts); }
 async function ensureWork(hit) { if (works[hit.id]?.credits) return works[hit.id]; const raw = hit.id.split(":")[1]; const extra = await DETAIL[hit.kind](raw).catch(() => ({}));
   const w = Object.assign({ id:hit.id, kind:hit.kind, title:hit.title, year:hit.year, cover:hit.cover, creator:hit.creator||"", length:hit.length||0 }, extra);
   if (!w.cover && w.poster) w.cover = w.poster; delete w.poster;
@@ -9521,7 +9531,7 @@ function openAdd(only) {
     <b>Log</b> if you've finished it, <b>Up next</b> if you haven't got to it, and <b>Watching</b>
     (or Reading, or Playing) if you're in the middle of it right now.</p>
     <input id="aSearch" type="search" placeholder="Search film, TV, books, games" autocomplete="off" style="margin-top:12px">
-    <p class="sub likehint">Put “like” in front of a title to find things similar to it: <button class="linkish" id="aLikeTry">like ${esc(likeEg)}</button></p>
+    <p class="sub likehint">Find things similar to a title, in any medium: <button class="linkish" id="aLikeTry">like ${esc(likeEg)}</button> or <button class="linkish" id="aLikeTry2">games like ${esc(likeEg)}</button></p>
     ${canScan() ? `<button class="chip" id="aScan" style="margin-top:8px">Scan a book's barcode</button>` : ""}
     <div class="chips">${Object.keys(KINDS).map(k => `<button class="chip k ${P.kinds.includes(k)?"on":""}" data-ak="${k}">${K(k).label}</button>`).join("")}</div>
     <div class="msg" id="aMsg"></div><div id="aResults"></div>
@@ -9538,7 +9548,7 @@ function openAdd(only) {
   wireLog("addLog", 6);
   setTimeout(() => $("#aSearch")?.focus(), 350);
   const asc = $("#aScan"); if (asc) asc.onclick = openScan;
-  $("#aLikeTry").onclick = () => { const i = $("#aSearch"); i.value = "like " + likeEg; i.dispatchEvent(new Event("input")); i.focus(); };
+  [["#aLikeTry", "like "], ["#aLikeTry2", "games like "]].forEach(([sel, pre]) => $(sel).onclick = () => { const i = $("#aSearch"); i.value = pre + likeEg; i.dispatchEvent(new Event("input")); i.focus(); });
   let t; $("#aSearch").oninput = e => { clearTimeout(t); const v = e.target.value.trim(); if (!v) { $("#aResults").innerHTML = ""; return; }
     /* the + is for what you just finished, but you don't always arrive having finished it —
        the same result can go to the shelf without pretending you've watched it */
@@ -10696,6 +10706,95 @@ async function recsFromPeople(mine) {
   for (const c of Object.values(out)) { c.who.sort((a, b) => b.w - a.w); c.pred = c.den >= .3 ? Math.max(1, Math.min(10, myMean + c.num / c.den)) : null; }
   return out; }
 
+/* ============ ACROSS MEDIA ============
+   "games like Heat", "films like The Last of Us", "books like Severance": the sources don't
+   talk to each other, so a title is boiled down to what it's like (a few broad tags shared by
+   every medium, plus its own keywords or subjects) and each source is asked for that */
+const BOOK_NOISE = /^(fiction|fiction, general|accessible book|protected daisy|in library|large type books|open library staff picks|literature|novel|english fiction|american fiction|nyt:|new york times|reading level|long now manual)/i;
+const VIBE_TAGS = [
+  ["crime", /crime|heist|gangster|mafia|mob\b|detective|police|noir|murder|robbery|cartel|organi[sz]ed crime/i],
+  ["horror", /horror|ghost|vampire|zombie|haunt|monster|slasher|supernatural/i],
+  ["scifi", /science fiction|sci-fi|cyberpunk|outer space|space opera|dystopi|robot|alien|time travel|post-apocalyptic/i],
+  ["fantasy", /fantasy|magic|dragon|wizard|myth|sword and sorcery/i],
+  ["western", /western|cowboy|wild west/i],
+  ["war", /\bwar\b|warfare|military|soldier|world war/i],
+  ["mystery", /mystery|whodunit|detective|investigation/i],
+  ["thriller", /thriller|suspense|espionage|\bspy\b|stealth|conspiracy|assassin/i],
+  ["romance", /romance|love stor|romantic/i],
+  ["comedy", /comedy|humou?r|funny|satire|parody/i],
+  ["history", /histor|period piece/i],
+  ["sport", /sport|racing|football|soccer|basketball|boxing|baseball/i],
+  ["music", /music|rhythm|band\b/i],
+  ["family", /family|kids|children|juvenile|animation/i],
+  ["nonfiction", /documentary|non-fiction|nonfiction|biography|true story/i],
+  ["adventure", /adventure|exploration|treasure|quest/i],
+  ["action", /action|shooter|fighting|martial arts|hack and slash/i],
+  ["drama", /drama/i]];
+const tagsOf = names => { const n = names.join(" | "); return VIBE_TAGS.filter(([, re]) => re.test(n)).map(([t]) => t); };
+/* keywords that say nothing about what a thing is like */
+const KW_NOISE = /based on|sequel|prequel|remake|stinger|woman director|female director|\b\d{4}s?\b|imax|3d|duringcredits|aftercredits|biography|anime|shot on|independent film|lgbt|duringcreditsstinger|^(new york|los angeles|london|paris|tokyo|usa|california|england)/i;
+const TMDB_TAG = { film:{ crime:80, horror:27, scifi:878, fantasy:14, western:37, war:10752, mystery:9648, thriller:53, romance:10749, comedy:35, history:36, music:10402, family:10751, nonfiction:99, adventure:12, action:28, drama:18 },
+  tv:{ crime:80, horror:9648, scifi:10765, fantasy:10765, western:37, war:10768, mystery:9648, thriller:80, comedy:35, family:10751, nonfiction:99, adventure:10759, action:10759, drama:18 } };
+const IGDB_THEME = { crime:"Thriller", horror:"Horror", scifi:"Science fiction", fantasy:"Fantasy", war:"Warfare", mystery:"Mystery", thriller:"Thriller", romance:"Romance", comedy:"Comedy", history:"Historical", family:"Kids", nonfiction:"Non-fiction", action:"Action", drama:"Drama" };
+const OL_TAG = { crime:"crime", horror:"horror", scifi:"science fiction", fantasy:"fantasy", western:"westerns", war:"war", mystery:"mystery", thriller:"thriller", romance:"romance", comedy:"humor", history:"historical fiction", sport:"sports", family:"juvenile fiction", adventure:"adventure", action:"adventure" };
+const vibeCache = {};
+async function vibeOf(w) { if (vibeCache[w.id]) return vibeCache[w.id];
+  const raw = w.id.split(":")[1]; let names = [...(w.genres || w.meta?.genres || [])], words = [];
+  try {
+    if (w.kind === "film" || w.kind === "tv") { const t = w.kind === "film" ? "movie" : "tv";
+      const [d, k] = await Promise.all([tmdb(`${t}/${raw}`), tmdb(`${t}/${raw}/keywords`)]);
+      names.push(...(d.genres || []).map(g => g.name)); words = (k.keywords || k.results || []).map(x => x.name); }
+    else if (w.kind === "game") { const g = (await igdb("games", `where id = ${+raw}; fields genres.name,themes.name,keywords.name;`))?.[0] || {};
+      names.push(...[...(g.themes || []), ...(g.genres || [])].map(x => x.name)); words = (g.keywords || []).map(x => x.name); }
+    else if (w.kind === "book") { const d = await ol(`/works/${raw}.json`);
+      const subs = (d.subjects || []).filter(x => x && !BOOK_NOISE.test(x) && x.length < 40); names.push(...subs); words = subs.map(lc); }
+  } catch {}
+  words = [...new Set(words.map(x => lc(String(x)).trim()).filter(x => x && x.length < 30 && !KW_NOISE.test(x)))].slice(0, 6);
+  /* the tags the keywords give count too: a heist film is a crime film even if TMDB only says thriller */
+  const tags = tagsOf([...names, ...words]);
+  return (vibeCache[w.id] = { tags, words }); }
+const tmdbHit = (r, kind, gm) => ({ id:`${kind}:${r.id}`, kind, title:r.title || r.name, year:String(r.release_date || r.first_air_date || "").slice(0, 4),
+  genres:(r.genre_ids || []).map(i => gm[i]).filter(Boolean), cover:TMDB_IMG(r.poster_path), ...(r.release_date || r.first_air_date ? { release:r.release_date || r.first_air_date } : {}) });
+const igdbHit = x => ({ id:"game:" + x.id, kind:"game", title:x.name, genres:[...(x.genres || []), ...(x.themes || [])].map(y => y.name),
+  year:x.first_release_date ? String(new Date(x.first_release_date * 1000).getFullYear()) : "", cover:x.cover?.image_id ? `https://images.igdb.com/igdb/image/upload/t_cover_big/${x.cover.image_id}.jpg` : "" });
+const olHit = (b, tag) => ({ id:"book:" + String(b.key).replace("/works/", ""), kind:"book", title:b.title, year:String(b.first_publish_year || ""), creator:(b.author_name || [])[0] || "",
+  genres:tag ? [tag] : [], cover:b.cover_i ? `https://covers.openlibrary.org/b/id/${b.cover_i}-M.jpg` : "" });
+let igdbThemeIds = null;
+async function crossLike(seed, kind) {
+  if (seed.kind === kind) return similarTo(seed);
+  const { tags, words } = await vibeOf(seed);
+  const top = tags.filter(t => !["drama", "action", "adventure"].includes(t)).slice(0, 2);
+  const broad = top.length ? top : tags.slice(0, 1);
+  let rows = [];
+  /* the same story in another medium comes first: the book of the film, the game of the book */
+  if (seed.title && seed.title.length > 3) try {
+    const t = lc(seed.title).replace(/^the\s+/, "");
+    rows.push(...(await SOURCES[kind](seed.title)).filter(h => { const x = lc(h.title || "").replace(/^the\s+/, ""); return x === t || x.startsWith(t + ":"); }).slice(0, 2)); } catch {}
+  try {
+    if (kind === "film" || kind === "tv") { const t = kind === "film" ? "movie" : "tv", gm = await tmdbGenreNames();
+      const gids = [...new Set(broad.map(x => TMDB_TAG[kind][x]).filter(Boolean))];
+      const kwIds = (await Promise.all(words.slice(0, 4).map(x => tmdb("search/keyword", { query:x }).then(r => (r.results || []).find(k => lc(k.name) === x)?.id).catch(() => null)))).filter(Boolean);
+      const ask = async extra => (await tmdb(`discover/${t}`, { sort_by:"vote_count.desc", "vote_average.gte":"6.5", include_adult:"false", ...extra })).results || [];
+      if (kwIds.length) rows.push(...(await ask({ with_keywords:kwIds.join("|"), ...(gids[0] ? { with_genres:String(gids[0]) } : {}) })).map(r => tmdbHit(r, kind, gm)));
+      if (rows.length < 8 && gids.length) rows.push(...(await ask({ with_genres:gids.join(",") })).map(r => tmdbHit(r, kind, gm)));
+      if (rows.length < 8 && gids.length > 1) rows.push(...(await ask({ with_genres:String(gids[0]) })).map(r => tmdbHit(r, kind, gm))); }
+    else if (kind === "game") {
+      if (!igdbThemeIds) igdbThemeIds = Object.fromEntries(((await igdb("themes", "fields id,name; limit 50;")) || []).map(x => [x.name, x.id]));
+      const themes = [...new Set(broad.map(x => igdbThemeIds[IGDB_THEME[x]]).filter(Boolean))];
+      const F = "fields name,first_release_date,cover.image_id,genres.name,themes.name; sort total_rating_count desc; limit 12;";
+      if (words.length) rows.push(...((await igdb("games", `${F} where keywords.name = (${words.slice(0, 5).map(x => `"${x.replace(/"/g, "")}"`).join(",")}) & total_rating_count > 25 & version_parent = null;`)) || []).map(igdbHit));
+      if (rows.length < 8 && themes.length) rows.push(...((await igdb("games", `${F} where themes = [${themes.join(",")}] & total_rating_count > 60 & version_parent = null;`)) || []).map(igdbHit));
+      if (rows.length < 8 && themes.length > 1) rows.push(...((await igdb("games", `${F} where themes = (${themes[0]}) & total_rating_count > 60 & version_parent = null;`)) || []).map(igdbHit)); }
+    else if (kind === "book") { const F = { sort:"rating", limit:"12", fields:"key,title,author_name,first_publish_year,cover_i" };
+      const subj = broad.map(x => OL_TAG[x]).filter(Boolean), quote = x => `subject:"${x.replace(/"/g, "")}"`;
+      if (words.length && subj.length) rows.push(...((await ol("/search.json", { ...F, q:`(${words.slice(0, 4).map(quote).join(" OR ")}) AND ${quote(subj[0])}` })).docs || []).map(b => olHit(b, subj[0])));
+      if (rows.length < 8 && subj.length) rows.push(...((await ol("/search.json", { ...F, q:subj.map(quote).join(" AND ") })).docs || []).map(b => olHit(b, subj[0])));
+      if (rows.length < 8 && subj.length > 1) rows.push(...((await ol("/search.json", { ...F, q:quote(subj[0]) })).docs || []).map(b => olHit(b, subj[0]))); }
+  } catch {}
+  const seen = new Set([seed.id]);
+  return rows.filter(r => r?.id && r.title && !seen.has(r.id) && seen.add(r.id)).slice(0, 12); }
+const KIND_PLURAL = { film:"Films", tv:"Shows", book:"Books", game:"Games" };
+
 /* like the ones you loved: the seeds, then whatever each one's source says goes with it */
 async function similarTo(w) { const raw = w.id.split(":")[1];
   if (w.kind === "film" || w.kind === "tv") { const [d, gm] = await Promise.all([tmdb(`${w.kind === "film" ? "movie" : "tv"}/${raw}/recommendations`), tmdbGenreNames()]);
@@ -10706,7 +10805,7 @@ async function similarTo(w) { const raw = w.id.split(":")[1];
     /* the book's own subjects, minus the shelving labels every book has, then the best
        loved books that share them — by other authors, since "more from" is its own source */
     const d = await ol(`/works/${raw}.json`);
-    const NOISE = /^(fiction|fiction, general|accessible book|protected daisy|in library|large type books|open library staff picks|literature|novel|english fiction|american fiction|nyt:|new york times|reading level|long now manual)/i;
+    const NOISE = BOOK_NOISE;
     const subs = (d.subjects || []).filter(s => s && !NOISE.test(s) && s.length < 40).slice(0, 3);
     const rows = [];
     for (const s of subs) { try { const r = await ol("/search.json", { q:`subject:"${s.replace(/"/g, "")}"`, sort:"rating", limit:"10", fields:"key,title,author_name,first_publish_year,cover_i" });
@@ -12889,19 +12988,27 @@ async function seriesOf(w) {
 const seriesAt = (s, id) => s?.parts.findIndex(p => p.id === id) ?? -1;
 /* more like this: what the title's own source says goes with it (TMDB's recommendations, IGDB's
    similar games, books sharing its subjects); what you've finished keeps a tick, not hidden */
-async function paintLike(w) {
+async function paintLike(w, kind = w.kind) {
   const el = $("#wLike"); if (!el) return;
-  let rows = []; try { rows = await similarTo(w); } catch {}
-  if ($("#wLike") !== el) return;
+  const chips = `<div class="lkinds" role="group" aria-label="What kind">${["film", "tv", "book", "game"].map(k =>
+    `<button class="chip ${k === kind ? "on" : ""}" data-lkind="${k}" aria-pressed="${k === kind}">${KIND_PLURAL[k]}</button>`).join("")}</div>`;
+  const head = `<div class="h"><span>More like this</span></div>${chips}`;
+  if (el.dataset.kind) el.innerHTML = `<div class="card likes">${head}<div class="srow">${skeletonTiles(5)}</div></div>`, wireLikeKinds(w, el);
+  let rows = []; try { rows = await crossLike(w, kind); } catch {}
+  if ($("#wLike") !== el || el.dataset.kind && el.dataset.kind !== kind) return;
   const seen = new Set([w.id]); rows = rows.filter(r => r.id && !seen.has(r.id) && seen.add(r.id)).slice(0, 12);
-  if (!rows.length) return;
+  if (!rows.length && kind === w.kind && !el.innerHTML) { el.innerHTML = `<div class="card likes">${head}<p class="sub" style="margin:10px 2px 4px">Pick a kind to find things like it.</p></div>`; wireLikeKinds(w, el); return; }
   window.__hits = Object.assign(window.__hits || {}, Object.fromEntries(rows.filter(r => !works[r.id]).map(r => [r.id, r])));
-  el.innerHTML = `<div class="card likes"><div class="h"><span>More like this</span><span class="tag dim">${rows.length}</span></div>
-    <div class="srow">${rows.map((r, i) => { const x = works[r.id]?.title ? works[r.id] : r;
-      return `<button class="spart lpart ${logged(r.id) ? "done" : ""}" data-lpart="${i}" aria-label="${esc(x.title)}${x.year ? ", " + esc(x.year) : ""}${logged(r.id) ? ", you've " + esc(K(w.kind).verb) + " it" : ""}">
-      ${tileCover(x)}${x.cover ? `<small>${esc(x.title)}</small>` : ""}</button>`; }).join("")}</div></div>`;
-  settleIn(el);
+  el.innerHTML = `<div class="card likes">${head}
+    ${rows.length ? `<div class="srow">${rows.map((r, i) => { const x = works[r.id]?.title ? works[r.id] : r;
+      return `<button class="spart lpart ${logged(r.id) ? "done" : ""}" data-lpart="${i}" aria-label="${esc(x.title)}${x.year ? ", " + esc(x.year) : ""}${logged(r.id) ? ", you've " + esc(K(x.kind).verb) + " it" : ""}">
+      ${tileCover(x)}${x.cover ? `<small>${esc(x.title)}</small>` : ""}</button>`; }).join("")}</div>`
+      : `<p class="sub" style="margin:10px 2px 4px">Nothing turned up for ${esc(KIND_PLURAL[kind].toLowerCase())} just now.</p>`}</div>`;
+  settleIn(el); wireLikeKinds(w, el);
   $$("[data-lpart]", el).forEach(b => b.onclick = () => hitOpen(rows[+b.dataset.lpart])); }
+function wireLikeKinds(w, el) {
+  $$("[data-lkind]", el).forEach(b => b.onclick = () => { const k = b.dataset.lkind; if (el.dataset.kind === k) return; el.dataset.kind = k; buzz(5); paintLike(w, k); }); }
+const skeletonTiles = n => Array.from({ length:n }, () => `<span class="spart lpart"><span class="co tskel"></span></span>`).join("");
 async function paintSeries(w) {
   const el = $("#wSeries"); if (!el) return;
   const s = await seriesOf(w); if (!s || $("#wSeries") !== el) return;
