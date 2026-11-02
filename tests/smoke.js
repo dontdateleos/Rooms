@@ -41,7 +41,7 @@ const BASE = (process.env.BASE || "http://127.0.0.1:8934").replace(/\/$/, "");
       await expect("#feedPick", "the room title"); await expect(".roomsecs", "the room sections");
       for (const sec of ["Play", "Charts", "Year", "Talk"]) { await tap("[data-rsecbtn]", sec); await wait(900); }
       await expect("#roomGames .card", "the games"); });
-    await step("people", async () => { await tap("nav button", "People"); await wait(1500);
+    await step("feed", async () => { await tap("nav button", "Feed"); await wait(1500);
       await expect("#storyRow .sbub.fresh", "a ring with something new"); await expect("#pplFol .slip", "the people you follow");
       await expect("#pplAll .slip", "everyone else");
       await tap("#storyRow .sbub.fresh"); await wait(600); await expect("#storyV .sv-body h2", "the story");
@@ -84,7 +84,7 @@ const BASE = (process.env.BASE || "http://127.0.0.1:8934").replace(/\/$/, "");
         fire("touchstart", 200); for (let i = 1; i <= 6; i++) { fire("touchmove", 200 - i * 8); await new Promise(r => setTimeout(r, 120)); } fire("touchend", 152); });
       await wait(700); await expect("#tab-doors.on", "Rooms still, after a short drag");
       if (await page.$("section.incoming")) throw new Error("a peeking tab was left behind");
-      await swipe(-160); await expect("#tab-people.on", "People after a swipe left");
+      await swipe(-160); await expect("#tab-people.on", "Feed after a swipe left");
       await swipe(160); await expect("#tab-doors.on", "Rooms after a swipe back"); });
     await step("hold library to spin", async () => { await tap("nav button", "Challenges"); await wait(600);
       const b = page.locator('nav button[data-tab="library"]'); const box = await b.boundingBox();
