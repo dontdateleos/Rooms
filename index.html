@@ -2487,19 +2487,40 @@ header,nav,.secbar{-webkit-backdrop-filter:blur(22px) saturate(1.2);backdrop-fil
 .hushed .odo,.hushed b{filter:blur(6px);opacity:.6}
 .hushed{cursor:pointer}
 
-/* ---------- the opening ---------- */
-#splash{position:fixed;inset:0;z-index:120;display:grid;place-items:center;background:var(--cream);opacity:0;animation:spIn .3s ease .25s forwards;transition:opacity .28s}
-#splash.gone{opacity:0!important;animation:none}
+/* ---------- the opening ----------
+   In the iPhone app it starts as the launch screen's picture, the mark alone in the middle
+   of the dark, so the hand-over can't be seen. Then the three dark rooms light up one by
+   one and open their eyes, everyone blinks, the name comes up, and the mark flies up into
+   the corner as the app shows through. In a browser it only fades in if loading is slow. */
+#splash{position:fixed;inset:0;z-index:120;display:grid;place-items:center;pointer-events:none}
+.spbg{position:absolute;inset:0;background:#16131C;transition:opacity .42s ease .08s}
+.spm{position:absolute;left:50%;top:50%;width:10vh;height:10vh;margin:-5vh 0 0 -5vh;transform-origin:0 0;will-change:transform}
+.spm svg{display:block;width:100%;height:100%;overflow:visible}
+.spm .sr,.spm .se{transform-box:fill-box;transform-origin:50% 50%}
+.spm .sr{opacity:.48}.spm .sr.lit{opacity:1}
+.spm .se{opacity:0}.spm .se.lit{opacity:1}
+.spw{position:absolute;left:0;right:0;top:calc(50% + 7.5vh);text-align:center;font:900 30px/1 var(--head);letter-spacing:-.035em;color:#F4EDE2;opacity:0}
+html:not(.intro) #splash{opacity:0;animation:spIn .3s ease .25s forwards;transition:opacity .28s}
+html:not(.intro) .spw{opacity:1}
+html:not(.intro) .spm .se{opacity:1;animation:spBlink 3.2s ease-in-out infinite}
 @keyframes spIn{to{opacity:1}}
-.sp-in{position:relative;width:220px;height:160px;display:grid;place-items:center}
-.sp-in b{font:900 36px/1 var(--head);letter-spacing:-.04em;color:var(--ink);position:relative;z-index:1}
-.sp{position:absolute;width:40px;height:40px;border-radius:12px}
-.sp u{position:absolute;top:13px;width:5px;height:12px;border-radius:3px;background:#151320;animation:spLook 3.2s ease-in-out infinite}
-.sp u:first-child{left:13px}.sp u:last-child{left:22px}
-.s1{left:6px;top:4px;background:#F5A3C7;--dx:4px;--dy:3px}.s2{right:6px;top:4px;background:#FFB36B;--dx:-4px;--dy:3px}
-.s3{left:6px;bottom:4px;background:#B9A6FF;--dx:4px;--dy:-3px}.s4{right:6px;bottom:4px;background:#8FD3FF;--dx:-4px;--dy:-3px}
-.s2 u{animation-delay:.3s}.s3 u{animation-delay:.6s}.s4 u{animation-delay:.15s}
-@keyframes spLook{0%,10%{transform:none}25%,60%{transform:translate(var(--dx),var(--dy))}63%{transform:translate(var(--dx),var(--dy)) scaleY(.1)}66%,85%{transform:translate(var(--dx),var(--dy))}100%{transform:none}}
+html.play .spm .sr:not(.lit){animation:spLight .5s cubic-bezier(.3,1.5,.5,1) both}
+html.play .spm .se:not(.lit){animation:spEyes .32s cubic-bezier(.3,1.5,.5,1) both,spBlink .34s ease-in-out .78s}
+html.play .spm .se.lit{animation:spBlink .34s ease-in-out .78s}
+html.play .spm .sr[data-r="1"],html.play .spm .se[data-e="1"]{animation-delay:.14s,.78s}
+html.play .spm .sr[data-r="2"],html.play .spm .se[data-e="2"]{animation-delay:.28s,.78s}
+html.play .spm .sr[data-r="0"]{animation-delay:0s}
+html.play .spm svg{animation:spHop .5s cubic-bezier(.3,1.4,.5,1) .5s}
+html.play .spw{animation:spWord .5s cubic-bezier(.2,.8,.2,1) .42s both}
+@keyframes spLight{0%{opacity:.48;transform:none}45%{opacity:1;transform:scale(1.12)}100%{opacity:1;transform:none}}
+@keyframes spEyes{from{opacity:0;transform:scaleY(0)}to{opacity:1;transform:none}}
+@keyframes spBlink{0%,100%{transform:none}50%{transform:scaleY(.1)}}
+@keyframes spHop{0%,100%{transform:none}35%{transform:translateY(-7%) scale(1.04,.97)}65%{transform:translateY(1%) scale(.98,1.02)}}
+@keyframes spWord{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+#splash.going .spbg{opacity:0}
+#splash.going .spw{opacity:0;transition:opacity .16s;animation:none}
+#splash.going .spm{transition:transform .56s cubic-bezier(.6,0,.15,1),opacity .18s ease .4s;opacity:0}
+#splash.gone{opacity:0!important;animation:none;transition:opacity .28s}
 /* ---------- the room's own colour ---------- */
 #doorsBody.washed{position:relative;isolation:isolate}
 .roomwash{position:absolute;left:-18px;right:-18px;top:-90px;height:360px;z-index:-1;pointer-events:none;
@@ -2512,16 +2533,10 @@ header,nav,.secbar{-webkit-backdrop-filter:blur(22px) saturate(1.2);backdrop-fil
 .rl-l:has(.couch){padding-block:7px;margin-block:-7px}
 
 .here .couch .face{margin:0;position:relative;z-index:1;background:none;box-shadow:none;border-radius:0;transition:transform .35s cubic-bezier(.3,1.4,.5,1),opacity .3s}
-.couch .face.off{opacity:.78;transform:translateY(2px)}
-.couch .face.off.st-quiet{transform:translateY(4px) rotate(-12deg);opacity:.6}
-.couch .face.st-quiet .av .eyes{scale:1 .14!important}
-.couch .face.sat{animation:sitUp .5s cubic-bezier(.3,1.5,.5,1)}
-@keyframes sitUp{from{transform:translateY(5px) rotate(-8deg)}}
-:is(.couch .face,.nowpill).st-watching .av{animation:stGlow 2.6s ease-in-out 6}
-:is(.couch .face,.nowpill).st-reading .av .eyes{animation:stRead 3.2s ease-in-out 5!important}
-:is(.couch .face,.nowpill).st-playing .av .eyes{animation:stDart 1.6s steps(1) 8!important}
-.couch .face.st-finished .av{animation:stHop 1.6s cubic-bezier(.3,1.4,.5,1) 2}
-.couch .face.st-finished::after{content:"\2713";position:absolute;right:-3px;top:-4px;width:13px;height:13px;border-radius:50%;background:var(--good);color:#fff;font:900 8px/13px var(--head);text-align:center;z-index:2}
+.couch .face .av{filter:none!important}
+.nowpill.st-watching .av{animation:stGlow 2.6s ease-in-out 6}
+.nowpill.st-reading .av .eyes{animation:stRead 3.2s ease-in-out 5!important}
+.nowpill.st-playing .av .eyes{animation:stDart 1.6s steps(1) 8!important}
 @keyframes stGlow{0%,100%{filter:none}40%{filter:brightness(1.2) drop-shadow(0 0 5px rgba(143,211,255,.55))}55%{filter:brightness(.96)}}
 @keyframes stRead{0%{translate:-4px 2px}70%{translate:4px 2px}78%,100%{translate:-4px 5px}}
 @keyframes stDart{0%{translate:-4px 0}25%{translate:4px -2px}50%{translate:2px 3px}75%{translate:-3px -1px}}
@@ -2566,7 +2581,7 @@ header,nav,.secbar{-webkit-backdrop-filter:blur(22px) saturate(1.2);backdrop-fil
 .desk .dpad{width:46px;height:22px;border-radius:11px;background:var(--mint);display:block}
 .desk .dpad i{position:absolute;left:9px;top:8px;width:7px;height:7px;border-radius:2px;background:rgba(0,0,0,.3)}
 .desk .dnone{position:absolute;right:10px;bottom:12px;font-size:11.5px;color:var(--mute)}
-@media (prefers-reduced-motion:reduce){#splash{animation:none;opacity:1}.sp u,.couch .face,.couch .face .av,.couch .face .eyes,.nowpill .av,.nowpill .eyes,.ngather span,.peekcard{animation:none!important;transition:none}}
+@media (prefers-reduced-motion:reduce){#splash,#splash *{animation:none!important}html:not(.intro) #splash{opacity:1}.spm .sr{opacity:1}.spm .se{opacity:1}.spw{opacity:1}.couch .face,.couch .face,.couch .face .av,.couch .face .eyes,.nowpill .av,.nowpill .eyes,.ngather span,.peekcard{animation:none!important;transition:none}}
 
 /* ---------- one favourite each ---------- */
 .lbl .pick1{font:600 11px var(--body);letter-spacing:0;text-transform:none;color:var(--mute);margin-left:6px}
@@ -2942,7 +2957,9 @@ html.svopen .toast{z-index:21}
 </style>
 </head>
 <body>
-<div id="splash" aria-hidden="true"><div class="sp-in"><b>Rooms</b><i class="sp s1"><u></u><u></u></i><i class="sp s2"><u></u><u></u></i><i class="sp s3"><u></u><u></u></i><i class="sp s4"><u></u><u></u></i></div></div>
+<div id="splash" aria-hidden="true"><div class="spbg"></div><div class="spm"><svg viewBox="10 10 80 80"><clipPath id="sm0"><rect x="12" y="12" width="37" height="37" rx="11"/></clipPath><g class="sr" data-r="0" clip-path="url(#sm0)"><rect x="12" y="12" width="37" height="37" fill="#b0758f"/><rect x="12" y="12" width="29" height="37" rx="11" fill="#f9cadf"/><rect x="12" y="20" width="29" height="29" rx="11" fill="#F5A3C7"/><rect x="12" y="31" width="29" height="18" fill="#F5A3C7"/></g><clipPath id="sm1"><rect x="51" y="12" width="37" height="37" rx="11"/></clipPath><g class="sr" data-r="1" clip-path="url(#sm1)"><rect x="51" y="12" width="37" height="37" fill="#b8814d"/><rect x="51" y="12" width="29" height="37" rx="11" fill="#ffd3a9"/><rect x="51" y="20" width="29" height="29" rx="11" fill="#FFB36B"/><rect x="51" y="31" width="29" height="18" fill="#FFB36B"/></g><clipPath id="sm2"><rect x="12" y="51" width="37" height="37" rx="11"/></clipPath><g class="sr" data-r="2" clip-path="url(#sm2)"><rect x="12" y="51" width="37" height="37" fill="#8578b8"/><rect x="12" y="51" width="29" height="37" rx="11" fill="#d6cbff"/><rect x="12" y="59" width="29" height="29" rx="11" fill="#B9A6FF"/><rect x="12" y="70" width="29" height="18" fill="#B9A6FF"/></g><clipPath id="sm3"><rect x="51" y="51" width="37" height="37" rx="11"/></clipPath><g class="sr lit" data-r="3" clip-path="url(#sm3)"><rect x="51" y="51" width="37" height="37" fill="#6798b8"/><rect x="51" y="51" width="29" height="37" rx="11" fill="#bee5ff"/><rect x="51" y="59" width="29" height="29" rx="11" fill="#8FD3FF"/><rect x="51" y="70" width="29" height="18" fill="#8FD3FF"/></g><g class="se" data-e="0" fill="#151320"><rect x="26.6" y="28" width="5.6" height="12.5" rx="2.8"/><rect x="37.4" y="28" width="5.6" height="12.5" rx="2.8"/></g><g class="se" data-e="1" fill="#151320"><rect x="57" y="28" width="5.6" height="12.5" rx="2.8"/><rect x="67.8" y="28" width="5.6" height="12.5" rx="2.8"/></g><g class="se" data-e="2" fill="#151320"><rect x="26.6" y="59.5" width="5.6" height="12.5" rx="2.8"/><rect x="37.4" y="59.5" width="5.6" height="12.5" rx="2.8"/></g><g class="se lit" data-e="3" fill="#151320"><rect x="57" y="59.5" width="5.6" height="12.5" rx="2.8"/><rect x="67.8" y="59.5" width="5.6" height="12.5" rx="2.8"/></g></svg></div><b class="spw">Rooms</b></div>
+<script>/* the iPhone app opens on the launch screen's own picture, and plays from there */
+(function () { var h = document.documentElement; if (location.protocol === "capacitor:" || /[?&]intro\b/.test(location.search)) h.classList.add("intro"); })();</script>
 
 <header><h1 class="sr-only">Rooms</h1><div class="wrap">
   <div class="logo"><svg class="mark" viewBox="10 10 80 80" aria-hidden="true"><clipPath id="lm0"><rect x="12" y="12" width="37" height="37" rx="11"/></clipPath><g class="rm" data-r="0" clip-path="url(#lm0)"><rect x="12" y="12" width="37" height="37" fill="#b0758f"/><rect x="12" y="12" width="29" height="37" rx="11" fill="#f9cadf"/><rect x="12" y="20" width="29" height="29" rx="11" fill="#F5A3C7"/><rect x="12" y="31" width="29" height="18" fill="#F5A3C7"/></g><clipPath id="lm1"><rect x="51" y="12" width="37" height="37" rx="11"/></clipPath><g class="rm" data-r="1" clip-path="url(#lm1)"><rect x="51" y="12" width="37" height="37" fill="#b8814d"/><rect x="51" y="12" width="29" height="37" rx="11" fill="#ffd3a9"/><rect x="51" y="20" width="29" height="29" rx="11" fill="#FFB36B"/><rect x="51" y="31" width="29" height="18" fill="#FFB36B"/></g><clipPath id="lm2"><rect x="12" y="51" width="37" height="37" rx="11"/></clipPath><g class="rm" data-r="2" clip-path="url(#lm2)"><rect x="12" y="51" width="37" height="37" fill="#8578b8"/><rect x="12" y="51" width="29" height="37" rx="11" fill="#d6cbff"/><rect x="12" y="59" width="29" height="29" rx="11" fill="#B9A6FF"/><rect x="12" y="70" width="29" height="18" fill="#B9A6FF"/></g><clipPath id="lm3"><rect x="51" y="51" width="37" height="37" rx="11"/></clipPath><g class="rm lit" data-r="3" clip-path="url(#lm3)"><rect x="51" y="51" width="37" height="37" fill="#6798b8"/><rect x="51" y="51" width="29" height="37" rx="11" fill="#bee5ff"/><rect x="51" y="59" width="29" height="29" rx="11" fill="#8FD3FF"/><rect x="51" y="70" width="29" height="18" fill="#8FD3FF"/></g><g class="eyes re" fill="#151320"><rect x="26.6" y="28" width="5.6" height="12.5" rx="2.8"/><rect x="37.4" y="28" width="5.6" height="12.5" rx="2.8"/></g><g class="eyes re" fill="#151320"><rect x="57" y="28" width="5.6" height="12.5" rx="2.8"/><rect x="67.8" y="28" width="5.6" height="12.5" rx="2.8"/></g><g class="eyes re" fill="#151320"><rect x="26.6" y="59.5" width="5.6" height="12.5" rx="2.8"/><rect x="37.4" y="59.5" width="5.6" height="12.5" rx="2.8"/></g><g class="eyes re lit" fill="#151320"><rect x="57" y="59.5" width="5.6" height="12.5" rx="2.8"/><rect x="67.8" y="59.5" width="5.6" height="12.5" rx="2.8"/></g></svg><span class="hdrtitle" id="hdrTitle" aria-hidden="true"></span><span class="logoword">Rooms</span></div>
@@ -6175,8 +6192,21 @@ function landCover() { const t = coverTap; coverTap = null;
 /* ============ auth ============ */
 /* the opening: the four rooms look at the name and blink while the app wakes up. It only
    fades in if loading takes more than a moment, and leaves as soon as there's a page. */
-function hideSplash() { const sp = document.getElementById("splash"); if (!sp || sp.classList.contains("gone")) return;
-  sp.classList.add("gone"); setTimeout(() => sp.remove(), 320); }
+function hideSplash() { const sp = document.getElementById("splash"); if (!sp || sp.classList.contains("gone") || sp.dataset.leaving) return;
+  const intro = document.documentElement.classList.contains("intro");
+  if (!intro || REDUCED) { sp.classList.add("gone"); setTimeout(() => sp.remove(), 320); return; }
+  sp.dataset.leaving = "1"; playIntro();
+  setTimeout(() => {
+    /* the mark lands on the header's own mark; on the sign-in page there isn't one, so it just fades */
+    const m = sp.querySelector(".spm"), to = document.querySelector("header .logo .mark")?.getBoundingClientRect(), from = m.getBoundingClientRect();
+    if (to && to.width && from.width) m.style.transform = `translate(${to.left - from.left}px,${to.top - from.top}px) scale(${to.width / from.width})`;
+    sp.classList.add("going"); setTimeout(() => sp.remove(), 620); }, Math.max(0, window.__introAt + 1080 - performance.now())); }
+/* starts the opening once the launch screen has gone, so none of it plays behind it */
+function playIntro() { if (window.__introAt != null) return; window.__introAt = performance.now(); document.documentElement.classList.add("play"); }
+if (document.documentElement.classList.contains("intro")) {
+  const ss = plug("SplashScreen");
+  if (ss) ss.hide({ fadeOutDuration:0 }).catch(() => {}).finally(() => requestAnimationFrame(playIntro)); else requestAnimationFrame(playIntro);
+  setTimeout(playIntro, 1500); }
 setTimeout(hideSplash, 10000);
 function renderAuth() { hideSplash();
   const b = $("#authBody");
