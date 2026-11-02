@@ -10,10 +10,10 @@ const GROUND = "#16131C", TEXT = "#F4EDE2", SUB = "#C9C1D9";
 /* Outfit is one variable font file covering weights 500 to 900 */
 const FONT = `data:font/woff2;base64,${fs.readFileSync(path.join(ROOT, "vendor/fonts/outfit-500-latin.woff2")).toString("base64")}`;
 
-/* the mark: you up front, lit, and three rooms behind with the lights off */
-/* each room is shaded like the faces: a lighter lid on top, a darker strip down the right */
+/* the mark: you up front, and three quiet rooms behind */
+/* shaded like the app's faces: the rooms behind solid and darker, yours with a lighter lid */
 const MARK = `<svg viewBox="10 10 80 80" xmlns="http://www.w3.org/2000/svg">
-  <g opacity=".48"><rect x="13" y="13" width="31" height="31" rx="10" fill="#F5A3C7"/><path d="M23 13H34A10 10 0 0 1 44 23V23H13V23A10 10 0 0 1 23 13Z" fill="#f8bfd8"/><path d="M44 23V34A10 10 0 0 1 34 44Q37.8 44 37.8 38V23Z" fill="#c986a3"/></g><g opacity=".48"><rect x="41" y="11" width="31" height="31" rx="10" fill="#FFB36B"/><path d="M51 11H62A10 10 0 0 1 72 21V21H41V21A10 10 0 0 1 51 11Z" fill="#ffca97"/><path d="M72 21V32A10 10 0 0 1 62 42Q65.8 42 65.8 36V21Z" fill="#d19358"/></g><g opacity=".48"><rect x="11" y="41" width="31" height="31" rx="10" fill="#B9A6FF"/><path d="M21 41H32A10 10 0 0 1 42 51V51H11V51A10 10 0 0 1 21 41Z" fill="#cec1ff"/><path d="M42 51V62A10 10 0 0 1 32 72Q35.8 72 35.8 66V51Z" fill="#9888d1"/></g><g ><rect x="35" y="35" width="53" height="53" rx="16" fill="#8FD3FF"/><path d="M51 35H72A16 16 0 0 1 88 51V51H35V51A16 16 0 0 1 51 35Z" fill="#b1e0ff"/><path d="M88 51V72A16 16 0 0 1 72 88Q77.4 88 77.4 78.4V51Z" fill="#75add1"/></g><g  fill="#151320"><rect x="44.93" y="57.55" width="7.55" height="16.9" rx="3.77"/><rect x="59.52" y="57.95" width="7.55" height="16.9" rx="3.77"/></g>
+  <rect x="13" y="13" width="31" height="31" rx="10" fill="#c4829f"/><rect x="46" y="12" width="31" height="31" rx="10" fill="#cc8f56"/><rect x="12" y="46" width="31" height="31" rx="10" fill="#9485cc"/><rect x="35" y="35" width="53" height="53" rx="16" fill="#8FD3FF"/><path d="M51 35H72A16 16 0 0 1 88 51H35A16 16 0 0 1 51 35Z" fill="#b1e0ff"/><g  fill="#151320"><rect x="44.93" y="57.55" width="7.55" height="16.9" rx="3.77"/><rect x="59.52" y="57.95" width="7.55" height="16.9" rx="3.77"/></g>
 </svg>`;
 
 const page = body => `<!doctype html><meta charset="utf-8"><style>
