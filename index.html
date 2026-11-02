@@ -10746,7 +10746,10 @@ const VIBE_TAGS = [
   ["adventure", /adventure|exploration|treasure|quest/i],
   ["action", /action|shooter|fighting|martial arts|hack and slash/i],
   ["drama", /drama/i]];
-const tagsOf = names => { const n = names.join(" | "); return VIBE_TAGS.filter(([, re]) => re.test(n)).map(([t]) => t); };
+/* strongest first: a tag named by many of a title's genres and keywords (a western's "cowboy",
+   "wild west", "outlaw") outranks one a single keyword happens to touch */
+const tagsOf = names => VIBE_TAGS.map(([t, re], i) => ({ t, i, n:names.filter(x => re.test(x)).length })).filter(x => x.n)
+  .sort((a, b) => b.n - a.n || a.i - b.i).map(x => x.t);
 /* keywords that say nothing about what a thing is like */
 const KW_NOISE = /based on|sequel|prequel|remake|stinger|woman director|female director|\b\d{4}s?\b|imax|3d|duringcredits|aftercredits|biography|anime|shot on|independent film|lgbt|duringcreditsstinger|^(new york|los angeles|london|paris|tokyo|usa|california|england)/i;
 const TMDB_TAG = { film:{ crime:80, horror:27, scifi:878, fantasy:14, western:37, war:10752, mystery:9648, thriller:53, romance:10749, comedy:35, history:36, music:10402, family:10751, nonfiction:99, adventure:12, action:28, drama:18 },
@@ -10792,7 +10795,9 @@ async function crossLike(seed, kind) {
   if (kind === "film" || kind === "tv") { const t = kind === "film" ? "movie" : "tv", gm = await tmdbGenreNames().catch(() => ({}));
     const gids = [...new Set(broad.map(x => TMDB_TAG[kind][x]).filter(Boolean))];
     const kwIds = (await Promise.all(words.slice(0, 4).map(x => tmdb("search/keyword", { query:x }).then(r => (r.results || []).find(k => lc(k.name) === x)?.id).catch(() => null)))).filter(Boolean);
-    const ask = async extra => ((await tmdb(`discover/${t}`, { sort_by:"vote_count.desc", "vote_average.gte":"6.5", include_adult:"false", ...extra })).results || []).map(r => tmdbHit(r, kind, gm));
+    /* well known and well liked, and no documentaries unless the title is one */
+    const ask = async extra => ((await tmdb(`discover/${t}`, { sort_by:"vote_count.desc", "vote_average.gte":"6.3", "vote_count.gte":kind === "film" ? "300" : "100",
+      include_adult:"false", ...(tags.includes("nonfiction") ? {} : { without_genres:"99" }), ...extra })).results || []).map(r => tmdbHit(r, kind, gm));
     if (kwIds.length) await tryAdd(() => ask({ with_keywords:kwIds.join("|"), ...(gids[0] ? { with_genres:String(gids[0]) } : {}) }), "tmdb keywords");
     if (rows.length < 8 && gids.length) await tryAdd(() => ask({ with_genres:gids.join(",") }), "tmdb genres");
     if (rows.length < 8 && gids.length > 1) await tryAdd(() => ask({ with_genres:String(gids[0]) }), "tmdb genre"); }
