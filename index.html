@@ -1165,6 +1165,37 @@ nav button:active{transform:scale(.95)}
 /* what you're in the middle of, in the room and on your own shelf */
 .nowcard input{width:100%;margin-top:10px}
 .nowrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.herechip .faces{display:flex}
+.herechip .face{display:block;width:auto;height:auto;background:none;border-radius:0;line-height:0;margin-left:-4px;position:relative}
+.herechip .av{width:20px;height:20px}
+.herechip .face:first-child{margin-left:0}
+.herechip .face .av svg{width:20px;height:20px;display:block}
+.herechip .face.off{opacity:.55}
+.herechip .face.busy::after{content:"";position:absolute;right:-1px;bottom:-1px;width:6px;height:6px;border-radius:50%;background:var(--mint);box-shadow:0 0 0 1.5px var(--bg);animation:chipPulse 1.2s ease-in-out infinite}
+@keyframes chipPulse{50%{transform:scale(1.5);opacity:.6}}
+.herechip .face.came{animation:faceIn .52s cubic-bezier(.2,1.4,.4,1) both}
+.herechip b{font-size:12px;font-weight:800;white-space:nowrap}
+.herechip:active{transform:scale(.96)}
+.pager.ptitle.withtools{display:flex;align-items:center;gap:8px}
+.pager.withtools h2{flex:1;min-width:0}
+.rl-r{display:flex;align-items:center;gap:6px;flex:none}
+.rl-r .herechip{flex:none;display:inline-flex;align-items:center;gap:6px;border:0;font:inherit;cursor:pointer;background:color-mix(in srgb,var(--ink) 9%,transparent);color:var(--ink);border-radius:999px;padding:4px 11px 4px 5px;min-height:30px}
+.rl-l{flex:1;flex-wrap:wrap;white-space:normal;gap:2px 0;font-size:11.5px}
+.rl-l>:not([hidden])~:not([hidden])::before{content:"·";margin:0 6px;color:var(--mute);font-weight:700}
+.rl-l .herenote{font-size:11.5px;font-weight:750;color:var(--good);white-space:nowrap}
+.nowline{margin:6px 0 0;font-size:12.5px;line-height:1.45;color:var(--mute);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.nowline:empty{display:none}
+.nowline .nowbit{cursor:pointer}
+.nowline .nowbit b{color:var(--ink);font-weight:750}
+.nowline .nowbit em{font-style:normal;color:var(--ink)}
+.nowline .nowbit.fresh b::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--good);margin:0 5px 1px 0;vertical-align:middle}
+.nowline .sep{font-style:normal}
+.couchlist .twin{width:100%;background:none;border-left:0;border-right:0;border-top:0;font:inherit;color:inherit;text-align:left}
+.couchlist .twin:last-child{border-bottom:0}
+.couchlist .twin .t{flex:1;min-width:0}
+.couchlist .twin small{display:block;color:var(--mute);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.couchlist .ondot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--good);vertical-align:middle;margin-left:3px}
+.couchlist .chev{color:var(--mute);font-size:18px}
 .nowpill{display:inline-flex;align-items:center;gap:7px;background:var(--cream2);
   border-radius:99px;padding:5px 12px 5px 6px;font-size:12.5px;max-width:100%}
 .nowpill .av{width:22px;height:22px;flex:none}
@@ -1654,6 +1685,11 @@ html.storying{overflow:hidden}
 .recap-row b{flex:1;font-family:var(--head);font-weight:800}
 .recap-row span:last-child{color:var(--mute);font-weight:700}
 .recap-row em{font-style:normal;color:var(--ink)}
+.mpill{display:inline-block;border-radius:99px;padding:1px 8px;font:800 11px/1.5 var(--head);color:#151320!important;letter-spacing:.01em;vertical-align:1px;white-space:nowrap}
+.mpill.bronze{background:linear-gradient(135deg,#E0A06A,#9a5f33)}
+.mpill.silver{background:linear-gradient(135deg,#E6E8F0,#9aa0b4)}
+.mpill.gold{background:linear-gradient(135deg,#FFE36B,#c99b1c)}
+.mpill.platinum{background:linear-gradient(135deg,#E8FBFF,#7fc6d8)}
 .credits{display:flex;flex-direction:column;gap:6px;margin-top:6px;padding:14px;border-radius:16px;background:var(--cream2)}
 .credits p{margin:0;font-size:12.5px;line-height:1.45;color:var(--mute)}
 .credits a{color:var(--ink);font-weight:700}
@@ -5141,30 +5177,36 @@ function paintHere() {
       ghost.style.position = "absolute"; ghost.style.pointerEvents = "none";
       f.after(ghost); setTimeout(() => ghost.remove(), 300); }); }
   const busy = others.filter(p => p.doing === "logging");
-  const R = activeRoom(), seat = R && couch.id === R.id ? R.members.filter(m => m.id !== me.id).slice(0, 7) : null;
-  if (seat && seat.length) {
-    const here = new Set(others.map(p => p.id)), wasOn = new Set($$(".couch .face.on", el).map(f => f.dataset.who));
-    el.innerHTML = `${others.length ? `<span class="dot"></span>` : ""}<span class="couch" style="--rc:var(--${roomColour(R)})">${seat.map(m => {
-        const on = here.has(m.id), p = others.find(x => x.id === m.id) || m, st = memberState(m.id, on), b = p.doing === "logging";
-        return `<span class="face ${on ? "on" : "off"} st-${st}${b ? " busy" : ""}${on && wasOn.size && !wasOn.has(m.id) ? " sat" : ""}" data-who="${esc(m.id)}" data-prof="${esc(m.id)}" role="button" tabindex="0"
-          title="${esc(m.handle)}${STATE_WORD[st] ? " · " + STATE_WORD[st] : on ? " · here" : ""}">${avatar(m)}${b ? `<i class="typing" aria-hidden="true"><b></b><b></b><b></b></i>` : ""}</span>`; }).join("")}</span>
-      <small>${busy.length === 1 ? esc(busy[0].handle) + "'s logging…" : busy.length > 1 ? said(busy.length) + " of you are logging…"
-        : others.length === 1 ? esc(others[0].handle) + " is here" : others.length ? others.length + " here" : hereQuiet || "Nobody else in here right now"}</small>`;
-    $$("[data-prof]", el).forEach(x => x.onclick = ev => { ev.stopPropagation(); peekPerson(x.dataset.prof, x); });
-    let hs = $("#hereCss"); if (!hs) { hs = document.createElement("style"); hs.id = "hereCss"; document.head.appendChild(hs); }
-    hs.textContent = others.length ? others.map(p => `.av[data-u="${CSS.escape(String(p.id))}"]`).join(",") + "{filter:drop-shadow(0 0 0 transparent) drop-shadow(0 0 3px color-mix(in srgb,var(--mint) 70%,transparent))}" : "";
-    return; }
-  el.innerHTML = others.length
-    ? `<span class="dot"></span><span class="faces">${others.map(p =>
-        `<span class="face${seen.size && !seen.has(p.id) ? " came" : ""}${p.doing === "logging" ? " busy" : ""}" data-who="${esc(p.id)}"
-          data-prof="${esc(p.id)}" style="cursor:pointer" title="${esc(p.handle)}">${avatar(p)}${p.doing === "logging" ? `<i class="typing" aria-hidden="true"><b></b><b></b><b></b></i>` : ""}</span>`).join("")}</span>
-       <small>${busy.length === 1 ? esc(busy[0].handle) + "'s logging…" : busy.length > 1 ? said(busy.length) + " of you are logging…"
-         : others.length === 1 ? esc(others[0].handle) + " is here" : others.length + " here"}</small>`
-    : `<small>${hereQuiet || "Nobody else in here right now"}</small>`;
+  /* the room's faces fold into one small chip: two faces and how many are in the room.
+     Who's around, and who's logging, is said in words on the line beside it. */
+  const R = activeRoom(), mates = (R?.members || []).filter(m => m.id !== me.id), here = new Set(others.map(p => p.id));
+  const lead = [...busy, ...others, ...mates].filter((p, i, a) => a.findIndex(x => x.id === p.id) === i).slice(0, 2);
+  el.classList.toggle("live", others.length > 0);
+  el.innerHTML = lead.length ? `<span class="faces">${lead.map(p => { const b = p.doing === "logging" || busy.some(x => x.id === p.id);
+      return `<span class="face ${here.has(p.id) ? "on" : "off"}${b ? " busy" : ""}${seen.size && !seen.has(p.id) ? " came" : ""}" data-who="${esc(p.id)}">${avatar(mates.find(m => m.id === p.id) || p)}</span>`; }).join("")}</span>
+    <b>${mates.length + 1} in here</b>` : `<b>Just you</b>`;
+  el.setAttribute("aria-label", `${mates.length + 1} in this room, ${others.length} here now`);
+  const note = $("#hereNote");
+  if (note) { note.innerHTML = busy.length === 1 ? esc(busy[0].handle) + "'s logging…" : busy.length > 1 ? said(busy.length) + " of you are logging…"
+      : others.length ? `${others.length} here now` : ""; note.hidden = !note.innerHTML; note.classList.toggle("busy", busy.length > 0); }
   /* anyone who's here gets lit eyes wherever their face turns up, not only in this row */
   let hs = $("#hereCss"); if (!hs) { hs = document.createElement("style"); hs.id = "hereCss"; document.head.appendChild(hs); }
   hs.textContent = others.length ? others.map(p => `.av[data-u="${CSS.escape(String(p.id))}"]`).join(",") + "{filter:drop-shadow(0 0 0 transparent) drop-shadow(0 0 3px color-mix(in srgb,var(--mint) 70%,transparent))}" : "";
-  $$("[data-prof]", el).forEach(x => x.onclick = () => openProfile(x.dataset.prof));
+  el.onclick = () => openCouch();
+}
+/* the chip opens the whole room: who's here, who's mid-way through something, who's
+   gone quiet. Each one opens that person. */
+function openCouch() {
+  const R = activeRoom(); if (!R) return;
+  const here = new Set(hereNow.map(p => p.id)), mates = R.members.filter(m => m.id !== me.id);
+  const rank = m => here.has(m.id) ? 0 : couch.now[m.id] ? 1 : 2;
+  const list = [...mates].sort((a, b) => rank(a) - rank(b));
+  openSheet(`<h3>Who's in ${esc(R.name)}</h3>
+    <p class="sub">${(n => n ? `${said(n).replace(/^./, c => c.toUpperCase())} here now` : "Nobody else here right now")(hereNow.filter(p => p.id !== me.id).length)} · ${R.members.length} in the room</p>
+    <div class="card couchlist" style="margin-top:12px">${list.map(m => { const on = here.has(m.id), n = couch.now[m.id], w = n && (n.works || works[n.work_id]);
+      const doing = hereNow.find(p => p.id === m.id)?.doing === "logging" ? "logging something…" : w ? `${lc(nowVerb(w.kind))} ${esc(w.title)}` : STATE_WORD[memberState(m.id, on)] || (on ? "here now" : "");
+      return `<button class="twin" data-cprof="${esc(m.id)}">${avatar(m)}<div class="t"><b>${esc(m.handle)}${on ? ` <i class="ondot" aria-label="here now"></i>` : ""}</b>${doing ? `<small>${doing}</small>` : ""}</div><span class="chev">›</span></button>`; }).join("")}</div>`);
+  $$("[data-cprof]").forEach(x => x.onclick = () => { closeSheet(); openProfile(x.dataset.cprof); });
 }
 /* the demo has nobody on the other end, so once a visit it acts out what a live room
    does: mo starts logging, the slip lands, and somebody likes something of yours */
@@ -6557,7 +6599,7 @@ async function openYearStory(year = storyYear() || String(new Date().getFullYear
    a line or two, and a tap to go on. Seven stops, skippable at any point, and it can be
    asked for again from settings. */
 const TOUR = [
-  { at:'#hereRow .couch, #hereRow', title:"Your room", body:"Everyone in the room sits up here. Tap a face to see what they're watching, reading or playing.", col:"#F5A3C7", need:"doors" },
+  { at:'#hereRow .couch, #hereRow', title:"Your room", body:"Everyone in the room is in this chip. Tap it to see who's here and what they're watching, reading or playing.", col:"#F5A3C7", need:"doors" },
   { at:'#add', title:"Log something", body:"Finished a film, show, book or game? Tap + and drag across the stars. Then pick the one thing you loved most.", col:"#FFB36B" },
   { at:'nav button[data-tab="doors"]', title:"Rooms", body:"What your friends log lands here. Hold a heart to answer with your face, or tap the bubble to reply.", col:"#F5A3C7" },
   { at:'nav button[data-tab="people"]', title:"Feed", body:"The people you follow, then everyone else. A ring means they've logged something in the last two days — tap it to see.", col:"#9EF0C9" },
@@ -7675,9 +7717,9 @@ async function renderRoomFeed(fb, R) {
   const pal = roomPalmares(es), hasYear = R.members.length > 1 && (!!pal || yearEs.length > 0 || !!awardsPhase());
   const sec = P.roomSec === "charts" || P.roomSec === "play" || (P.roomSec === "year" && hasYear) ? P.roomSec : "talk";
   const secs = [["talk", "Talk"], ["play", "Play"], ["charts", "Charts"], ...(hasYear ? [["year", "Year"]] : [])];
-  fb.innerHTML = `<div class="roomline"><div class="rl-l"><div class="here" id="hereRow" aria-live="polite"><small>Nobody else in here right now</small></div>${roomStreak(es, R)}</div>
-      <button class="iconbtn sm" id="roomMenu" aria-label="Room options"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button></div>
-      <div class="nowrow" id="roomNow"></div>
+  fb.innerHTML = `<div class="roomline"><div class="rl-l">${roomStreak(es, R)}<small class="herenote" id="hereNote" aria-live="polite" hidden></small></div>
+      <span class="rl-r"><button class="herechip" id="hereRow"><b>${R.members.length} in here</b></button><button class="iconbtn sm" id="roomMenu" aria-label="Room options"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button></span></div>
+      <p class="nowline" id="roomNow"></p>
       ${R.members.length < 2 ? `<div class="card"><div class="alone"><b>It's just you in here.</b>
         <span>Rooms only does anything with other people in it — agreement, the year, the arguments.
         Send one person the link and the whole thing switches on.</span>
@@ -7730,7 +7772,9 @@ async function renderRoomFeed(fb, R) {
   if (awardsPhase() === "vote" && R.members.length > 1 && P.awardCoach !== `${R.id}:${awardYear()}` && currentTab() === "doors") {
     P.awardCoach = `${R.id}:${awardYear()}`; saveP(); setTimeout(() => coach(`${awardsName(R)} are open. Vote in the Year tab`), 2600); }
   if (!P.holdTip && myEntries.length >= 3 && currentTab() === "doors") { P.holdTip = 1; saveP(); setTimeout(() => coach("Hold any poster to rate it, shelve it or pass it on"), 1600); }
-  $("#roomMenu", fb).onclick = () => openRoomMenu(R); wireTonight(); if (R.members.length > 1) paintAsks(R);
+  /* the chip and the menu sit on the title row, beside the room's name */
+  { const rr = $(".rl-r", fb), pg = $("#pager"); if (rr && pg) { $$(".rl-r", pg).forEach(x => x.remove()); pg.appendChild(rr); pg.classList.add("withtools"); } }
+  $("#roomMenu").onclick = () => openRoomMenu(R); wireTonight(); if (R.members.length > 1) paintAsks(R);
   const segEl = $(".roomsecs", fb); glideSeg(segEl, true);
   { const wk = $("#weekCard"); if (wk) wk.hidden = (P.roomSec || "talk") !== "talk"; }
   if (window.ResizeObserver && segEl) new ResizeObserver(() => glideSeg(segEl, true)).observe(segEl);
@@ -9057,17 +9101,14 @@ async function paintRoomNow(R) {
   const seen = new Set(), pick = [];
   for (const r of rows) { if (seen.has(r.user_id)) continue; seen.add(r.user_id); pick.push(r); }
   if (couch.id === R.id) { couch.now = Object.fromEntries(pick.map(r => [r.user_id, r])); paintHere(); }
-  /* how long ago matters as much as what: a pill moved in the last 45 minutes has a live
-     dot, and a bar that moved slides from where it was rather than jumping */
+  /* what people are on reads as one plain line, not a row of pills: "ali is reading
+     Pachinko · mo is watching The Leftovers". Anything moved in the last 45 minutes has a
+     small live dot, and each part opens the title. */
   el.innerHTML = pick.map(r => { const w = r.works || works[r.work_id]; if (!w) return "";
-    const who = r.user_id === me.id ? "You" : (r.profiles?.handle || ""), doing = lc(nowVerb(w.kind));
+    const mine = r.user_id === me.id, who = mine ? "You" : (r.profiles?.handle || ""), doing = lc(nowVerb(w.kind));
     const age = Date.now() - Date.parse(r.updated_at || "");
-    return `<span class="nowpill${age < 45 * 6e4 ? ` fresh st-${KIND_DOING[w.kind] || "watching"}` : ""}" data-w="${esc(r.work_id)}" data-nk="${esc(r.user_id + "|" + r.work_id)}">${avatar({ id:r.user_id, handle:who,
-      avatar:r.profiles?.avatar }, "av")}<b>${esc(r.user_id === me.id ? "You're" : who)}</b><span><i class="ndo">${doing}</i> ${esc(w.title)} · ${nowLine(r)}${age < 864e5 ? ` · <time data-at="${esc(r.updated_at)}">${relAt(r.updated_at)}</time>` : ""}</span>${progressBar(progressOf(r, w))}</span>`;
-  }).join("");
-  $$("[data-nk]", el).forEach(x => { const i = $(".pbar i", x); if (!i) return;
-    const was = nowWas[x.dataset.nk], now = i.style.width; nowWas[x.dataset.nk] = now;
-    if (!REDUCED && was && was !== now) { i.style.width = was; requestAnimationFrame(() => requestAnimationFrame(() => { i.style.width = now; })); } });
+    return `<span class="nowbit${age < 45 * 6e4 ? " fresh" : ""}" data-w="${esc(r.work_id)}" role="button" tabindex="0"><b>${esc(who)}</b> ${mine ? "are" : "is"} ${doing} <em>${esc(w.title)}</em></span>`;
+  }).filter(Boolean).join(`<i class="sep" aria-hidden="true"> · </i>`);
   $$("[data-w]", el).forEach(x => x.onclick = () => openWork(x.dataset.w)); }
 
 function openHand(w) {
@@ -12089,18 +12130,28 @@ function ghostMark(tilt, base) {
     <g class="eyes" fill="#151320"><rect x="40" y="44" width="7" height="20" rx="3.5"/><rect x="55" y="42" width="7" height="22" rx="3.5"/></g>
   </g></svg>`;
 }
+/* each challenge is a tiny room in its medium's colour, the same soft shape as the logo:
+   a lighter lid on top, a darker right side, two eyes */
+const KIND_ROOM = { film:"#FFB36B", tv:"#F5A3C7", book:"#FFE36B", game:"#9EF0C9" };
+function roomMark(kind) {
+  const c = KIND_ROOM[kind] || "#B9A6FF";
+  return `<svg viewBox="0 0 26 26" aria-hidden="true"><rect x="2" y="2" width="22" height="22" rx="8.5" fill="${c}"/>
+    <rect x="19.6" y="2" width="4.4" height="22" rx="4" fill="#000" opacity=".14"/><path d="M4 8.6A8.5 8.5 0 0 1 10.5 2H15.5A8.5 8.5 0 0 1 22 8.6Z" fill="#fff" opacity=".35"/>
+    <g class="eyes" fill="#151320"><rect x="7.6" y="10" width="3" height="6.8" rx="1.5"/><rect x="13.6" y="10" width="3" height="6.8" rx="1.5"/></g></svg>`; }
+/* a medal is a small pill in its own metal */
+const medalPill = m => m ? `<span class="mpill ${m.tier}">${m.name}</span>` : "";
 const HALLOWEEN_2026 = {
   id:"halloween-2026", name:"31 Nights In", label:"Halloween", tone:"apricot", mk:"ghost", starts:"2026-10-01", ends:"2026-10-31",
   rule:"Horror-tagged logs only.", pitch:"Horror, all October.",
   challenges:[
     { id:"midnight-matinee", kind:"film", icon:"◒", name:"Midnight Matinee", copy:"Log horror films through October.",
-      mark:ghostMark(0, AV_COLS[0]) },
+      mark:roomMark("film") },
     { id:"after-dark", kind:"tv", icon:"▤", name:"After Dark", copy:"Log horror shows through October.",
-      mark:ghostMark(-2, AV_COLS[2]) },
+      mark:roomMark("tv") },
     { id:"haunted-shelf", kind:"book", icon:"✦", name:"Haunted Shelf", copy:"Log horror books through October.",
-      mark:ghostMark(-3, AV_COLS[3]) },
+      mark:roomMark("book") },
     { id:"ghost-machine", kind:"game", icon:"◇", name:"Ghost in the Machine", copy:"Log horror games through October.",
-      mark:ghostMark(2, AV_COLS[4]) }
+      mark:roomMark("game") }
   ]
 };
 const SEASON_MEDALS = [
@@ -12133,22 +12184,15 @@ HALLOWEEN_2026.picks = SEASON_PICKS;
    has to be looked up to know what counts. */
 const LONG_ENOUGH = { film:150, tv:40, book:500, game:40 };
 const seasonLength = e => +(e.works?.length || works[e.work_id]?.length || 0);
-function longMark(tilt, base) {
-  const light = avShade(base, .30), dark = avShade(base, -.18);
-  return `<svg viewBox="0 0 100 100" aria-hidden="true"><g transform="rotate(${tilt} 50 54)">
-    <rect x="28" y="6" width="44" height="88" rx="22" fill="${base}"/><path d="M50 6a22 22 0 0 1 22 22H28A22 22 0 0 1 50 6z" fill="${light}"/>
-    <path d="M72 28v44a22 22 0 0 1-14 20c7-6 8-12 8-20V28z" fill="${dark}"/>
-    <g class="eyes" fill="#151320"><rect x="40" y="38" width="7" height="13" rx="3.5"/><rect x="54" y="37" width="7" height="14" rx="3.5"/></g>
-    <path d="M41 60q4 3 8 0" stroke="#151320" stroke-width="3" fill="none" stroke-linecap="round" opacity=".5"/></g></svg>`; }
 const LONG_NIGHTS_2026 = {
   id:"long-nights-2026", name:"Long Nights", label:"Long Nights", tone:"butter", mk:"moon", starts:"2026-11-01", ends:"2026-12-31",
   rule:"Long ones only: films over 2½ hours, shows of 40+ episodes, books of 500+ pages, games of 40+ hours.", pitch:"The long ones, while the nights are long.",
   qualifies: e => { const n = seasonLength(e), min = LONG_ENOUGH[seasonKind(e)]; return !!min && n >= min; },
   challenges:[
-    { id:"the-long-sit", kind:"film", icon:"◒", name:"The Long Sit", copy:"Films over two and a half hours.", mark:longMark(-2, AV_COLS[0]) },
-    { id:"the-long-haul", kind:"tv", icon:"▤", name:"The Long Haul", copy:"Shows of forty episodes or more.", mark:longMark(2, AV_COLS[2]) },
-    { id:"doorstoppers", kind:"book", icon:"✦", name:"Doorstoppers", copy:"Books of five hundred pages or more.", mark:longMark(-3, AV_COLS[3]) },
-    { id:"hundred-hour-club", kind:"game", icon:"◇", name:"The Forty-Hour Club", copy:"Games of forty hours or more.", mark:longMark(3, AV_COLS[4]) }
+    { id:"the-long-sit", kind:"film", icon:"◒", name:"The Long Sit", copy:"Films over two and a half hours.", mark:roomMark("film") },
+    { id:"the-long-haul", kind:"tv", icon:"▤", name:"The Long Haul", copy:"Shows of forty episodes or more.", mark:roomMark("tv") },
+    { id:"doorstoppers", kind:"book", icon:"✦", name:"Doorstoppers", copy:"Books of five hundred pages or more.", mark:roomMark("book") },
+    { id:"hundred-hour-club", kind:"game", icon:"◇", name:"The Forty-Hour Club", copy:"Games of forty hours or more.", mark:roomMark("game") }
   ],
   picks:[
     ...["Lawrence of Arabia","Seven Samurai","The Godfather Part II","Once Upon a Time in America","Barry Lyndon","Magnolia","Fanny and Alexander","The Irishman","Killers of the Flower Moon","Oppenheimer","Andrei Rublev","Heat","The Deer Hunter","Malcolm X","Dune: Part Two"].map(t => ["film", t]),
@@ -12167,10 +12211,10 @@ const CATCH_UP_2027 = {
   rule:"Anything first released in 2026.", pitch:"Last year's, before it's too late.",
   qualifies: e => String(e.works?.year || works[e.work_id]?.year || "") === "2026",
   challenges:[
-    { id:"catch-up-film", kind:"film", icon:"◒", name:"Missed It in Cinemas", copy:"Films from 2026.", mark:longMark(-2, AV_COLS[0]) },
-    { id:"catch-up-tv", kind:"tv", icon:"▤", name:"Everyone Was Talking About", copy:"Shows from 2026.", mark:longMark(2, AV_COLS[2]) },
-    { id:"catch-up-book", kind:"book", icon:"✦", name:"The Pile by the Bed", copy:"Books from 2026.", mark:longMark(-3, AV_COLS[3]) },
-    { id:"catch-up-game", kind:"game", icon:"◇", name:"The Backlog", copy:"Games from 2026.", mark:longMark(3, AV_COLS[4]) }
+    { id:"catch-up-film", kind:"film", icon:"◒", name:"Missed It in Cinemas", copy:"Films from 2026.", mark:roomMark("film") },
+    { id:"catch-up-tv", kind:"tv", icon:"▤", name:"Everyone Was Talking About", copy:"Shows from 2026.", mark:roomMark("tv") },
+    { id:"catch-up-book", kind:"book", icon:"✦", name:"The Pile by the Bed", copy:"Books from 2026.", mark:roomMark("book") },
+    { id:"catch-up-game", kind:"game", icon:"◇", name:"The Backlog", copy:"Games from 2026.", mark:roomMark("game") }
   ],
   picks:[]
 };
@@ -12183,8 +12227,8 @@ const CATCH_UP_2027 = {
 const lastDay = (y, m) => new Date(Date.UTC(y, m, 0)).toISOString().slice(0, 10);   /* m is 1-12 */
 const hasGenre = (e, words) => seasonGenres(e).some(g => words.some(w => g.includes(w)));
 const SHORT_ENOUGH = { film:100, tv:10, book:200, game:8 };
-const fourWays = (slug, y, names, copies, mk) => ["film", "tv", "book", "game"].map((kind, i) => ({ id:`${slug}-${kind}-${y}`, kind,
-  icon:["◒", "▤", "✦", "◇"][i], name:names[i], copy:copies[i], mark:mk([-2, 2, -3, 3][i], AV_COLS[[0, 2, 3, 4][i]]) }));
+const fourWays = (slug, y, names, copies) => ["film", "tv", "book", "game"].map((kind, i) => ({ id:`${slug}-${kind}-${y}`, kind,
+  icon:["◒", "▤", "✦", "◇"][i], name:names[i], copy:copies[i], mark:roomMark(kind) }));
 const picksOf = (kind, titles) => titles.map(t => [kind, t]);
 const SEASON_YEAR = [
   { slug:"short-ones", m:[3, 3], name:"Short Ones", label:"Short Ones", tone:"sky", mk:"film",
@@ -12236,7 +12280,7 @@ const seasonsOf = y => [
     challenges:CATCH_UP_2027.challenges.map(c => ({ ...c, id:`${c.id}-${y}`, copy:c.copy.replace("2026", String(y - 1)) })) }] : []),
   ...(y >= 2027 ? SEASON_YEAR.map(t => ({ id:`${t.slug}-${y}`, name:t.name, label:t.label, tone:t.tone, mk:t.mk, rule:t.rule, pitch:t.pitch,
     starts:`${y}-${String(t.m[0]).padStart(2, "0")}-01`, ends:lastDay(y, t.m[1]), qualifies:t.qualifies, picks:t.picks,
-    challenges:fourWays(t.slug, y, t.names, t.copies, t.mk === "ghost" ? ghostMark : longMark) })) : []),
+    challenges:fourWays(t.slug, y, t.names, t.copies) })) : []),
   ...(y > 2026 ? [{ ...HALLOWEEN_2026, id:`halloween-${y}`, starts:`${y}-10-01`, ends:`${y}-10-31`, challenges:HALLOWEEN_2026.challenges.map(c => ({ ...c, id:`${c.id}-${y}` })) },
     { ...LONG_NIGHTS_2026, id:`long-nights-${y}`, starts:`${y}-11-01`, ends:`${y}-12-31`, challenges:LONG_NIGHTS_2026.challenges.map(c => ({ ...c, id:`${c.id}-${y}` })) }] : [])];
 const SEASONS = [HALLOWEEN_2026, LONG_NIGHTS_2026, CATCH_UP_2027,
@@ -12278,7 +12322,7 @@ function openSeasonChallenge(challenge) {
     .slice(0, 15).map(w => [w.kind, w.title]);
   const entries = seasonEntries(challenge), medal = seasonMedal(entries.length);
   openSheet(`<div class="head"><div class="season-object ${challenge.kind}">${challenge.mark}</div><div class="hh"><h3>${esc(challenge.name)}</h3><p class="sub">${esc(challenge.copy)} ${esc(S.rule)}</p></div></div>
-    <div class="card" style="margin-top:14px"><b>${entries.length} logged</b><p class="sub" style="margin-top:4px">${medal ? medal.name + " earned so far." : "Your first qualifying log earns Bronze."}</p></div>
+    <div class="card" style="margin-top:14px"><b>${entries.length} logged</b><p class="sub" style="margin-top:4px">${medal ? medalPill(medal) + " earned so far." : `Your first qualifying log earns ${medalPill(SEASON_MEDALS[0])}.`}</p></div>
     <div class="lbl">Start here</div><div class="season-picks">${picks.map(([kind,title], i) => `<button class="row" type="button" data-season-pick="${esc(title)}" data-season-kind="${kind}"><span class="rk">${i+1}</span><div class="t"><b>${esc(title)}</b><small>${tag(kind)}${/^second-time-round/.test(challenge.id) ? " · you loved it" : ""}</small></div><span class="chip">Find</span></button>`).join("")}</div>
     <div class="stack"><button class="btn quiet" id="seasonClose">Back</button></div>`);
   $("#seasonClose").onclick = closeSheet;
@@ -12322,7 +12366,7 @@ function seasonRecapHTML(S) {
   const total = rows.reduce((t, r) => t + r.n, 0);
   return `<div class="card season-recap" id="seasonRecap"><div class="h"><span>${esc(S.name)} is over</span><span class="tag dim">ended ${when(S.ends)}</span></div>
     <p class="gprompt" style="font-size:22px;margin:8px 0 10px">${total ? `You logged ${total} for it.` : "You sat this one out."}</p>
-    <div class="recap-rows">${rows.map(({ c, n, m }) => `<div class="recap-row"><span class="season-object ${c.kind}">${c.mark}</span><b>${esc(c.name)}</b><span>${n ? `${n}${m ? ` · <em>${m.icon} ${m.name}</em>` : ""}` : "—"}</span></div>`).join("")}</div>
+    <div class="recap-rows">${rows.map(({ c, n, m }) => `<div class="recap-row"><span class="season-object ${c.kind}">${c.mark}</span><b>${esc(c.name)}</b><span>${n ? `${n}${m ? ` · ${medalPill(m)}` : ""}` : "—"}</span></div>`).join("")}</div>
     <p class="sub gline" id="seasonRecapRoom"></p></div>`; }
 async function fillSeasonRecap(S) {
   const el = $("#seasonRecapRoom"), R = activeRoom(); if (!el || !R || R.members.length < 2) return;
@@ -12408,7 +12452,7 @@ async function renderClubs() {
         <b>${esc(c.name)}</b>
         ${n ? `<span class="sn-covers">${seasonEntries(c, myEntries, season).slice(0, 4).map(e => `<span class="snc">${cover(works[e.work_id] || e.works, "snci")}</span>`).join("")}</span>` : ""}
         <span class="sn-steps" aria-label="${m ? m.name + " earned" : "no medal yet"}">${SEASON_MEDALS.map(x => `<i class="${n >= x.at ? "on " + x.tier : ""}"></i>`).join("")}</span>
-        <small>${m ? `${m.name}${SEASON_MEDALS.find(x => x.at > n) ? ` · ${SEASON_MEDALS.find(x => x.at > n).name} at ${SEASON_MEDALS.find(x => x.at > n).at}` : " · all done"}` : `${esc(c.copy)}`}</small></button>`).join("")}</div>
+        <small>${m ? `${medalPill(m)}${SEASON_MEDALS.find(x => x.at > n) ? ` · ${SEASON_MEDALS.find(x => x.at > n).name} at ${SEASON_MEDALS.find(x => x.at > n).at}` : " · all done"}` : `${esc(c.copy)}`}</small></button>`).join("")}</div>
     <div id="snLately"></div>
     <div id="snRace"></div>
 `;
