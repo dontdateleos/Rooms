@@ -1898,7 +1898,9 @@ create policy round_answers_mine on round_answers for all to authenticated
 
 -- Who Rated It?: a review somebody in the room wrote (not "just me", not imported, with
 -- something to it), and the name kept back
-create or replace function start_who(p_room uuid)
+-- p_kind narrows it to films, shows, books or games (null is any)
+drop function if exists start_who(uuid);
+create or replace function start_who(p_room uuid, p_kind text default null)
 returns uuid language plpgsql security definer set search_path = public as $$
 declare e record; rid uuid;
 begin
@@ -1908,17 +1910,18 @@ begin
   where not en.private and not coalesce(en.part, false) and en.note is not null and char_length(en.note) between 15 and 400
     and coalesce(en.context->>'imported', '') = '' and coalesce(en.context->>'before', '') = ''
     and en.created_at > now() - interval '240 days'
+    and (p_kind is null or en.work_id like p_kind || ':%')
     and not exists (select 1 from room_rounds r where r.room_id = p_room and r.game = 'who' and r.payload->>'entry' = en.id::text)
   order by random() limit 1;
   if not found then raise exception 'nothing to guess yet'; end if;
   insert into room_rounds (room_id, game, payload, created_by)
-    values (p_room, 'who', jsonb_build_object('entry', e.id, 'work', e.work_id, 'note', e.note, 'score', e.score), auth.uid())
+    values (p_room, 'who', jsonb_build_object('entry', e.id, 'work', e.work_id, 'note', e.note, 'score', e.score, 'kind', coalesce(p_kind, 'any')), auth.uid())
     returning id into rid;
   insert into round_secrets (round_id, answer) values (rid, e.user_id::text);
   return rid;
 end $$;
-revoke all on function start_who(uuid) from public, anon;
-grant execute on function start_who(uuid) to authenticated;
+revoke all on function start_who(uuid, text) from public, anon;
+grant execute on function start_who(uuid, text) to authenticated;
 
 -- The room's rounds of the last three weeks, each with its answers. A name comes back on
 -- an answer only once the round is revealed (or it's yours); so does Who Rated It?'s secret.

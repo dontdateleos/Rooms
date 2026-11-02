@@ -1924,7 +1924,16 @@ nav button .dot{top:0;right:calc(50% - 24px)}
 .lbl .sn-key,.lbl small{font-family:var(--body);font-weight:600;letter-spacing:0;text-transform:none;color:var(--mute);margin-left:auto;font-size:11.5px}
 .lbl:has(small){display:flex;align-items:baseline;gap:10px}
 .sn-tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-.clu-card{display:flex;align-items:center;gap:12px;width:100%;border:0;font:inherit;color:var(--ink);text-align:left;cursor:pointer;background:linear-gradient(135deg,color-mix(in srgb,var(--sky) 22%,var(--card)),var(--card))}
+.clu-card{width:100%;color:var(--ink);background:linear-gradient(135deg,color-mix(in srgb,var(--sky) 22%,var(--card)),var(--card))}
+/*kinds*/
+.clu-card{display:grid;gap:10px}
+.clu-main{display:flex;align-items:center;gap:12px;width:100%;border:0;background:none;padding:0;font:inherit;color:var(--ink);text-align:left;cursor:pointer}
+.clu-kinds{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}.clu-kinds::-webkit-scrollbar{display:none}
+.clu-kinds .chip{flex:none;padding:5px 10px;font-size:12.5px}
+.clu-kinds em{font-style:normal;font:800 11px var(--head);margin-left:6px;padding:0 6px;border-radius:99px;background:var(--good);color:#151320}
+.clu-kinds em.x{background:#E46A6A}
+.pg-kinds{margin-bottom:6px}
+.pg-kind{font-style:normal;font-size:11px;font-weight:800;padding:2px 8px;border-radius:99px;background:color-mix(in srgb,var(--pg) 30%,transparent);margin-left:6px;vertical-align:2px}
 .clu-dots{display:grid;grid-template-columns:repeat(5,9px);gap:4px;flex:none}
 .clu-dots i{width:9px;height:24px;border-radius:5px;background:color-mix(in srgb,var(--ink) 16%,transparent)}
 .clu-dots i.ok{background:var(--good)}.clu-dots i.x{background:#E46A6A}
@@ -10995,7 +11004,16 @@ const CLUE_POOL = [
 const CLUES_START = "2026-11-02";
 const cluesNo = (d = today()) => dayNo(d) - dayNo(CLUES_START) + 1;
 /* a prime stride walks the whole list before it repeats, and keeps the media mixed */
-const cluesPick = (d = today()) => CLUE_POOL[((cluesNo(d) - 1) * 97 % CLUE_POOL.length + CLUE_POOL.length) % CLUE_POOL.length];
+const cluesAny = d => CLUE_POOL[((cluesNo(d) - 1) * 97 % CLUE_POOL.length + CLUE_POOL.length) % CLUE_POOL.length];
+/* "any" is the mixed one; each medium also has its own, the same for everyone, and never the
+   same title as the day's mixed one */
+const MEDIA_PICK = [["any", "Any"], ["film", "Films"], ["tv", "TV"], ["book", "Books"], ["game", "Games"]];
+const mediaWord = k => MEDIA_PICK.find(x => x[0] === k)?.[1] || "Any";
+function cluesPick(d = today(), k = "any") {
+  if (k === "any") return cluesAny(d);
+  const pool = CLUE_POOL.filter(x => x[0] === k), n = pool.length, base = (((cluesNo(d) - 1) * 13 + 5) % n + n) % n;
+  return pool[base][1] === cluesAny(d)[1] ? pool[(base + 1) % n] : pool[base]; }
+const cluesGame = k => k === "any" ? "clues" : "clues:" + k;
 const normT = t => lc(String(t || "")).normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/^(the|a|an)\s+/, "").replace(/[^a-z0-9]+/g, " ").trim();
 const CLUE_KIND_WORD = { film:"A film", tv:"A TV show", book:"A book", game:"A game" };
 const CLUE_MADE = { film:"directed by", tv:"made by", book:"written by", game:"made by" };
@@ -11009,11 +11027,11 @@ function blankPlot(text, title) {
     if (tw.has(normT(w)) || (!start && /^[A-ZÀ-Ý]/.test(w) && w.length > 1)) return pre + "▇".repeat(Math.min(6, Math.max(3, Math.round(w.length / 2))));
     return m; }); }
 const cluesCache = {};
-async function cluesToday(d = today()) {
-  if (cluesCache[d]) return cluesCache[d];
-  const [kind, title, year] = cluesPick(d);
+async function cluesToday(d = today(), k = "any") {
+  if (cluesCache[d + k]) return cluesCache[d + k];
+  const [kind, title, year] = cluesPick(d, k);
   let ans = null, det = {}, words = [];
-  if (DEMO) { const pool = Object.values(works).filter(w => w?.title && !isPart(w.id) && (w.meta?.overview || w.creator));
+  if (DEMO) { const pool = Object.values(works).filter(w => w?.title && !isPart(w.id) && (w.meta?.overview || w.creator) && (k === "any" || w.kind === k));
     ans = pool[(cluesNo(d) * 7) % pool.length]; det = { creator:ans.creator, meta:ans.meta || {} }; }
   else {
     const hits = await SOURCES[kind](title).catch(() => []);
@@ -11031,24 +11049,25 @@ async function cluesToday(d = today()) {
     words.length ? words.join(" · ") : (w.length ? `${w.length}${K(w.kind).unit}` : "Nothing more to go on here"),
     `${y}${w.creator ? ` · ${CLUE_MADE[w.kind]} ${String(w.creator).split(",")[0]}` : ""}`,
     w.meta.overview ? `“${blankPlot(w.meta.overview, w.title)}”` : `It starts with “${String(w.title).slice(0, 1)}”` ];
-  return cluesCache[d] = { no:cluesNo(d), day:d, w, clues }; }
-const cluesState = () => { const s = P.clues; return s?.day === today() ? s : { day:today(), shown:1, guesses:[], done:false, solved:false }; };
+  return cluesCache[d + k] = { no:cluesNo(d), day:d, k, w, clues }; }
+const cluesState = (k = "any") => { const s = k === "any" && !P.cluesBy?.any ? P.clues : P.cluesBy?.[k];
+  return s?.day === today() ? s : { day:today(), shown:1, guesses:[], done:false, solved:false }; };
 const cluePoints = s => s.solved ? 6 - s.shown : 0;
 function cluesShare(s, pz) {
   const marks = Array.from({ length:5 }, (_, i) => i < s.shown - 1 ? "🟥" : i === s.shown - 1 ? (s.solved ? "🟩" : "🟥") : "⬜").join("");
-  return `Rooms · Five Clues #${pz.no}\n${marks} ${s.solved ? `${s.shown}/5` : "X/5"}`; }
-async function openClues(after) {
+  return `Rooms · Five Clues #${pz.no}${pz.k && pz.k !== "any" ? " · " + mediaWord(pz.k) : ""}\n${marks} ${s.solved ? `${s.shown}/5` : "X/5"}`; }
+async function openClues(after, k = "any") {
   let pz; openSheet(`<div class="clu-load">${skeleton(3)}</div>`);
-  try { pz = await cluesToday(); } catch { openSheet(`<h3>Five Clues</h3><p class="sub">Today's couldn't load. Try again in a bit.</p>`); return; }
-  let s = cluesState(), t = null;
-  const save = () => { P.clues = s; saveP(); };
+  try { pz = await cluesToday(today(), k); } catch { openSheet(`<h3>Five Clues</h3><p class="sub">Today's couldn't load. Try again in a bit.</p>`); return; }
+  let s = cluesState(k), t = null;
+  const save = () => { P.cluesBy = { ...(P.cluesBy || {}), [k]:s }; saveP(); };
   const finish = async () => { s.done = true; save(); buzz(s.solved ? [10, 40, 16] : 20);
-    if (!DEMO) try { await q(sb.from("daily_scores").insert({ user_id:me.id, game:"clues", day:s.day, clues:s.shown, solved:s.solved })); } catch {}
-    else try { await q(sb.from("daily_scores").upsert({ user_id:me.id, game:"clues", day:s.day, clues:s.shown, solved:s.solved })); } catch {}
+    if (!DEMO) try { await q(sb.from("daily_scores").insert({ user_id:me.id, game:cluesGame(k), day:s.day, clues:s.shown, solved:s.solved })); } catch {}
+    else try { await q(sb.from("daily_scores").upsert({ user_id:me.id, game:cluesGame(k), day:s.day, clues:s.shown, solved:s.solved })); } catch {}
     draw(); if (s.solved && !REDUCED) setTimeout(() => { const c = $(".clu-ans .co"); if (c) burstAt(c, 24); }, 200); after?.(); };
   const wrong = label => { s.guesses.push(label); if (s.shown >= 5) { s.shown = 6; s.solved = false; finish(); return; } s.shown++; save(); draw(true); };
   const draw = (turned = false) => { const w = pz.w;
-    openSheet(`<div class="clu"><div class="clu-h"><h3>Five Clues</h3><span class="tag dim">#${pz.no}</span></div>
+    openSheet(`<div class="clu"><div class="clu-h"><h3>Five Clues</h3><span class="tag dim">#${pz.no}${k !== "any" ? " · " + mediaWord(k) : ""}</span></div>
       <ol class="clu-list">${pz.clues.map((c, i) => `<li class="${i < Math.min(s.shown, 5) || s.done ? "on" : ""}${turned && i === s.shown - 1 ? " turn" : ""}"><span class="n">${i + 1}</span><span class="c">${i < Math.min(s.shown, 5) || s.done ? esc(c).replace(/“|”/g, m => m) : "·  ·  ·"}</span></li>`).join("")}</ol>
       ${s.guesses.length ? `<div class="clu-wrong">${s.guesses.map(g => `<span>${esc(g)}</span>`).join("")}</div>` : ""}
       ${s.done ? `<div class="clu-ans" data-cw="${esc(w.id)}">${cover(w)}<div><b>${esc(w.title)}</b><small>${tag(w.kind)} ${esc(w.year || "")}</small>
@@ -11076,27 +11095,30 @@ async function openClues(after) {
   draw(); }
 /* the card at the top of the room's Play tab, and the room's week of it */
 async function paintDaily(R, box) {
-  if (!box) return; const s = cluesState();
-  box.innerHTML = `<button class="card game clu-card" id="cluOpen" type="button"><span class="clu-dots">${[1, 2, 3, 4, 5].map(i => `<i class="${s.done ? (s.solved && i === s.shown ? "ok" : i < s.shown || (!s.solved && i <= 5) ? "x" : "") : ""}"></i>`).join("")}</span>
-      <span class="clu-ct"><b>Five Clues · #${cluesNo()}</b><small>${s.done ? (s.solved ? `You got it on clue ${s.shown} · ${cluePoints(s)} points` : "Not today. A new one tomorrow.") : s.guesses.length ? `${s.guesses.length} down, keep going` : "Today's film, show, book or game. Guess it in as few clues as you can."}</small></span>
-      <span class="chev" aria-hidden="true">›</span></button><div id="cluTable"></div>`;
-  $("#cluOpen", box).onclick = () => openClues(() => paintDaily(R, box));
+  if (!box) return; const k = MEDIA_PICK.some(([x]) => x === P.cluesKind) ? P.cluesKind : "any", s = cluesState(k);
+  box.innerHTML = `<div class="card game clu-card"><button class="clu-main" id="cluOpen" type="button"><span class="clu-dots">${[1, 2, 3, 4, 5].map(i => `<i class="${s.done ? (s.solved && i === s.shown ? "ok" : i < s.shown || (!s.solved && i <= 5) ? "x" : "") : ""}"></i>`).join("")}</span>
+      <span class="clu-ct"><b>Five Clues · #${cluesNo()}${k !== "any" ? ` · ${mediaWord(k)}` : ""}</b><small>${s.done ? (s.solved ? `You got it on clue ${s.shown} · ${cluePoints(s)} points` : "Not today. A new one tomorrow.") : s.guesses.length ? `${s.guesses.length} down, keep going` : k === "any" ? "Today's film, show, book or game. Guess it in as few clues as you can." : `Today's ${K(k).label.toLowerCase()}. Guess it in as few clues as you can.`}</small></span>
+      <span class="chev" aria-hidden="true">›</span></button>
+    <div class="clu-kinds" role="tablist" aria-label="Which one">${MEDIA_PICK.map(([x, l]) => { const st = cluesState(x);
+      return `<button class="chip ${x === k ? "on" : ""}" data-ck="${x}" role="tab" aria-selected="${x === k}">${l}${st.done ? `<em class="${st.solved ? "ok" : "x"}">${st.solved ? cluePoints(st) : "×"}</em>` : ""}</button>`; }).join("")}</div></div><div id="cluTable"></div>`;
+  $("#cluOpen", box).onclick = () => openClues(() => paintDaily(R, box), k);
+  $$("[data-ck]", box).forEach(b => b.onclick = () => { P.cluesKind = b.dataset.ck; saveP(); buzz(4); paintDaily(R, box); });
   paintDailyTable(R, $("#cluTable", box)); }
 async function paintDailyTable(R, el) {
   if (!el || !R || R.members.length < 2) return;
   const wk = gameWeek(), last = gameWeek(1), ids = R.members.map(m => m.id);
-  let rows = []; try { rows = await q(sb.from("daily_scores").select("*").in("user_id", ids).eq("game", "clues").gte("day", last)); } catch { return; }
+  let rows = []; try { rows = await q(sb.from("daily_scores").select("*").in("user_id", ids).like("game", "clues%").gte("day", last)); } catch { return; }
   if (!el.isConnected) return;
   const pts = r => r.solved ? 6 - r.clues : 0;
   const sum = from => to => ids.map(id => ({ id, n:rows.filter(r => r.user_id === id && r.day >= from && (!to || r.day < to)).reduce((t, r) => t + pts(r), 0) }));
   const week = sum(wk)().sort((a, b) => b.n - a.n), prev = sum(last)(wk).sort((a, b) => b.n - a.n);
   const crown = prev[0]?.n > 0 && prev[0].n > (prev[1]?.n ?? -1) ? prev[0].id : null;
-  const todayRow = id => rows.find(r => r.user_id === id && r.day === today());
+  const todayRows = id => rows.filter(r => r.user_id === id && r.day === today());
   if (!week.some(x => x.n) && !rows.some(r => r.day >= wk)) { el.innerHTML = `<p class="sub clu-tnote">The room's week of Five Clues adds up here.</p>`; return; }
   el.innerHTML = `<div class="card clu-table"><div class="h"><span>This week's table</span><span class="tag dim">Five Clues</span></div>
-    ${week.map((x, i) => { const m = R.members.find(p => p.id === x.id) || {}, tr = todayRow(x.id);
+    ${week.map((x, i) => { const m = R.members.find(p => p.id === x.id) || {}, tr = todayRows(x.id), tp = tr.reduce((t, r) => t + pts(r), 0);
       return `<div class="clu-tr${x.id === me.id ? " mine" : ""}"><span class="rk">${i + 1}</span><span class="clu-face">${avatar(m)}${crown === x.id ? `<i class="crown" title="Won last week" aria-label="won last week">♛</i>` : ""}</span>
-        <b>${esc(x.id === me.id ? "you" : m.handle || "")}</b><small>${tr ? (tr.solved ? `today: clue ${tr.clues}` : "today: missed") : "not yet today"}</small><span class="n">${x.n}</span></div>`; }).join("")}</div>`; }
+        <b>${esc(x.id === me.id ? "you" : m.handle || "")}</b><small>${tr.length ? `today: ${tr.length} played · ${tp} ${tp === 1 ? "point" : "points"}` : "not yet today"}</small><span class="n">${x.n}</span></div>`; }).join("")}</div>`; }
 
 /* ============ PARTY GAMES ============
    Five games a room plays on its phones, each in its own time. Somebody starts a round;
@@ -11107,48 +11129,60 @@ async function paintDailyTable(R, el) {
 const PARTY = {
   blurb:{ name:"Fake Blurb", line:"A real but little-known title. Everyone writes a fake plot; the real one hides among them. Spot it, and fool the rest.", ask:"A plot that could pass for the real one", col:"var(--sky)" },
   pitch:{ name:"Bad Pitch", line:"A famous title. Pitch it in one line so it sounds terrible. Funniest wins.", ask:"Your worst pitch for it", col:"var(--apricot)" },
-  mash:{ name:"Title Mash", line:"Two titles, one film. Write the tagline for the mash-up.", ask:"The tagline", col:"var(--pink)" },
+  mash:{ name:"Title Mash", line:"Two titles, one story. Write the tagline for the mash-up.", ask:"The tagline", col:"var(--pink)" },
   who:{ name:"Who Rated It?", line:"A real review from someone in this room, name hidden. Guess who wrote it.", col:"var(--mint)" },
   court:{ name:"Hot Take Court", line:"The room's hottest take goes on trial. One line of defence, then guilty or not guilty.", col:"var(--butter)" }
 };
 const ANSWER_GAMES = new Set(["blurb", "pitch", "mash"]);
-const pool1 = () => CLUE_POOL[Math.floor(Math.random() * CLUE_POOL.length)];
+const pool1 = (k = "any") => { const pool = k === "any" ? CLUE_POOL : CLUE_POOL.filter(x => x[0] === k); return pool[Math.floor(Math.random() * pool.length)]; };
 async function partyWork([kind, title, year]) {
-  if (DEMO) { const w = Object.values(works).filter(x => x?.title && !isPart(x.id))[Math.floor(Math.random() * 20)]; return { id:w.id, kind:w.kind, title:w.title, year:w.year, cover:w.cover || "" }; }
+  if (DEMO) { const ws = Object.values(works).filter(x => x?.title && !isPart(x.id) && x.kind === kind), w = ws[Math.floor(Math.random() * ws.length)]; return { id:w.id, kind:w.kind, title:w.title, year:w.year, cover:w.cover || "" }; }
   try { const h = (await SOURCES[kind](title)).find(x => normT(x.title) === normT(title)); if (h) return { id:h.id, kind, title:h.title, year:h.year, cover:h.cover || "" }; } catch {}
   return { id:null, kind, title, year:String(year), cover:"" }; }
-/* something real and not very well known, with a plot to hide among the fakes */
-async function blurbPick() {
-  if (DEMO) { const ws = Object.values(works).filter(w => w?.meta?.overview && w.meta.overview.length > 60); const w = ws[Math.floor(Math.random() * ws.length)];
-    return { work:{ id:w.id, kind:w.kind, title:w.title, year:w.year, cover:w.cover || "" }, real:w.meta.overview.slice(0, 200) }; }
-  const gm = await tmdbGenreNames().catch(() => ({}));
+/* something real and not very well known, with a plot to hide among the fakes: a film or
+   show from TMDB, a game from IGDB, a book from Open Library */
+const firstLines = (t, max = 200) => { const s2 = String(t || "").replace(/\s+/g, " ").trim().split(/(?<=[.!?])\s+/);
+  return (s2[0].length > 70 ? s2[0] : s2.slice(0, 2).join(" ")).slice(0, max); };
+async function blurbPick(k = "any") {
+  if (k === "any") k = ["film", "film", "tv", "book", "game"][Math.floor(Math.random() * 5)];
+  if (DEMO) { const ws = Object.values(works).filter(w => w?.meta?.overview && w.meta.overview.length > 60 && (w.kind === k || !Object.values(works).some(x => x?.kind === k && x.meta?.overview)));
+    const w = ws[Math.floor(Math.random() * ws.length)];
+    return { work:{ id:w.id, kind:w.kind, title:w.title, year:w.year, cover:w.cover || "" }, real:firstLines(w.meta.overview) }; }
   for (let n = 0; n < 4; n++) {
-    const d = await tmdb("discover/movie", { sort_by:"popularity.desc", "vote_count.gte":"40", "vote_count.lte":"400", "vote_average.gte":"6", without_genres:"99,16",
-      include_adult:"false", page:String(1 + Math.floor(Math.random() * 20)) });
-    const r = (d.results || []).filter(x => x.overview && x.overview.length > 70 && x.overview.length < 400 && x.poster_path)[Math.floor(Math.random() * 6)];
-    if (r) { const s = r.overview.split(/(?<=[.!?])\s+/), real = (s[0].length > 70 ? s[0] : s.slice(0, 2).join(" ")).slice(0, 200);
-      return { work:tmdbHit(r, "film", gm), real }; } }
+    if (k === "film" || k === "tv") { const gm = await tmdbGenreNames().catch(() => ({}));
+      const d = await tmdb(`discover/${k === "film" ? "movie" : "tv"}`, { sort_by:"popularity.desc", "vote_count.gte":k === "film" ? "40" : "20", "vote_count.lte":k === "film" ? "400" : "250",
+        "vote_average.gte":"6", without_genres:k === "film" ? "99,16" : "99,10763,10764,10767", include_adult:"false", page:String(1 + Math.floor(Math.random() * 15)) });
+      const r = (d.results || []).filter(x => x.overview && x.overview.length > 70 && x.overview.length < 500 && x.poster_path)[Math.floor(Math.random() * 6)];
+      if (r) return { work:tmdbHit(r, k, gm), real:firstLines(r.overview) }; }
+    if (k === "game") { const g = await igdb("games", `fields name,summary,first_release_date,cover.image_id,genres.name,themes.name; where summary != null & cover != null & total_rating_count > 12 & total_rating_count < 90; limit 50; offset ${Math.floor(Math.random() * 400)};`).catch(() => []);
+      const x = (g || []).filter(y => y.summary && y.summary.length > 70)[Math.floor(Math.random() * 8)];
+      if (x) return { work:igdbHit(x), real:firstLines(x.summary) }; }
+    if (k === "book") { const d = await ol("/search.json", { q:"subject:fiction language:eng", sort:"random", limit:"20", fields:"key,title,author_name,first_publish_year,cover_i,edition_count" }).catch(() => ({}));
+      for (const b of (d.docs || []).filter(x => x.cover_i && (x.edition_count || 0) < 40).slice(0, 5)) {
+        const w = await ol(`${b.key}.json`).catch(() => ({})), about = typeof w.description === "string" ? w.description : w.description?.value || "";
+        if (about.length > 70 && !/^\s*\(|copyright|isbn/i.test(about)) return { work:olHit(b), real:firstLines(about.replace(/\[.*?\]\(.*?\)|-{3,}[\s\S]*$/g, "")) }; } } }
   throw new Error("Couldn't find one just now"); }
 /* the room's hottest take: the score furthest from everyone else in the room on the same title */
-function courtPick(R, es) {
-  const by = {}; for (const e of (es || []).filter(e => !isQuiet(e) && !e.part)) (by[e.work_id] ||= []).push(e);
+function courtPick(R, es, k = "any") {
+  const by = {}; for (const e of (es || []).filter(e => !isQuiet(e) && !e.part && (k === "any" || kindOf(e.work_id) === k))) (by[e.work_id] ||= []).push(e);
   let best = null;
   for (const [wid, rows] of Object.entries(by)) { const last = Object.values(Object.fromEntries(rows.map(e => [e.user_id, e])));
     if (last.length < 2) continue;
     for (const e of last) { const others = last.filter(x => x !== e), avg = others.reduce((t, x) => t + x.score, 0) / others.length, gap = Math.abs(e.score - avg);
       if (gap >= 3 && (!best || gap > best.gap)) best = { gap, user:e.user_id, work:wid, score:e.score, avg:Math.round(avg * 10) / 10 }; } }
   return best; }
-async function startRound(R, game, es) {
+async function startRound(R, game, es, k = "any") {
   let payload = {};
   if (game === "who") {
-    if (!DEMO && !sb.__local) { const id = await q(sb.rpc("start_who", { p_room:R.id })); return id; }
-    const e = (es || []).filter(x => x.note && x.note.length >= 15 && !isQuiet(x) && R.members.some(m => m.id === x.user_id))[Math.floor(Math.random() * 6)];
+    if (!DEMO && !sb.__local) { const id = await q(sb.rpc("start_who", { p_room:R.id, p_kind:k === "any" ? null : k })); return id; }
+    const e = (es || []).filter(x => x.note && x.note.length >= 15 && !isQuiet(x) && R.members.some(m => m.id === x.user_id) && (k === "any" || kindOf(x.work_id) === k))[Math.floor(Math.random() * 6)];
     if (!e) throw new Error("Nobody's written enough reviews yet");
     payload = { entry:e.id, work:e.work_id, note:noteText(e.note), score:e.score, _secret:e.user_id }; }
-  else if (game === "blurb") payload = await blurbPick();
-  else if (game === "pitch") payload = { work:await partyWork(pool1()) };
-  else if (game === "mash") { let a = pool1(), b = pool1(); while (b[1] === a[1]) b = pool1(); payload = { a:await partyWork(a), b:await partyWork(b) }; }
-  else if (game === "court") { const c = courtPick(R, es); if (!c) throw new Error("Nobody's far enough from the room on anything yet"); payload = c; }
+  else if (game === "blurb") payload = await blurbPick(k);
+  else if (game === "pitch") payload = { work:await partyWork(pool1(k)) };
+  else if (game === "mash") { let a = pool1(k), b = pool1(k); while (b[1] === a[1]) b = pool1(k); payload = { a:await partyWork(a), b:await partyWork(b) }; }
+  else if (game === "court") { const c = courtPick(R, es, k); if (!c) throw new Error(`Nobody's far enough from the room on ${k === "any" ? "anything" : K(k).plural.toLowerCase()} yet`); payload = c; }
+  payload.kind = k;
   const row = await q(sb.from("room_rounds").insert({ room_id:R.id, game, payload, created_by:me.id }).select().single());
   return row?.id; }
 async function loadRounds(R) {
@@ -11216,7 +11250,7 @@ function roundHTML(R, r, votes) {
       const top = Math.max(0, ...os.filter(o => !o.real).map(o => o.n));
       body = `<div class="pg-opts done">${os.map(o => `<div class="pg-opt ${o.real ? "real" : o.n && o.n === top ? "win" : ""}"><span>${esc(o.text)}</span>
         <small>${o.real ? `the real one · ${o.n ? `${o.n} found it` : "nobody found it"}` : `${esc(whoName(R, o.user))} · ${o.n} ${r.game === "blurb" ? (o.n === 1 ? "fooled" : "fooled") : o.n === 1 ? "vote" : "votes"}`}</small></div>`).join("")}</div>`; } }
-  return `<div class="card game pg" style="--pg:${P2.col}" data-round="${esc(r.id)}"><div class="h"><span>${esc(P2.name)}</span><span class="tag dim">${st.phase === "done" ? "the reveal" : st.phase === "vote" ? "voting" : st.phase === "answer" ? "answering" : "over"}</span></div>
+  return `<div class="card game pg" style="--pg:${P2.col}" data-round="${esc(r.id)}"><div class="h"><span>${esc(P2.name)}${p.kind && p.kind !== "any" ? ` <em class="pg-kind">${mediaWord(p.kind)}</em>` : ""}</span><span class="tag dim">${st.phase === "done" ? "the reveal" : st.phase === "vote" ? "voting" : st.phase === "answer" ? "answering" : "over"}</span></div>
     <small class="pg-by">${esc(whoName(R, r.created_by))} started it · ${esc(noteAgo(r.created_at))}</small>${top}${body}</div>`; }
 async function paintParty(R, es, box) {
   if (!box || !R || R.members.length < 2) { if (box) box.innerHTML = ""; return; }
@@ -11227,14 +11261,18 @@ async function paintParty(R, es, box) {
   box.innerHTML = `<div class="lbl pg-lbl">Party games<button class="chip" id="pgStart" type="button">+ Start one</button></div>${show.map(r => roundHTML(R, r, votes)).join("") || `<p class="sub pg-none">Fake Blurb, Bad Pitch, Title Mash, Who Rated It? and Hot Take Court. Start one and the room plays in its own time.</p>`}`;
   const again = () => { pingRoom("games"); paintParty(R, es, box); };
   $("#pgStart", box).onclick = async () => {
+    let pk = MEDIA_PICK.some(([x]) => x === P.partyKind) ? P.partyKind : "any";
     const v = await openAsk(`<h3>Start a party game</h3><p class="sub">Everyone answers on their own phone, in their own time. Then the room votes.</p>
+      <div class="lbl">Films, shows, books or games</div><div class="chips pg-kinds">${MEDIA_PICK.map(([x, l]) => `<button class="chip ${x === pk ? "on" : ""}" data-pmk="${x}">${l}</button>`).join("")}</div>
       <div class="pg-pick">${Object.entries(PARTY).map(([k, g]) => `<button class="pg-pk" data-pk="${k}" style="--pg:${g.col}" ${running.has(k) ? "disabled" : ""}><b>${esc(g.name)}</b><small>${running.has(k) ? "One's on already" : esc(g.line)}</small></button>`).join("")}</div>
       <div class="stack"><button class="btn quiet" id="pkNo">Not now</button></div>`,
-      done => { $$("[data-pk]", $("#askBox")).forEach(b => b.onclick = () => done(b.dataset.pk)); $("#pkNo").onclick = () => done(null); });
+      done => { $$("[data-pk]", $("#askBox")).forEach(b => b.onclick = () => done(b.dataset.pk)); $("#pkNo").onclick = () => done(null);
+        $$("[data-pmk]", $("#askBox")).forEach(b => b.onclick = () => { pk = b.dataset.pmk; P.partyKind = pk; saveP(); buzz(4);
+          $$("[data-pmk]", $("#askBox")).forEach(x => x.classList.toggle("on", x === b)); }); });
     if (!v) return;
-    try { say("Setting it up…"); await startRound(R, v, es); buzz(8); say(`${PARTY[v].name} is on`, "good");
+    try { say("Setting it up…"); await startRound(R, v, es, pk); buzz(8); say(`${PARTY[v].name} is on`, "good");
       notify({ room:R.id, title:`${me.handle} started ${PARTY[v].name}`, body:PARTY[v].line, tag:"party-" + R.id }); again(); }
-    catch (e) { say(/nothing to guess/.test(e.message) ? "Nobody's written enough reviews yet" : e.message || "Couldn't start it"); } };
+    catch (e) { say(/nothing to guess/.test(e.message) ? `Nobody's written enough reviews${pk === "any" ? "" : " of " + K(pk).plural.toLowerCase()} yet` : e.message || "Couldn't start it"); } };
   $$("[data-psend]", box).forEach(b => b.onclick = async () => { const id = b.dataset.psend, ta = $(`[data-pin="${CSS.escape(id)}"]`, box), body = ta.value.trim();
     if (!body) { ta.focus(); return; } if (willNotPost(body)) { say("That word doesn't go up here. Say it another way."); return; }
     b.disabled = true; try { await q(sb.from("round_answers").insert({ round_id:id, user_id:me.id, body })); buzz(6); say("You're in"); again(); }
