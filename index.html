@@ -9328,14 +9328,29 @@ function paintHits(resEl, groups, onPick, box, acts) {
       $$(".pick.open", resEl).forEach(o => o.classList.remove("open"));
       r.classList.toggle("open", !was); };
     $$("[data-act]", r).forEach(b => b.onclick = ev => { ev.stopPropagation(); onPick(r, b.dataset.act); box?.focus(); }); }); }
+/* the title "like X" means, in any medium. Something you've logged or saved by that name first;
+   then the best known exact match: films and shows by how many have rated them, games by
+   their ratings, books by their editions. Asking for "games like X" looks for X elsewhere */
+async function likeSeed(term, want) {
+  const t0 = lc(term).trim(), same = h => lc(h.title || "").trim() === t0;
+  const mine = Object.values(works).filter(w => w?.title && !isPart(w.id) && same(w) && (logged(w.id) || activeList()?.items.includes(w.id)));
+  if (mine.length) return mine.sort((a, b) => (want?.includes(a.kind) ? 1 : 0) - (want?.includes(b.kind) ? 1 : 0))[0];
+  const [multi, books, games] = await Promise.all([tmdb("search/multi", { query:term, include_adult:"false" }).catch(() => ({})), SOURCES.book(term).catch(() => []),
+    igdb("games", `search "${term.replace(/"/g, "")}"; fields name,first_release_date,cover.image_id,total_rating_count; limit 10;`).catch(() => [])]);
+  const gm = await tmdbGenreNames().catch(() => ({}));
+  const screenAll = (multi.results || []).filter(r => r.media_type === "movie" || r.media_type === "tv");
+  const screen = screenAll.filter(r => lc(r.title || r.name || "").trim() === t0).sort((a, b) => (b.vote_count || 0) - (a.vote_count || 0));
+  const game = (games || []).filter(g => lc(g.name || "").trim() === t0).sort((a, b) => (b.total_rating_count || 0) - (a.total_rating_count || 0))[0];
+  const book = books.find(same);
+  const asScreen = r => tmdbHit(r, r.media_type === "movie" ? "film" : "tv", gm);
+  /* how well known each is, on one rough scale */
+  const cands = [screen[0] && { h:asScreen(screen[0]), fame:(screen[0].vote_count || 0) }, game && { h:igdbHit(game), fame:(game.total_rating_count || 0) * 8 },
+    book && { h:book, fame:400 }].filter(Boolean)
+    .map(c => ({ ...c, fame:c.fame * (want?.includes(c.h.kind) ? .25 : 1) })).sort((a, b) => b.fame - a.fame);
+  return cands[0]?.h || (screenAll[0] && asScreen(screenAll[0])) || books[0] || (games?.[0] && igdbHit(games[0])) || null; }
 async function likeSearch(term, onPick, resEl, msgEl, box, acts, want = null) {
   msgEl.innerHTML = `<span class="thinker">${tinyFace("ok", "#B9A6FF")}</span>Finding things like “${esc(term)}”`;
-  /* the one you mean, in any medium: something of yours by that name first, then the sources'
-     exact match (films, then shows, books, games); asking for "games like X" looks for X elsewhere */
-  const t0 = lc(term), order = ["film", "tv", "book", "game"].sort((a, b) => (want?.includes(a) ? 1 : 0) - (want?.includes(b) ? 1 : 0));
-  let seed = Object.values(works).filter(w => w?.title && !isPart(w.id) && lc(w.title) === t0).sort((a, b) => order.indexOf(a.kind) - order.indexOf(b.kind))[0];
-  if (!seed) { const found = await Promise.all(order.map(k => SOURCES[k](term).catch(() => [])));
-    seed = found.map(r => r.find(h => lc(h.title) === t0)).find(Boolean) || found.find(r => r.length)?.[0]; }
+  const seed = await likeSeed(term, want);
   if (!seed) { msgEl.textContent = ""; resEl.innerHTML = blank("var(--cream2)","?", `Nothing called “${esc(term)}”`, "Check the spelling and try again.", []); return; }
   const kinds = want || P.kinds, per = kinds.length > 1 ? 6 : 12;
   const got = await Promise.all(kinds.map(k => crossLike(seed, k).catch(() => [])));
@@ -10766,33 +10781,38 @@ async function crossLike(seed, kind) {
   const top = tags.filter(t => !["drama", "action", "adventure"].includes(t)).slice(0, 2);
   const broad = top.length ? top : tags.slice(0, 1);
   let rows = [];
-  /* the same story in another medium comes first: the book of the film, the game of the book */
-  if (seed.title && seed.title.length > 3) try {
+  /* the same story in another medium comes first: the book of the film, the film of the book, the
+     show of the game. Not the other way into games: a game that shares a film's name rarely is it */
+  const screen = k => k === "film" || k === "tv", adapts = (screen(seed.kind) && kind === "book") || (seed.kind === "book" && screen(kind)) || (seed.kind === "game" && screen(kind));
+  if (adapts && seed.title && seed.title.length > 3) try {
     const t = lc(seed.title).replace(/^the\s+/, "");
-    rows.push(...(await SOURCES[kind](seed.title)).filter(h => { const x = lc(h.title || "").replace(/^the\s+/, ""); return x === t || x.startsWith(t + ":"); }).slice(0, 2)); } catch {}
-  try {
-    if (kind === "film" || kind === "tv") { const t = kind === "film" ? "movie" : "tv", gm = await tmdbGenreNames();
-      const gids = [...new Set(broad.map(x => TMDB_TAG[kind][x]).filter(Boolean))];
-      const kwIds = (await Promise.all(words.slice(0, 4).map(x => tmdb("search/keyword", { query:x }).then(r => (r.results || []).find(k => lc(k.name) === x)?.id).catch(() => null)))).filter(Boolean);
-      const ask = async extra => (await tmdb(`discover/${t}`, { sort_by:"vote_count.desc", "vote_average.gte":"6.5", include_adult:"false", ...extra })).results || [];
-      if (kwIds.length) rows.push(...(await ask({ with_keywords:kwIds.join("|"), ...(gids[0] ? { with_genres:String(gids[0]) } : {}) })).map(r => tmdbHit(r, kind, gm)));
-      if (rows.length < 8 && gids.length) rows.push(...(await ask({ with_genres:gids.join(",") })).map(r => tmdbHit(r, kind, gm)));
-      if (rows.length < 8 && gids.length > 1) rows.push(...(await ask({ with_genres:String(gids[0]) })).map(r => tmdbHit(r, kind, gm))); }
-    else if (kind === "game") {
-      if (!igdbThemeIds) igdbThemeIds = Object.fromEntries(((await igdb("themes", "fields id,name; limit 50;")) || []).map(x => [x.name, x.id]));
-      const themes = [...new Set(broad.map(x => igdbThemeIds[IGDB_THEME[x]]).filter(Boolean))];
-      const F = "fields name,first_release_date,cover.image_id,genres.name,themes.name; sort total_rating_count desc; limit 12;";
-      if (words.length) rows.push(...((await igdb("games", `${F} where keywords.name = (${words.slice(0, 5).map(x => `"${x.replace(/"/g, "")}"`).join(",")}) & total_rating_count > 25 & version_parent = null;`)) || []).map(igdbHit));
-      if (rows.length < 8 && themes.length) rows.push(...((await igdb("games", `${F} where themes = [${themes.join(",")}] & total_rating_count > 60 & version_parent = null;`)) || []).map(igdbHit));
-      if (rows.length < 8 && themes.length > 1) rows.push(...((await igdb("games", `${F} where themes = (${themes[0]}) & total_rating_count > 60 & version_parent = null;`)) || []).map(igdbHit)); }
-    else if (kind === "book") { const F = { sort:"rating", limit:"12", fields:"key,title,author_name,first_publish_year,cover_i" };
-      const subj = broad.map(x => OL_TAG[x]).filter(Boolean), quote = x => `subject:"${x.replace(/"/g, "")}"`;
-      if (words.length && subj.length) rows.push(...((await ol("/search.json", { ...F, q:`(${words.slice(0, 4).map(quote).join(" OR ")}) AND ${quote(subj[0])}` })).docs || []).map(b => olHit(b, subj[0])));
-      if (rows.length < 8 && subj.length) rows.push(...((await ol("/search.json", { ...F, q:subj.map(quote).join(" AND ") })).docs || []).map(b => olHit(b, subj[0])));
-      if (rows.length < 8 && subj.length > 1) rows.push(...((await ol("/search.json", { ...F, q:quote(subj[0]) })).docs || []).map(b => olHit(b, subj[0]))); }
-  } catch {}
-  const seen = new Set([seed.id]);
-  return rows.filter(r => r?.id && r.title && !seen.has(r.id) && seen.add(r.id)).slice(0, 12); }
+    rows.push(...(await SOURCES[kind](seed.title)).filter(h => { const x = lc(h.title || "").replace(/^the\s+/, ""); return x === t || x.startsWith(t + ":"); }).slice(0, 1)); } catch {}
+  const tryAdd = async (f, why) => { try { rows.push(...((await f()) || [])); } catch (e) { console.warn("find similar:", why, e?.message || e); } };
+  if (kind === "film" || kind === "tv") { const t = kind === "film" ? "movie" : "tv", gm = await tmdbGenreNames().catch(() => ({}));
+    const gids = [...new Set(broad.map(x => TMDB_TAG[kind][x]).filter(Boolean))];
+    const kwIds = (await Promise.all(words.slice(0, 4).map(x => tmdb("search/keyword", { query:x }).then(r => (r.results || []).find(k => lc(k.name) === x)?.id).catch(() => null)))).filter(Boolean);
+    const ask = async extra => ((await tmdb(`discover/${t}`, { sort_by:"vote_count.desc", "vote_average.gte":"6.5", include_adult:"false", ...extra })).results || []).map(r => tmdbHit(r, kind, gm));
+    if (kwIds.length) await tryAdd(() => ask({ with_keywords:kwIds.join("|"), ...(gids[0] ? { with_genres:String(gids[0]) } : {}) }), "tmdb keywords");
+    if (rows.length < 8 && gids.length) await tryAdd(() => ask({ with_genres:gids.join(",") }), "tmdb genres");
+    if (rows.length < 8 && gids.length > 1) await tryAdd(() => ask({ with_genres:String(gids[0]) }), "tmdb genre"); }
+  else if (kind === "game") {
+    if (!igdbThemeIds) try { igdbThemeIds = Object.fromEntries(((await igdb("themes", "fields id,name; limit 50;")) || []).map(x => [x.name, x.id])); } catch (e) { console.warn("find similar: igdb themes", e?.message); }
+    const themes = [...new Set(broad.map(x => igdbThemeIds?.[IGDB_THEME[x]]).filter(Boolean))];
+    const F = "fields name,first_release_date,cover.image_id,genres.name,themes.name; sort total_rating_count desc; limit 12;";
+    const ask = async where => ((await igdb("games", `${F} where ${where} & total_rating_count > 40;`)) || []).map(igdbHit);
+    if (words.length) await tryAdd(() => ask(`keywords.name = (${words.slice(0, 5).map(x => `"${x.replace(/"/g, "")}"`).join(",")})`), "igdb keywords");
+    if (rows.length < 8 && themes.length) await tryAdd(() => ask(`themes = [${themes.join(",")}]`), "igdb themes");
+    if (rows.length < 8 && themes.length > 1) await tryAdd(() => ask(`themes = (${themes[0]})`), "igdb theme"); }
+  else if (kind === "book") { const F = { sort:"rating", limit:"12", fields:"key,title,author_name,first_publish_year,cover_i" };
+    const subj = broad.map(x => OL_TAG[x]).filter(Boolean), quote = x => `subject:"${x.replace(/"/g, "")}"`;
+    const ask = async (q, tag) => ((await ol("/search.json", { ...F, q:`${q} AND language:eng` })).docs || []).map(b => olHit(b, tag));
+    if (words.length && subj.length) await tryAdd(() => ask(`(${words.slice(0, 4).map(quote).join(" OR ")}) AND ${quote(subj[0])}`, subj[0]), "ol subjects");
+    if (rows.length < 8 && subj.length) await tryAdd(() => ask(subj.map(quote).join(" AND "), subj[0]), "ol tags");
+    if (rows.length < 8 && subj.length > 1) await tryAdd(() => ask(quote(subj[0]), subj[0]), "ol tag"); }
+  /* one of each: by id, and by title and year, since sources list some things twice */
+  const key = r => `${lc(r.title)}|${r.year || ""}`, seen = new Set([seed.id, key(seed)]);
+  return rows.filter(r => r?.id && r.title && !seen.has(r.id) && !seen.has(key(r)) && seen.add(r.id) && seen.add(key(r))).slice(0, 12); }
+
 const KIND_PLURAL = { film:"Films", tv:"Shows", book:"Books", game:"Games" };
 
 /* like the ones you loved: the seeds, then whatever each one's source says goes with it */

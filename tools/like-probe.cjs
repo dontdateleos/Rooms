@@ -6,6 +6,8 @@ const QUERIES = (process.env.QUERIES?.trim() || "like Heat|games like Heat|books
 (async () => {
   const b = await chromium.launch(), p = await b.newPage({ viewport:{ width:390, height:844 } });
   const errs = []; p.on("pageerror", e => errs.push(e.message));
+  p.on("console", m => { if (/find similar/.test(m.text())) errs.push(m.text()); });
+  p.on("response", async r => { if (r.status() >= 400 && /workers\.dev/.test(r.url())) errs.push(`${r.status()} ${r.url().replace(/^https:\/\/[^/]+/, "")} ${r.request().postData() || ""} → ${(await r.text().catch(() => "")).slice(0, 200)}`); });
   /* wait for the newest page to be the one GitHub Pages serves */
   for (let i = 0; i < 20; i++) { const r = await fetch(SITE.split("?")[0] + "?t=" + Date.now()).then(r => r.text()).catch(() => "");
     if (r.includes(process.env.NEEDS || "crossLike")) break; console.log("waiting for the site to update…"); await new Promise(r => setTimeout(r, 15000)); }
