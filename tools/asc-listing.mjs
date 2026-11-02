@@ -181,10 +181,10 @@ async function submit() {
     appStoreVersion:{ data:{ type:"appStoreVersions", id:version.id } } } } };
   if (!items.length) for (let i = 0; ; i++) {
     try { await api("POST", "/v1/reviewSubmissionItems", ITEM); break; }
-    catch (e) { if (!/IN_POST_PROCESSING/.test(e.message) || i >= 20) throw e; console.log("  screenshots still processing, waiting…"); await new Promise(r => setTimeout(r, 30000)); } }
+    catch (e) { if (!/IN_POST_PROCESSING|not ready to be submitted/.test(e.message) || i >= 20) throw e; console.log("  Apple is still processing (screenshots or build), waiting…"); await new Promise(r => setTimeout(r, 30000)); } }
   for (let i = 0; ; i++) {
     try { await api("PATCH", `/v1/reviewSubmissions/${sub.id}`, { data:{ type:"reviewSubmissions", id:sub.id, attributes:{ submitted:true } } }); break; }
-    catch (e) { if (!/IN_POST_PROCESSING/.test(e.message) || i >= 20) throw e; console.log("  screenshots still processing, waiting…"); await new Promise(r => setTimeout(r, 30000)); } }
+    catch (e) { if (!/IN_POST_PROCESSING|not ready to be submitted/.test(e.message) || i >= 20) throw e; console.log("  Apple is still processing (screenshots or build), waiting…"); await new Promise(r => setTimeout(r, 30000)); } }
   console.log(`Submitted version ${version.attributes.versionString} for review.`); }
 
 /* swap a newer build into a version that's already waiting for review: wait for the build to finish
