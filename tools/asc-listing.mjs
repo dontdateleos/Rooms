@@ -27,7 +27,7 @@ async function api(method, path, body) {
   if (!r.ok) { const e = new Error(`${method} ${path.split("?")[0]} → ${r.status}: ${(j.errors || []).map(e => [e.title, e.detail, e.source?.pointer].filter(Boolean).join(" — ")).join("; ") || text.slice(0, 300)}`); e.status = r.status; throw e; }
   return j; }
 let failed = 0;
-async function step(name, fn) { try { const r = await fn(); console.log(`✓ ${name}${r ? ` — ${r}` : ""}`); return true; }
+async function step(name, fn) { try { const r = await fn(); console.log(`✓ ${name}${typeof r === "string" ? ` — ${r}` : ""}`); return true; }
   catch (e) { failed++; console.log(`✗ ${name}: ${e.message}`); return false; } }
 
 /* ---------- what goes in, read from store/listing.md so there's one source ---------- */
@@ -79,14 +79,26 @@ async function apply() {
       attributes:{ name:L.name, subtitle:L.subtitle, privacyPolicyUrl:L.privacy } } }).then(() => `"${L.name}"`));
   await step("Age rating questionnaire", async () => {
     const d = (await api("GET", `/v1/appInfos/${info.id}/ageRatingDeclaration`)).data; const have = d.attributes, set = {};
+    /* the content questions: Rooms makes none of this itself */
     const NONE = ["alcoholTobaccoOrDrugUseOrReferences", "contests", "gamblingSimulated", "medicalOrTreatmentInformation", "profanityOrCrudeHumor", "sexualContentGraphicAndNudity",
       "sexualContentOrNudity", "horrorOrFearThemes", "matureOrSuggestiveThemes", "violenceCartoonOrFantasy", "violenceRealistic", "violenceRealisticProlongedGraphicOrSadistic", "gunsOrOtherWeapons"];
+    /* the features: people post reviews and replies to each other and follow each other, with
+       report, block and a word filter; there's no web browser, chat, ads, loot boxes or gambling */
+    const YES = ["userGeneratedContent", "socialMedia"];
     const NO = ["gambling", "unrestrictedWebAccess", "lootBox", "advertising", "healthOrWellnessTopics", "parentalControls", "ageAssurance", "messagingAndChat", "seventeenPlus"];
     for (const k of NONE) if (k in have) set[k] = "NONE";
     for (const k of NO) if (k in have) set[k] = false;
-    if ("userGeneratedContent" in have) set.userGeneratedContent = true;      /* people post reviews and replies, with report, block and a word filter */
-    await api("PATCH", `/v1/ageRatingDeclarations/${d.id}`, { data:{ type:"ageRatingDeclarations", id:d.id, attributes:set } });
-    return `${Object.keys(set).length} answers`; });
+    for (const k of YES) if (k in have) set[k] = true;
+    /* Apple keeps adding questions; whatever it says is missing gets the answer above, or a no */
+    for (let tries = 0; tries < 12; tries++) {
+      try { await api("PATCH", `/v1/ageRatingDeclarations/${d.id}`, { data:{ type:"ageRatingDeclarations", id:d.id, attributes:set } }); return `${Object.keys(set).length} answers`; }
+      catch (e) { const miss = [...e.message.matchAll(/attribute '(\w+)'/g)].map(m => m[1]).filter(k => !(k in set));
+        const bad = [...e.message.matchAll(/\/data\/attributes\/(\w+)/g)].map(m => m[1]).filter(k => !miss.includes(k) && typeof set[k] === "boolean" && !YES.includes(k));
+        if (!miss.length && !bad.length) throw e;
+        for (const k of miss) set[k] = YES.includes(k) ? true : NONE.includes(k) ? "NONE" : false;
+        for (const k of bad) set[k] = "NONE";
+        console.log(`  …also answering: ${[...miss, ...bad].join(", ")}`); } }
+    throw new Error("gave up after twelve tries"); });
   await step("Copyright and release when approved", () => api("PATCH", `/v1/appStoreVersions/${version.id}`, { data:{ type:"appStoreVersions", id:version.id,
     attributes:{ copyright:L.copyright, releaseType:"AFTER_APPROVAL" } } }));
   const locs = (await api("GET", `/v1/appStoreVersions/${version.id}/appStoreVersionLocalizations`)).data || [];
@@ -105,7 +117,8 @@ async function apply() {
     if (!REVIEW_EMAIL || !REVIEW_PASSWORD) { delete attributes.demoAccountName; delete attributes.demoAccountPassword; }
     const cur = await api("GET", `/v1/appStoreVersions/${version.id}/appStoreReviewDetail`).catch(e => { if (e.status === 404) return {}; throw e; });
     if (cur.data) await api("PATCH", `/v1/appStoreReviewDetails/${cur.data.id}`, { data:{ type:"appStoreReviewDetails", id:cur.data.id, attributes } });
-    else await api("POST", "/v1/appStoreReviewDetails", { data:{ type:"appStoreReviewDetails", attributes, relationships:{ appStoreVersion:{ data:{ type:"appStoreVersions", id:version.id } } } } });
+    else { try { await api("POST", "/v1/appStoreReviewDetails", { data:{ type:"appStoreReviewDetails", attributes, relationships:{ appStoreVersion:{ data:{ type:"appStoreVersions", id:version.id } } } } }); }
+      catch (e) { if (/contactFirstName|contactPhone/.test(e.message)) throw new Error("Apple needs your name and phone number first: App Store Connect → the app → version 1.0 → App Review Information → Contact Information. Save, then run this again."); throw e; } }
     return REVIEW_EMAIL ? `signs in as ${REVIEW_EMAIL}` : "no demo account given"; });
   console.log(failed ? `\n${failed} step(s) need a look (above).` : "\nAll done.");
   console.log("Still to do in the website: App Privacy (answers in STORE.md), and your name and phone number under App Review Information."); }
