@@ -107,8 +107,8 @@ async function cached(key, ctx, ttl, make) {
 /* only the lookups the app actually makes. The Origin check above stops browsers on other
    sites, not a script that sets the header itself, so the paths are the second fence:
    whatever else TMDB or IGDB can answer, this worker won't spend its keys asking. */
-const TMDB_OK = /^\/3\/(search\/(movie|tv|person)|discover\/(movie|tv)|find\/[\w-]+|genre\/(movie|tv)\/list|movie\/upcoming|person\/\d+\/combined_credits|collection\/\d+|(movie|tv)\/\d+(\/(images|recommendations|credits|watch\/providers|season\/\d+))?)$/;
-const IGDB_OK = new Set(["games", "genres"]);
+const TMDB_OK = /^\/3\/(search\/(movie|tv|person|multi|keyword)|discover\/(movie|tv)|find\/[\w-]+|genre\/(movie|tv)\/list|movie\/upcoming|person\/\d+\/combined_credits|collection\/\d+|(movie|tv)\/\d+(\/(images|recommendations|credits|keywords|watch\/providers|season\/\d+))?)$/;
+const IGDB_OK = new Set(["games", "genres", "themes"]);
 async function tmdb(url, env, ctx, cors) {
   if (!env.TMDB_KEY) return json({ error: "no TMDB_KEY set" }, 500, cors);
   if (!TMDB_OK.test(url.pathname)) return json({ error: "not a lookup this app makes" }, 404, cors);

@@ -9333,7 +9333,8 @@ function paintHits(resEl, groups, onPick, box, acts) {
    their ratings, books by their editions. Asking for "games like X" looks for X elsewhere */
 async function likeSeed(term, want) {
   const t0 = lc(term).trim(), same = h => lc(h.title || "").trim() === t0;
-  const mine = Object.values(works).filter(w => w?.title && !isPart(w.id) && same(w) && (logged(w.id) || activeList()?.items.includes(w.id)));
+  /* (the demo's own titles have made-up ids, so it always asks the sources) */
+  const mine = DEMO ? [] : Object.values(works).filter(w => w?.title && !isPart(w.id) && same(w) && (logged(w.id) || activeList()?.items.includes(w.id)));
   if (mine.length) return mine.sort((a, b) => (want?.includes(a.kind) ? 1 : 0) - (want?.includes(b.kind) ? 1 : 0))[0];
   const [multi, books, games] = await Promise.all([tmdb("search/multi", { query:term, include_adult:"false" }).catch(() => ({})), SOURCES.book(term).catch(() => []),
     igdb("games", `search "${term.replace(/"/g, "")}"; fields name,first_release_date,cover.image_id,total_rating_count; limit 10;`).catch(() => [])]);
