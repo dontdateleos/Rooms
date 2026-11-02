@@ -8,7 +8,7 @@ name: iPhone app
 on:
   push:
     branches: [main]
-    paths: [index.html, demo.js, privacy.html, vendor/**, icons/**, ios/**, package.json, package-lock.json, capacitor.config.json, tools/build-www.mjs, .github/workflows/ios.yml]
+    paths: [index.html, demo.js, privacy.html, vendor/**, icons/**, ios/**, package.json, package-lock.json, capacitor.config.json, tools/build-www.mjs, tools/ios-widget.rb, .github/workflows/ios.yml]
   workflow_dispatch:
 concurrency:
   group: ios-${{ github.ref }}
@@ -30,6 +30,10 @@ jobs:
       - run: npm ci
       - name: Build the page into the app
         run: npm run sync
+      - name: Add the widget extension to the project
+        run: |
+          gem list -i xcodeproj >/dev/null || sudo gem install xcodeproj --no-document
+          ruby tools/ios-widget.rb
       - name: Build for the simulator
         run: |
           set -o pipefail

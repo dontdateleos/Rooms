@@ -69,7 +69,18 @@ async function make() {
   const uuid = prof.data.attributes.uuid, content = Buffer.from(prof.data.attributes.profileContent, "base64");
   for (const d of [join(homedir(), "Library/MobileDevice/Provisioning Profiles"), join(homedir(), "Library/Developer/Xcode/UserData/Provisioning Profiles")]) {
     mkdirSync(d, { recursive:true }); writeFileSync(join(d, `${uuid}.mobileprovision`), content); }
-  env("ASC_PROFILE_ID", prof.data.id); env("ASC_PROFILE_NAME", name); env("ASC_PROFILE_UUID", uuid); }
+  env("ASC_PROFILE_ID", prof.data.id); env("ASC_PROFILE_NAME", name); env("ASC_PROFILE_UUID", uuid);
+  /* the widget extension has its own app id and needs its own profile, signed by the same certificate */
+  const WIDGET_ID = BUNDLE_ID + ".widget";
+  let wb = ((await api("GET", `/v1/bundleIds?filter[identifier]=${encodeURIComponent(WIDGET_ID)}&limit=5`)).data || []).find(b => b.attributes.identifier === WIDGET_ID);
+  if (!wb) { wb = (await api("POST", "/v1/bundleIds", { data:{ type:"bundleIds", attributes:{ identifier:WIDGET_ID, name:"Rooms Widget", platform:"IOS" } } })).data; console.log("registered the widget's app id"); }
+  const wname = `Rooms Widget ${GITHUB_RUN_NUMBER}`;
+  const wprof = await api("POST", "/v1/profiles", { data:{ type:"profiles", attributes:{ name:wname, profileType:"IOS_APP_STORE" },
+    relationships:{ bundleId:{ data:{ type:"bundleIds", id:wb.id } }, certificates:{ data:[{ type:"certificates", id:cert.data.id }] } } } });
+  const wuuid = wprof.data.attributes.uuid, wcontent = Buffer.from(wprof.data.attributes.profileContent, "base64");
+  for (const d of [join(homedir(), "Library/MobileDevice/Provisioning Profiles"), join(homedir(), "Library/Developer/Xcode/UserData/Provisioning Profiles")]) {
+    mkdirSync(d, { recursive:true }); writeFileSync(join(d, `${wuuid}.mobileprovision`), wcontent); }
+  env("ASC_WIDGET_PROFILE_NAME", wname); }
 
 /* room for this run's certificate. A build's signer is the certificate made last before it was
    uploaded (a certificate lives a year, so it was made a year before it expires) */
@@ -96,7 +107,7 @@ async function makeRoom() {
     await api("DELETE", `/v1/certificates/${c.id}`).then(() => console.log(`revoked an old certificate (${c.attributes.displayName || c.id}, expiring ${c.attributes.expirationDate.slice(0, 10)})`), e => console.log(String(e)));
   /* profiles of earlier runs whose certificate has gone are no use to anyone */
   const profs = (await api("GET", "/v1/profiles?filter[profileType]=IOS_APP_STORE&limit=100")).data || [];
-  for (const p of profs.filter(p => /^Rooms TestFlight /.test(p.attributes.name) && p.attributes.profileState !== "ACTIVE"))
+  for (const p of profs.filter(p => /^Rooms (TestFlight|Widget) /.test(p.attributes.name) && p.attributes.profileState !== "ACTIVE"))
     await api("DELETE", `/v1/profiles/${p.id}`).then(() => console.log(`deleted the old profile "${p.attributes.name}"`), () => {}); }
 
 async function cleanup() {

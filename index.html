@@ -3054,6 +3054,30 @@ const homeUrl = () => NATIVE ? SITE : location.origin + location.pathname;
 const homePath = () => NATIVE ? new URL(SITE).pathname : location.pathname;
 const plugs = {};
 const plug = name => NATIVE && window.Capacitor.registerPlugin ? (plugs[name] ||= window.Capacitor.registerPlugin(name)) : null;
+/* the iPhone's own bits: the home-screen widget and "Watching now" on the lock screen.
+   Older builds of the app don't have them, so every call is allowed to fail quietly. */
+const native = (fn, args) => { try { return plug("RoomsNative")?.[fn]?.(args)?.catch?.(() => null) ?? null; } catch { return null; } };
+const cssColour = name => getComputedStyle(document.documentElement).getPropertyValue("--" + name).trim();
+/* the room's newest logs and tonight's pick, for the widget */
+let widgetLast = "";
+function widgetSync(R, es) { if (!NATIVE || DEMO || !R) return;
+  const logs = es.filter(e => !e.part && !isQuiet(e)).slice(0, 4).map(e => { const w = works[e.work_id] || e.works || {};
+    return { who:e.user_id === me.id ? "You" : (e.profiles?.handle || profOfId(e.user_id).handle || "Someone"), title:w.title || "", kind:w.kind || kindOf(e.work_id),
+      stars:Math.round(e.score) / 2, cover:w.cover || null }; }).filter(l => l.title);
+  const n = myNow.find(x => x.works || works[x.work_id]), nw = n && (n.works || works[n.work_id]);
+  const next = nw || (activeList()?.items || []).map(id => works[id]).find(w => w && !logged(w.id) && !isSoon(w));
+  const snap = { room:R.name, colour:cssColour(roomColour(R)) || "#F7B3CF", tonight:next?.title || null, tonightCover:next?.cover || null, logs };
+  const json = JSON.stringify(snap); if (json === widgetLast) return; widgetLast = json;
+  native("setWidget", { json:JSON.stringify({ ...snap, updated:Date.now() }) }); }
+/* "Watching now" on the lock screen follows what you're in the middle of */
+function liveNow(id) { if (!NATIVE) return; const n = nowOf(id), w = works[id] || n?.works; if (!w) return;
+  const pr = progressOf(n, w);
+  const detail = pr?.ep ? `S${pr.ep[0]} E${pr.ep[1]}` : pr?.page ? `p. ${pr.page} of ${pr.of}` : pr?.pct != null ? `${pr.pct}%` : "";
+  const started = n?.started_on ? new Date(n.started_on + "T12:00:00").getTime() : Date.now();
+  native("startActivity", { key:id, title:w.title || "", verb:nowVerb(w.kind), colour:CARD.cols[w.kind] || "#F7B3CF",
+    detail, progress:pr?.pct != null ? pr.pct / 100 : -1, started:Math.min(started, Date.now()) }); }
+const liveEnd = id => NATIVE && native("endActivity", { key:id });
+const liveTidy = () => NATIVE && native("endActivity", { keep:myNow.map(n => n.work_id) });
 const canShareText = () => NATIVE || !!navigator.share;
 const shareText = text => NATIVE ? plug("Share").share({ text }) : navigator.share({ text });
 if (NATIVE) { document.documentElement.classList.add("native");
@@ -7634,7 +7658,7 @@ async function renderRoomFeed(fb, R) {
   try { es = feedRows(await wholeEntries(f => { let x = sb.from("entries").select(ENTRY_SEL);
     if (f) x = x.eq("part", false);
     return x.in("user_id", ids).order("created_at",{ascending:false}).limit(60); })); } catch (e) { fb.innerHTML = `<p class="empty">${esc(e.message)}</p>`; return; }
-  es.sort(newestFirst);
+  es.sort(newestFirst); widgetSync(R, es);
   const roomFilter = ["all", "reviews", "activity"].includes(P.roomFilter) ? P.roomFilter : "all";
   const roomEntries = roomFilter === "reviews" ? es.filter(e => e.note || (e.loved || []).length) : roomFilter === "activity" ? es.filter(e => !e.note && !(e.loved || []).length) : es;
   es.forEach(e => remember(e.works)); const allComp = competition(es, 60), comp = allComp.slice(0, 6);
@@ -9247,7 +9271,7 @@ const NOW_SEL = "work_id,started_on,at,updated_at";
 async function loadNow() {
   try { myNow = await q(sb.from("nows").select(NOW_SEL + ",works(*)").eq("user_id", me.id)
       .order("updated_at", { ascending:false }));
-    myNow.forEach(n => remember(n.works)); }
+    myNow.forEach(n => remember(n.works)); liveTidy(); }
   catch { myNow = []; } }
 const nowOf = id => myNow.find(n => n.work_id === id) || null;
 async function startNow(id, at = null) {
@@ -9256,10 +9280,10 @@ async function startNow(id, at = null) {
      the clock on something you picked up a fortnight ago. */
   const row = { user_id:me.id, work_id:id, at, updated_at:new Date().toISOString() };
   if (!nowOf(id)) row.started_on = today();
-  try { await q(sb.from("nows").upsert(row)); await loadNow(); return true; }
+  try { await q(sb.from("nows").upsert(row)); await loadNow(); liveNow(id); return true; }
   catch (e) { oops(e, "Couldn't pick that up"); return false; } }
 async function stopNow(id) {
-  const back = myNow.slice(); myNow = myNow.filter(n => n.work_id !== id);
+  const back = myNow.slice(); myNow = myNow.filter(n => n.work_id !== id); liveEnd(id);
   try { await q(sb.from("nows").delete().eq("user_id", me.id).eq("work_id", id)); return true; }
   catch (e) { myNow = back; oops(e, "Couldn't put that down"); return false; } }
 /* whoever you share a room with can see it, so the same query serves the room */
