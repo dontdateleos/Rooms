@@ -1924,6 +1924,16 @@ nav button .dot{top:0;right:calc(50% - 24px)}
 .lbl .sn-key,.lbl small{font-family:var(--body);font-weight:600;letter-spacing:0;text-transform:none;color:var(--mute);margin-left:auto;font-size:11.5px}
 .lbl:has(small){display:flex;align-items:baseline;gap:10px}
 .sn-tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.cab-count{display:flex;gap:18px;align-items:center;margin:6px 0 4px}
+.cab-count span{display:flex;align-items:center;gap:7px}.cab-count svg{width:28px;height:28px}
+.cab-count b{font:900 21px var(--head)}
+.cab-season{border-top:1px solid var(--line);padding:10px 0 2px;margin-top:8px}
+.cab-sh{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+.cab-pic{width:38px;height:38px;flex:none}.cab-pic svg{width:100%;height:100%;display:block;overflow:visible}
+.cab-pic .zz{animation:none}
+.cab-sh b{font:800 14.5px var(--head)}.cab-sh small{display:block;color:var(--mute);font-size:12px}
+.cab-row{display:flex;align-items:center;gap:10px;padding:6px 0 6px 4px;font-weight:700;font-size:13.5px}
+.cab-row svg{width:24px;height:24px;flex:none}.cab-row span:not(.mpill){flex:1;min-width:0}
 .sn-rules{display:grid;grid-template-columns:1fr 1fr;gap:6px 10px;margin-top:26px}
 .snr{display:flex;align-items:center;gap:7px;min-width:0;font-size:12px;line-height:1.25;color:#C9BFE0}
 .snr svg{width:22px;height:22px;flex:none}
@@ -11384,6 +11394,7 @@ async function renderTaste() { const body = $("#tasteBody"); const t = tasteOf(m
     ${myEntries.length ? `<div id="podium"></div>
     <button class="card tastemini" id="tasteMore" aria-label="See your whole taste">${tasteMiniHTML(t)}</button>
     ${yourNumbersHTML()}
+    ${cabinetHTML(myEntries, true)}
     <div id="myLists"></div>
     <div id="hotTakes"></div>
     <div class="card" id="recCard"><div class="h"><span>You might like</span><span class="tag dim">picked for you</span></div><div id="recBody">${skeleton(1)}</div></div>
@@ -12539,6 +12550,23 @@ async function seasonFinds(S, kind) {
   if (out.length < 5) for (const [k, t] of S.picks.filter(([k]) => k === kind)) { if (out.length >= 8) break;
     try { const h = (await SOURCES[k](t))?.[0]; if (h) add(h, "a season pick"); } catch {} }
   return snFindCache[key] = out; }
+/* ---------- the trophy shelf ----------
+   Every season medal somebody has earned, kept on their profile after the season ends:
+   a count of each metal, then each season with its picture and what was won in it. */
+const MONTH_LONG = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const seasonSpan = S => { const [y, a] = S.starts.split("-").map(Number), b = +S.ends.split("-")[1];
+  return a === b ? `${MONTH_LONG[a - 1]} ${y}` : `${MON[a - 1]}–${MON[b - 1]} ${y}`; };
+const seasonPicHTML = S => S.pic ? SEASON_PICS[S.pic] : S.mk === "ghost" ? ghostMark(2, "#8FD3FF") : placeMark({ mk:S.mk, tone:S.tone });
+function cabinetHTML(es, self) {
+  const won = SEASONS.filter(S => S.starts <= today()).reverse().map(S => ({ S, rows:S.challenges.map(c => ({ c, n:seasonEntries(c, es, S).length }))
+    .map(r => ({ ...r, m:seasonMedal(r.n) })).filter(r => r.m) })).filter(x => x.rows.length);
+  if (!won.length) return self ? `<div class="card cabinet"><div class="h"><span>Trophy shelf</span></div>
+    <p class="sub" style="margin:4px 0 0">Season medals land here and stay. Your first one is a single log away in Challenges.</p></div>` : "";
+  const all = won.flatMap(x => x.rows), tiers = [...SEASON_MEDALS].reverse().map(m => [m, all.filter(r => r.m.tier === m.tier).length]).filter(([, n]) => n);
+  return `<div class="card cabinet"><div class="h"><span>Trophy shelf</span><span class="tag dim">${won.length} ${won.length === 1 ? "season" : "seasons"}</span></div>
+    <div class="cab-count">${tiers.map(([m, n]) => `<span title="${n} ${m.name}">${metalRoom(m.tier)}<b>${n}</b></span>`).join("")}</div>
+    ${won.map(({ S, rows }) => `<div class="cab-season"><div class="cab-sh"><span class="cab-pic">${seasonPicHTML(S)}</span><div><b>${esc(S.name)}</b><small>${esc(seasonSpan(S))}${seasonPhase(S).key === "live" ? " · on now" : ""}</small></div></div>
+      ${rows.map(({ c, m }) => `<div class="cab-row">${roomMark(c.kind)}<span>${esc(c.name)}</span>${medalPill(m)}</div>`).join("")}</div>`).join("")}</div>`; }
 let seasonTurn = 0;
 async function renderClubs() {
   const body = $("#clubsBody");
@@ -13898,6 +13926,7 @@ async function openProfile(userId) { const self = userId === me.id;
         ${w2.title ? `Furthest apart: <b>${esc(w2.title)}</b> — you <b>${(g.far.mine/2).toFixed(1)}</b>, them <b>${(g.far.them/2).toFixed(1)}</b>.` : ""}</p>`; })()}
     ${marksHTML(marks)}
     <div class="card">${tasteHTML(t, { third:!self })}</div>
+    ${cabinetHTML(self ? myEntries : es, self)}
     ${top?.items.length ? `<div class="card"><div class="h"><span>${self?"Your":esc(p.handle)+"'s"} four</span></div>${fourHTML(top.items)}</div>` : ""}
     ${Object.keys(theirTens).length ? `<div class="card"><div class="h"><span>${self?"Your":esc(p.handle)+"'s"} tens</span><span class="tag dim">by medium</span></div>
       ${Object.entries(theirTens).map(([k,items]) => `<div class="lbl" style="margin-top:10px">${K(k).plural}</div>
