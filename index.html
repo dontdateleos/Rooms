@@ -1924,6 +1924,72 @@ nav button .dot{top:0;right:calc(50% - 24px)}
 .lbl .sn-key,.lbl small{font-family:var(--body);font-weight:600;letter-spacing:0;text-transform:none;color:var(--mute);margin-left:auto;font-size:11.5px}
 .lbl:has(small){display:flex;align-items:baseline;gap:10px}
 .sn-tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.clu-card{display:flex;align-items:center;gap:12px;width:100%;border:0;font:inherit;color:var(--ink);text-align:left;cursor:pointer;background:linear-gradient(135deg,color-mix(in srgb,var(--sky) 22%,var(--card)),var(--card))}
+.clu-dots{display:grid;grid-template-columns:repeat(5,9px);gap:4px;flex:none}
+.clu-dots i{width:9px;height:24px;border-radius:5px;background:color-mix(in srgb,var(--ink) 16%,transparent)}
+.clu-dots i.ok{background:var(--good)}.clu-dots i.x{background:#E46A6A}
+.clu-ct{flex:1;min-width:0;display:grid;gap:2px}.clu-ct b{font:800 16px var(--head)}.clu-ct small{color:var(--mute);font-size:12.5px;line-height:1.35}
+.clu-card .chev{color:var(--mute);font-size:20px}
+.clu-tnote{margin:6px 2px 0;font-size:12.5px}
+.clu-table{margin-top:10px}
+.clu-tr{display:grid;grid-template-columns:18px 30px 1fr auto;grid-template-rows:auto auto;column-gap:10px;align-items:center;padding:7px 0;border-top:1px solid var(--line)}
+.clu-tr:first-of-type{border-top:0}
+.clu-tr .rk{grid-row:1/3;color:var(--mute);font:800 13px var(--head);text-align:center}
+.clu-tr .clu-face{grid-row:1/3;position:relative}.clu-face .av{width:30px;height:30px}
+.clu-face .crown{position:absolute;top:-11px;left:50%;transform:translateX(-50%) rotate(-8deg);font-style:normal;color:#FFD54A;font-size:15px;text-shadow:0 1px 0 rgba(0,0,0,.4)}
+.clu-tr b{font:800 14px var(--head)}.clu-tr small{grid-column:3;color:var(--mute);font-size:11.5px}
+.clu-tr .n{grid-row:1/3;grid-column:4;font:900 20px var(--head)}
+.clu-tr.mine b{color:var(--good)}
+.clu-h{display:flex;align-items:center;gap:10px}.clu-h h3{margin:0}
+.clu-list{list-style:none;margin:14px 0 10px;padding:0;display:grid;gap:7px}
+.clu-list li{display:flex;gap:10px;align-items:flex-start;padding:11px 12px;border-radius:14px;background:var(--cream2);color:var(--mute);font-size:14px;line-height:1.4}
+.clu-list li.on{background:var(--card);color:var(--ink);box-shadow:inset 0 0 0 1px var(--line)}
+.clu-list li.turn{animation:cluTurn .5s cubic-bezier(.3,1.3,.5,1)}
+@keyframes cluTurn{0%{transform:rotateX(80deg);opacity:.2}100%{transform:none;opacity:1}}
+.clu-list .n{flex:none;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font:800 11.5px var(--head);background:color-mix(in srgb,var(--ink) 12%,transparent)}
+.clu-list li.on .n{background:var(--sky);color:#151320}
+.clu-wrong{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.clu-wrong span{font-size:12px;padding:3px 9px;border-radius:99px;background:color-mix(in srgb,#E46A6A 18%,transparent);color:var(--ink);text-decoration:line-through;text-decoration-color:#E46A6A}
+.clu-ans{display:flex;gap:12px;align-items:center;padding:12px;border-radius:16px;background:var(--card);margin:6px 0;cursor:pointer}
+.clu-ans .co{width:62px;height:90px;border-radius:9px;flex:none}
+.clu-ans b{font:900 18px var(--head)}.clu-ans small{display:block;color:var(--mute)}.clu-ans p{margin:6px 0 0;font-size:13.5px}
+#cluHits .card{margin-top:8px}
+.pg-lbl{display:flex;align-items:center;justify-content:space-between}
+.pg-lbl .chip{text-transform:none;letter-spacing:0}
+.pg-none{margin:4px 2px 12px}
+.pg{border-top:4px solid var(--pg)}
+.pg-by{display:block;color:var(--mute);font-size:12px;margin:-2px 0 10px}
+.pg-w{display:flex;align-items:center;gap:10px;cursor:pointer;min-width:0}
+.pg-w .co{width:40px;height:58px;border-radius:7px;flex:none;object-fit:cover}
+.pg-w b{font:800 14.5px/1.2 var(--head);display:block}.pg-w small{color:var(--mute);font-size:12px}
+.pg-mash{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center}
+.pg-mash .x{font:900 20px var(--head);color:var(--pg)}
+.pg-q{margin:10px 0 8px;font-size:14px;color:var(--mute)}.pg-q b{color:var(--ink)}
+.pg-quote{margin:10px 0 10px;padding:12px 14px;border-radius:14px;background:var(--cream2);font-size:14.5px;line-height:1.45;display:grid;gap:6px}
+.pg-in{width:100%;margin:2px 0 0;resize:vertical}
+.pg-row{display:flex;justify-content:space-between;align-items:center;margin-top:8px}
+.pg-row small{color:var(--mute);font-size:12px}
+.pg-send{width:auto;padding:9px 16px;font-size:14px}
+.pg-wait{margin:6px 0;color:var(--mute);font-size:13.5px;line-height:1.45}
+.pg-opts{display:grid;gap:7px;margin-top:6px}
+.pg-opt{border:0;font:inherit;text-align:left;color:var(--ink);background:var(--cream2);border-radius:14px;padding:11px 13px;font-size:14px;line-height:1.4;cursor:pointer;display:grid;gap:3px}
+.pg-opt.on{box-shadow:inset 0 0 0 2px var(--pg);background:color-mix(in srgb,var(--pg) 16%,var(--cream2))}
+.pg-opt:disabled{opacity:.6;cursor:default}
+.pg-opt small{color:var(--mute);font-size:11.5px;font-weight:700}
+.pg-opts.done .pg-opt{cursor:default}
+.pg-opt.win{box-shadow:inset 0 0 0 2px var(--pg)}.pg-opt.real{box-shadow:inset 0 0 0 2px var(--good)}
+.pg-foot{display:block;margin-top:8px;color:var(--mute);font-size:11.5px}
+.pg-faces{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+.pg-face{border:0;background:var(--cream2);border-radius:14px;padding:8px 10px;display:grid;justify-items:center;gap:3px;color:var(--ink);font:inherit;cursor:pointer;min-width:62px}
+.pg-face .av{width:32px;height:32px}.pg-face small{font-size:11.5px;font-weight:700}
+.pg-face.on{box-shadow:inset 0 0 0 2px var(--pg)}
+.pg-verdict{display:flex;gap:8px;margin-top:6px}
+.pg-def{margin:8px 0;font-size:14.5px;line-height:1.45}.pg-def small{color:var(--mute)}
+.pg-result{margin:10px 0 4px;font:900 20px var(--head)}.pg-result.good{color:var(--good)}.pg-result.bad{color:#E46A6A}
+.pg-pick{display:grid;gap:8px;margin-top:12px}
+.pg-pk{border:0;text-align:left;font:inherit;color:var(--ink);background:var(--card);border-left:5px solid var(--pg);border-radius:14px;padding:11px 13px;cursor:pointer;display:grid;gap:3px}
+.pg-pk b{font:800 15px var(--head)}.pg-pk small{color:var(--mute);font-size:12.5px;line-height:1.35}
+.pg-pk:disabled{opacity:.5;cursor:default}
 .stk-bar{display:flex;gap:8px;align-items:center;margin:12px 0 14px}
 .stk-bar input{flex:1;min-width:0;margin:0}
 .stk-bar .btn{flex:none;width:auto;padding:11px 14px;font-size:14px;white-space:nowrap}
@@ -3708,10 +3774,10 @@ function peopleOf(w) { const c = w.credits || {}, out = [];
    refresh puts it back exactly as it was. */
 const DEMO = /(^|[#?&])demo\b/.test(location.hash + location.search);
 const LOCAL = !window.__mockSb && (DEMO || SUPABASE_URL.includes("YOUR-"));
-const GAME_KEYS = { reactions:["entry_id","user_id"], room_answers:["room_id","week","user_id"], room_brackets:["room_id","month"], room_votes:["room_id","game","voter"], room_ask_answers:["ask_id","user_id","work_id"] };
+const GAME_KEYS = { reactions:["entry_id","user_id"], room_answers:["room_id","week","user_id"], room_brackets:["room_id","month"], room_votes:["room_id","game","voter"], room_ask_answers:["ask_id","user_id","work_id"], daily_scores:["user_id","game","day"] };
 function makeLocalSb(seed) {
   const KEY = "rooms.db";
-  const blank = { profile:null, signedOut:false, works:{}, profiles:[], entries:[], lists:[], list_items:[], rooms:[], room_members:[], clubs:[], club_members:[], club_votes:[], reactions:[], replies:[], top_lists:[], top_list_items:[], follows:[], nows:[], handovers:[], seen:[], blocks:[], reports:[], settings:[], handles:[], room_answers:[], room_brackets:[], room_votes:[], room_nights:[], room_asks:[], room_ask_answers:[] };
+  const blank = { profile:null, signedOut:false, works:{}, profiles:[], entries:[], lists:[], list_items:[], rooms:[], room_members:[], clubs:[], club_members:[], club_votes:[], reactions:[], replies:[], top_lists:[], top_list_items:[], follows:[], nows:[], handovers:[], seen:[], blocks:[], reports:[], settings:[], handles:[], room_answers:[], room_brackets:[], room_votes:[], room_nights:[], room_asks:[], room_ask_answers:[], daily_scores:[], room_rounds:[], round_answers:[], theme_lists:[], theme_list_items:[], theme_list_likes:[] };
   const db = Object.assign({}, blank, seed || JSON.parse(localStorage.getItem(KEY) || "{}"));
   if (!db.nows) db.nows = [];                 /* a log written before v15 has no such key */
   if (!db.handovers) db.handovers = [];       /* nor one written before v16 */
@@ -10848,7 +10914,7 @@ async function paintGames(R, es) {
   if (past) await fillWorks(past.options).catch(() => {});
   const swNow = swipeState(R, g);
   if (swNow.deck.length) await fillWorks(swNow.matches).catch(() => {});
-  el.innerHTML = pickFlowHTML(R, g, night) + `<div id="roomPicks"></div>` + promptHTML(R, g) + bracketHTML(R, br, g) + (!night && past ? nightAfterHTML(R, past, g) : "");
+  el.innerHTML = `<div id="dailyBox"></div><div id="partyBox"></div>` + pickFlowHTML(R, g, night) + `<div id="roomPicks"></div>` + promptHTML(R, g) + bracketHTML(R, br, g) + (!night && past ? nightAfterHTML(R, past, g) : "");
   /* the Play tab gets a dot while there's something waiting on you */
   const s = promptState(R, g, gameWeek()), bst = br ? bracketState(R, br, g.votes) : null;
   const todo = (!s.voting && !s.mine) || (s.voting && !s.revealed && !s.myVote) || !!bst?.current?.matches.some(mt => !mt.mine)
@@ -10883,10 +10949,294 @@ async function paintGames(R, es) {
   $$("[data-gw]", el).forEach(x => x.onclick = () => openWork(x.dataset.gw));
   wireNights(R, el, night, past, again, g); wireSwipe(R, el, g, again);
   paintRoomPicks(R, $("#roomPicks", el), !night, again);
+  paintDaily(R, $("#dailyBox", el)); paintParty(R, es, $("#partyBox", el));
   if (gameFocus) { const want = gameFocus; gameFocus = null;
     const card = $$(".card.game", el).find(c => ($(".h span", c)?.textContent || "").toLowerCase().includes(want.toLowerCase()));
     if (card) setTimeout(() => card.scrollIntoView({ block:"center", behavior:REDUCED ? "auto" : "smooth" }), 250); }
 }
+/* ============ FIVE CLUES ============
+   One title a day, the same for everyone: a film, a show, a book or a game. The clues go
+   from vague to plain (when it's from, what kind, a few words about it, who made it and
+   the year, then a line of the plot with the names taken out) and every wrong guess or
+   skip turns over the next one. Got it on the first clue is five points, the fifth is one.
+   The puzzle isn't stored anywhere: the date picks it from the list below, and each phone
+   looks the clues up for itself. */
+const CLUE_POOL = [
+  ...[["Heat",1995],["Jaws",1975],["Alien",1979],["The Matrix",1999],["Pulp Fiction",1994],["The Godfather",1972],["Goodfellas",1990],["Fargo",1996],["Se7en",1995],["Titanic",1997],
+    ["Jurassic Park",1993],["Back to the Future",1985],["The Shining",1980],["Blade Runner",1982],["Die Hard",1988],["Groundhog Day",1993],["The Truman Show",1998],["Fight Club",1999],["Memento",2000],["Spirited Away",2001],
+    ["Amélie",2001],["Oldboy",2003],["Lost in Translation",2003],["Eternal Sunshine of the Spotless Mind",2004],["No Country for Old Men",2007],["There Will Be Blood",2007],["The Dark Knight",2008],["WALL·E",2008],["Up",2009],["Inception",2010],
+    ["The Social Network",2010],["Drive",2011],["Her",2013],["The Grand Budapest Hotel",2014],["Whiplash",2014],["Mad Max: Fury Road",2015],["Arrival",2016],["Moonlight",2016],["La La Land",2016],["Get Out",2017],
+    ["Parasite",2019],["Knives Out",2019],["Everything Everywhere All at Once",2022],["Oppenheimer",2023],["Barbie",2023],["Casablanca",1942],["Psycho",1960],["Taxi Driver",1976],["Raiders of the Lost Ark",1981],["E.T. the Extra-Terrestrial",1982],
+    ["The Princess Bride",1987],["The Silence of the Lambs",1991],["Toy Story",1995],["The Big Lebowski",1998],["Gladiator",2000],["Pan's Labyrinth",2006],["Zodiac",2007],["Gone Girl",2014],["Dune",2021],["Ratatouille",2007]].map(([t, y]) => ["film", t, y]),
+  ...[["Breaking Bad",2008],["The Sopranos",1999],["The Wire",2002],["Game of Thrones",2011],["Friends",1994],["The Office",2005],["Stranger Things",2016],["Seinfeld",1989],["Mad Men",2007],["Lost",2004],
+    ["Twin Peaks",1990],["Fleabag",2016],["Succession",2018],["Severance",2022],["The Simpsons",1989],["Chernobyl",2019],["The Bear",2022],["Better Call Saul",2015],["True Detective",2014],["Sherlock",2010],
+    ["The Last of Us",2023],["Black Mirror",2011],["Mr. Robot",2015],["Arrested Development",2003],["Parks and Recreation",2009],["The Crown",2016],["Band of Brothers",2001],["Dark",2017],["Squid Game",2021],["Ted Lasso",2020],
+    ["Atlanta",2016],["The X-Files",1993],["Buffy the Vampire Slayer",1997],["The Leftovers",2014],["Hannibal",2013],["Peaky Blinders",2013],["Shōgun",2024],["The White Lotus",2021],["Mindhunter",2017],["Fargo",2014],
+    ["BoJack Horseman",2014],["Avatar: The Last Airbender",2005],["Normal People",2020],["Killing Eve",2018],["The Expanse",2015],["Battlestar Galactica",2004],["The Good Place",2016],["Six Feet Under",2001],["Deadwood",2004],["The Americans",2013]].map(([t, y]) => ["tv", t, y]),
+  ...[["Pride and Prejudice",1813],["Nineteen Eighty-Four",1949],["The Great Gatsby",1925],["To Kill a Mockingbird",1960],["Jane Eyre",1847],["Frankenstein",1818],["Dracula",1897],["Moby-Dick",1851],["The Catcher in the Rye",1951],["Beloved",1987],
+    ["The Road",2006],["Never Let Me Go",2005],["The Remains of the Day",1989],["One Hundred Years of Solitude",1967],["The Handmaid's Tale",1985],["Brave New World",1932],["Rebecca",1938],["The Secret History",1992],["Gone Girl",2012],["Normal People",2018],
+    ["The Hobbit",1937],["Dune",1965],["Fahrenheit 451",1953],["Lord of the Flies",1954],["The Bell Jar",1963],["Wuthering Heights",1847],["Little Women",1868],["Crime and Punishment",1866],["The Kite Runner",2003],["Life of Pi",2001],
+    ["Atonement",2001],["Wolf Hall",2009],["The Hunger Games",2008],["The Girl with the Dragon Tattoo",2005],["A Little Life",2015],["Station Eleven",2014],["Pachinko",2017],["Circe",2018],["Where the Crawdads Sing",2018],["Project Hail Mary",2021],
+    ["The Martian",2011],["Jurassic Park",1990],["The Shining",1977],["It",1986],["American Psycho",1991],["Middlemarch",1871],["The Name of the Wind",2007],["Good Omens",1990],["The Hitchhiker's Guide to the Galaxy",1979],["Mrs Dalloway",1925]].map(([t, y]) => ["book", t, y]),
+  ...[["The Legend of Zelda: Breath of the Wild",2017],["Super Mario 64",1996],["Half-Life 2",2004],["Portal",2007],["The Last of Us",2013],["Red Dead Redemption 2",2018],["The Witcher 3: Wild Hunt",2015],["Minecraft",2011],["Tetris",1984],["Dark Souls",2011],
+    ["Elden Ring",2022],["Hollow Knight",2017],["Celeste",2018],["Hades",2020],["Disco Elysium",2019],["Outer Wilds",2019],["Stardew Valley",2016],["Undertale",2015],["BioShock",2007],["Mass Effect 2",2010],
+    ["Grand Theft Auto V",2013],["Bloodborne",2015],["Shadow of the Colossus",2005],["Metal Gear Solid",1998],["Final Fantasy VII",1997],["Chrono Trigger",1995],["Super Metroid",1994],["Silent Hill 2",2001],["Resident Evil 4",2005],["God of War",2018],
+    ["Journey",2012],["Inside",2016],["Return of the Obra Dinn",2018],["Baldur's Gate 3",2023],["Animal Crossing: New Horizons",2020],["The Elder Scrolls V: Skyrim",2011],["Fallout: New Vegas",2010],["Portal 2",2011],["Spelunky",2008],["Braid",2008],
+    ["Firewatch",2016],["What Remains of Edith Finch",2017],["Untitled Goose Game",2019],["Among Us",2018],["Fortnite",2017],["Pokémon Red and Blue",1996],["Halo: Combat Evolved",2001],["Super Mario Odyssey",2017],["Cuphead",2017],["Death Stranding",2019]].map(([t, y]) => ["game", t, y])
+];
+const CLUES_START = "2026-11-02";
+const cluesNo = (d = today()) => dayNo(d) - dayNo(CLUES_START) + 1;
+/* a prime stride walks the whole list before it repeats, and keeps the media mixed */
+const cluesPick = (d = today()) => CLUE_POOL[((cluesNo(d) - 1) * 97 % CLUE_POOL.length + CLUE_POOL.length) % CLUE_POOL.length];
+const normT = t => lc(String(t || "")).normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/^(the|a|an)\s+/, "").replace(/[^a-z0-9]+/g, " ").trim();
+const CLUE_KIND_WORD = { film:"A film", tv:"A TV show", book:"A book", game:"A game" };
+const CLUE_MADE = { film:"directed by", tv:"made by", book:"written by", game:"made by" };
+/* take the names out of the plot: the title's own words, and anything capitalised
+   that isn't starting a sentence */
+function blankPlot(text, title) {
+  const tw = new Set(normT(title).split(" ").filter(w => w.length > 3));
+  const s = String(text || "").replace(/\s+/g, " ").split(/(?<=[.!?])\s+/).slice(0, 2).join(" ").slice(0, 260);
+  return s.replace(/(^|[.!?]\s+|\s)([\w'’À-ÿ-]+)/g, (m, pre, w) => {
+    const start = pre === "" || /[.!?]/.test(pre);
+    if (tw.has(normT(w)) || (!start && /^[A-ZÀ-Ý]/.test(w) && w.length > 1)) return pre + "▇".repeat(Math.min(6, Math.max(3, Math.round(w.length / 2))));
+    return m; }); }
+const cluesCache = {};
+async function cluesToday(d = today()) {
+  if (cluesCache[d]) return cluesCache[d];
+  const [kind, title, year] = cluesPick(d);
+  let ans = null, det = {}, words = [];
+  if (DEMO) { const pool = Object.values(works).filter(w => w?.title && !isPart(w.id) && (w.meta?.overview || w.creator));
+    ans = pool[(cluesNo(d) * 7) % pool.length]; det = { creator:ans.creator, meta:ans.meta || {} }; }
+  else {
+    const hits = await SOURCES[kind](title).catch(() => []);
+    ans = hits.find(h => normT(h.title) === normT(title) && Math.abs((+h.year || 0) - year) <= 1) || hits.find(h => normT(h.title) === normT(title)) || hits[0];
+    if (!ans) throw new Error("couldn't find today's");
+    det = await DETAIL[kind](ans.id.split(":")[1]).catch(() => ({}));
+    if (kind === "film" || kind === "tv") try { const k = await tmdb(`${kind === "film" ? "movie" : "tv"}/${ans.id.split(":")[1]}/keywords`);
+      words = (k.keywords || k.results || []).map(x => x.name).filter(x => !KW_NOISE.test(x)).slice(0, 3); } catch {} }
+  const w = { ...ans, creator:det.creator || ans.creator || "", meta:{ ...(ans.meta || {}), ...(det.meta || {}) } };
+  const y = +(w.year || year) || year, genres = (w.meta.genres || []).filter(g => !BOOK_NOISE?.test?.(g)).slice(0, 3);
+  if (!words.length) words = (w.meta.genres || []).slice(3, 6);
+  const clues = [
+    `${CLUE_KIND_WORD[w.kind] || "Something"} from the ${Math.floor(y / 10) * 10}s`,
+    genres.length ? genres.join(" · ") : "No genre to go on — guess away",
+    words.length ? words.join(" · ") : (w.length ? `${w.length}${K(w.kind).unit}` : "Nothing more to go on here"),
+    `${y}${w.creator ? ` · ${CLUE_MADE[w.kind]} ${String(w.creator).split(",")[0]}` : ""}`,
+    w.meta.overview ? `“${blankPlot(w.meta.overview, w.title)}”` : `It starts with “${String(w.title).slice(0, 1)}”` ];
+  return cluesCache[d] = { no:cluesNo(d), day:d, w, clues }; }
+const cluesState = () => { const s = P.clues; return s?.day === today() ? s : { day:today(), shown:1, guesses:[], done:false, solved:false }; };
+const cluePoints = s => s.solved ? 6 - s.shown : 0;
+function cluesShare(s, pz) {
+  const marks = Array.from({ length:5 }, (_, i) => i < s.shown - 1 ? "🟥" : i === s.shown - 1 ? (s.solved ? "🟩" : "🟥") : "⬜").join("");
+  return `Rooms · Five Clues #${pz.no}\n${marks} ${s.solved ? `${s.shown}/5` : "X/5"}`; }
+async function openClues(after) {
+  let pz; openSheet(`<div class="clu-load">${skeleton(3)}</div>`);
+  try { pz = await cluesToday(); } catch { openSheet(`<h3>Five Clues</h3><p class="sub">Today's couldn't load. Try again in a bit.</p>`); return; }
+  let s = cluesState(), t = null;
+  const save = () => { P.clues = s; saveP(); };
+  const finish = async () => { s.done = true; save(); buzz(s.solved ? [10, 40, 16] : 20);
+    if (!DEMO) try { await q(sb.from("daily_scores").insert({ user_id:me.id, game:"clues", day:s.day, clues:s.shown, solved:s.solved })); } catch {}
+    else try { await q(sb.from("daily_scores").upsert({ user_id:me.id, game:"clues", day:s.day, clues:s.shown, solved:s.solved })); } catch {}
+    draw(); if (s.solved && !REDUCED) setTimeout(() => { const c = $(".clu-ans .co"); if (c) burstAt(c, 24); }, 200); after?.(); };
+  const wrong = label => { s.guesses.push(label); if (s.shown >= 5) { s.shown = 6; s.solved = false; finish(); return; } s.shown++; save(); draw(true); };
+  const draw = (turned = false) => { const w = pz.w;
+    openSheet(`<div class="clu"><div class="clu-h"><h3>Five Clues</h3><span class="tag dim">#${pz.no}</span></div>
+      <ol class="clu-list">${pz.clues.map((c, i) => `<li class="${i < Math.min(s.shown, 5) || s.done ? "on" : ""}${turned && i === s.shown - 1 ? " turn" : ""}"><span class="n">${i + 1}</span><span class="c">${i < Math.min(s.shown, 5) || s.done ? esc(c).replace(/“|”/g, m => m) : "·  ·  ·"}</span></li>`).join("")}</ol>
+      ${s.guesses.length ? `<div class="clu-wrong">${s.guesses.map(g => `<span>${esc(g)}</span>`).join("")}</div>` : ""}
+      ${s.done ? `<div class="clu-ans" data-cw="${esc(w.id)}">${cover(w)}<div><b>${esc(w.title)}</b><small>${tag(w.kind)} ${esc(w.year || "")}</small>
+          <p>${s.solved ? `Got it on clue ${s.shown} · <b>${cluePoints(s)} ${cluePoints(s) === 1 ? "point" : "points"}</b>` : "Not this time · 0 points"}</p></div></div>
+        <div class="stack"><button class="btn" id="cluShare">Share how you did</button><button class="btn quiet" id="cluGo">See ${esc(w.title)}</button></div>
+        <p class="sub" style="text-align:center">A new one tomorrow.</p>`
+      : `<input id="cluQ" type="search" placeholder="Guess the ${esc(K(w.kind).label.toLowerCase())}" autocomplete="off" autocapitalize="none"><div id="cluHits"></div>
+        <div class="stack"><button class="btn quiet" id="cluSkip">${s.shown >= 5 ? "Give up" : "Skip to the next clue"}</button></div>`}</div>`);
+    if (s.done) { $("#cluGo").onclick = () => { closeSheet(); if (!works[w.id]) remember(w); openWork(w.id); };
+      $("#cluShare").onclick = async () => { const txt = cluesShare(s, pz);
+        try { if (navigator.share) await navigator.share({ text:txt }); else { await navigator.clipboard.writeText(txt); say("Copied"); } }
+        catch { try { await navigator.clipboard.writeText(txt); say("Copied"); } catch {} } };
+      return; }
+    $("#cluSkip").onclick = () => wrong("skipped");
+    const box = $("#cluQ"); box.focus({ preventScroll:true });
+    box.oninput = () => { clearTimeout(t); const v = box.value.trim(); if (v.length < 2) { $("#cluHits").innerHTML = ""; return; }
+      t = setTimeout(async () => { let hits = [];
+        if (DEMO) hits = Object.values(works).filter(x => x?.kind === w.kind && !isPart(x.id) && lc(x.title).includes(lc(v))).slice(0, 6);
+        else hits = await SOURCES[w.kind](v).catch(() => []);
+        if ($("#cluQ")?.value.trim() !== v) return;
+        $("#cluHits").innerHTML = hits.length ? `<div class="card">${hits.map((h, i) => `<div class="row" data-g="${i}" role="button" tabindex="0">${cover(h)}<div class="t"><b>${esc(h.title)}</b><small>${esc(h.year || "")}${h.creator ? " · " + esc(h.creator) : ""}</small></div></div>`).join("")}</div>` : `<p class="msg">Nothing by that name</p>`;
+        $$("[data-g]", $("#cluHits")).forEach(r => r.onclick = () => { const h = hits[+r.dataset.g];
+          const right = h.id === w.id || (normT(h.title) === normT(w.title) && Math.abs((+h.year || 0) - (+w.year || 0)) <= 1);
+          if (right) { s.solved = true; finish(); } else wrong(h.title); }); }, 300); }; };
+  draw(); }
+/* the card at the top of the room's Play tab, and the room's week of it */
+async function paintDaily(R, box) {
+  if (!box) return; const s = cluesState();
+  box.innerHTML = `<button class="card game clu-card" id="cluOpen" type="button"><span class="clu-dots">${[1, 2, 3, 4, 5].map(i => `<i class="${s.done ? (s.solved && i === s.shown ? "ok" : i < s.shown || (!s.solved && i <= 5) ? "x" : "") : ""}"></i>`).join("")}</span>
+      <span class="clu-ct"><b>Five Clues · #${cluesNo()}</b><small>${s.done ? (s.solved ? `You got it on clue ${s.shown} · ${cluePoints(s)} points` : "Not today. A new one tomorrow.") : s.guesses.length ? `${s.guesses.length} down, keep going` : "Today's film, show, book or game. Guess it in as few clues as you can."}</small></span>
+      <span class="chev" aria-hidden="true">›</span></button><div id="cluTable"></div>`;
+  $("#cluOpen", box).onclick = () => openClues(() => paintDaily(R, box));
+  paintDailyTable(R, $("#cluTable", box)); }
+async function paintDailyTable(R, el) {
+  if (!el || !R || R.members.length < 2) return;
+  const wk = gameWeek(), last = gameWeek(1), ids = R.members.map(m => m.id);
+  let rows = []; try { rows = await q(sb.from("daily_scores").select("*").in("user_id", ids).eq("game", "clues").gte("day", last)); } catch { return; }
+  if (!el.isConnected) return;
+  const pts = r => r.solved ? 6 - r.clues : 0;
+  const sum = from => to => ids.map(id => ({ id, n:rows.filter(r => r.user_id === id && r.day >= from && (!to || r.day < to)).reduce((t, r) => t + pts(r), 0) }));
+  const week = sum(wk)().sort((a, b) => b.n - a.n), prev = sum(last)(wk).sort((a, b) => b.n - a.n);
+  const crown = prev[0]?.n > 0 && prev[0].n > (prev[1]?.n ?? -1) ? prev[0].id : null;
+  const todayRow = id => rows.find(r => r.user_id === id && r.day === today());
+  if (!week.some(x => x.n) && !rows.some(r => r.day >= wk)) { el.innerHTML = `<p class="sub clu-tnote">The room's week of Five Clues adds up here.</p>`; return; }
+  el.innerHTML = `<div class="card clu-table"><div class="h"><span>This week's table</span><span class="tag dim">Five Clues</span></div>
+    ${week.map((x, i) => { const m = R.members.find(p => p.id === x.id) || {}, tr = todayRow(x.id);
+      return `<div class="clu-tr${x.id === me.id ? " mine" : ""}"><span class="rk">${i + 1}</span><span class="clu-face">${avatar(m)}${crown === x.id ? `<i class="crown" title="Won last week" aria-label="won last week">♛</i>` : ""}</span>
+        <b>${esc(x.id === me.id ? "you" : m.handle || "")}</b><small>${tr ? (tr.solved ? `today: clue ${tr.clues}` : "today: missed") : "not yet today"}</small><span class="n">${x.n}</span></div>`; }).join("")}</div>`; }
+
+/* ============ PARTY GAMES ============
+   Five games a room plays on its phones, each in its own time. Somebody starts a round;
+   everyone answers (or, for Who Rated It?, just guesses); then everyone votes; then the
+   names come out. Answers are anonymous until the reveal, on the server, the same way the
+   weekly question's are. A round answers for a day (or until everyone's in, or whoever
+   started it calls time), votes for up to two days, and shows its result for a few more. */
+const PARTY = {
+  blurb:{ name:"Fake Blurb", line:"A real but little-known title. Everyone writes a fake plot; the real one hides among them. Spot it, and fool the rest.", ask:"A plot that could pass for the real one", col:"var(--sky)" },
+  pitch:{ name:"Bad Pitch", line:"A famous title. Pitch it in one line so it sounds terrible. Funniest wins.", ask:"Your worst pitch for it", col:"var(--apricot)" },
+  mash:{ name:"Title Mash", line:"Two titles, one film. Write the tagline for the mash-up.", ask:"The tagline", col:"var(--pink)" },
+  who:{ name:"Who Rated It?", line:"A real review from someone in this room, name hidden. Guess who wrote it.", col:"var(--mint)" },
+  court:{ name:"Hot Take Court", line:"The room's hottest take goes on trial. One line of defence, then guilty or not guilty.", col:"var(--butter)" }
+};
+const ANSWER_GAMES = new Set(["blurb", "pitch", "mash"]);
+const pool1 = () => CLUE_POOL[Math.floor(Math.random() * CLUE_POOL.length)];
+async function partyWork([kind, title, year]) {
+  if (DEMO) { const w = Object.values(works).filter(x => x?.title && !isPart(x.id))[Math.floor(Math.random() * 20)]; return { id:w.id, kind:w.kind, title:w.title, year:w.year, cover:w.cover || "" }; }
+  try { const h = (await SOURCES[kind](title)).find(x => normT(x.title) === normT(title)); if (h) return { id:h.id, kind, title:h.title, year:h.year, cover:h.cover || "" }; } catch {}
+  return { id:null, kind, title, year:String(year), cover:"" }; }
+/* something real and not very well known, with a plot to hide among the fakes */
+async function blurbPick() {
+  if (DEMO) { const ws = Object.values(works).filter(w => w?.meta?.overview && w.meta.overview.length > 60); const w = ws[Math.floor(Math.random() * ws.length)];
+    return { work:{ id:w.id, kind:w.kind, title:w.title, year:w.year, cover:w.cover || "" }, real:w.meta.overview.slice(0, 200) }; }
+  const gm = await tmdbGenreNames().catch(() => ({}));
+  for (let n = 0; n < 4; n++) {
+    const d = await tmdb("discover/movie", { sort_by:"popularity.desc", "vote_count.gte":"40", "vote_count.lte":"400", "vote_average.gte":"6", without_genres:"99,16",
+      include_adult:"false", page:String(1 + Math.floor(Math.random() * 20)) });
+    const r = (d.results || []).filter(x => x.overview && x.overview.length > 70 && x.overview.length < 400 && x.poster_path)[Math.floor(Math.random() * 6)];
+    if (r) { const s = r.overview.split(/(?<=[.!?])\s+/), real = (s[0].length > 70 ? s[0] : s.slice(0, 2).join(" ")).slice(0, 200);
+      return { work:tmdbHit(r, "film", gm), real }; } }
+  throw new Error("Couldn't find one just now"); }
+/* the room's hottest take: the score furthest from everyone else in the room on the same title */
+function courtPick(R, es) {
+  const by = {}; for (const e of (es || []).filter(e => !isQuiet(e) && !e.part)) (by[e.work_id] ||= []).push(e);
+  let best = null;
+  for (const [wid, rows] of Object.entries(by)) { const last = Object.values(Object.fromEntries(rows.map(e => [e.user_id, e])));
+    if (last.length < 2) continue;
+    for (const e of last) { const others = last.filter(x => x !== e), avg = others.reduce((t, x) => t + x.score, 0) / others.length, gap = Math.abs(e.score - avg);
+      if (gap >= 3 && (!best || gap > best.gap)) best = { gap, user:e.user_id, work:wid, score:e.score, avg:Math.round(avg * 10) / 10 }; } }
+  return best; }
+async function startRound(R, game, es) {
+  let payload = {};
+  if (game === "who") {
+    if (!DEMO && !sb.__local) { const id = await q(sb.rpc("start_who", { p_room:R.id })); return id; }
+    const e = (es || []).filter(x => x.note && x.note.length >= 15 && !isQuiet(x) && R.members.some(m => m.id === x.user_id))[Math.floor(Math.random() * 6)];
+    if (!e) throw new Error("Nobody's written enough reviews yet");
+    payload = { entry:e.id, work:e.work_id, note:noteText(e.note), score:e.score, _secret:e.user_id }; }
+  else if (game === "blurb") payload = await blurbPick();
+  else if (game === "pitch") payload = { work:await partyWork(pool1()) };
+  else if (game === "mash") { let a = pool1(), b = pool1(); while (b[1] === a[1]) b = pool1(); payload = { a:await partyWork(a), b:await partyWork(b) }; }
+  else if (game === "court") { const c = courtPick(R, es); if (!c) throw new Error("Nobody's far enough from the room on anything yet"); payload = c; }
+  const row = await q(sb.from("room_rounds").insert({ room_id:R.id, game, payload, created_by:me.id }).select().single());
+  return row?.id; }
+async function loadRounds(R) {
+  let rounds = null;
+  if (!sb.__local) try { rounds = await q(sb.rpc("room_rounds_for", { p_room:R.id })); } catch (e) { if (!missingBit(e)) console.warn("rounds", e); }
+  const votes = await q(sb.from("room_votes").select("*").eq("room_id", R.id).like("game", "round%")).catch(() => []);
+  if (!Array.isArray(rounds)) { /* the demo, and a database without the update, read the tables */
+    const since = new Date(Date.now() - 21 * 864e5).toISOString();
+    const rs = await q(sb.from("room_rounds").select("*").eq("room_id", R.id).gte("created_at", since)).catch(() => []);
+    const ans = rs.length ? await q(sb.from("round_answers").select("*").in("round_id", rs.map(r => r.id))).catch(() => []) : [];
+    rounds = rs.map(r => { const vs = votes.filter(v => v.game === "round:" + r.id).length;
+      const open = Date.now() - Date.parse(r.created_at) > 48 * 36e5 || vs >= Math.max(2, R.members.length - 1);
+      const a = ans.filter(x => x.round_id === r.id);
+      return { ...r, revealed:open, secret:open ? r.payload?._secret || null : null,
+        answers:a.map(x => ({ id:x.id, body:x.body, mine:x.user_id === me.id, user_id:open || x.user_id === me.id ? x.user_id : null })), answered:a.map(x => x.user_id) }; }); }
+  rounds.sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
+  const ids = rounds.flatMap(r => [r.payload?.work, r.payload?.work?.id].filter(x => typeof x === "string"));
+  if (ids.length) await fillWorks(ids).catch(() => {});
+  return { rounds, votes }; }
+function roundState(R, r, votes) {
+  const age = Date.now() - Date.parse(r.created_at), vs = votes.filter(v => v.game === "round:" + r.id), mineV = vs.find(v => v.voter === me.id);
+  const go = votes.some(v => v.game === "roundgo:" + r.id), answered = r.answered || [];
+  let phase = "vote";
+  if (ANSWER_GAMES.has(r.game)) { const allIn = R.members.every(m => answered.includes(m.id));
+    phase = r.answers.length >= 2 && (allIn || go || age > 24 * 36e5) ? "vote" : age > 24 * 36e5 ? "fizzled" : "answer"; }
+  if (r.game === "court") phase = r.answers.length || go || age > 12 * 36e5 ? "vote" : "answer";
+  if (r.revealed && phase === "vote") phase = "done";
+  if (r.revealed && phase !== "done") phase = "fizzled";
+  return { phase, vs, mineV, go, answered, age }; }
+const whoName = (R, id) => id === me.id ? "you" : R.members.find(m => m.id === id)?.handle || "someone";
+function roundHTML(R, r, votes) {
+  const P2 = PARTY[r.game], st = roundState(R, r, votes), p = r.payload || {}, mine = r.answers.find(a => a.mine);
+  const wcard = w => w ? `<div class="pg-w"${w.id ? ` data-gw="${esc(w.id)}"` : ""}>${w.id && works[w.id] ? cover(works[w.id]) : w.cover ? `<img class="co" src="${esc(w.cover)}" alt="" loading="lazy">` : ""}<div><b>${esc(w.title || "")}</b><small>${w.kind ? tag(w.kind) : ""} ${esc(w.year || "")}</small></div></div>` : "";
+  let top = "";
+  if (r.game === "blurb") top = `${wcard(p.work)}<p class="pg-q">What's it really about?</p>`;
+  if (r.game === "pitch") top = `${wcard(p.work)}<p class="pg-q">Pitch it so it sounds terrible.</p>`;
+  if (r.game === "mash") top = `<div class="pg-mash">${wcard(p.a)}<span class="x">×</span>${wcard(p.b)}</div><p class="pg-q">Write the tagline for the mash-up.</p>`;
+  if (r.game === "who") { const w = works[p.work] || {}; top = `${wcard({ ...w, id:p.work })}<blockquote class="pg-quote">“${esc(noteText(p.note || ""))}”<span>${stars(p.score || 0, "sm")}</span></blockquote>`; }
+  if (r.game === "court") { const w = works[p.work] || {}; top = `${wcard({ ...w, id:p.work })}<p class="pg-q"><b>${esc(whoName(R, p.user))}</b> gave it <b>${(p.score / 2).toFixed(1)}★</b> when the rest of the room gave it ${(p.avg / 2).toFixed(1)}★.</p>`; }
+  let body = "";
+  const opts = () => { let o = r.answers.map(a => ({ key:a.id, text:a.body, mine:a.mine, user:a.user_id }));
+    if (r.game === "blurb") o.push({ key:"real", text:p.real, real:true });
+    return o.sort((a, b) => avHash(r.id + a.key) - avHash(r.id + b.key)); };
+  if (st.phase === "answer") {
+    if (r.game === "court" && p.user !== me.id) body = `<p class="pg-wait">Waiting for ${esc(whoName(R, p.user))}'s defence.</p>`;
+    else if (mine) body = `<p class="pg-wait">You're in: “${esc(mine.body)}”<br>${st.answered.length} of ${R.members.length} in.${r.created_by === me.id && r.answers.length >= 2 ? ` <button class="linky" data-pgo="${esc(r.id)}">Start the vote now</button>` : ""}</p>`;
+    else body = `<textarea class="pg-in" data-pin="${esc(r.id)}" maxlength="200" rows="2" placeholder="${esc(r.game === "court" ? "Your defence, in a line" : P2.ask)}"></textarea>
+      <div class="pg-row"><small>${st.answered.length} of ${R.members.length} in</small><button class="btn pg-send" data-psend="${esc(r.id)}">${r.game === "court" ? "Plead" : "Send it"}</button></div>`; }
+  else if (st.phase === "vote") {
+    if (r.game === "court") { const def = r.answers[0];
+      body = `${def ? `<p class="pg-def">“${esc(def.body)}” <small>— the defence</small></p>` : `<p class="pg-wait">No defence offered.</p>`}
+        ${p.user === me.id ? `<p class="pg-wait">The room is deciding. ${st.vs.length} ${st.vs.length === 1 ? "vote" : "votes"} so far.</p>`
+        : `<div class="pg-verdict">${[["guilty", "Guilty"], ["free", "Not guilty"]].map(([k, l]) => `<button class="chip ${st.mineV?.choice === k ? "on" : ""}" data-pv="${esc(r.id)}" data-pc="${k}">${l}</button>`).join("")}</div>`}`; }
+    else if (r.game === "who") body = `<div class="pg-faces">${R.members.map(m => `<button class="pg-face ${st.mineV?.choice === m.id ? "on" : ""}" data-pv="${esc(r.id)}" data-pc="${esc(m.id)}">${avatar(m)}<small>${esc(m.id === me.id ? "me" : m.handle)}</small></button>`).join("")}</div>`;
+    else body = `<p class="pg-wait">${r.game === "blurb" ? "Which one's real?" : "Vote for the best one. Not your own."}</p><div class="pg-opts">${opts().map(o => `<button class="pg-opt ${st.mineV?.choice === o.key ? "on" : ""}" ${o.mine ? "disabled" : ""} data-pv="${esc(r.id)}" data-pc="${esc(o.key)}">${esc(o.text)}${o.mine ? " <small>yours</small>" : ""}</button>`).join("")}</div>`;
+    body += `<small class="pg-foot">${st.vs.length} of ${R.members.length} voted · names come out when everyone has${st.mineV ? " · you can change your vote till then" : ""}</small>`; }
+  else if (st.phase === "fizzled") body = `<p class="pg-wait">Not enough answers came in for this one.</p>`;
+  else { /* the reveal */
+    const count = k => st.vs.filter(v => v.choice === k).length;
+    if (r.game === "court") { const g = count("guilty"), f = count("free"), def = r.answers[0];
+      body = `${def ? `<p class="pg-def">“${esc(def.body)}” <small>— the defence</small></p>` : ""}<p class="pg-result ${g > f ? "bad" : "good"}">${g > f ? "Guilty" : g === f ? "Hung jury" : "Not guilty"} · ${g} to ${f}</p>`; }
+    else if (r.game === "who") { const who = r.secret, right = st.vs.filter(v => v.choice === who && v.voter !== who).map(v => whoName(R, v.voter));
+      body = `<p class="pg-result good">It was ${esc(whoName(R, who))}.</p><p class="pg-wait">${right.length ? `${esc(right.join(", "))} got it.` : "Nobody got it."}</p>`; }
+    else { const os = opts().map(o => ({ ...o, n:count(o.key) })).sort((a, b) => (b.real ? 99 : b.n) - (a.real ? 99 : a.n));
+      const top = Math.max(0, ...os.filter(o => !o.real).map(o => o.n));
+      body = `<div class="pg-opts done">${os.map(o => `<div class="pg-opt ${o.real ? "real" : o.n && o.n === top ? "win" : ""}"><span>${esc(o.text)}</span>
+        <small>${o.real ? `the real one · ${o.n ? `${o.n} found it` : "nobody found it"}` : `${esc(whoName(R, o.user))} · ${o.n} ${r.game === "blurb" ? (o.n === 1 ? "fooled" : "fooled") : o.n === 1 ? "vote" : "votes"}`}</small></div>`).join("")}</div>`; } }
+  return `<div class="card game pg" style="--pg:${P2.col}" data-round="${esc(r.id)}"><div class="h"><span>${esc(P2.name)}</span><span class="tag dim">${st.phase === "done" ? "the reveal" : st.phase === "vote" ? "voting" : st.phase === "answer" ? "answering" : "over"}</span></div>
+    <small class="pg-by">${esc(whoName(R, r.created_by))} started it · ${esc(noteAgo(r.created_at))}</small>${top}${body}</div>`; }
+async function paintParty(R, es, box) {
+  if (!box || !R || R.members.length < 2) { if (box) box.innerHTML = ""; return; }
+  const { rounds, votes } = await loadRounds(R).catch(() => ({ rounds:[], votes:[] }));
+  if (!box.isConnected) return;
+  const show = rounds.filter(r => { const st = roundState(R, r, votes); return st.phase !== "done" && st.phase !== "fizzled" || Date.now() - Date.parse(r.created_at) < 4 * 864e5; }).slice(0, 6);
+  const running = new Set(rounds.filter(r => !["done", "fizzled"].includes(roundState(R, r, votes).phase)).map(r => r.game));
+  box.innerHTML = `<div class="lbl pg-lbl">Party games<button class="chip" id="pgStart" type="button">+ Start one</button></div>${show.map(r => roundHTML(R, r, votes)).join("") || `<p class="sub pg-none">Fake Blurb, Bad Pitch, Title Mash, Who Rated It? and Hot Take Court. Start one and the room plays in its own time.</p>`}`;
+  const again = () => { pingRoom("games"); paintParty(R, es, box); };
+  $("#pgStart", box).onclick = async () => {
+    const v = await openAsk(`<h3>Start a party game</h3><p class="sub">Everyone answers on their own phone, in their own time. Then the room votes.</p>
+      <div class="pg-pick">${Object.entries(PARTY).map(([k, g]) => `<button class="pg-pk" data-pk="${k}" style="--pg:${g.col}" ${running.has(k) ? "disabled" : ""}><b>${esc(g.name)}</b><small>${running.has(k) ? "One's on already" : esc(g.line)}</small></button>`).join("")}</div>
+      <div class="stack"><button class="btn quiet" id="pkNo">Not now</button></div>`,
+      done => { $$("[data-pk]", $("#askBox")).forEach(b => b.onclick = () => done(b.dataset.pk)); $("#pkNo").onclick = () => done(null); });
+    if (!v) return;
+    try { say("Setting it up…"); await startRound(R, v, es); buzz(8); say(`${PARTY[v].name} is on`, "good");
+      notify({ room:R.id, title:`${me.handle} started ${PARTY[v].name}`, body:PARTY[v].line, tag:"party-" + R.id }); again(); }
+    catch (e) { say(/nothing to guess/.test(e.message) ? "Nobody's written enough reviews yet" : e.message || "Couldn't start it"); } };
+  $$("[data-psend]", box).forEach(b => b.onclick = async () => { const id = b.dataset.psend, ta = $(`[data-pin="${CSS.escape(id)}"]`, box), body = ta.value.trim();
+    if (!body) { ta.focus(); return; } if (willNotPost(body)) { say("That word doesn't go up here. Say it another way."); return; }
+    b.disabled = true; try { await q(sb.from("round_answers").insert({ round_id:id, user_id:me.id, body })); buzz(6); say("You're in"); again(); }
+    catch (e) { b.disabled = false; oops(e, "Couldn't send it"); } });
+  $$("[data-pgo]", box).forEach(b => b.onclick = async () => { try { await q(sb.from("room_votes").upsert({ room_id:R.id, game:"roundgo:" + b.dataset.pgo, voter:me.id, choice:"go" })); again(); } catch (e) { oops(e, "Couldn't"); } });
+  $$("[data-pv]", box).forEach(b => b.onclick = async () => { b.disabled = true;
+    try { await q(sb.from("room_votes").upsert({ room_id:R.id, game:"round:" + b.dataset.pv, voter:me.id, choice:b.dataset.pc })); buzz(5); again(); }
+    catch (e) { b.disabled = false; oops(e, "Couldn't vote"); } });
+  $$("[data-gw]", box).forEach(x => x.onclick = () => openWork(x.dataset.gw)); }
+
 const fourHTML = items => `<div class="four">${[0,1,2,3].map(i => { const w = works[items[i]]; return w ? `<div class="po" data-work="${esc(w.id)}">${cover(w,"")}<b>${esc(w.title)}</b></div>` : `<div class="po" style="opacity:.4"></div>`; }).join("")}</div>`;
 /* ---------- what to try next ----------
    Three ways in, mixed together:

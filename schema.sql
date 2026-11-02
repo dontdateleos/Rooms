@@ -1817,3 +1817,130 @@ insert into theme_list_items (list_id, work_id, added_by, position)
   cross join lateral unnest(c.items) with ordinality as i(work_id, n)
   where exists (select 1 from works w where w.id = i.work_id)
   on conflict (list_id, work_id) do nothing;
+
+-- ---------- the daily puzzle ----------
+-- Five Clues: one title a day, the same for everybody, picked by the app from a fixed list
+-- by the date. What's kept is how you did: how many clues it took and whether you got it.
+-- Your rooms can see it, which is what the room's weekly table adds up. Safe to re-run.
+create table if not exists daily_scores (
+  user_id uuid not null references profiles(id) on delete cascade,
+  game text not null default 'clues',
+  day date not null,
+  clues int not null check (clues between 1 and 6),
+  solved boolean not null,
+  created_at timestamptz not null default now(),
+  primary key (user_id, game, day)
+);
+create index if not exists daily_scores_day_idx on daily_scores (game, day);
+alter table daily_scores enable row level security;
+drop policy if exists daily_scores_read on daily_scores;
+create policy daily_scores_read on daily_scores for select to authenticated
+  using (user_id = auth.uid() or (shares_room(user_id) and not apart_from(user_id)));
+drop policy if exists daily_scores_mine on daily_scores;
+create policy daily_scores_mine on daily_scores for insert to authenticated
+  with check (user_id = auth.uid() and day between current_date - 1 and current_date + 1);
+
+-- ---------- party games ----------
+-- A round of one of the room's party games: Fake Blurb, Bad Pitch, Title Mash, Who Rated
+-- It? and Hot Take Court. Somebody starts one, everyone answers on their own phone in their
+-- own time, then everyone votes. Answers are anonymous until the reveal the same way the
+-- weekly question's are: nobody can read anyone else's rows, and room_rounds_for() hands
+-- them back with the names left off until the round is revealed. Who Rated It? has a
+-- secret (whose review it is), so that round is started by start_who(), which picks the
+-- review on the server and keeps the name where only the reveal can read it.
+-- Votes go in room_votes as game 'round:<id>'; 'roundgo:<id>' is someone calling time on
+-- the answers. Safe to re-run.
+create table if not exists room_rounds (
+  id uuid primary key default gen_random_uuid(),
+  room_id uuid not null references rooms(id) on delete cascade,
+  game text not null check (game in ('blurb','pitch','mash','who','court')),
+  payload jsonb not null default '{}',
+  created_by uuid references profiles(id) on delete set null,
+  created_at timestamptz not null default now()
+);
+create index if not exists room_rounds_room_idx on room_rounds (room_id, created_at desc);
+create table if not exists round_secrets (
+  round_id uuid primary key references room_rounds(id) on delete cascade,
+  answer text not null
+);
+create table if not exists round_answers (
+  id uuid primary key default gen_random_uuid(),
+  round_id uuid not null references room_rounds(id) on delete cascade,
+  user_id uuid not null references profiles(id) on delete cascade,
+  body text not null check (char_length(body) between 1 and 200),
+  created_at timestamptz not null default now(),
+  unique (round_id, user_id)
+);
+do $$ begin
+  if not exists (select 1 from pg_constraint where conname = 'round_answers_clean') then
+    alter table round_answers add constraint round_answers_clean check (not bad_word(body)) not valid; end if;
+end $$;
+alter table room_rounds enable row level security;
+alter table round_secrets enable row level security;
+alter table round_answers enable row level security;
+
+drop policy if exists room_rounds_read on room_rounds;
+create policy room_rounds_read on room_rounds for select to authenticated
+  using (room_id in (select my_room_ids()));
+drop policy if exists room_rounds_start on room_rounds;
+create policy room_rounds_start on room_rounds for insert to authenticated
+  with check (created_by = auth.uid() and room_id in (select my_room_ids()) and game <> 'who');
+drop policy if exists room_rounds_end on room_rounds;
+create policy room_rounds_end on room_rounds for delete to authenticated
+  using (created_by = auth.uid());
+
+drop policy if exists round_answers_read on round_answers;
+create policy round_answers_read on round_answers for select to authenticated using (user_id = auth.uid());
+drop policy if exists round_answers_mine on round_answers;
+create policy round_answers_mine on round_answers for all to authenticated
+  using (user_id = auth.uid())
+  with check (user_id = auth.uid() and exists (select 1 from room_rounds r where r.id = round_id and r.room_id in (select my_room_ids())));
+
+-- Who Rated It?: a review somebody in the room wrote (not "just me", not imported, with
+-- something to it), and the name kept back
+create or replace function start_who(p_room uuid)
+returns uuid language plpgsql security definer set search_path = public as $$
+declare e record; rid uuid;
+begin
+  if p_room not in (select my_room_ids()) then raise exception 'not your room'; end if;
+  select en.id, en.user_id, en.work_id, en.note, en.score into e
+  from entries en join room_members m on m.user_id = en.user_id and m.room_id = p_room
+  where not en.private and not coalesce(en.part, false) and en.note is not null and char_length(en.note) between 15 and 400
+    and coalesce(en.context->>'imported', '') = '' and coalesce(en.context->>'before', '') = ''
+    and en.created_at > now() - interval '240 days'
+    and not exists (select 1 from room_rounds r where r.room_id = p_room and r.game = 'who' and r.payload->>'entry' = en.id::text)
+  order by random() limit 1;
+  if not found then raise exception 'nothing to guess yet'; end if;
+  insert into room_rounds (room_id, game, payload, created_by)
+    values (p_room, 'who', jsonb_build_object('entry', e.id, 'work', e.work_id, 'note', e.note, 'score', e.score), auth.uid())
+    returning id into rid;
+  insert into round_secrets (round_id, answer) values (rid, e.user_id::text);
+  return rid;
+end $$;
+revoke all on function start_who(uuid) from public, anon;
+grant execute on function start_who(uuid) to authenticated;
+
+-- The room's rounds of the last three weeks, each with its answers. A name comes back on
+-- an answer only once the round is revealed (or it's yours); so does Who Rated It?'s secret.
+-- Revealed: two days old, or everyone but one has voted.
+create or replace function room_rounds_for(p_room uuid)
+returns table (id uuid, game text, payload jsonb, created_by uuid, created_at timestamptz,
+               revealed boolean, secret text, answers jsonb, answered uuid[])
+language sql stable security definer set search_path = public as $$
+  with r as (
+    select rr.*,
+      (rr.created_at < now() - interval '48 hours'
+        or (select count(*) from room_votes v where v.room_id = rr.room_id and v.game = 'round:' || rr.id)
+           >= greatest(2, (select count(*) from room_members m where m.room_id = rr.room_id) - 1)) as open
+    from room_rounds rr
+    where rr.room_id = p_room and p_room in (select my_room_ids()) and rr.created_at > now() - interval '21 days')
+  select r.id, r.game, r.payload, r.created_by, r.created_at, r.open,
+    case when r.open then (select s.answer from round_secrets s where s.round_id = r.id) end,
+    coalesce((select jsonb_agg(jsonb_build_object('id', a.id, 'body', a.body, 'mine', a.user_id = auth.uid(),
+        'user_id', case when r.open or a.user_id = auth.uid() then a.user_id end) order by a.id)
+      from round_answers a where a.round_id = r.id), '[]'::jsonb),
+    coalesce((select array_agg(a.user_id order by a.user_id) from round_answers a where a.round_id = r.id), '{}')
+  from r order by r.created_at desc;
+$$;
+revoke all on function room_rounds_for(uuid) from public, anon;
+grant execute on function room_rounds_for(uuid) to authenticated;

@@ -261,6 +261,9 @@ const answers = [
 ].map(([user_id, week, work_id, pitch]) => ({ room_id:"r1", week, user_id, work_id, pitch, created_at:ago(3) }));
 const vote = (game, voter, choice, d = 2) => ({ room_id:"r1", game, voter, choice, created_at:ago(d) });
 const roomVotes = [
+  /* party rounds: Fake Blurb's vote is under way, and Who Rated It? is out */
+  ...[["u-cass","real"],["u-mo","ra4"]].map(([v, c]) => vote("round:rr2", v, c, 0.5)),
+  ...[["u-mo","u-ali"],["u-cass","u-rue"],["u-rue","u-ali"],["me","u-mo"]].map(([v, c]) => vote("round:rr3", v, c, 2)),
   ...[["me","u-rue"],["u-mo","me"],["u-rue","me"],["u-cass","u-mo"]].map(([v, c]) => vote("prompt:" + LASTWK, v, c, 4)),
   /* the quarter-finals; the pairs are seeds 1v8, 4v5, 2v7, 3v6 */
   ...[["me","film:1"],["u-mo","film:1"],["u-ali","film:9"],["u-cass","film:1"],["u-rue","film:1"]].map(([v, c]) => vote(`bracket:${MONTH}:1:0`, v, c, 6)),
@@ -358,6 +361,21 @@ export function demoSeed() {
       ...["film:1","tv:1","book:2","film:4"].map((work_id, i) => ({ list_id:"tl3", work_id, added_by:"me", position:i, added_at:ago(20 - i) })),
       ...["film:9","film:40","book:1","tv:2"].map((work_id, i) => ({ list_id:"tl4", work_id, added_by:i === 3 ? "u-mo" : "u-ali", position:i, added_at:ago(12 - i) })),
       ...["game:1","game:2","film:3"].map((work_id, i) => ({ list_id:"tl5", work_id, added_by:"u-rue", position:i, added_at:ago(3) })),
+    ],
+    /* the daily puzzle and a couple of party rounds, so Play has a game going */
+    daily_scores:[["u-mo",0,2,true],["u-cass",0,4,true],["u-mo",1,1,true],["u-ali",1,3,true],["u-cass",2,0,false],["u-rue",1,5,true],["me",1,2,true],["u-mo",8,1,true],["u-mo",9,2,true]]
+      .map(([user_id, back, clues, solved]) => ({ user_id, game:"clues", day:day(back), clues:clues || 6, solved, created_at:ago(back) })),
+    room_rounds:[
+      { id:"rr1", room_id:"r1", game:"pitch", payload:{ work:{ id:"film:1", kind:"film", title:"Heat", year:"1995", cover:"" } }, created_by:"u-cass", created_at:ago(0.2) },
+      { id:"rr2", room_id:"r1", game:"blurb", payload:{ work:{ id:"film:5", kind:"film", title:"Sexy Beast", year:"2000", cover:"" }, real:"A retired safecracker's sunny Spanish exile is shattered when a terrifying old associate arrives to recruit him for one last job." }, created_by:"u-mo", created_at:ago(1.2) },
+      { id:"rr3", room_id:"r1", game:"who", payload:{ entry:"x", work:"film:2", note:"Two hours of a man refusing to be told what to do, and I believed every minute of it.", score:9, _secret:"u-ali" }, created_by:"u-rue", created_at:ago(2.5) },
+    ],
+    round_answers:[
+      { id:"ra1", round_id:"rr1", user_id:"u-mo", body:"Two middle-aged men really need to talk about their feelings. Three hours. Some traffic.", created_at:ago(0.15) },
+      { id:"ra2", round_id:"rr1", user_id:"u-ali", body:"A man refuses to commit to anything for longer than 30 seconds, including this film.", created_at:ago(0.1) },
+      { id:"ra3", round_id:"rr2", user_id:"u-cass", body:"An ageing pool cleaner discovers his villa's pool is a portal to 1970s London.", created_at:ago(1.1) },
+      { id:"ra4", round_id:"rr2", user_id:"u-ali", body:"A British gangster opens a tapas bar, and the tapas bar fights back.", created_at:ago(1) },
+      { id:"ra5", round_id:"rr2", user_id:"u-rue", body:"Two old friends sunbathe until one of them is a rock.", created_at:ago(0.9) },
     ],
     theme_list_likes:[{ list_id:"tl1", user_id:"u-cass" }, { list_id:"tl1", user_id:"u-rue" }, { list_id:"tl2", user_id:"me" }, { list_id:"tl3", user_id:"u-mo" }],
     /* where a few of Up next's things stream, for the services filter; Thief has just
