@@ -204,6 +204,12 @@ const LOG = [
   ["u-cass","film:32",9,15,"",["the look"]],
   ["u-cass","film:30",8,10,"",[]],
   ["u-ali","film:31",7,3,"",[]],
+  /* the last two days, so People has rings across the top: rue and ali you follow,
+     cass and mo you don't */
+  ["u-rue","film:8",10,0.12,"The last shot. That's the review.",[]],
+  ["u-ali","book:5",8,0.35,"Quietly devastating, then somehow hopeful.",[]],
+  ["u-ali","film:7",9,0.9,"Two people not saying it for two hours.",["the acting"]],
+  ["u-cass","game:1",9,0.55,"Go in knowing nothing.",[]],
   /* put down partway: a book you gave up on, and a film somebody walked out of */
   ["me","book:4",5,25,"Beautiful, and I was so tired.",[]],
 ];

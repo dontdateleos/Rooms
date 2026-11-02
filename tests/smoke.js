@@ -41,15 +41,16 @@ const BASE = (process.env.BASE || "http://127.0.0.1:8934").replace(/\/$/, "");
       await expect("#feedPick", "the room title"); await expect(".roomsecs", "the room sections");
       for (const sec of ["Play", "Charts", "Year", "Talk"]) { await tap("[data-rsecbtn]", sec); await wait(900); }
       await expect("#roomGames .card", "the games"); });
-    await step("moving between places", async () => {
-      /* the room's name is the menu: tap it, pick somewhere else, and come back */
-      const title = () => page.locator("#feedPick").innerText();
-      const was = await title(); await tap("#feedPick"); await wait(500);
-      await tap("[data-fp]:not(.on)"); await wait(900);
-      if ((await title()) === was) throw new Error("picking another place didn't move");
-      await tap("#feedPick"); await wait(500); await tap("[data-fp]"); await wait(900);
-      if ((await title()) !== was) throw new Error("couldn't get back to the room"); });
-    await step("room picker", async () => { await tap("#feedPick"); await wait(500); await expect("[data-fp]", "rooms to pick"); await closeSheet(); });
+    await step("people", async () => { await tap("nav button", "People"); await wait(1500);
+      await expect("#storyRow .sbub.fresh", "a ring with something new"); await expect("#pplFol .slip", "the people you follow");
+      await expect("#pplAll .slip", "everyone else");
+      await tap("#storyRow .sbub.fresh"); await wait(600); await expect("#storyV .sv-body h2", "the story");
+      const first = await page.locator("#storyV .sv-body h2").innerText();
+      await page.mouse.click(330, 420); await wait(500);
+      if ((await page.locator("#storyV .sv-body h2").innerText()) === first) throw new Error("tapping the story didn't move on");
+      await tap("#storyV .sv-x"); await wait(500);
+      if (await page.$("#storyV")) throw new Error("the story didn't close"); });
+    await step("room picker", async () => { await tap("nav button", "Rooms"); await wait(1200); await tap("#feedPick"); await wait(500); await expect("[data-fp]", "rooms to pick"); await closeSheet(); });
     await step("room menu", async () => { await tap("#roomMenu"); await wait(500); await expect("#roomSeats", "the members"); await closeSheet(); });
     await step("bell", async () => { await tap("#bellBtn"); await wait(500); await expect("#noteBody", "the bell's list"); await closeSheet(); });
     await step("diary and ranked", async () => { await tap("nav button", "Queue"); await wait(700); await tap("#libBar [data-lib='archive']"); await wait(900); await expect(".drow", "the diary");
@@ -83,7 +84,7 @@ const BASE = (process.env.BASE || "http://127.0.0.1:8934").replace(/\/$/, "");
         fire("touchstart", 200); for (let i = 1; i <= 6; i++) { fire("touchmove", 200 - i * 8); await new Promise(r => setTimeout(r, 120)); } fire("touchend", 152); });
       await wait(700); await expect("#tab-doors.on", "Rooms still, after a short drag");
       if (await page.$("section.incoming")) throw new Error("a peeking tab was left behind");
-      await swipe(-160); await expect("#tab-shelf.on", "Queue after a swipe left");
+      await swipe(-160); await expect("#tab-people.on", "People after a swipe left");
       await swipe(160); await expect("#tab-doors.on", "Rooms after a swipe back"); });
     await step("hold library to spin", async () => { await tap("nav button", "Challenges"); await wait(600);
       const b = page.locator('nav button[data-tab="library"]'); const box = await b.boundingBox();
@@ -99,7 +100,7 @@ const BASE = (process.env.BASE || "http://127.0.0.1:8934").replace(/\/$/, "");
       await tap("#wMore"); await wait(500); await tap('[data-more="list"]'); await wait(800); await expect("[data-addl]", "your lists to add it to"); await closeSheet();
       await tap('#feedBody [data-work="film:1"]'); await wait(1200);
       await tap(".whead [data-creator]"); await wait(1200); await expect(".crgrid .crw", "the director's films"); await closeSheet(); });
-    await step("your page", async () => { await tap("nav button", "You"); await wait(1200); await expect("#tasteCog", "settings"); });
+    await step("your page", async () => { await tap("#meBtn"); await wait(1200); await expect("#tasteCog", "settings"); });
     await step("log something", async () => { await tap("#add"); await wait(700);
       if (!(await page.$("#sheet.on"))) throw new Error("the + button didn't open anything"); await closeSheet(); });
 

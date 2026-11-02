@@ -2458,7 +2458,9 @@ nav button[data-tab="doors"].on .ni-f rect:nth-child(2){animation-delay:.05s}nav
 nav button[data-tab="library"].on .ni-f rect:nth-child(-n+2){animation:tiDeal .45s cubic-bezier(.3,1.4,.5,1) both}
 nav button[data-tab="library"].on .ni-f rect:nth-child(2){animation-delay:.07s}
 nav button[data-tab="clubs"].on .ni-f{transform-origin:50% 90%;animation:tabPop .28s cubic-bezier(.2,1.2,.4,1),tiWobble .6s ease-in-out .15s}
-nav button[data-tab="taste"].on .ni-f g{animation:blinkOnce .3s ease-in-out .25s}
+nav button[data-tab="people"].on .ni-f rect:nth-child(2){transform-origin:50% 100%;animation:tabPop .28s cubic-bezier(.2,1.2,.4,1)}
+nav button[data-tab="people"].on .ni-f rect:first-child{animation:tiPop .42s cubic-bezier(.3,1.6,.5,1) .06s both}
+nav button[data-tab="people"].on .ni-f g{animation:blinkOnce .3s ease-in-out .3s}
 @keyframes tiPop{from{transform:scale(.3);opacity:.3}}
 @keyframes tiDeal{from{transform:translateY(-6px);opacity:0}}
 @keyframes tiWobble{25%{transform:rotate(-12deg)}55%{transform:rotate(8deg)}80%{transform:rotate(-3deg)}}
@@ -2864,6 +2866,79 @@ html.sheetup body:has(#updBar) .toast{top:calc(70px + env(safe-area-inset-top))}
   *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;animation-delay:0s!important;transition-duration:.01ms!important;transition-delay:0s!important}
   #wheelG{transition-duration:.5s!important}
 }
+/* ---------- People: the rings across the top, and the story a ring opens ---------- */
+.storyrow{display:flex;gap:12px;overflow-x:auto;scrollbar-width:none;margin:14px -16px 6px;padding:4px 16px 8px;scroll-padding-inline:16px;scroll-snap-type:x proximity}
+.storyrow::-webkit-scrollbar{display:none}
+.sbub{flex:none;width:68px;display:flex;flex-direction:column;align-items:center;gap:6px;position:relative;background:none;border:0;padding:0;color:var(--ink);scroll-snap-align:start;font:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.sring{display:block;width:68px;height:68px;border-radius:50%;padding:3px;background:var(--line);transition:transform var(--m-fast) var(--m-ease)}
+.sbub:active .sring{transform:scale(.93)}
+.sbub.fresh.f .sring{background:linear-gradient(140deg,var(--pink),var(--apricot) 55%,var(--butter))}
+.sbub.fresh.e .sring{background:linear-gradient(140deg,var(--sky),var(--lilac))}
+.sbub.mine .sring{background:linear-gradient(140deg,var(--mint),var(--sky))}
+.sbub.add .sring{background:none;border:2px dashed var(--line);padding:1px}
+.sin{display:grid;place-items:center;width:100%;height:100%;border-radius:50%;background:var(--card);border:3px solid var(--cream);overflow:hidden}
+.sin .av{width:42px;height:42px}
+.sname{font-size:11.5px;font-weight:600;line-height:1.15;max-width:68px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sbub.seen .sname{color:var(--mute)}
+.scnt{position:absolute;top:-2px;right:-3px;min-width:20px;height:20px;padding:0 5px;border-radius:99px;background:var(--pink);color:var(--onAccent);font:800 11px/16px var(--head);text-align:center;border:2px solid var(--cream)}
+.splus{position:absolute;top:46px;right:-1px;width:23px;height:23px;border-radius:50%;background:var(--ink);color:var(--cream);display:grid;place-items:center;font:900 15px/1 var(--head);border:3px solid var(--cream)}
+.ssplit{flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;width:14px;padding-bottom:20px}
+.ssplit i{width:1px;flex:1;max-height:20px;background:var(--line)}
+.ssplit small{writing-mode:vertical-rl;transform:rotate(180deg);font-size:9.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--mute)}
+.snone{align-self:center;font-size:13px;color:var(--mute);max-width:230px;padding-bottom:20px;white-space:normal}
+.caught{display:flex;flex-direction:column;align-items:center;text-align:center;gap:3px;padding:24px 12px 12px}
+.caught .ctick{width:40px;height:40px;border-radius:50%;border:2px solid var(--good);color:var(--good);display:grid;place-items:center;font:900 18px var(--head);margin-bottom:6px}
+.caught b{font:800 17px var(--head)}
+.caught small{color:var(--mute);font-size:13px;max-width:34ch}
+.twin .twinfol{margin-left:8px;flex:none}
+#pplAll>.lbl:first-child{margin-top:22px}
+html.svopen,html.svopen body{overflow:hidden}
+html.svopen .toast{z-index:21}
+.storyv{position:fixed;inset:0;z-index:19;background:#0E0C12;color:#fff;display:flex;flex-direction:column;overflow:hidden;
+  padding:calc(10px + env(safe-area-inset-top,0px)) 14px calc(14px + env(safe-area-inset-bottom,0px));
+  touch-action:none;user-select:none;-webkit-user-select:none;animation:svIn .26s var(--m-ease)}
+@keyframes svIn{from{opacity:0;transform:scale(.92);border-radius:30px}}
+.storyv.out{animation:svOut .2s ease-in forwards}
+@keyframes svOut{to{opacity:0;transform:translateY(var(--svy,0px)) scale(.88);border-radius:30px}}
+.sv-bg{position:absolute;inset:-15%;background:var(--k,#333) center/cover no-repeat;filter:blur(46px) saturate(1.3);opacity:.5;z-index:0;pointer-events:none}
+.storyv>*:not(.sv-bg){position:relative;z-index:1}
+.sv-bars{display:flex;gap:4px}
+.sv-bars i{flex:1;height:3px;border-radius:2px;background:rgba(255,255,255,.3);overflow:hidden}
+.sv-bars b{display:block;height:100%;width:0;background:#fff}
+.sv-bars .done b{width:100%}
+.sv-bars .run b{animation:svFill 5s linear forwards}
+.storyv.paused .sv-bars .run b{animation-play-state:paused}
+@keyframes svFill{to{width:100%}}
+.sv-head{display:flex;align-items:center;gap:9px;margin-top:10px}
+.sv-who{display:flex;align-items:center;gap:8px;background:none;border:0;color:#fff;padding:0;font:inherit;min-width:0}
+.sv-who .av{width:32px;height:32px}
+.sv-who b{font:800 15px var(--head)}
+.sv-who small{color:rgba(255,255,255,.65);font-size:13px;white-space:nowrap}
+.sv-x{margin-left:auto;width:42px;height:42px;border-radius:50%;border:0;background:none;color:#fff;font:300 32px/1 var(--body);cursor:pointer}
+.sv-body{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;padding:12px 0}
+.sv-cover{border:0;background:rgba(255,255,255,.08);padding:0;width:min(52vw,220px);max-height:40vh;aspect-ratio:2/3;border-radius:14px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.5);cursor:pointer;flex:none}
+.sv-cover .co{width:100%;height:100%;object-fit:cover;display:block;border-radius:0;opacity:1}
+.sv-cover img{pointer-events:none;-webkit-user-drag:none}
+.storyv{-webkit-touch-callout:none}
+.sv-kind{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.65);margin-top:4px}
+.sv-body h2{margin:0;font:900 28px/1.06 var(--head);letter-spacing:-.02em;text-wrap:balance;max-width:16ch}
+.sv-body .stars{--ink:#fff;--starOff:rgba(255,255,255,.18);--starEdge:transparent}
+.sv-body .stars svg{width:24px;height:24px}
+.sv-note{margin:2px 0 0;font-size:16px;line-height:1.42;max-width:32ch;color:rgba(255,255,255,.92);display:-webkit-box;-webkit-line-clamp:6;-webkit-box-orient:vertical;overflow:hidden}
+.sv-loved{margin:0;font-size:13px;color:rgba(255,255,255,.72)}
+.sv-loved b{color:#fff}
+.sv-foot{display:flex;gap:8px;align-items:center;min-height:46px}
+.sv-reply{flex:1;min-width:0;text-align:left;border:1px solid rgba(255,255,255,.35);background:none;color:rgba(255,255,255,.8);border-radius:99px;padding:12px 16px;font:500 14px var(--body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
+.sv-like{width:46px;height:46px;flex:none;border-radius:50%;border:0;background:rgba(255,255,255,.12);color:#fff;display:grid;place-items:center;cursor:pointer}
+.sv-like svg{width:22px;height:22px;stroke:currentColor;stroke-width:2}
+.sv-like.on{background:var(--pink);color:#151320}
+.sv-up{flex:none;border:0;border-radius:99px;background:#fff;color:#151320;font:800 13.5px var(--head);padding:13px 15px;white-space:nowrap;cursor:pointer}
+.sv-up:disabled{background:rgba(255,255,255,.14);color:#fff;cursor:default}
+.sv-likes{margin:0;flex:1;text-align:center;color:rgba(255,255,255,.75);font-size:13.5px}
+.sv-heart{position:absolute;left:50%;top:42%;z-index:3;width:110px;height:110px;pointer-events:none;color:var(--pink);animation:svHeart .7s ease-out forwards}
+.sv-heart svg{width:100%;height:100%}
+@keyframes svHeart{0%{transform:translate(-50%,-50%) scale(.3);opacity:0}30%{transform:translate(-50%,-50%) scale(1.15);opacity:1}100%{transform:translate(-50%,-75%);opacity:0}}
+@media (prefers-reduced-motion:reduce){.storyv,.storyv.out,.sv-heart{animation:none}}
 </style>
 </head>
 <body>
@@ -2881,6 +2956,7 @@ html.sheetup body:has(#updBar) .toast{top:calc(70px + env(safe-area-inset-top))}
 <main class="wrap">
   <section id="tab-auth" class="on"><div class="auth" id="authBody"></div></section>
   <section id="tab-doors"><div id="doorsBody"></div></section>
+  <section id="tab-people"><div id="peopleBody"></div></section>
   <div class="libbar" id="libBar" hidden><h2 class="pagetitle" data-pagetitle="Queue">Queue</h2><div class="seg glide ul" role="tablist" aria-label="Your queue"><span class="segglide"></span>
     <button data-lib="shelf" role="tab">Up next</button><button data-lib="archive" role="tab">Diary</button><button data-lib="ranked" role="tab">Ranked</button></div></div>
   <section id="tab-archive"><div id="archiveBody"></div></section>
@@ -2891,10 +2967,10 @@ html.sheetup body:has(#updBar) .toast{top:calc(70px + env(safe-area-inset-top))}
 
 <nav id="nav"><div class="in"><span class="navpill" id="navPill"></span>
   <button data-tab="doors"><svg class="ni ni-o" viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><rect x="3.5" y="3.5" width="7.5" height="7.5" rx="2.4"/><rect x="13" y="3.5" width="7.5" height="7.5" rx="2.4"/><rect x="3.5" y="13" width="7.5" height="7.5" rx="2.4"/><rect x="13" y="13" width="7.5" height="7.5" rx="2.4"/></g></svg><svg class="ni ni-f" viewBox="0 0 24 24" aria-hidden="true"><g fill="currentColor"><rect x="3" y="3" width="8.5" height="8.5" rx="2.6" opacity=".45"/><rect x="12.5" y="3" width="8.5" height="8.5" rx="2.6" opacity=".45"/><rect x="3" y="12.5" width="8.5" height="8.5" rx="2.6" opacity=".45"/><rect x="12.5" y="12.5" width="8.5" height="8.5" rx="2.6"/></g></svg><span>Rooms</span></button>
-  <button data-tab="library"><svg class="ni ni-o" viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><path d="M7 3.5h10"/><path d="M5.5 7h13"/><rect x="4" y="10.5" width="16" height="10" rx="2.8"/></g></svg><svg class="ni ni-f" viewBox="0 0 24 24" aria-hidden="true"><g fill="currentColor"><rect x="6.5" y="2.5" width="11" height="2.4" rx="1.2" opacity=".45"/><rect x="5" y="6" width="14" height="2.6" rx="1.3" opacity=".7"/><rect x="3.5" y="10" width="17" height="11" rx="3"/></g></svg><span>Queue</span></button>
+  <button data-tab="people"><svg class="ni ni-o" viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><rect x="11" y="4" width="9.5" height="16" rx="4.75"/><path d="M8.6 8.4H7.3a3.8 3.8 0 0 0-3.8 3.8v4a3.8 3.8 0 0 0 3.8 3.8h1.3"/></g><g fill="currentColor"><rect x="13.4" y="9.2" width="1.8" height="4" rx=".9"/><rect x="16.4" y="9.5" width="1.8" height="4.2" rx=".9"/></g></svg><svg class="ni ni-f" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="7.5" width="10" height="13" rx="4" fill="currentColor" opacity=".45"/><rect x="10.5" y="3.5" width="10.5" height="17" rx="5.25" fill="currentColor"/><g fill="var(--cream)"><rect x="13.3" y="9.2" width="1.9" height="4.2" rx=".95"/><rect x="16.5" y="9.5" width="1.9" height="4.4" rx=".95"/></g></svg><span>People</span></button>
   <button id="add" aria-label="Log something"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+  <button data-tab="library"><svg class="ni ni-o" viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><path d="M7 3.5h10"/><path d="M5.5 7h13"/><rect x="4" y="10.5" width="16" height="10" rx="2.8"/></g></svg><svg class="ni ni-f" viewBox="0 0 24 24" aria-hidden="true"><g fill="currentColor"><rect x="6.5" y="2.5" width="11" height="2.4" rx="1.2" opacity=".45"/><rect x="5" y="6" width="14" height="2.6" rx="1.3" opacity=".7"/><rect x="3.5" y="10" width="17" height="11" rx="3"/></g></svg><span>Queue</span></button>
   <button data-tab="clubs"><svg class="ni ni-o" viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><path d="M7.5 4h9v5.5a4.5 4.5 0 0 1-9 0z"/><path d="M7.5 6H5a3 3 0 0 0 3 4.2M16.5 6H19a3 3 0 0 1-3 4.2M12 14v3.5M8.5 20h7"/></g></svg><svg class="ni ni-f" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3.5h10v6a5 5 0 0 1-10 0z" fill="currentColor"/><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 6H5a3 3 0 0 0 3 4.2M16.5 6H19a3 3 0 0 1-3 4.2M12 14v3.5M8.5 20h7"/></g><path d="M12 6.4l.8 1.6 1.7.25-1.25 1.2.3 1.7-1.55-.8-1.55.8.3-1.7-1.25-1.2 1.7-.25z" fill="var(--cream)"/></svg><span>Challenges</span></button>
-  <button data-tab="taste"><svg class="ni ni-o" viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><rect x="4" y="4" width="16" height="16" rx="5.5"/></g><g fill="currentColor"><rect x="9" y="9.6" width="1.9" height="4.4" rx=".95"/><rect x="13.1" y="10" width="1.9" height="4.6" rx=".95"/></g></svg><svg class="ni ni-f" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="6" fill="currentColor"/><g fill="var(--cream)"><rect x="9" y="9.6" width="1.9" height="4.4" rx=".95"/><rect x="13.1" y="10" width="1.9" height="4.6" rx=".95"/></g></svg><span>You</span></button>
 </div></nav>
 <div class="demobar" id="demobar" role="region" aria-label="Demo" hidden>Demo &middot; invented people &middot; nothing is saved</div>
 <div class="offline" id="offline" role="status" aria-live="polite"></div>
@@ -5303,7 +5379,7 @@ async function onLiveHand(row) {
    are actually looking at; anywhere else the next render picks it up. */
 function onFollowEntry(row) {
   if (!row || row.part || isApart(row.user_id) || row.user_id === me.id || !followSet().has(row.user_id)) return;
-  if (currentTab() !== "doors" || feedNow() !== "following") return;
+  if (currentTab() !== "people") return;
   dropInSlip(row, "#folTop"); }
 
 /* ---------- what's happened since you were last here ----------
@@ -5313,7 +5389,7 @@ function onFollowEntry(row) {
    to you,
    each of which you might want to do something about. The first belongs on the tab
    that holds the feed. The second needs somewhere of its own, so it got the bell. */
-let unseen = { entries:[], followers:[], likes:[], games:[], upNext:[] };
+let unseen = { entries:[], followers:[], likes:[], games:[], upNext:[], stories:0 };
 const lastSeen = () => P.lastSeen || new Date(Date.now() - 3*864e5).toISOString();
 /* The bell's own mark. Unlike the feed's, this one starts at the moment you first
    arrive rather than three days back: opening a new bell to a pile of history you have
@@ -5350,6 +5426,11 @@ async function checkNew() {
       .in("entry_id", [...mineIds].slice(0, 200)).neq("user_id", me.id).limit(200));
     unseen.likes = rs.filter(r => String(r.created_at || "") > mark); } catch { unseen.likes = []; } }
   try { unseen.games = await gameNotes(); } catch { unseen.games = []; }
+  if (follows.length) { try { const cut = storyCut();
+    const es = feedRows(await wholeEntries(f => { let x = sb.from("entries").select("id,user_id,created_at,context");
+      if (f) x = x.eq("part", false);
+      return x.in("user_id", follows.map(f => f.followee)).order("created_at",{ascending:false}).limit(60); }));
+    unseen.stories = es.filter(e => String(e.created_at) > cut && !storySeen(e.id)).length; } catch {} }
   paintDot();
 }
 /* Handovers are not diffed against the mark. An unanswered one is not news you have
@@ -5383,6 +5464,9 @@ function paintDot() {
   if (btn) { const n = unseen.entries.length;
     $(".dot", btn)?.remove();
     if (n > 0 && currentTab() !== "home") btn.insertAdjacentHTML("beforeend", `<span class="dot">${n > 9 ? "9+" : n}</span>`); }
+  const pb = $("nav button[data-tab='people']");
+  if (pb) { const n = unseen.stories; $(".dot", pb)?.remove();
+    if (n > 0 && currentTab() !== "people") pb.insertAdjacentHTML("beforeend", `<span class="dot">${n > 9 ? "9+" : n}</span>`); }
   const bell = $("#bellBtn");
   if (bell) { const m = noteCount(), had = !!$(".dot", bell);
     $(".dot", bell)?.remove();
@@ -5524,7 +5608,7 @@ function together(e, all) {
 }
 
 /* ============ shell ============ */
-const RENDER = { doors:renderDoors, archive:renderCabinet, shelf:renderShelf, taste:renderTaste, clubs:renderClubs };
+const RENDER = { doors:renderDoors, people:renderPeople, archive:renderCabinet, shelf:renderShelf, taste:renderTaste, clubs:renderClubs };
 /* 19 — the pill follows the tab you land on.
    It caches pixel geometry in inline styles, which means anything that moves the nav
    behind its back leaves it pointing at a layout that no longer exists. The way to see
@@ -5568,7 +5652,7 @@ if (window.ResizeObserver) { const nb = $("nav .in");
   if (nb) new ResizeObserver(() => requestAnimationFrame(() => movePill(true))).observe(nb); }
 document.fonts?.ready.then(() => movePill(true)).catch(() => {});
 
-const TAB_ORDER = ["doors", "shelf", "archive", "clubs", "taste"];
+const TAB_ORDER = ["doors", "people", "shelf", "archive", "clubs"];
 const drawnAt = {}; let swipeDrawT = 0;
 /* each tab keeps where you were in it; tapping the tab you're already on goes to the top */
 const tabScroll = {};
@@ -6250,7 +6334,7 @@ async function enter() { hideSplash();
   booting = true;
   /* a "season ends in three nights" notification opens on the season */
   const toSeasons = /^#seasons\b/.test(location.hash); if (toSeasons) { history.replaceState(null, "", location.pathname + location.search); P.clubTab = "season"; }
-  switchTab(toSeasons ? "clubs" : "doors"); movePill(true); checkNew(); joinMeChannel();
+  switchTab(toSeasons ? "clubs" : rooms.length ? "doors" : "people"); movePill(true); checkNew(); joinMeChannel();
   if (!P.onboarded && !myEntries.length) setTimeout(openWelcome, 400); else if (P.tourDue) maybeTour();
 }
 function paintMeAv() { const el = $("#meAv"); if (!el) return; el.innerHTML = avSVG(avFor(me));
@@ -6342,15 +6426,16 @@ async function openYearStory(year = storyYear() || String(new Date().getFullYear
 /* ---------- showing a new person round ----------
    After the welcome (or straight away if they chose to look around first), one of the
    logo's rooms points at each part of the app in turn: a lit ring on the thing itself,
-   a line or two, and a tap to go on. Six stops, skippable at any point, and it can be
+   a line or two, and a tap to go on. Seven stops, skippable at any point, and it can be
    asked for again from settings. */
 const TOUR = [
   { at:'#hereRow .couch, #hereRow', title:"Your room", body:"Everyone in the room sits up here. Tap a face to see what they're watching, reading or playing.", col:"#F5A3C7", need:"doors" },
   { at:'#add', title:"Log something", body:"Finished a film, show, book or game? Tap + and drag across the stars. Then pick the one thing you loved most.", col:"#FFB36B" },
   { at:'nav button[data-tab="doors"]', title:"Rooms", body:"What your friends log lands here. Hold a heart to answer with your face, or tap the bubble to reply.", col:"#F5A3C7" },
+  { at:'nav button[data-tab="people"]', title:"People", body:"The people you follow, then everyone else. A ring means they've logged something in the last two days — tap it to see.", col:"#9EF0C9" },
   { at:'nav button[data-tab="library"]', title:"Queue", body:"Up next is everything you mean to get to. Diary is everything you've finished, by date, and Ranked is your order of them.", col:"#B9A6FF" },
   { at:'nav button[data-tab="clubs"]', title:"Challenges", body:"Set a goal for the year, and join this month's season with the room.", col:"#FFE86A" },
-  { at:'nav button[data-tab="taste"]', title:"You", body:"Your taste, your year, and your settings. That's the whole tour.", col:"#8FD3FF", last:true },
+  { at:'#meBtn', title:"You", body:"Your taste, your year and your settings are behind your name. That's the whole tour.", col:"#8FD3FF", last:true },
 ];
 function maybeTour() { if (!P.tourDue || !me) return;
   setTimeout(() => { if (!P.tourDue || $("#sheet").classList.contains("on") || $("#ask").classList.contains("on")) return;
@@ -6687,9 +6772,9 @@ function wireTonight() { const c = $("#tonight"); if (!c) return;
 async function renderDoors() {
   const body = $("#doorsBody"); const R = activeRoom();
   const mem = memories()[0], rev = dueReview();
-  /* Your rooms, then Following, then Everyone, as pages you move along: the title says
-     where you are, the arrows (or a swipe across it) move one along, and a dot per place
-     shows how many there are and which you're on. Tapping the title lists them all. */
+  /* Your rooms, as pages you move along: the title says where you are, the arrows (or a
+     swipe across it) move one along, and a dot per room shows which you're on. Tapping the
+     title lists them all. Following and Everyone live on People. */
   const places = feedPlaces(), cur = places.find(p => p.key === placeNow()) || places[0];
   body.style.setProperty("--room", `var(--${roomColour(R)})`);
   const inRoom = cur.key.startsWith("room:");
@@ -6754,11 +6839,7 @@ async function renderDoors() {
   /* what counted as new is decided once a visit, before it's all marked seen — otherwise
      the feed asked "new since when?" a moment after answering "since now" */
   if (currentTab() === "doors") { if (feedSince == null) feedSince = lastSeen(); markSeen(); }
-  if (feedNow() !== "room") { $("#doorsBody")?.classList.remove("washed"); $("#doorsBody .roomwash")?.remove(); }
-  if (feedNow() === "room") return renderRoomFeed(fb, R);
-  leaveRoomChannel();
-  if (feedNow() === "following") return renderFollowingFeed(fb);
-  return renderEveryoneFeed(fb);
+  return renderRoomFeed(fb, R);
 }
 /* where to: each of your rooms, then the two feeds that aren't a room */
 /* ---------- spoilers ----------
@@ -6933,7 +7014,6 @@ function pagerArrive(dir, pg, ...els) {
 function feedPlaces() {
   const out = rooms.map(r => place("room:" + r.id, r.name, roomColour(r), "room"));
   if (!out.length) out.push(place("room:", "Your room", "pink", "room"));
-  out.push(place("following", "Following", "lilac", "people"), place("everyone", "Everyone", "sky", "crowd"));
   return out; }
 const placeNow = () => { const fn = feedNow(); return fn === "room" ? "room:" + (activeRoom()?.id || "") : fn; };
 /* dir is which way the arrows went, so wrapping from the last place to the first still
@@ -6953,8 +7033,6 @@ function openFeedPick() {
   const row = (attr, name, sub, on, col) => `<button class="row feedrow ${on ? "on" : ""}" ${attr}><span class="fdot" style="background:${col}"></span><div class="t"><b>${esc(name)}</b><small>${sub}</small></div>${on ? `<span class="tag dim">here</span>` : ""}</button>`;
   openSheet(`<h3>Go to</h3>
     ${rooms.map(r => row(`data-fp="room:${esc(r.id)}"`, r.name, `${r.members?.length || ""} ${r.members?.length === 1 ? "person" : "people"} · a room`.trim(), fn === "room" && R?.id === r.id, `var(--${roomColour(r)})`)).join("")}
-    ${row(`data-fp="following"`, "Following", "the people whose taste you follow", fn === "following", "var(--lilac)")}
-    ${row(`data-fp="everyone"`, "Everyone", "what the whole app is finishing", fn === "everyone", "var(--sky)")}
     ${rooms.length < ROOM_LIMIT ? `<div class="roomactions"><button class="btn soft" id="newRoom">Open a room</button><button class="btn ghost" id="joinRoom">Join with a code</button></div>` : ""}
     <p class="msg" id="roomMsg"></p>`);
   wireRoomButtons();
@@ -7225,22 +7303,27 @@ function logLineHTML(es) { const e = es[0], mine = e.user_id === me.id;
   const list = names.length < 3 ? names.join(" and ") : names.slice(0, -1).join(", ") + " and " + names[names.length - 1];
   return `<div class="logline"><div class="ll-who">${avatar(e.profiles)}<p><b data-prof="${esc(e.user_id)}">${esc(mine ? "you" : e.profiles?.handle || "someone")}</b> ${verbs.length === 1 ? verbs[0] : "logged"} ${list}<small> · ${whenE(e)}</small></p></div>
     <div class="ll-row">${es.map((x, i) => `<button class="ll-w" data-entry="${esc(x.id)}" data-gw="${esc(x.work_id)}" aria-label="${esc(`${ws[i].title || "Untitled"}, ${(x.score / 2).toFixed(1)} stars`)}">${cover(ws[i])}${stars(x.score, "sm")}</button>`).join("")}</div></div>`; }
+/* asks for the words, sends them, and keeps them on the entry; true once it's gone */
+async function replyTo(e) {
+  const body = (await askText({ title:e.user_id === me.id ? "Add to what you said" : `Reply to ${e.profiles?.handle || "them"}`,
+    sub:`About ${esc(works[e.work_id]?.title || e.works?.title || "this")}. Wrap a spoiler in ||two bars||.`, placeholder:"Say something back", ok:"Send", max:600 }) || "").trim();
+  if (!body) return false;
+  if (willNotPost(body)) { say("That word doesn't go up here. Say it another way."); return false; }
+  try { const r = await q(sb.from("replies").insert({ entry_id:e.id, user_id:me.id, body }).select().single());
+    e.replies = [...(e.replies || []), { ...r, profiles:{ id:me.id, handle:me.handle, avatar:me.avatar } }];
+    if (e.user_id !== me.id) notify({ to:e.user_id, title:`${me.handle} replied`, body:noteText(body).slice(0, 140), tag:"reply-" + e.id });
+    return true; }
+  catch (err) { oops(err, "Couldn't send that"); return false; } }
 function wireThreads(el, by) {
   const paint = (e, all) => { const t = $(`[data-thread="${CSS.escape(e.id)}"]`, el); if (!t) return; t.innerHTML = threadHTML(e, all); wireOne(t, all); };
   const wireOne = (root, all) => {
     $$("[data-allreplies]", root).forEach(b => b.onclick = ev => { ev.stopPropagation(); const e = by[b.dataset.allreplies]; if (e) paint(e, true); });
     $$("[data-reply]", root).forEach(b => b.onclick = async ev => { ev.stopPropagation(); const e = by[b.dataset.reply]; if (!e) return;
-      const body = (await askText({ title:e.user_id === me.id ? "Add to what you said" : `Reply to ${e.profiles?.handle || "them"}`,
-        sub:`About ${esc(works[e.work_id]?.title || e.works?.title || "this")}. Wrap a spoiler in ||two bars||.`, placeholder:"Say something back", ok:"Send", max:600 }) || "").trim();
-      if (!body) return;
-      if (willNotPost(body)) { say("That word doesn't go up here. Say it another way."); return; }
-      try { const r = await q(sb.from("replies").insert({ entry_id:e.id, user_id:me.id, body }).select().single());
-        e.replies = [...(e.replies || []), { ...r, profiles:{ id:me.id, handle:me.handle, avatar:me.avatar } }]; paint(e, all);
-        const fresh = $$(`[data-thread="${CSS.escape(e.id)}"] .rep`, el).pop();
-        if (fresh && !REDUCED) { fresh.animate([{ transform:"translateY(10px) scale(.96)", opacity:0 }, { transform:"none", opacity:1 }], { duration:360, easing:"cubic-bezier(.2,1.2,.4,1)" });
-          fresh.scrollIntoView({ block:"nearest", behavior:"smooth" }); }
-        if (e.user_id !== me.id) notify({ to:e.user_id, title:`${me.handle} replied`, body:noteText(body).slice(0, 140), tag:"reply-" + e.id }); }
-      catch (err) { oops(err, "Couldn't send that"); } });
+      if (!await replyTo(e)) return;
+      paint(e, all);
+      const fresh = $$(`[data-thread="${CSS.escape(e.id)}"] .rep`, el).pop();
+      if (fresh && !REDUCED) { fresh.animate([{ transform:"translateY(10px) scale(.96)", opacity:0 }, { transform:"none", opacity:1 }], { duration:360, easing:"cubic-bezier(.2,1.2,.4,1)" });
+        fresh.scrollIntoView({ block:"nearest", behavior:"smooth" }); } });
     $$("[data-unreply]", root).forEach(b => b.onclick = async ev => { ev.stopPropagation(); const e = by[b.dataset.of]; if (!e) return;
       if (!await askYesNo({ title:"Take your reply back?", ok:"Take it back", bad:true })) return;
       try { await q(sb.from("replies").delete().eq("id", b.dataset.unreply)); e.replies = (e.replies || []).filter(r => r.id !== b.dataset.unreply); paint(e, all); }
@@ -7532,33 +7615,12 @@ function wireRoomButtons(root = $("#sheet.on #sheetBody") || document) { const n
     if (!name) return;
     if (willNotName(name)) { roomSay(NAME_NO); return; }
     try { const r = await q(sb.rpc("create_room", { p_name:name })); await loadRooms(); if (r?.id) P.activeRoom = r.id; P.feed = "room"; P.feedPicked = true; saveP(); closeSheet(); await loadClubs(); renderDoors(); } catch (e) { roomSay(e.message); } };
-  const ge = $("#goEveryone", root); if (ge) ge.onclick = () => { P.feed = "everyone"; P.feedPicked = true; saveP(); renderDoors(); };
+  const ge = $("#goEveryone", root); if (ge) ge.onclick = () => switchTab("people");
   if (jr) jr.onclick = async () => {
     const code = await askText({ title:"Join a room", sub:"Whoever is already in it can find the code under the room's name.", label:"The six-character code", placeholder:"PIT123", ok:"Join", max:12, upper:true });
     if (!code) return;
     if (rooms.length >= ROOM_LIMIT && !rooms.some(r => r.code.toLowerCase() === code.trim().toLowerCase())) { roomSay("Leave a room to join another. You can be in up to three rooms."); return; }
     try { const r = await q(sb.rpc("join_room", { p_code:code })); const wasIn = rooms.some(x => x.id === r?.id); await loadRooms(); if (r?.id && !wasIn) notify({ room:r.id, title:`${me.handle} came into ${r.name || "your room"}`, body:"Say hello — or hand them something to watch.", tag:"join-" + r.id }); if (r?.id) P.activeRoom = r.id; P.feed = "room"; P.feedPicked = true; saveP(); closeSheet(); await loadClubs(); renderDoors(); } catch (e) { roomSay(e.message); } }; }
-async function renderFollowingFeed(fb) {
-  const ids = follows.map(f => f.followee); let es = [];
-  if (ids.length) { try { es = feedRows(await wholeEntries(f => { let x = sb.from("entries").select(ENTRY_SEL);
-    if (f) x = x.eq("part", false);
-    return x.in("user_id", ids).order("created_at",{ascending:false}).limit(60); })); }
-    catch (err) { oops(err, "Couldn't load the following feed"); } }
-  es.sort(newestFirst);
-  es.forEach(e => remember(e.works));
-  const twins = await tasteTwins(6);
-  fb.innerHTML = (ids.length ? `<div class="chips" style="margin-top:6px">${follows.map(f => `<button class="chip" data-prof="${esc(f.followee)}">${esc(f.profiles?.handle||"")}</button>`).join("")}</div>` : "")
-    + `<div id="folTop"></div>`
-    + (es.length ? es.map(e => slipHTML(e)).join("") : blank("var(--lilac)","✦","Nobody yet","Following is for taste, not for friends. Find someone whose sensibility interests you and their entries land here.",[]))
-    + (twins.length ? `<div class="card"><div class="h"><span>Taste twins</span><span class="tag dim">by what you single out</span></div>${twins.map(t => `<div class="twin pairing" data-prof="${esc(t.p.id)}" data-match="${parseInt(t.match) || 0}">${avatar(me)}${avatar(t.p)}<div class="t"><b>${esc(t.p.handle)}</b><small>${esc(t.top.join(" · "))}</small></div><span class="ring">${t.match}</span></div>`).join("")}</div>`
-      : (tasteOf(myEntries).tagged < 3
-        ? blank("var(--mint)","✧","Twins need a taste","Single out what you loved on three entries and we can find the people who go for the same things.",[["twinAdd","Log something"]])
-        : blank("var(--mint)","✧","No twins yet","Nobody else here has tagged enough for a match. As the hall fills up, this is where the people who think like you show up.",[])));
-  endLine(fb, es, 60);
-  wireSlips(fb, es); revealIn(fb); $$("[data-prof]", fb).forEach(x => x.onclick = () => openProfile(x.dataset.prof));
-  drawTogether(fb);
-  const tw = $("#twinAdd"); if (tw) tw.onclick = openAdd;
-}
 async function tasteTwins(limit) { let ps = []; try { ps = notApart(await q(sb.from("profiles").select("id,handle,bio,avatar").neq("id", me.id).limit(200))); } catch { return []; }
   const mine = tasteOf(myEntries); if (mine.tagged < 3) return []; const out = [];
   for (const p of ps) { if (isFollowing(p.id)) continue; let es = []; try { es = await wholeEntries(f => { let x = sb.from("entries").select("work_id,score,loved");
@@ -7566,18 +7628,9 @@ async function tasteTwins(limit) { let ps = []; try { ps = notApart(await q(sb.f
       return x.eq("user_id", p.id).limit(200); }); } catch { continue; }
     const t = tasteOf(es); const m = tasteMatch(mine, t); if (m === null || t.tagged < 2) continue; out.push({ p, match:m, top:t.craft.slice(0,3).map(c => c[0]) }); }
   return out.sort((a,b) => b.match - a.match).slice(0, limit); }
-/* Where a first day lands. The feed remembers what you last chose, and what it shipped
-   with was "your room" — so the screen straight after onboarding was an empty room and
-   two buttons that both need somebody else. Everyone is the one feed with anything in it
-   and there was no reason to go and look.
-
-   Not a new default: a preference you have never expressed is not a preference. Once you
-   open or join a room, or follow one person, your room is yours again. Choosing a feed
-   by hand writes it down and this stops guessing for good. */
-const feedNow = () => {
-  if (P.feedPicked) return P.feed;
-  if (!rooms.length && !follows.length) return "everyone";
-  return P.feed; };
+/* Rooms holds your rooms and nothing else: Following and Everyone have a tab of their own,
+   People. Kept as a function because a few places still ask. */
+const feedNow = () => "room";
 
 function feedSort(es) { const myTaste = tasteOf(myEntries); P.feedSort = P.feedSort || "momentum";
   return { html: `<div class="seg">${Object.entries(SORTS).map(([k,l]) => `<button data-fs="${k}" class="${P.feedSort===k?"on":""}">${l}</button>`).join("")}</div>`,
@@ -7638,29 +7691,198 @@ const noRoomCard = () => rooms.length ? "" : `<div class="card noroom">
     <div><b>Rooms is better with your people in it</b><p class="sub">Open a room for you and a few friends, or join theirs with a code. Then you'll see what each of you rated and how much you agree.</p>
     <div class="roomactions"><button class="btn blue" id="newRoom">Open a room</button><button class="btn ghost" id="joinRoom">Join with a code</button></div>
     </div></div>`;
-async function renderEveryoneFeed(fb) {
-  let es = []; try { es = feedRows(await wholeEntries(f => { let x = sb.from("entries").select(ENTRY_SEL);
-    if (f) x = x.eq("part", false);
-    return x.order("created_at",{ascending:false}).limit(300); })); } catch (e) { fb.innerHTML = `<p class="empty">${esc(e.message)}</p>`; return; }
-  es.forEach(e => remember(e.works));
-  if (!es.length) { fb.innerHTML = noRoomCard() +
-    blank("var(--sky)","◎","Nothing here yet", myEntries.length && !rooms.length
-      ? "Everyone's public logs land here. Yours are just yours for now — they'll reach your friends once you're in a room together."
-      : "Everyone's logs land here — their scores, how much they agree, and what they loved. Be the first.",[["hallAdd","Log something"]]);
-    $("#hallAdd").onclick = openAdd; if (!rooms.length) wireRoomButtons(fb); return; }
-  let shown = [];
-  const weekAgo = new Date(Date.now() - 7*864e5).toISOString().slice(0,10); const recent = es.filter(e => e.rated_on >= weekAgo);
-  /* divisive stays worked out from what is here: it is about the argument, not the
-     ranking, and the rows it needs are the ones on this screen anyway */
+/* ============ PEOPLE ============
+   Everyone outside your rooms, on a tab of its own. Across the top, a ring for each person
+   who's logged something in the last two days: the people you follow first, then everyone
+   else. A tap plays what they logged, a card at a time, the way stories do. Under the
+   rings, the people you follow, newest first; once you're caught up, people with your
+   taste, then what the rest of Rooms is finishing. */
+const STORY_HOURS = 48;
+const storyCut = () => new Date(Date.now() - STORY_HOURS * 36e5).toISOString();
+const storySeen = id => !!P.storySeen?.[id];
+const groupFresh = g => g.es.some(e => !storySeen(e.id));
+let storyGroups = { mine:null, fol:[], all:[] }, peopleGen = 0;
+/* one ring per person, their logs oldest first so they play in the order they happened;
+   rings with something new come before ones you've seen, newest news first */
+function storyGroupsOf(es, mineEs) {
+  const cut = storyCut(), fs = followSet(), by = {}, seen = new Set();
+  for (const e of es) { if (seen.has(e.id) || String(e.created_at) <= cut || e.user_id === me.id) continue; seen.add(e.id); (by[e.user_id] ||= []).push(e); }
+  const old = (a, b) => String(a.created_at).localeCompare(String(b.created_at));
+  const groups = Object.values(by).map(list => { list.sort(old);
+    return { p:list[0].profiles || { id:list[0].user_id }, es:list, last:String(list[list.length - 1].created_at) }; });
+  const order = list => list.sort((a, b) => groupFresh(b) - groupFresh(a) || b.last.localeCompare(a.last));
+  const mine = mineEs.filter(e => String(e.created_at) > cut).sort(old);
+  return { mine:mine.length ? { p:me, es:mine, mine:true } : null,
+    fol:order(groups.filter(g => fs.has(g.p.id))), all:order(groups.filter(g => !fs.has(g.p.id))).slice(0, 20) }; }
+/* the seen list only needs to remember what could still be on screen */
+function markStorySeen(id) { const m = P.storySeen ||= {}; if (m[id]) return; m[id] = Date.now();
+  const keys = Object.keys(m); if (keys.length > 400) keys.sort((a, b) => m[a] - m[b]).slice(0, keys.length - 400).forEach(k => delete m[k]);
+  saveP(); }
+const storyNew = () => storyGroups.fol.reduce((n, g) => n + g.es.filter(e => !storySeen(e.id)).length, 0);
+
+function storyBubble(g, tier) { const fresh = !g.mine && groupFresh(g), left = g.mine ? 0 : g.es.filter(e => !storySeen(e.id)).length;
+  const name = g.mine ? "You" : g.p.handle || "someone";
+  return `<button class="sbub ${g.mine ? "mine" : fresh ? "fresh " + tier : "seen"}" data-story="${esc(g.p.id)}" aria-label="${esc(g.mine ? "What you logged lately" : `${name}${fresh ? `, ${left} new` : ""}`)}">
+    <span class="sring"><span class="sin">${avatar(g.p)}</span></span>${left > 1 ? `<span class="scnt" aria-hidden="true">${left}</span>` : ""}
+    ${g.mine ? `<span class="splus" aria-hidden="true">+</span>` : ""}<span class="sname">${esc(name)}</span></button>`; }
+function paintStoryRow() { const row = $("#storyRow"); if (!row) return; const { mine, fol, all } = storyGroups;
+  const meB = mine ? storyBubble(mine) : `<button class="sbub add" data-story-add aria-label="Log something"><span class="sring"><span class="sin">${avatar(me)}</span></span><span class="splus" aria-hidden="true">+</span><span class="sname">You</span></button>`;
+  row.innerHTML = meB + fol.map(g => storyBubble(g, "f")).join("")
+    + (fol.length && all.length ? `<span class="ssplit" aria-hidden="true"><i></i><small>everyone</small><i></i></span>` : "")
+    + all.map(g => storyBubble(g, "e")).join("")
+    + (fol.length || all.length ? "" : `<span class="snone">When somebody logs something, they show up here for two days.</span>`);
+  $$(".sbub", row).forEach(b => b.onclick = ev => {
+    if (b.hasAttribute("data-story-add") || ev.target.closest(".splus")) return openAdd();
+    openStory(b.dataset.story); });
+  unseen.stories = storyNew(); paintDot(); }
+
+async function renderPeople() {
+  const body = $("#peopleBody"); if (!body || !me) return; const gen = ++peopleGen;
+  if (!$("#storyRow", body)) body.innerHTML = `<h2 class="pagetitle" data-pagetitle="People">People</h2><div class="storyrow" id="storyRow"></div><div id="pplFol">${skeleton(3, true)}</div>`;
+  const ids = follows.map(f => f.followee);
+  let fol = [], all = [];
+  await Promise.all([
+    ids.length ? wholeEntries(f => { let x = sb.from("entries").select(ENTRY_SEL);
+      if (f) x = x.eq("part", false);
+      return x.in("user_id", ids).order("created_at",{ascending:false}).limit(60); }).then(r => { fol = feedRows(r); }).catch(err => oops(err, "Couldn't load the people you follow")) : null,
+    wholeEntries(f => { let x = sb.from("entries").select(ENTRY_SEL);
+      if (f) x = x.eq("part", false);
+      return x.order("created_at",{ascending:false}).limit(300); }).then(r => { all = feedRows(r); }).catch(() => {})]);
+  if (gen !== peopleGen) return;
+  [...fol, ...all].forEach(e => remember(e.works));
+  fol.sort(newestFirst);
+  /* yours, minus anything you kept to yourself */
+  const priv = new Set(myEntries.filter(e => e.private).map(e => e.id));
+  storyGroups = storyGroupsOf([...fol, ...all], all.filter(e => e.user_id === me.id && !priv.has(e.id)));
+  const shown = fol.slice(0, 40);
+  body.innerHTML = `<h2 class="pagetitle" data-pagetitle="People">People</h2>
+    <div class="storyrow" id="storyRow" role="list" aria-label="Who's logged something lately"></div>
+    <div id="pplFol">${!ids.length
+      ? blank("var(--lilac)", "✦", "Follow people for their logs", "Find someone whose taste interests you — a taste twin, or anyone under Everyone — and what they log comes first here.", [])
+      : `<div id="folTop"></div>${shown.map(e => slipHTML(e)).join("")}
+        ${shown.length ? `<div class="caught"><span class="ctick" aria-hidden="true">✓</span><b>You're all caught up</b><small>That's everyone you follow. Here's what the rest of Rooms is finishing.</small></div>`
+          : `<p class="sub" style="text-align:center;margin:18px 0">Nobody you follow has logged anything yet.</p>`}`}</div>
+    <div id="pplTwins"></div><div id="pplAll"></div>`;
+  paintStoryRow();
+  const fb = $("#pplFol"); wireSlips(fb, shown); revealIn(fb);
+  paintEveryone($("#pplAll"), all);
+  /* the twins take a while to work out, so they arrive after everything else is up */
+  tasteTwins(6).then(tw => { if (gen !== peopleGen) return; const box = $("#pplTwins"); if (!box) return;
+    if (!tw.length) { if (tasteOf(myEntries).tagged < 3) { box.innerHTML = blank("var(--mint)","✧","Twins need a taste","Single out what you loved on three entries and we can find the people who go for the same things.",[["twinAdd","Log something"]]);
+        const ta = $("#twinAdd", box); if (ta) ta.onclick = openAdd; }
+      return; }
+    box.innerHTML = `<div class="card"><div class="h"><span>People with your taste</span><span class="tag dim">by what you single out</span></div>${tw.map(t => `<div class="twin pairing" data-prof="${esc(t.p.id)}" data-match="${parseInt(t.match) || 0}">${avatar(me)}${avatar(t.p)}<div class="t"><b>${esc(t.p.handle)}</b><small>${esc(t.top.join(" · "))}</small></div><span class="ring">${t.match}</span><button class="chip twinfol" data-follow="${esc(t.p.id)}">Follow</button></div>`).join("")}</div>`;
+    $$("[data-prof]", box).forEach(x => x.onclick = () => openProfile(x.dataset.prof));
+    $$("[data-follow]", box).forEach(b => b.onclick = async ev => { ev.stopPropagation(); b.disabled = true; b.textContent = "Following";
+      if (await setFollow(b.dataset.follow, true)) { buzz(8); say(`Following ${b.closest(".twin")?.querySelector("b")?.textContent || "them"}`); renderPeople(); }
+      else { b.disabled = false; b.textContent = "Follow"; } });
+    drawTogether(box); }).catch(() => {}); }
+
+/* everyone you don't follow: what's splitting people, then what they said */
+function paintEveryone(box, es) { if (!box) return;
+  const fs = followSet(), rest = es.filter(e => e.user_id !== me.id && !fs.has(e.user_id));
+  if (!rest.length) { box.innerHTML = `<div class="lbl">Everyone</div>` + blank("var(--sky)", "◎", "Nobody else yet", "Logs from people you don't follow land here — their scores, how much they agree, and what they loved.", []); return; }
+  const weekAgo = new Date(Date.now() - 7*864e5).toISOString().slice(0,10), recent = es.filter(e => e.rated_on >= weekAgo);
   const divisive = competition(recent.length >= 5 ? recent : es, 40)
     .filter(f => f.n >= 2).sort((a,b) => (a.agree ?? 100) - (b.agree ?? 100)).slice(0, 5);
-  fb.innerHTML = `${noRoomCard()}<p class="sub" style="text-align:center;margin-top:8px">What people are saying \u00b7 ${es.length} ${es.length === 1 ? "entry" : "entries"} \u00b7 ${recent.length} this week</p>
+  const f = feedSort(rest), shown = f.rows.slice(0, 20);
+  box.innerHTML = `<div class="lbl">Everyone</div>
     ${divisive.length ? `<div class="card"><div class="h"><span>Most divisive</span><span class="tag dim">bring these into a room</span></div>${compRows(divisive)}</div>` : ""}
-    <div class="lbl">What people said</div>${(() => { const f = feedSort(es);
-      shown = f.rows.slice(0, 20); return f.html + shown.map(e => slipHTML(e)).join(""); })()}`;
-  endLine(fb, shown, 20); if (!rooms.length) wireRoomButtons(fb);
-  wireSlips(fb, es); revealIn(fb); wireFeedSort(fb, renderDoors); $$("[data-cw]", fb).forEach(x => x.onclick = () => openWork(x.dataset.cw));
-}
+    ${f.html}${shown.map(e => slipHTML(e)).join("")}`;
+  endLine(box, shown, 20);
+  wireSlips(box, rest); revealIn(box); wireFeedSort(box, () => paintEveryone(box, es));
+  $$("[data-cw]", box).forEach(x => x.onclick = () => openWork(x.dataset.cw)); }
+
+/* ---------- the story ----------
+   Full screen, one log at a time. Tap the right of it for the next, the left to go back,
+   hold to pause, swipe sideways for the next person and down to put it away. A ring that
+   had something new plays on into the next new ring, the way you'd expect. */
+let sv = null;
+function openStory(uid) {
+  const { mine, fol, all } = storyGroups, every = [...fol, ...all];
+  let line;
+  if (mine && uid === me.id) line = [mine];
+  else { const g = every.find(x => x.p.id === uid); if (!g) return;
+    line = groupFresh(g) ? [g, ...every.slice(every.indexOf(g) + 1).filter(groupFresh)] : [g]; }
+  const firstNew = g => g.mine ? 0 : Math.max(0, g.es.findIndex(e => !storySeen(e.id)));
+  sv = { line, gi:0, ei:firstNew(line[0]), firstNew };
+  $("#storyV")?.remove();
+  const v = document.createElement("div"); v.id = "storyV"; v.className = "storyv";
+  v.setAttribute("role", "dialog"); v.setAttribute("aria-modal", "true"); v.setAttribute("aria-label", "Stories");
+  v.innerHTML = `<div class="sv-bg"></div><div class="sv-bars"></div><div class="sv-head"><button class="sv-who" data-sv-who></button><button class="sv-x" aria-label="Close">×</button></div>
+    <div class="sv-body" aria-live="polite"></div><div class="sv-foot"></div>`;
+  document.body.append(v); document.documentElement.classList.add("svopen"); buzz(5);
+  $(".sv-x", v).onclick = closeStory;
+  wireStoryGestures(v); svPaint(); }
+function closeStory() { const v = $("#storyV"); if (!v) return; sv = null;
+  document.documentElement.classList.remove("svopen");
+  if (REDUCED) v.remove(); else { v.classList.add("out"); setTimeout(() => v.remove(), 200); }
+  paintStoryRow(); }
+function svPaint() { const v = $("#storyV"); if (!v || !sv) return;
+  const g = sv.line[sv.gi], e = g.es[sv.ei], w = remember(e.works) || works[e.work_id] || {};
+  if (!g.mine) markStorySeen(e.id);
+  /* longer words get longer on screen */
+  const dur = Math.min(12000, 5000 + noteText(e.note).length * 35);
+  const bg = $(".sv-bg", v); bg.style.backgroundImage = w.cover ? `url(${JSON.stringify(w.cover)})` : ""; bg.style.setProperty("--k", K(w.kind || "film").colour);
+  $(".sv-bars", v).innerHTML = g.es.map((_, i) => `<i class="${i < sv.ei ? "done" : i === sv.ei ? "run" : ""}"><b style="animation-duration:${dur}ms"></b></i>`).join("");
+  $(".sv-bars .run b", v)?.addEventListener("animationend", svNext);
+  $(".sv-who", v).innerHTML = `${avatar(g.p)}<b>${esc(g.mine ? "You" : g.p.handle || "someone")}</b><small>${esc(relAt(e.created_at))}</small>`;
+  $(".sv-body", v).innerHTML = `<button class="sv-cover" data-sv-work aria-label="Open ${esc(w.title || "it")}">${cover(w)}</button>
+    <div class="sv-kind">${esc(K(w.kind || "film").label)}${w.year ? ` · ${esc(w.year)}` : ""}</div><h2>${esc(w.title || "")}</h2>${stars(e.score)}
+    ${dnfOf(e) ? `<p class="sv-loved">${dnfLine(e)}</p>` : ""}
+    ${e.note ? `<p class="sv-note">“${noteHTML(e.note)}”</p>` : ""}
+    ${e.loved?.length ? `<p class="sv-loved">Loved ${e.loved.slice(0,3).map(k => `<b>${esc(k.startsWith("person:") ? k.slice(7) : k)}</b>`).join(", ").replace(/, ([^,]*)$/, " and $1")}</p>` : ""}`;
+  const foot = $(".sv-foot", v);
+  if (g.mine) foot.innerHTML = `<p class="sv-likes">${likeLine(e) || "Nobody's reacted yet"}</p>`;
+  else { const has = (e.reactions || []).some(r => r.user_id === me.id), mineToo = logged(e.work_id), queued = activeList()?.items.includes(e.work_id);
+    foot.innerHTML = `<button class="sv-reply" data-sv-reply>Reply to ${esc(g.p.handle || "them")}…</button>
+      <button class="sv-like ${has ? "on" : ""}" data-sv-like aria-pressed="${has}" aria-label="${has ? "Liked — tap to take it back" : "Like this"}">${heartSVG(has)}</button>
+      ${mineToo ? `<button class="sv-up" disabled>You logged it</button>` : `<button class="sv-up" data-sv-up ${queued ? "disabled" : ""}>${queued ? "In Up next" : "+ Up next"}</button>`}`; }
+  /* everything in the foot and the header pauses the story while you're using it */
+  const hold = async fn => { v.classList.add("paused"); try { await fn(); } finally { if (sv) v.classList.remove("paused"); } };
+  const rep = $("[data-sv-reply]", v); if (rep) rep.onclick = () => hold(async () => { if (await replyTo(e)) say(`Sent to ${g.p.handle || "them"}`, "good"); });
+  const lk = $("[data-sv-like]", v); if (lk) lk.onclick = () => svLike(e, lk);
+  const up = $("[data-sv-up]", v); if (up) up.onclick = () => hold(async () => { up.disabled = true; up.textContent = "Adding";
+    await addToShelf(e.work_id); const ok = activeList()?.items.includes(e.work_id);
+    up.textContent = ok ? "In Up next" : "+ Up next"; up.disabled = !!ok; if (ok) buzz(8); });
+  $("[data-sv-work]", v).onclick = ev => { if (Math.abs(parseFloat(v.style.getPropertyValue("--svy")) || 0) > 0) return; const id = w.id || e.work_id; closeStory(); openWork(id); };
+  $("[data-sv-who]", v).onclick = () => { closeStory(); if (g.mine) switchTab("taste"); else openProfile(g.p.id); }; }
+async function svLike(e, b) { const had = (e.reactions || []).some(r => r.user_id === me.id && kindOfR(r) === "like");
+  if (!had && !REDUCED) { const h = document.createElement("span"); h.className = "sv-heart"; h.innerHTML = heartSVG(true); $("#storyV")?.append(h); setTimeout(() => h.remove(), 750); }
+  buzz(had ? 4 : 10); await setReaction(e, "like");
+  const has = (e.reactions || []).some(r => r.user_id === me.id);
+  if (b?.isConnected) { b.classList.toggle("on", has); b.setAttribute("aria-pressed", String(has)); b.innerHTML = heartSVG(has); } }
+function svNext() { if (!sv) return; const g = sv.line[sv.gi];
+  if (sv.ei < g.es.length - 1) { sv.ei++; return svPaint(); }
+  if (sv.gi < sv.line.length - 1) { sv.gi++; sv.ei = sv.firstNew(sv.line[sv.gi]); buzz(3); return svPaint(); }
+  closeStory(); }
+function svBack() { if (!sv) return;
+  if (sv.ei > 0) { sv.ei--; return svPaint(); }
+  if (sv.gi > 0) { sv.gi--; sv.ei = sv.line[sv.gi].es.length - 1; return svPaint(); }
+  svPaint(); }
+/* a whole person along, either way */
+function svPerson(d) { if (!sv) return; const to = sv.gi + d;
+  if (to < 0) return svPaint(); if (to >= sv.line.length) return closeStory();
+  sv.gi = to; sv.ei = d > 0 ? sv.firstNew(sv.line[to]) : 0; buzz(4); svPaint(); }
+function wireStoryGestures(v) { let s = null;
+  const own = t => t.closest(".sv-head button, .sv-foot, .spoiler");
+  v.addEventListener("pointerdown", e => { if (own(e.target)) return;
+    s = { x:e.clientX, y:e.clientY, t:Date.now(), dx:0, dy:0, cover:!!e.target.closest("[data-sv-work]") }; v.classList.add("paused"); });
+  v.addEventListener("pointermove", e => { if (!s) return; s.dx = e.clientX - s.x; s.dy = e.clientY - s.y;
+    if (s.dy > 8 && s.dy > Math.abs(s.dx)) { v.style.transition = "none"; v.style.transform = `translateY(${s.dy}px) scale(${1 - Math.min(s.dy, 400) / 1600})`; v.style.borderRadius = "26px"; } });
+  const end = e => { if (!s) return; const d = s; s = null; v.classList.remove("paused");
+    v.style.transition = "transform .2s, border-radius .2s"; v.style.transform = ""; v.style.borderRadius = "";
+    if (d.dy > 110 && d.dy > Math.abs(d.dx)) { v.style.setProperty("--svy", d.dy + "px"); return closeStory(); }
+    if (Math.abs(d.dx) > 70 && Math.abs(d.dx) > Math.abs(d.dy)) return svPerson(d.dx < 0 ? 1 : -1);
+    /* a hold was a pause, not a tap */
+    if (Date.now() - d.t > 280 || Math.abs(d.dx) > 12 || Math.abs(d.dy) > 12 || e.type === "pointercancel") return;
+    /* a tap on the poster opens the title, which its own click does */
+    if (d.cover) return;
+    if (e.clientX < innerWidth * .3) svBack(); else svNext(); };
+  v.addEventListener("pointerup", end); v.addEventListener("pointercancel", end); }
+addEventListener("keydown", e => { if (!sv || $("#ask.on")) return;
+  if (e.key === "Escape") closeStory(); else if (e.key === "ArrowRight") svNext(); else if (e.key === "ArrowLeft") svBack(); });
+document.addEventListener("visibilitychange", () => $("#storyV")?.classList.toggle("paused", document.hidden));
 
 /* ============ SHELF ============ */
 let wheelItems = [], reelX = 0, spinning = false, upcoming = null;
