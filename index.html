@@ -2958,6 +2958,7 @@ html.svopen .toast{z-index:21}
 @media (prefers-reduced-motion:reduce){.storyv,.storyv.out,.sv-heart{animation:none}}
 .nowpill .ndo{font-style:normal;color:var(--mute)}
 .addacts{display:flex;gap:6px;flex:none}
+.agreeline{font-size:12.5px;line-height:1.5;margin-top:14px}
 </style>
 </head>
 <body>
@@ -5992,6 +5993,19 @@ let askGo = null;
 function closeAsk(v) { const a = $("#ask"); if (!a.classList.contains("on")) return;
   a.classList.remove("on"); a.setAttribute("aria-hidden", "true"); $("#askBox").innerHTML = ""; letFocus();
   const f = askGo; askGo = null; f?.(v); }
+/* ---------- the terms ----------
+   Agreed to on the sign-in screen. Anyone who signed in before they existed is asked once,
+   and asked again next time if they close it without agreeing. */
+const TERMS_V = "2026-11-02";
+async function askTerms() {
+  if (DEMO || !me || P.terms === TERMS_V) return;
+  if ($("#ask")?.classList.contains("on") || $("#sheet")?.classList.contains("on")) { setTimeout(askTerms, 4000); return; }
+  const ok = await openAsk(`<h3>Our terms of use</h3>
+    <p class="sub">Rooms is for sharing what you watch, read and play with people you choose. There's no tolerance for abuse, hate, harassment or objectionable content: reports are looked at within a day, and anyone who breaks the rules loses their account.</p>
+    <p class="sub"><a href="terms.html" target="_blank" rel="noopener">Read the terms of use</a> · <a href="privacy.html" target="_blank" rel="noopener">privacy</a></p>
+    <div class="stack"><button class="btn blue" data-terms="1">I agree</button></div>`,
+    done => $$("[data-terms]", $("#askBox")).forEach(x => x.onclick = () => done(true)));
+  if (ok) { P.terms = TERMS_V; saveP(); } }
 function openAsk(html, wire) {
   return new Promise(res => {
     closeAsk(null);                       /* one at a time, and the old one answers null */
@@ -6235,7 +6249,10 @@ function renderAuth() { hideSplash();
     <div class="lbl">Password</div><input id="pw" type="password" autocomplete="current-password" placeholder="at least eight characters">
     <div class="stack"><button class="btn blue" id="signUp">Make an account</button><button class="btn ghost" id="signIn">I already have one · Sign in</button></div>
     <div class="stack"><button class="btn quiet" id="send">Email me a code instead</button></div>
+    <p class="note agreeline">By making an account or signing in, you agree to the <a href="terms.html" target="_blank" rel="noopener">terms of use</a>, including no tolerance for abuse or objectionable content, and to <a href="privacy.html" target="_blank" rel="noopener">how your data is handled</a>.</p>
     <div id="codeStep"></div><p class="msg" id="authMsg"></p>`;
+  /* pressing any of the three is agreeing, so it's written down then */
+  ["signUp", "signIn", "send"].forEach(id => $("#" + id)?.addEventListener("click", () => { P.terms = TERMS_V; saveP(); }));
 
   /* Somebody arriving on a link should see what they were sent before being asked for an
      email. Asked for after the screen is up, and only written in if it comes back — a
@@ -6370,6 +6387,7 @@ async function enter() { hideSplash();
   const toSeasons = /^#seasons\b/.test(location.hash); if (toSeasons) { history.replaceState(null, "", location.pathname + location.search); P.clubTab = "season"; }
   switchTab(toSeasons ? "clubs" : rooms.length ? "doors" : "people"); movePill(true); checkNew(); joinMeChannel();
   if (!P.onboarded && !myEntries.length) setTimeout(openWelcome, 400); else if (P.tourDue) maybeTour();
+  setTimeout(askTerms, 900);
 }
 function paintMeAv() { const el = $("#meAv"); if (!el) return; el.innerHTML = avSVG(avFor(me));
   /* your week shows on your face in the corner, and only there: a run of low scores and
@@ -14074,7 +14092,7 @@ async function openYou() { let top = { items:[] }; try { top = await ensureMyTop
       <p class="msg" id="delMsg"></p></details>
     ${behindFold()}
     <p class="sub" style="text-align:center;margin-top:18px">
-      <a href="privacy.html" target="_blank" rel="noopener" id="privacyLink">What happens to your log</a></p>`);
+      <a href="privacy.html" target="_blank" rel="noopener" id="privacyLink">What happens to your log</a> · <a href="terms.html" target="_blank" rel="noopener" id="termsLink">Terms of use</a></p>`);
   /* the shape picker */
   let av = Object.assign({}, avFor(me));
   const paintAv = () => {

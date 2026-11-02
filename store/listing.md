@@ -80,6 +80,8 @@ top of `tools/store-shots/raw.cjs`.
 > Sign in with the demo account above. It is in a room called Movie Night with two test
 > accounts (demo_mia and demo_tom) who have logged a few things, and it follows them, so the
 > room, the Feed tab and the suggestions have something in them.
+> Terms of use (no tolerance for objectionable content or abusive users) are agreed to on the
+> sign-in screen, and asked for once on first launch: https://dontdateleos.github.io/Rooms/terms.html
 > Reporting and blocking: open anyone's entry (tap it) or profile, and both are at the bottom:
 > "Report this" and "Block". Blocks are undone from Settings → Blocked (tap your name at the top of the app, then the cog).
 > Deleting an account: tap your name at the top, then Settings (the cog) → Close your account.

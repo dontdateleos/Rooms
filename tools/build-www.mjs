@@ -10,7 +10,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), ".."), OUT = join(ROO
 /* the page, the demo it can show, the privacy page it links to, and what they load.
    Not the marketing site, the service worker (the app has no use for one) or the
    splash screens the website's home-screen install uses (the app has its own). */
-const FILES = ["index.html", "demo.js", "privacy.html", "manifest.webmanifest"];
+const FILES = ["index.html", "demo.js", "privacy.html", "terms.html", "manifest.webmanifest"];
 const DIRS = ["vendor", "icons"];
 
 rmSync(OUT, { recursive: true, force: true }); mkdirSync(OUT);
