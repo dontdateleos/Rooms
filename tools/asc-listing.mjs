@@ -173,6 +173,14 @@ async function submit() {
     const its = (await api("GET", `/v1/reviewSubmissions/${x.id}/items?include=appStoreVersion`).catch(() => ({}))).data || [];
     console.log(`  submission ${x.id.slice(0, 8)}: ${x.attributes.state}, ${its.length} item(s)`);
     if (its.some(it => it.relationships?.appStoreVersion?.data?.id === version.id)) sub = sub || x; else if (!its.length) empty.push(x); }
+  if (sub && sub.attributes.state === "UNRESOLVED_ISSUES") {
+    /* the submission a refused build left behind won't take the new build; close it and start afresh */
+    await api("PATCH", `/v1/reviewSubmissions/${sub.id}`, { data:{ type:"reviewSubmissions", id:sub.id, attributes:{ canceled:true } } });
+    console.log(`  closed the old submission ${sub.id.slice(0, 8)}`);
+    for (let i = 0; i < 40; i++) {
+      const st = (await api("GET", `/v1/reviewSubmissions/${sub.id}`)).data.attributes.state;
+      if (/CANCELED|COMPLETE/.test(st)) break; await new Promise(r => setTimeout(r, 15000)); }
+    sub = null; }
   if (sub) { for (const x of empty) await api("PATCH", `/v1/reviewSubmissions/${x.id}`, { data:{ type:"reviewSubmissions", id:x.id, attributes:{ canceled:true } } }).catch(() => {}); }
   else sub = empty[0] || (await api("POST", "/v1/reviewSubmissions", { data:{ type:"reviewSubmissions", attributes:{ platform:"IOS" }, relationships:{ app:{ data:{ type:"apps", id:app.id } } } } })).data;
   const items = (await api("GET", `/v1/reviewSubmissions/${sub.id}/items`).catch(() => ({}))).data || [];
