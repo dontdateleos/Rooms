@@ -71,9 +71,8 @@ async function make() {
     mkdirSync(d, { recursive:true }); writeFileSync(join(d, `${uuid}.mobileprovision`), content); }
   env("ASC_PROFILE_ID", prof.data.id); env("ASC_PROFILE_NAME", name); env("ASC_PROFILE_UUID", uuid); }
 
-/* room for this run's certificate: keep the newest one, and the one that signed a build that's on
-   a version in or waiting for review (the certificate made last before that build was uploaded;
-   a certificate's life is a year, so it was made a year before it expires); revoke the rest */
+/* room for this run's certificate. A build's signer is the certificate made last before it was
+   uploaded (a certificate lives a year, so it was made a year before it expires) */
 const madeAt = c => new Date(c.attributes.expirationDate).getTime() - 365 * 864e5;
 async function makeRoom() {
   /* Apple allows two distribution certificates, so only one is kept for this run to sit beside:
