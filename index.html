@@ -10768,9 +10768,13 @@ async function vibeOf(w) { if (vibeCache[w.id]) return vibeCache[w.id];
     else if (w.kind === "book") { const d = await ol(`/works/${raw}.json`);
       const subs = (d.subjects || []).filter(x => x && !BOOK_NOISE.test(x) && x.length < 40); names.push(...subs); words = subs.map(lc); }
   } catch {}
-  words = [...new Set(words.map(x => lc(String(x)).trim()).filter(x => x && x.length < 30 && !KW_NOISE.test(x)))].slice(0, 6);
+  words = [...new Set(words.map(x => lc(String(x)).trim()).filter(x => x && x.length < 30 && !KW_NOISE.test(x)))];
   /* the tags the keywords give count too: a heist film is a crime film even if TMDB only says thriller */
   const tags = tagsOf([...names, ...words]);
+  /* a game carries dozens of keywords ("horse", "fishing", "day/night cycle"); only the ones that
+     say what it's like travel to other media */
+  if (w.kind === "game") words = words.filter(x => VIBE_TAGS.some(([, re]) => re.test(x)) || /apocalyp|zombie|heist|outlaw|cowboy|samurai|ninja|pirate|cyberpunk|noir|survival|revenge|dystopi|time travel|serial killer/.test(x));
+  words = words.slice(0, 6);
   return (vibeCache[w.id] = { tags, words }); }
 const tmdbHit = (r, kind, gm) => ({ id:`${kind}:${r.id}`, kind, title:r.title || r.name, year:String(r.release_date || r.first_air_date || "").slice(0, 4),
   genres:(r.genre_ids || []).map(i => gm[i]).filter(Boolean), cover:TMDB_IMG(r.poster_path), ...(r.release_date || r.first_air_date ? { release:r.release_date || r.first_air_date } : {}) });
