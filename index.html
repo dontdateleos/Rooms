@@ -2954,6 +2954,7 @@ html.svopen .toast{z-index:21}
 .sv-heart svg{width:100%;height:100%}
 @keyframes svHeart{0%{transform:translate(-50%,-50%) scale(.3);opacity:0}30%{transform:translate(-50%,-50%) scale(1.15);opacity:1}100%{transform:translate(-50%,-75%);opacity:0}}
 @media (prefers-reduced-motion:reduce){.storyv,.storyv.out,.sv-heart{animation:none}}
+.nowpill .ndo{font-style:normal;color:var(--mute)}
 </style>
 </head>
 <body>
@@ -5036,7 +5037,7 @@ function peekPerson(id, from) {
   const st = memberState(id, hereNow.some(p => p.id === id));
   const el = document.createElement("div"); el.className = "peekcard"; el.setAttribute("role", "dialog"); el.setAttribute("aria-label", m.handle);
   el.innerHTML = `<div class="pk-h">${avatar(m)}<div><b>${esc(m.handle)}</b><small>${esc(STATE_WORD[st] || (hereNow.some(p => p.id === id) ? "here now" : "in the room"))}</small></div></div>
-    ${nw ? `<button class="pk-row" data-pkw="${esc(now.work_id)}">${cover(nw)}<span><b>${esc(nw.title)}</b><small>${nowLine(now)}</small>${progressBar(progressOf(now, nw))}</span></button>` : ""}
+    ${nw ? `<button class="pk-row" data-pkw="${esc(now.work_id)}">${cover(nw)}<span><b>${esc(nw.title)}</b><small>${nowVerb(nw.kind)} · ${nowLine(now)}</small>${progressBar(progressOf(now, nw))}</span></button>` : ""}
     ${lw ? `<button class="pk-row" data-pkw="${esc(last.work_id)}">${cover(lw)}<span><small>Last logged · ${when(last.rated_on)}</small><b>${esc(lw.title)}</b>${stars(last.score, "sm")}</span></button>` : ""}
     ${!nw && !lw ? `<p class="pk-none">Nothing logged in here yet.</p>` : ""}
     <button class="pk-go" id="pkGo">See ${esc(m.handle)}'s profile ›</button>`;
@@ -8897,10 +8898,10 @@ async function paintRoomNow(R) {
   /* how long ago matters as much as what: a pill moved in the last 45 minutes has a live
      dot, and a bar that moved slides from where it was rather than jumping */
   el.innerHTML = pick.map(r => { const w = r.works || works[r.work_id]; if (!w) return "";
-    const who = r.user_id === me.id ? "You" : (r.profiles?.handle || "");
+    const who = r.user_id === me.id ? "You" : (r.profiles?.handle || ""), doing = lc(nowVerb(w.kind));
     const age = Date.now() - Date.parse(r.updated_at || "");
     return `<span class="nowpill${age < 45 * 6e4 ? ` fresh st-${KIND_DOING[w.kind] || "watching"}` : ""}" data-w="${esc(r.work_id)}" data-nk="${esc(r.user_id + "|" + r.work_id)}">${avatar({ id:r.user_id, handle:who,
-      avatar:r.profiles?.avatar }, "av")}<b>${esc(who)}</b><span>${esc(w.title)} · ${nowLine(r)}${age < 864e5 ? ` · <time data-at="${esc(r.updated_at)}">${relAt(r.updated_at)}</time>` : ""}</span>${progressBar(progressOf(r, w))}</span>`;
+      avatar:r.profiles?.avatar }, "av")}<b>${esc(r.user_id === me.id ? "You're" : who)}</b><span><i class="ndo">${doing}</i> ${esc(w.title)} · ${nowLine(r)}${age < 864e5 ? ` · <time data-at="${esc(r.updated_at)}">${relAt(r.updated_at)}</time>` : ""}</span>${progressBar(progressOf(r, w))}</span>`;
   }).join("");
   $$("[data-nk]", el).forEach(x => { const i = $(".pbar i", x); if (!i) return;
     const was = nowWas[x.dataset.nk], now = i.style.width; nowWas[x.dataset.nk] = now;
