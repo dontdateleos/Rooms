@@ -1924,6 +1924,50 @@ nav button .dot{top:0;right:calc(50% - 24px)}
 .lbl .sn-key,.lbl small{font-family:var(--body);font-weight:600;letter-spacing:0;text-transform:none;color:var(--mute);margin-left:auto;font-size:11.5px}
 .lbl:has(small){display:flex;align-items:baseline;gap:10px}
 .sn-tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.sn-rules{display:grid;grid-template-columns:1fr 1fr;gap:6px 10px;margin-top:26px}
+.snr{display:flex;align-items:center;gap:7px;min-width:0;font-size:12px;line-height:1.25;color:#C9BFE0}
+.snr svg{width:22px;height:22px;flex:none}
+.snr b{display:block;color:#FBF3E7;font:800 12.5px var(--head)}
+.sn-queue{margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,.1);display:grid;gap:8px}
+.sn-queue > b{font:800 13.5px var(--head);color:#FBF3E7}
+.snq{display:flex;gap:7px;overflow-x:auto;scrollbar-width:none}
+.snq button{border:0;padding:0;background:none;flex:none;cursor:pointer;border-radius:8px;line-height:0}
+.snq .co{width:44px;height:64px;border-radius:8px}
+.sn-find{justify-self:start;padding:9px 14px;font-size:13.5px}
+.sn-ladder{display:flex;align-items:center;gap:0}
+.sn-ladder i{flex:none;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font:800 10.5px var(--head);font-style:normal;color:var(--mute);border:1.5px dashed color-mix(in srgb,var(--mute) 55%,transparent);background:var(--card)}
+.sn-ladder i+i{margin-left:14px;position:relative}
+.sn-ladder i+i::before{content:"";position:absolute;right:100%;top:50%;width:14px;height:2px;margin-right:1.5px;background:color-mix(in srgb,var(--mute) 30%,transparent)}
+.sn-ladder i.on{border:0;color:#151320}
+.sn-ladder i.on.bronze{background:linear-gradient(135deg,#E0A06A,#9a5f33)}.sn-ladder i.on.silver{background:linear-gradient(135deg,#E6E8F0,#9aa0b4)}
+.sn-ladder i.on.gold{background:linear-gradient(135deg,#FFE36B,#c99b1c)}.sn-ladder i.on.platinum{background:linear-gradient(135deg,#E8FBFF,#7fc6d8)}
+.sn-recapline{display:flex;align-items:center;gap:10px;width:100%;margin-top:18px;border:0;background:var(--card);color:var(--ink);font:inherit;text-align:left;border-radius:16px;padding:12px 14px;cursor:pointer}
+.sn-recapline b{font:800 14px var(--head)}.sn-recapline>span{flex:1;color:var(--mute);font-size:12.5px;display:flex;flex-wrap:wrap;gap:4px;align-items:center;justify-content:flex-end}
+.sn-recapline i{color:var(--mute);font-style:normal;font-size:18px}
+.sn-next{display:flex;align-items:center;gap:12px}
+.sn-nmark{width:46px;height:46px;flex:none}.sn-nmark svg{width:100%;height:100%;display:block}
+.sn-next b{font:800 15px var(--head)}.sn-next small{display:block;color:var(--mute);font-size:12.5px;line-height:1.35}
+.sn-together{display:grid;gap:7px;padding-bottom:12px;margin-bottom:6px;border-bottom:1px solid var(--line)}
+.sn-together > div{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.sn-together b{font:800 14px var(--head)}.sn-together span{color:var(--mute);font-size:12.5px;font-weight:700}
+.sn-tbar{height:8px;border-radius:4px;background:var(--cream2);overflow:hidden}
+.sn-tbar i{display:block;height:100%;border-radius:4px;background:var(--rc,var(--apricot));transition:width .8s cubic-bezier(.2,.8,.2,1)}
+.snbadge{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;background:#2a2340;vertical-align:-4px;margin-left:4px}
+.snbadge svg{width:13px;height:13px}
+.po .snbadge{position:absolute;left:6px;top:6px;margin:0;box-shadow:0 2px 6px rgba(0,0,0,.35);z-index:2}
+.sndot{display:inline-block;width:8px;height:8px;border-radius:50%}
+.sntag{display:inline-flex;align-items:center;gap:6px;margin-top:8px;padding:4px 10px 4px 6px;border-radius:99px;font:800 12px var(--head);color:var(--ink);background:color-mix(in srgb,var(--tone) 22%,transparent)}
+.sntag svg{width:16px;height:16px}
+.medalmo{position:fixed;inset:0;z-index:90;display:grid;place-items:center;padding:24px;background:rgba(10,8,16,.6);opacity:0;transition:opacity .25s}
+.medalmo.on{opacity:1}
+.mm-card{width:min(340px,100%);background:var(--card);border-radius:24px;padding:24px 20px 18px;text-align:center;display:grid;justify-items:center;gap:8px;transform:translateY(20px) scale(.94);transition:transform .35s cubic-bezier(.3,1.4,.5,1)}
+.medalmo.on .mm-card{transform:none}
+.mm-card h3{margin:4px 0 0;font:900 22px var(--head)}.mm-card .sub{margin:0}
+.mm-card .stack{width:100%;margin-top:8px}
+.mm-room{width:96px;height:96px}.mm-room svg{width:100%;height:100%;display:block}
+.medalmo.on .mm-room{animation:mmDrop .7s cubic-bezier(.3,1.5,.5,1) both}
+@keyframes mmDrop{0%{transform:translateY(-120px) rotate(-12deg);opacity:0}60%{transform:translateY(6px) rotate(3deg);opacity:1}100%{transform:none}}
+@media (prefers-reduced-motion:reduce){.medalmo.on .mm-room{animation:none}}
 .sn-tile{border:0;background:var(--card);color:var(--ink);border-radius:18px;padding:12px;text-align:left;display:grid;gap:7px;cursor:pointer;font:inherit;min-width:0;align-content:start}
 .sn-tile .top{display:flex;justify-content:space-between;align-items:center;gap:6px}
 .sn-tile .top small{font-size:11px;color:var(--mute);font-weight:600;white-space:nowrap}
@@ -4174,7 +4218,7 @@ async function loadMine() {
      no title, no poster and no row anywhere. Fetch the shows the parts point at. */
   const need = [...new Set(myParts.map(e => showOf(e.work_id)))].filter(id => !works[id]);
   if (need.length) { try { (await q(sb.from("works").select("*").in("id", need))).forEach(remember); } catch {} }
-  myRing(); }
+  myRing(); medalCheck(); }
 /* your own ring, from the log that has just landed. No club query and no taste match —
    both need a round trip, and the two marks that want them light up when you open your
    own profile, which is the one place anybody goes looking. */
@@ -8575,7 +8619,7 @@ function renderShelf() {
     <div class="msg" id="msg"></div><div id="results"></div>${arrivedHTML()}
     ${all.length ? `${pickBar}
       <div class="grid" id="shelfGrid">${rows.map(w => { const soon = isSoon(w), n = nowOf(w.id);
-        return `<div class="cell" data-cell="${esc(w.id)}"><div class="po ${logged(w.id)?"done":""} ${soon?"soon":""} ${n?"onit":""}" data-w="${esc(w.id)}">${cover(w,"")}<b>${esc(w.title)}</b>
+        return `<div class="cell" data-cell="${esc(w.id)}"><div class="po ${logged(w.id)?"done":""} ${soon?"soon":""} ${n?"onit":""}" data-w="${esc(w.id)}">${cover(w,"")}<b>${esc(w.title)}</b>${logged(w.id) ? "" : snBadge(w)}
           ${soon ? `<span class="soon-tag">${when(w.release)}</span>` : `<button class="tick ${logged(w.id)?"done":""}" data-t="${esc(w.id)}" aria-label="log it"></button>`}</div>
           <div class="cap"><span>${soon ? "Coming" : n ? nowLine(n) : (() => { const f = cameFrom(w.id), sv = svcMine(w.id)[0];
             return f ? `from ${esc(f.sender_p?.handle || "a friend")}` : sv ? `<em class="onsvc">on ${esc(svcName(sv))}</em>` : ""; })()}</span></div></div>`; }).join("")}</div>`
@@ -9489,7 +9533,7 @@ async function doSearch(term, onPick, resEl, msgEl, box, acts = null) {
     return; } window.__hits = Object.assign(window.__hits||{}, Object.fromEntries([...hits, ...byThem].map(h => [h.id, h])));
   paintHits(resEl, [{ hits }, ...(byThem.length ? [{ label:`${person.role} ${person.name}`, hits:byThem }] : [])], onPick, box, acts); }
 function paintHits(resEl, groups, onPick, box, acts) {
-  const inner = h => `${cover(h)}<div class="t"><b>${esc(h.title)}</b><small>${tag(h.kind)} ${isSoon(h)?`Coming ${when(h.release)}`:esc(h.year||"")}${h.creator?" · "+esc(h.creator):""}${logged(h.id) ? " · \u2713" : ""}</small></div>`;
+  const inner = h => `${cover(h)}<div class="t"><b>${esc(h.title)}</b><small>${tag(h.kind)} ${isSoon(h)?`Coming ${when(h.release)}`:esc(h.year||"")}${h.creator?" · "+esc(h.creator):""}${logged(h.id) ? " · \u2713" : ""}${snBadge(works[h.id] || h)}</small></div>`;
   /* with nothing to choose between, the row is still one tap — that path is untouched */
   const rowHTML = h => acts === "open"
     ? `<div class="row openrow" data-add="${esc(h.id)}" role="button" tabindex="0" aria-label="${esc(h.title)}${h.year ? ", " + esc(h.year) : ""}. Hold to log it">${inner(h)}<span class="chev" aria-hidden="true">›</span></div>`
@@ -12146,6 +12190,16 @@ function roomMark(kind) {
     <g class="eyes" fill="#151320"><rect x="7.6" y="10" width="3" height="6.8" rx="1.5"/><rect x="13.6" y="10" width="3" height="6.8" rx="1.5"/></g></svg>`; }
 /* a medal is a small pill in its own metal */
 const medalPill = m => m ? `<span class="mpill ${m.tier}">${m.name}</span>` : "";
+/* ---------- what counts ----------
+   Whether a title would count for the season that's on, so it can say so wherever the
+   title turns up: in your Queue, in search, on its own page. */
+const SN_TUB = `<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 7h10l-1.4 8H4.4z" fill="#F4EDE2"/><path d="M5.6 7l.5 8M8 7v8M10.4 7l-.5 8" stroke="#F5A3C7" stroke-width="1.3"/><circle cx="5" cy="5.6" r="2.1" fill="#FFF6D8"/><circle cx="8" cy="4.4" r="2.3" fill="#FFF6D8"/><circle cx="11" cy="5.6" r="2.1" fill="#FFF6D8"/></svg>`;
+function snCounts(w, S = currentSeason()) {
+  if (!w?.id || !S || seasonPhase(S).key !== "live" || !S.challenges.some(c => c.kind === w.kind)) return false;
+  try { return !!S.qualifies({ work_id:w.id, works:w, context:{} }); } catch { return false; } }
+const snIcon = S => S.pic === "dozing" ? SN_TUB : `<i class="sndot" style="background:var(--${S.tone})"></i>`;
+const snBadge = w => { const S = currentSeason(); return snCounts(w, S) ? `<span class="snbadge" title="Counts for ${esc(S.name)}" aria-label="Counts for ${esc(S.name)}">${snIcon(S)}</span>` : ""; };
+const snTag = w => { const S = currentSeason(); return snCounts(w, S) ? `<span class="sntag" style="--tone:var(--${S.tone})">${snIcon(S)}Counts for ${esc(S.name)}</span>` : ""; };
 /* Long Nights' picture: your room dozing off with a tub of popcorn, a few pieces spilled */
 const SEASON_PICS = { dozing:`<svg class="snpic" viewBox="0 0 120 120" aria-hidden="true"><circle cx="100" cy="12" r="1.4" fill="#FFF4C2"/><circle cx="110" cy="32" r="1" fill="#FFF4C2"/><rect x="16" y="30" width="62" height="62" rx="23.56" fill="#F7B3CF"/><rect x="65.6" y="30" width="12.4" height="62" rx="14.14" fill="#000" opacity=".14"/><path d="M21.89 48.6A23.56 23.56 0 0 1 39.56 30H54.44A23.56 23.56 0 0 1 72.11 48.6Z" fill="#fff" opacity=".35"/><path d="M28.4 61q4.96 4.34 9.92 0M45.76 61q4.96 4.34 9.92 0" stroke="#151320" stroke-width="3.72" fill="none" stroke-linecap="round"/><g transform=""><path d="M54 70h44l-5.28 44h-33.44z" fill="#F4EDE2"/><clipPath id="snpop547044"><path d="M54 70h44l-5.28 44h-33.44z"/></clipPath><g clip-path="url(#snpop547044)"><path d="M62.8 70L65.97 114" stroke="#F5A3C7" stroke-width="5.28"/><path d="M76 70L76 114" stroke="#F5A3C7" stroke-width="5.28"/><path d="M89.2 70L86.03 114" stroke="#F5A3C7" stroke-width="5.28"/></g><g class=""><circle cx="59.5" cy="68" r="4.4" fill="#FFF6D8"/><circle cx="56.86" cy="69.54" r="3.17" fill="#FFF6D8"/><circle cx="62.23" cy="69.32" r="3.08" fill="#FFF6D8"/><circle cx="60.16" cy="70.2" r="1.23" fill="#FFE36B" opacity=".8"/></g><g class=""><circle cx="70.5" cy="65" r="4.4" fill="#FFF6D8"/><circle cx="67.86" cy="66.54" r="3.17" fill="#FFF6D8"/><circle cx="73.23" cy="66.32" r="3.08" fill="#FFF6D8"/><circle cx="71.16" cy="67.2" r="1.23" fill="#FFE36B" opacity=".8"/></g><g class=""><circle cx="81.5" cy="68" r="4.4" fill="#FFF6D8"/><circle cx="78.86" cy="69.54" r="3.17" fill="#FFF6D8"/><circle cx="84.23" cy="69.32" r="3.08" fill="#FFF6D8"/><circle cx="82.16" cy="70.2" r="1.23" fill="#FFE36B" opacity=".8"/></g><g class=""><circle cx="92.5" cy="65" r="4.4" fill="#FFF6D8"/><circle cx="89.86" cy="66.54" r="3.17" fill="#FFF6D8"/><circle cx="95.23" cy="66.32" r="3.08" fill="#FFF6D8"/><circle cx="93.16" cy="67.2" r="1.23" fill="#FFE36B" opacity=".8"/></g><g class=""><circle cx="65" cy="62.52" r="4.4" fill="#FFF6D8"/><circle cx="62.36" cy="64.06" r="3.17" fill="#FFF6D8"/><circle cx="67.73" cy="63.84" r="3.08" fill="#FFF6D8"/><circle cx="65.66" cy="64.72" r="1.23" fill="#FFE36B" opacity=".8"/></g><g class=""><circle cx="76" cy="60.52" r="4.4" fill="#FFF6D8"/><circle cx="73.36" cy="62.06" r="3.17" fill="#FFF6D8"/><circle cx="78.73" cy="61.84" r="3.08" fill="#FFF6D8"/><circle cx="76.66" cy="62.72" r="1.23" fill="#FFE36B" opacity=".8"/></g><g class=""><circle cx="87" cy="62.52" r="4.4" fill="#FFF6D8"/><circle cx="84.36" cy="64.06" r="3.17" fill="#FFF6D8"/><circle cx="89.73" cy="63.84" r="3.08" fill="#FFF6D8"/><circle cx="87.66" cy="64.72" r="1.23" fill="#FFE36B" opacity=".8"/></g><g class=""><circle cx="76" cy="56.8" r="4.4" fill="#FFF6D8"/><circle cx="73.36" cy="58.34" r="3.17" fill="#FFF6D8"/><circle cx="78.73" cy="58.12" r="3.08" fill="#FFF6D8"/><circle cx="76.66" cy="59" r="1.23" fill="#FFE36B" opacity=".8"/></g></g><g class=""><circle cx="30" cy="108" r="5" fill="#FFF6D8"/><circle cx="27" cy="109.75" r="3.6" fill="#FFF6D8"/><circle cx="33.1" cy="109.5" r="3.5" fill="#FFF6D8"/><circle cx="30.75" cy="110.5" r="1.4" fill="#FFE36B" opacity=".8"/></g><g class=""><circle cx="44" cy="112" r="4.5" fill="#FFF6D8"/><circle cx="41.3" cy="113.58" r="3.24" fill="#FFF6D8"/><circle cx="46.79" cy="113.35" r="3.15" fill="#FFF6D8"/><circle cx="44.67" cy="114.25" r="1.26" fill="#FFE36B" opacity=".8"/></g><text class="zz" x="80" y="26" font-family="Outfit,sans-serif" font-weight="900" font-size="19" fill="#c9c1d9">z</text><text class="zz" x="94" y="14" font-family="Outfit,sans-serif" font-weight="900" font-size="13" fill="#c9c1d9">z</text></svg>` };
 const HALLOWEEN_2026 = {
@@ -12193,7 +12247,8 @@ HALLOWEEN_2026.picks = SEASON_PICKS;
 const LONG_ENOUGH = { film:150, tv:40, book:500, game:40 };
 const seasonLength = e => +(e.works?.length || works[e.work_id]?.length || 0);
 const LONG_NIGHTS_2026 = {
-  id:"long-nights-2026", name:"Long Nights", label:"Long Nights", tone:"butter", mk:"moon", pic:"dozing", starts:"2026-11-01", ends:"2026-12-31",
+  id:"long-nights-2026", name:"Long Nights", label:"Long Nights", tone:"butter", mk:"moon", pic:"dozing", find:"Find me a long one", together:"long ones",
+  counts:{ film:"2½ hours or more", tv:"40+ episodes", book:"500+ pages", game:"40+ hours" }, starts:"2026-11-01", ends:"2026-12-31",
   rule:"Long ones only: films over 2½ hours, shows of 40+ episodes, books of 500+ pages, games of 40+ hours.", pitch:"The long ones, while the nights are long.",
   qualifies: e => { const n = seasonLength(e), min = LONG_ENOUGH[seasonKind(e)]; return !!min && n >= min; },
   challenges:[
@@ -12394,6 +12449,96 @@ async function paintPickPosters(S, root) {
     const missing = titles.filter(t => !(t in store)); if (!missing.length || !SOURCES[c.kind]) continue;
     await Promise.all(missing.map(t => SOURCES[c.kind](t).then(r => { store[t] = r?.[0]?.cover || ""; }).catch(() => {})));
     P.pickCovers = store; saveP(); if (slot.isConnected) draw(); } }
+/* what's after this one, so the tab never feels finished */
+function nextSeasonHTML(S) {
+  const n = SEASONS.find(x => x.starts > S.ends); if (!n) return "";
+  return `<div class="lbl">Next season</div><div class="card sn-next" style="--tone:var(--${n.tone})"><span class="sn-nmark">${n.pic ? SEASON_PICS[n.pic] : n.mk === "ghost" ? ghostMark(2, "#8FD3FF") : placeMark({ mk:n.mk, tone:n.tone })}</span>
+    <div><b>${esc(n.name)}</b><small>from ${esc(when(n.starts))} · ${esc(n.pitch)}</small></div></div>`; }
+/* ---------- a medal moment ----------
+   When a log takes a challenge up a medal, it lands: the medal drops in as a little room
+   in its metal, with a buzz, and a card you can share. The first look at a season only
+   remembers where you are, so medals you already had don't all go off at once. */
+const TIER_AT = t => SEASON_MEDALS.findIndex(m => m.tier === t);
+function medalCheck() {
+  try { if (!me) return; const S = currentSeason(); if (seasonPhase(S).key !== "live") return;
+    const got = P.medals || (P.medals = {}), known = (P.medalSeasons || []).includes(S.id), fresh = [];
+    for (const c of S.challenges) { const n = seasonEntries(c, myEntries, S).length, m = seasonMedal(n); if (!m) continue;
+      if (!got[c.id] || TIER_AT(m.tier) > TIER_AT(got[c.id])) { if (known) fresh.push({ c, m, n }); got[c.id] = m.tier; } }
+    if (!known) P.medalSeasons = [...(P.medalSeasons || []), S.id].slice(-8);
+    saveP(); if (fresh.length) setTimeout(() => medalMoment(S, fresh.at(-1)), 900); } catch (e) { console.warn("medals", e); } }
+const metalRoom = (tier, id = "mr" + Math.random().toString(36).slice(2, 7)) => { const [a, b] = MEDAL_METAL[tier] || MEDAL_METAL.bronze;
+  return `<svg viewBox="0 0 26 26" aria-hidden="true"><defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${b}"/></linearGradient></defs>
+    <rect x="2" y="2" width="22" height="22" rx="8.5" fill="url(#${id})"/><path d="M4 8.6A8.5 8.5 0 0 1 10.5 2H15.5A8.5 8.5 0 0 1 22 8.6Z" fill="#fff" opacity=".35"/>
+    <g class="eyes" fill="#151320"><rect x="7.6" y="10" width="3" height="6.8" rx="1.5"/><rect x="13.6" y="10" width="3" height="6.8" rx="1.5"/></g></svg>`; };
+const MEDAL_METAL = { bronze:["#E0A06A", "#9a5f33"], silver:["#E6E8F0", "#9aa0b4"], gold:["#FFE36B", "#c99b1c"], platinum:["#E8FBFF", "#7fc6d8"] };
+function medalMoment(S, { c, m, n }) {
+  $("#medalMoment")?.remove();
+  const nx = SEASON_MEDALS.find(x => x.at > n), el = document.createElement("div");
+  el.id = "medalMoment"; el.className = "medalmo"; el.setAttribute("role", "dialog"); el.setAttribute("aria-label", `${m.name} in ${c.name}`);
+  el.innerHTML = `<div class="mm-card"><div class="mm-room">${metalRoom(m.tier)}</div>${medalPill(m)}<h3>${esc(m.name)} in ${esc(c.name)}</h3>
+    <p class="sub">${n} for ${esc(S.name)}.${nx ? ` ${nx.at - n} more for ${nx.name}.` : " That's the lot."}</p>
+    <div class="stack"><button class="btn" id="mmShare">Share it</button><button class="btn quiet" id="mmOk">Nice</button></div></div>`;
+  document.body.appendChild(el); requestAnimationFrame(() => el.classList.add("on")); buzz([10, 50, 20]);
+  setTimeout(() => { const r = $(".mm-room", el); if (r && !REDUCED) burstAt(r, 26); }, 420);
+  const close = () => { el.classList.remove("on"); setTimeout(() => el.remove(), 260); };
+  $("#mmOk", el).onclick = close; el.onclick = e => { if (e.target === el) close(); };
+  $("#mmShare", el).onclick = async () => { try { await cardOut(await drawMedal(S, c, m, n), `rooms-${m.tier}.png`); } catch (e) { oops(e, "Couldn't make the card"); } }; }
+async function drawMedal(S, c, m, n) {
+  await ready();
+  const W = 1080, H = 1350, M = 80, cv = document.createElement("canvas"); cv.width = W; cv.height = H; const x = cv.getContext("2d");
+  const [a, b] = MEDAL_METAL[m.tier];
+  x.fillStyle = "#16131C"; x.fillRect(0, 0, W, H);
+  const g = x.createRadialGradient(W / 2, 560, 40, W / 2, 560, 700); g.addColorStop(0, a + "55"); g.addColorStop(1, a + "00"); x.fillStyle = g; x.fillRect(0, 0, W, H);
+  cardMark(x, M, 92, 44); x.fillStyle = "#F4EDE2"; x.font = "900 46px Outfit, sans-serif"; x.fillText("ROOMS", M + 82, 132);
+  x.fillStyle = "#A099B4"; x.font = "700 28px Inter, sans-serif"; x.textAlign = "right"; x.fillText(S.name.toUpperCase(), W - M, 128); x.textAlign = "left";
+  const im = await imgLoad("data:image/svg+xml;charset=utf-8," + encodeURIComponent(metalRoom(m.tier, "cardm").replace("<svg ", '<svg xmlns="http://www.w3.org/2000/svg" width="520" height="520" ')), false);
+  if (im) x.drawImage(im, (W - 420) / 2, 300, 420, 420);
+  x.textAlign = "center"; x.fillStyle = "#F4EDE2"; x.font = "900 120px Outfit, sans-serif"; x.fillText(m.name, W / 2, 860);
+  x.fillStyle = a; x.font = "800 56px Outfit, sans-serif"; x.fillText(fitText(x, c.name, W - M * 2), W / 2, 950);
+  x.fillStyle = "#A099B4"; x.font = "600 38px Inter, sans-serif"; x.fillText(`${n} ${SN_NOUN[c.kind]?.[n === 1 ? 0 : 1] || "logged"} · ${S.name}`, W / 2, 1020);
+  x.textAlign = "left"; return cv; }
+
+/* ---------- find me one that counts ----------
+   Starts from what you've loved most lately, asks the find-similar search for more like it
+   in each medium, and keeps only what the season would count. Your Queue's own counted
+   titles come first; the season's hand-picked list fills in where the search comes up short. */
+async function openSeasonFind(S) {
+  const kinds = S.challenges.map(c => c.kind);
+  let kind = P.snFindKind && kinds.includes(P.snFindKind) ? P.snFindKind : kinds[0];
+  openSheet(`<h3>${esc(S.find || "Find me one that counts")}</h3><p class="sub">Picked from what you've loved, and only ones that count for ${esc(S.name)}.</p>
+    <div class="chips" id="snfKinds" style="margin-top:12px">${kinds.map(k => `<button class="chip ${k === kind ? "on" : ""}" data-snk="${k}">${K(k).plural}</button>`).join("")}</div>
+    <div id="snfList" style="margin-top:10px"></div>`);
+  const paint = async () => { const box = $("#snfList"); if (!box) return; const want = kind;
+    box.innerHTML = `<div class="card">${skeleton(4)}</div>`;
+    const rows = await seasonFinds(S, want); if (!$("#snfList") || want !== kind) return;
+    box.innerHTML = rows.length ? `<div class="card">${rows.map(r => `<div class="row" data-snf="${esc(r.w.id)}" role="button" tabindex="0">${cover(r.w)}<div class="t"><b>${esc(r.w.title)}</b>
+        <small>${tag(r.w.kind)} ${esc(r.w.year || "")}${r.w.length ? ` · ${r.w.length}${K(r.w.kind).unit || ""}` : ""}${r.why ? ` · ${r.why}` : ""}</small></div><span class="chev" aria-hidden="true">›</span></div>`).join("")}</div>`
+      : `<p class="sub">Nothing found that counts just now. The challenge's own list has some.</p>`;
+    $$("[data-snf]", box).forEach(b => b.onclick = () => { const r = rows.find(x => x.w.id === b.dataset.snf); closeSheet(); remember(r.w); openWork(r.w.id); }); };
+  $$("[data-snk]").forEach(b => b.onclick = () => { kind = b.dataset.snk; P.snFindKind = kind; saveP();
+    $$("[data-snk]").forEach(x => x.classList.toggle("on", x === b)); paint(); });
+  paint(); }
+const snFindCache = {};
+async function seasonFinds(S, kind) {
+  const key = S.id + ":" + kind; if (snFindCache[key]) return snFindCache[key];
+  const out = [], seen = new Set(), add = (w, why) => { if (!w?.id || seen.has(w.id) || logged(w.id)) return; seen.add(w.id); out.push({ w, why }); };
+  /* your Queue first */
+  (activeList()?.items || []).map(id => works[id]).filter(w => w?.kind === kind && snCounts(w, S)).forEach(w => add(w, "in your Queue"));
+  /* then like the things you rated highest lately */
+  const seeds = [...myEntries].filter(e => e.score >= 8 && !e.part).sort((a, b) => String(b.rated_on).localeCompare(String(a.rated_on)))
+    .map(e => works[e.work_id]).filter(Boolean).sort((a, b) => (b.kind === kind) - (a.kind === kind)).slice(0, 3);
+  for (const seed of seeds) { if (out.length >= 8) break;
+    let hits = []; try { hits = await crossLike(seed, kind); } catch {}
+    for (const h of hits.slice(0, 10)) { if (out.length >= 8) break; if (seen.has(h.id) || logged(h.id)) continue;
+      let w = { ...h };
+      /* how long it is lives in the details, not the search result */
+      if (!w.length && DETAIL[kind] && (kind === "film" || kind === "tv")) try { const d = await DETAIL[kind](h.id.split(":")[1]); w.length = d.length || 0; w.meta = { ...(w.meta || {}), ...(d.meta || {}) }; } catch {}
+      if (!w.meta?.genres && w.genres) w.meta = { ...(w.meta || {}), genres:w.genres };
+      if (snCounts(w, S)) add(w, `like ${esc(seed.title)}`); } }
+  /* and the season's own picks to fill in */
+  if (out.length < 5) for (const [k, t] of S.picks.filter(([k]) => k === kind)) { if (out.length >= 8) break;
+    try { const h = (await SOURCES[k](t))?.[0]; if (h) add(h, "a season pick"); } catch {} }
+  return snFindCache[key] = out; }
 let seasonTurn = 0;
 async function renderClubs() {
   const body = $("#clubsBody");
@@ -12442,30 +12587,44 @@ async function renderClubs() {
   const ringWord = phase.key === "upcoming" ? (ringNum === 1 ? "day to go" : "days to go") : phase.key === "finished" ? "logged" : left === 1 ? "night left" : "nights left";
   const best = earned.filter(x => x.m).sort((x, y) => y.n - x.n);
   const next = earned.map(x => ({ ...x, to:SEASON_MEDALS.find(m => m.at > x.n) })).filter(x => x.to).sort((x, y) => (x.to.at - x.n) - (y.to.at - y.n))[0];
-  out.innerHTML = `${ended && ended !== season ? seasonRecapHTML(ended) : ""}
+  const recapNew = ended && ended !== season && !(P.recapSeen || []).includes(ended.id);
+  out.innerHTML = `${recapNew ? seasonRecapHTML(ended) : ""}
     <div class="season-hero sn-hero" style="--tone:var(--${season.tone})">
       <span class="tag">${phase.key === "upcoming" ? "Next season" : phase.key === "finished" ? "Between seasons" : "Public season"}</span>
       <h3>${esc(season.name)}</h3>
-      <p class="sub">${esc(season.rule)}</p>
+      <div class="sn-rules" title="${esc(season.rule)}">${season.challenges.map(c => `<span class="snr">${roomMark(c.kind)}<span><b>${K(c.kind).plural}</b>${esc(season.counts?.[c.kind] || c.copy.replace(/\.$/, ""))}</span></span>`).join("")}</div>
       <span class="season-ghost${season.pic ? " pic" : ""}" aria-hidden="true">${season.pic ? SEASON_PICS[season.pic] : season.mk === "ghost" ? ghostMark(2, "#8FD3FF") : placeMark({ mk:season.mk, tone:season.tone })}</span>
       <div class="sn-prog">
         <div class="sn-ring" role="img" aria-label="${ringNum} ${ringWord}"><svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="${R}" class="tk"/><circle cx="32" cy="32" r="${R}" class="fl" stroke-dasharray="${(C * (phase.key === "finished" ? 1 : gone / span)).toFixed(1)} ${C.toFixed(1)}"/></svg>
           <b>${ringNum}</b><small>${ringWord}</small></div>
         <div class="sn-sum"><b>${total ? `${total} logged` : phase.key === "upcoming" ? "Starts " + esc(when(season.starts)) : phase.key === "finished" ? "You sat this one out" : "Nothing logged yet"}</b>
           <p>${best.length ? best.map(x => `${x.m.name} in ${esc(x.c.name)}`).slice(0, 2).join(" · ") : phase.key === "upcoming" ? esc(season.pitch) : phase.key === "finished" ? "The next season's on its way." : "Log one that counts and your first medal lands."}${next && phase.key === "live" ? `<br>${next.to.at - next.n} more ${SN_NOUN[next.c.kind][next.to.at - next.n === 1 ? 0 : 1]} for ${next.to.name}.` : ""}</p></div>
-      </div></div>
+      </div>
+      ${phase.key === "live" ? (() => { const qc = (activeList()?.items || []).map(id => works[id]).filter(w => w && !logged(w.id) && snCounts(w, season));
+        return `<div class="sn-queue">${qc.length ? `<b>${qc.length === 1 ? "One" : said(qc.length).replace(/^./, x => x.toUpperCase())} in your Queue ${qc.length === 1 ? "counts" : "count"}</b>
+          <div class="snq">${qc.slice(0, 5).map(w => `<button type="button" data-work="${esc(w.id)}" aria-label="${esc(w.title)}">${cover(w)}</button>`).join("")}</div>` : ""}
+          <button class="btn soft sn-find" id="snFind" type="button">${esc(season.find || "Find me one that counts")}</button></div>`; })() : ""}</div>
     <div class="lbl">Four ways in</div>
     <div class="sn-tiles">${earned.map(({ c, n, m }) => `<button class="sn-tile${n ? " going" : ""}" type="button" data-season-challenge="${c.id}" style="--k:${K(c.kind).colour}">
         <span class="top"><span class="tag" style="background:${K(c.kind).colour}">${K(c.kind).label}</span><small>${n ? `${n} logged` : phase.key === "finished" ? "none logged" : "not started"}</small></span>
         <b>${esc(c.name)}</b>
         ${n ? `<span class="sn-covers">${seasonEntries(c, myEntries, season).slice(0, 4).map(e => `<span class="snc">${cover(works[e.work_id] || e.works, "snci")}</span>`).join("")}</span>` : ""}
-        <span class="sn-steps" aria-label="${m ? m.name + " earned" : "no medal yet"}">${SEASON_MEDALS.map(x => `<i class="${n >= x.at ? "on " + x.tier : ""}"></i>`).join("")}</span>
-        <small>${m ? `${medalPill(m)}${SEASON_MEDALS.find(x => x.at > n) ? ` · ${SEASON_MEDALS.find(x => x.at > n).name} at ${SEASON_MEDALS.find(x => x.at > n).at}` : " · all done"}` : `${esc(c.copy)}`}</small></button>`).join("")}</div>
+        <span class="sn-ladder" aria-label="${m ? m.name + " earned" : "no medal yet"}">${SEASON_MEDALS.map(x => `<i class="${x.tier}${n >= x.at ? " on" : ""}" title="${x.name} at ${x.at}">${x.at}</i>`).join("")}</span>
+        <small>${(() => { const nx = SEASON_MEDALS.find(x => x.at > n);
+          return m ? `${medalPill(m)}${nx ? ` · ${nx.at - n} more for ${nx.name}` : " · all done"}` : esc(c.copy); })()}</small></button>`).join("")}</div>
     <div id="snLately"></div>
     <div id="snRace"></div>
+    ${ended && ended !== season && !recapNew ? (() => { const rows = ended.challenges.map(c => seasonMedal(seasonEntries(c, myEntries, ended).length)).filter(Boolean);
+      const n = ended.challenges.reduce((t, c) => t + seasonEntries(c, myEntries, ended).length, 0);
+      return `<button class="sn-recapline" id="snRecapOpen" type="button"><b>${esc(ended.name)}</b><span>${n ? `${n} logged` : "sat it out"}${rows.length ? " · " + rows.map(medalPill).join(" ") : ""}</span><i aria-hidden="true">›</i></button><div id="snRecapBox"></div>`; })() : ""}
+    ${nextSeasonHTML(season)}
 `;
+  if (recapNew) { P.recapSeen = [...(P.recapSeen || []), ended.id].slice(-6); saveP(); }
+  const ro = $("#snRecapOpen", out); if (ro) ro.onclick = () => { ro.remove(); $("#snRecapBox").innerHTML = seasonRecapHTML(ended); fillSeasonRecap(ended); };
+  $$(".sn-queue [data-work]", out).forEach(b => b.onclick = () => openWork(b.dataset.work));
+  const sf = $("#snFind", out); if (sf) sf.onclick = () => openSeasonFind(season);
   $$('[data-season-challenge]', out).forEach(row => row.onclick = () => openSeasonChallenge(season.challenges.find(c => c.id === row.dataset.seasonChallenge)));
-  if (ended && ended !== season) fillSeasonRecap(ended);
+  if (recapNew) fillSeasonRecap(ended);
   /* the ring fills and the number counts up as the page opens */
   if (!REDUCED) { const fl = $(".sn-ring .fl", out), nb = $(".sn-ring b", out), to = fl?.getAttribute("stroke-dasharray");
     if (fl && to) fl.animate([{ strokeDasharray:`0 ${C.toFixed(1)}` }, { strokeDasharray:to }], { duration:900, delay:150, easing:"cubic-bezier(.2,.8,.2,1)", fill:"backwards" });
@@ -12506,7 +12665,9 @@ function paintSeasonRace(S, room, myTotal) {
   const lead = rows[0], meAt = rows.findIndex(r => r.p.id === me.id);
   const line = !lead.n ? "Nobody's on the board yet." : lead.p.id === me.id ? (rows[1]?.n === lead.n ? `You're level with ${esc(rows[1].p.handle)}.` : "You're out in front.") : meAt === -1 ? "" : `${esc(lead.p.handle)}'s ahead${rows[meAt].n < lead.n ? ` by ${lead.n - rows[meAt].n}` : ""}.`;
   el.innerHTML = `<div class="lbl">The room's race<small>${line}</small></div>
-    <div class="card sn-race">${rows.slice(0, 8).map((r, i) => { const pct = lead.n ? Math.round(r.n / lead.n * 100) : 0;
+    <div class="card sn-race">${(() => { const all = rows.reduce((t, r) => t + r.n, 0), goal = room.members.length * 5, pct = Math.min(100, Math.round(all / goal * 100));
+      return `<div class="sn-together"><div><b>${esc(room.room.name)} together</b><span>${all >= goal ? `${all} · done, together` : `${all} of ${goal} ${esc(S.together || "logged")}`}</span></div>
+        <span class="sn-tbar"><i style="width:${pct}%"></i></span></div>`; })()}${rows.slice(0, 8).map((r, i) => { const pct = lead.n ? Math.round(r.n / lead.n * 100) : 0;
       return `<div class="sn-rr${r.p.id === me.id ? " mine" : ""}${i === 0 && r.n ? " lead" : ""}" data-prof="${esc(r.p.id)}">
         <b>${esc(r.p.handle)}${r.p.id === me.id ? " <small>(you)</small>" : ""}${room.fresh.has(r.p.id) ? ` <em>new today</em>` : ""}</b>
         <span class="sn-lane"><i class="fill" style="width:${pct}%"></i><span class="runner" style="left:${pct}%">${avatar(r.p)}</span></span>
@@ -12722,7 +12883,7 @@ async function openWork(id, back = null) { let w = works[id]; if (!w) { try { co
      sets a title in its own colour; with no poster, its medium's colour does it */
   openSheet(`<div class="whero" aria-hidden="true" style="--wk:${cfg.colour}${w.cover ? `;background-image:url('${esc(blurSrc(w.cover))}')` : ""}"></div>
     ${back ? `<button class="wback" id="wBack" type="button">‹ Back to results</button>` : ""}
-    <div class="head whead" style="--wk:${cfg.colour}">${cover(w)}<div class="hh"><h3>${esc(w.title)}</h3><p class="sub">${tag(w.kind)} ${esc(w.year||"")}${w.creator?" · "+creatorLinks(w):""}${w.length?` · ${w.length}${cfg.unit.replace(" ", "\u00a0")}`:""}</p>${(w.meta?.genres || []).length ? `<div class="wgenres">${(w.meta.genres).slice(0, 4).map(g =>
+    <div class="head whead" style="--wk:${cfg.colour}">${cover(w)}<div class="hh"><h3>${esc(w.title)}</h3><p class="sub">${tag(w.kind)} ${esc(w.year||"")}${w.creator?" · "+creatorLinks(w):""}${w.length?` · ${w.length}${cfg.unit.replace(" ", "\u00a0")}`:""}</p>${snTag(w)}${(w.meta?.genres || []).length ? `<div class="wgenres">${(w.meta.genres).slice(0, 4).map(g =>
       `<button class="wgenre" data-wgenre="${esc(g)}" aria-label="Your favourite ${esc(g)} in your diary">${esc(g)}</button>`).join("")}</div>` : ""}</div></div>
     ${w.meta?.overview ? `<p class="wabout" id="wAbout" role="button" tabindex="0" aria-expanded="false">${esc(String(w.meta.overview).slice(0, 900))}</p>` : ""}
     <div class="wacts">
