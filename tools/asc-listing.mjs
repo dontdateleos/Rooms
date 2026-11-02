@@ -5,6 +5,7 @@
 //                                       age rating, price, availability, screenshots, the newest
 //                                       build and the review details (demo account included)
 //   node tools/asc-listing.mjs submit   sends version 1.0 to App Review (only when asked to)
+//   node tools/asc-listing.mjs resubmit swaps in a newer build: out of review, apply, back in (only when asked to)
 // Needs ASC_KEY_ID, ASC_ISSUER_ID, ASC_KEY_P8; REVIEW_EMAIL/REVIEW_PASSWORD for the demo account.
 // Not possible through the API, so done once in the website: App Privacy (the "nutrition
 // label", answers in STORE.md) and the review contact's name and phone number.
@@ -169,5 +170,42 @@ async function submit() {
   await api("PATCH", `/v1/reviewSubmissions/${sub.id}`, { data:{ type:"reviewSubmissions", id:sub.id, attributes:{ submitted:true } } });
   console.log(`Submitted version ${version.attributes.versionString} for review.`); }
 
+/* swap a newer build into a version that's already waiting for review: wait for the build to finish
+   processing, take the version out of review, fill everything in again (attaching that build), send it back */
+const wait = ms => new Promise(r => setTimeout(r, ms));
+async function resubmit() {
+  const { app, version } = await find();
+  const onIt = (await api("GET", `/v1/appStoreVersions/${version.id}/build`).catch(() => ({}))).data;
+  const was = +(onIt?.attributes.version || 0);
+  console.log(`Version ${version.attributes.versionString} is ${version.attributes.appStoreState}, with build ${was || "none"}`);
+  let newest;
+  for (let i = 0; i < 60; i++) {
+    newest = ((await api("GET", `/v1/builds?filter[app]=${app.id}&sort=-uploadedDate&limit=1`)).data || [])[0];
+    const n = +(newest?.attributes.version || 0), st = newest?.attributes.processingState;
+    if (n > was && st === "VALID") break;
+    if (n > was && /FAILED|INVALID/.test(st)) throw new Error(`build ${n} is ${st}; the version is left in review as it was`);
+    if (i === 59) throw new Error(`no newer processed build after 30 minutes (newest ${n}, ${st}); the version is left as it was`);
+    console.log(`  waiting for a build newer than ${was} (newest ${n}: ${st || "not uploaded yet"})`); await wait(30000); }
+  console.log(`Build ${newest.attributes.version} is ready`);
+  if (/WAITING_FOR_REVIEW|IN_REVIEW/.test(version.attributes.appStoreState)) {
+    const subs = (await api("GET", `/v1/reviewSubmissions?filter[app]=${app.id}&filter[platform]=IOS&limit=20`)).data || [];
+    for (const s of subs.filter(s => /WAITING_FOR_REVIEW|IN_REVIEW|UNRESOLVED_ISSUES/.test(s.attributes.state))) {
+      await api("PATCH", `/v1/reviewSubmissions/${s.id}`, { data:{ type:"reviewSubmissions", id:s.id, attributes:{ canceled:true } } });
+      console.log(`Took submission ${s.id} out of review`); }
+    for (let i = 0; ; i++) {
+      const st = (await api("GET", `/v1/appStoreVersions/${version.id}`)).data.attributes.appStoreState;
+      if (!/WAITING_FOR_REVIEW|IN_REVIEW/.test(st)) { console.log(`Version is now ${st}`); break; }
+      if (i === 40) throw new Error("the version didn't come out of review after 20 minutes");
+      await wait(30000); } }
+  await apply();
+  if (failed) throw new Error("something in the listing didn't save, so it wasn't sent to review");
+  const open = ((await api("GET", `/v1/reviewSubmissions?filter[app]=${app.id}&filter[platform]=IOS&filter[state]=READY_FOR_REVIEW&limit=5`)).data || [])[0];
+  if (open) {   // an unsent submission left over from taking it out of review: send that one
+    await api("POST", "/v1/reviewSubmissionItems", { data:{ type:"reviewSubmissionItems", relationships:{ reviewSubmission:{ data:{ type:"reviewSubmissions", id:open.id } },
+      appStoreVersion:{ data:{ type:"appStoreVersions", id:version.id } } } } }).catch(e => console.log(`  (item: ${e.message.slice(0, 160)})`));
+    await api("PATCH", `/v1/reviewSubmissions/${open.id}`, { data:{ type:"reviewSubmissions", id:open.id, attributes:{ submitted:true } } });
+    console.log(`Submitted version ${version.attributes.versionString} with build ${newest.attributes.version} for review.`); }
+  else { await submit(); console.log(`(with build ${newest.attributes.version})`); } }
+
 const mode = process.argv[2] || "status";
-({ status, apply, submit })[mode]?.().catch(e => { console.error(e.message); process.exit(1); }).then(() => { if (failed) process.exitCode = 1; });
+({ status, apply, submit, resubmit })[mode]?.().catch(e => { console.error(e.message); process.exit(1); }).then(() => { if (failed) process.exitCode = 1; });

@@ -7,16 +7,16 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: "status, apply or submit"
+        description: "status, apply, submit or resubmit"
         required: true
         default: status
         type: choice
-        options: [status, apply, submit]
+        options: [status, apply, submit, resubmit]
 concurrency: appstore
 jobs:
   listing:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 60
     env:
       ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
       ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
@@ -31,7 +31,7 @@ jobs:
       # a fresh password each time the listing is applied; it's set on the account and handed to
       # Apple in the same run, and never printed. A REVIEW_PASSWORD secret, if set, is used instead.
       - name: Demo account password
-        if: inputs.mode == 'apply'
+        if: inputs.mode == 'apply' || inputs.mode == 'resubmit'
         env:
           FIXED: ${{ secrets.REVIEW_PASSWORD }}
         run: |
@@ -39,7 +39,7 @@ jobs:
           echo "::add-mask::$pw"
           echo "REVIEW_PASSWORD=$pw" >> "$GITHUB_ENV"
       - name: The review account
-        if: inputs.mode == 'apply'
+        if: inputs.mode == 'apply' || inputs.mode == 'resubmit'
         run: node tools/review-account.mjs
       - name: App Store Connect (${{ inputs.mode }})
         run: node tools/asc-listing.mjs ${{ inputs.mode }}
