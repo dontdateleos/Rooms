@@ -6,7 +6,7 @@
 // The certificate is NOT revoked after the upload: App Review checks a build's signature again
 // when it's submitted, and a build signed by a revoked certificate fails with ITMS-90035
 // "Invalid Signature". Apple allows only a few distribution certificates, so "make" first revokes
-// old ones, keeping the newest and the one that signed any build that's in or waiting for review.
+// old ones, keeping only the one that signed a build that's in or waiting for review.
 // Xcode's own automatic signing can't do this on a fresh account: it wants a registered iPhone
 // before it will make anything, even for a build that's only going to the App Store.
 // Needs ASC_KEY_ID, ASC_ISSUER_ID, ASC_KEY_P8 and BUNDLE_ID; writes what it made to GITHUB_ENV.
@@ -76,18 +76,24 @@ async function make() {
    a certificate's life is a year, so it was made a year before it expires); revoke the rest */
 const madeAt = c => new Date(c.attributes.expirationDate).getTime() - 365 * 864e5;
 async function makeRoom() {
+  /* Apple allows two distribution certificates, so only one is kept for this run to sit beside:
+     the one that signed a build in (or waiting for) review, else the one on a version being
+     prepared, else the newest. A TestFlight-only build doesn't need its certificate afterwards. */
   const certs = ((await api("GET", "/v1/certificates?filter[certificateType]=DISTRIBUTION&limit=50")).data || []).sort((a, b) => madeAt(b) - madeAt(a));
-  const keep = new Set(certs.slice(0, 1).map(c => c.id));
+  let keep = null;
   try {
     const app = (await api("GET", `/v1/apps?filter[bundleId]=${encodeURIComponent(BUNDLE_ID)}`)).data?.[0];
     const versions = app ? (await api("GET", `/v1/apps/${app.id}/appStoreVersions?filter[platform]=IOS&limit=10`)).data || [] : [];
-    for (const v of versions.filter(v => /WAITING_FOR_REVIEW|IN_REVIEW|PENDING_DEVELOPER_RELEASE|PENDING_APPLE_RELEASE|PROCESSING_FOR_APP_STORE/.test(v.attributes.appStoreState || ""))) {
+    const rank = v => /WAITING_FOR_REVIEW|IN_REVIEW|PENDING_DEVELOPER_RELEASE|PENDING_APPLE_RELEASE|PROCESSING_FOR_APP_STORE/.test(v.attributes.appStoreState || "") ? 0
+      : /PREPARE_FOR_SUBMISSION|READY_FOR_REVIEW|DEVELOPER_REJECTED|REJECTED/.test(v.attributes.appStoreState || "") ? 1 : 9;
+    for (const v of versions.filter(v => rank(v) < 9).sort((a, b) => rank(a) - rank(b))) {
       const b = (await api("GET", `/v1/appStoreVersions/${v.id}/build`).catch(() => ({}))).data;
       if (!b) continue;
       const up = new Date(b.attributes.uploadedDate).getTime(), signer = certs.find(c => madeAt(c) <= up + 60e3);
-      if (signer) { keep.add(signer.id); console.log(`keeping the certificate that signed build ${b.attributes.version} (on version ${v.attributes.versionString}, ${v.attributes.appStoreState})`); } }
-  } catch (e) { console.log(`couldn't check versions (${e.message.slice(0, 120)}); keeping the two newest certificates`); certs.slice(0, 2).forEach(c => keep.add(c.id)); }
-  for (const c of certs.filter(c => !keep.has(c.id)))
+      if (signer) { keep = signer; console.log(`keeping the certificate that signed build ${b.attributes.version} (on version ${v.attributes.versionString}, ${v.attributes.appStoreState})`); break; } }
+  } catch (e) { console.log(`couldn't check versions (${e.message.slice(0, 120)}); keeping the newest certificate`); }
+  keep ||= certs[0];
+  for (const c of certs.filter(c => c.id !== keep?.id))
     await api("DELETE", `/v1/certificates/${c.id}`).then(() => console.log(`revoked an old certificate (${c.attributes.displayName || c.id}, expiring ${c.attributes.expirationDate.slice(0, 10)})`), e => console.log(String(e)));
   /* profiles of earlier runs whose certificate has gone are no use to anyone */
   const profs = (await api("GET", "/v1/profiles?filter[profileType]=IOS_APP_STORE&limit=100")).data || [];
