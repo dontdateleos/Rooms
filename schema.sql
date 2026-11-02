@@ -1947,3 +1947,35 @@ language sql stable security definer set search_path = public as $$
 $$;
 revoke all on function room_rounds_for(uuid) from public, anon;
 grant execute on function room_rounds_for(uuid) to authenticated;
+
+-- ---------- plainer words for what you loved ----------
+-- The words you pick for what you loved used to be a critic's (the directing, the editing,
+-- the pacing). They're everyday words now, and old entries move over to the new ones so
+-- taste and the room's charts keep counting them together. Only entries that still hold
+-- an old word are touched, so this is safe to re-run.
+create or replace function love_word(k text, kind text) returns text language sql immutable as $$
+  select case
+    when k in ('the directing', 'the sets', 'the look', 'the art') then 'how it looked'
+    when k = 'the editing' then 'kept me hooked'
+    when k = 'the atmosphere' then 'the vibe'
+    when k = 'the dialogue' then 'great lines'
+    when k in ('the season', 'the structure') then 'the story'
+    when k = 'the cast' then 'the acting'
+    when k = 'the voice' then 'the writing'
+    when k = 'the controls' then 'how it plays'
+    when k = 'the sound' then 'the music'
+    when k = 'the writing' and kind in ('film', 'tv') then 'the story'
+    when k = 'the pacing' then case kind when 'book' then 'couldn''t put it down' when 'game' then 'couldn''t stop playing' else 'kept me hooked' end
+    else k end
+$$;
+-- one row at a time, so an old row that a newer check would refuse (a word that wasn't
+-- banned when it was written) is skipped rather than stopping the whole update
+do $$ declare r record; begin
+  for r in select e.id from entries e where e.loved is not null
+      and exists (select 1 from unnest(e.loved) x where love_word(x, split_part(e.work_id, ':', 1)) <> x) loop
+    begin
+      update entries e set loved = (select array_agg(distinct love_word(x, split_part(e.work_id, ':', 1))) from unnest(e.loved) x) where e.id = r.id;
+    exception when check_violation then null;
+    end;
+  end loop;
+end $$;

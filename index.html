@@ -2007,6 +2007,8 @@ nav button .dot{top:0;right:calc(50% - 24px)}
 .stk-sep{flex:none;width:1px;align-self:stretch;margin:4px 2px;background:var(--line)}
 .stk-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:3px}
 .stk-tags i{font-style:normal;font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:99px;background:color-mix(in srgb,var(--lilac) 22%,transparent);color:var(--ink)}
+#lovedWrap .custom[hidden]{display:none}
+.chip.addown{border:1.5px dashed color-mix(in srgb,var(--mute) 60%,transparent);background:none;color:var(--mute)}
 .stk-bar{display:flex;gap:8px;align-items:center;margin:12px 0 14px}
 .stk-bar input{flex:1;min-width:0;margin:0}
 .stk-bar .btn{flex:none;width:auto;padding:11px 14px;font-size:14px;white-space:nowrap}
@@ -3551,16 +3553,16 @@ function burstAt(el, n = 28, delay = 0) {
 /* ============ the four rooms ============ */
 const KINDS = {
   film: { label:"Film", room:"Film", plural:"Films", colour:"var(--film)", verb:"watched", creatorLabel:"Directed by", lengthLabel:"Runtime", unit:" min",
-    craft:["the directing","the writing","the acting","the look","the editing","the music","the sets","the ending","the atmosphere","the pacing","the dialogue"],
+    craft:["the story","the acting","how it looked","the music","the ending","the vibe","great lines","kept me hooked"],
     ticks:[["first","First watch","Rewatch"],["where","At the cinema","At home"],["done","Finished it","Walked out"]] },
   tv: { label:"TV", room:"TV", plural:"TV", colour:"var(--tv)", verb:"watched", creatorLabel:"Made by", lengthLabel:"Episodes", unit:" eps",
-    craft:["the writing","the acting","the look","the season","the cast","the music","the ending","the world","the pacing","the dialogue"],
+    craft:["the story","the characters","the acting","how it looked","the music","the ending","great lines","kept me hooked"],
     ticks:[["first","First watch","Rewatch"],["where","Finished it","Didn't finish"]] },
   book: { label:"Book", room:"Books", plural:"Books", colour:"var(--book)", verb:"read", creatorLabel:"Written by", lengthLabel:"Pages", unit:" pp",
-    craft:["the writing","the structure","the characters","the ideas","the voice","the world","the ending","the pacing","the dialogue"],
+    craft:["the story","the characters","the writing","the world","the ideas","the ending","great lines","couldn't put it down"],
     ticks:[["first","First read","Reread"],["where","Paper","Audio"],["done","Finished it","Didn't finish"]] },
   game: { label:"Game", room:"Games", plural:"Games", colour:"var(--game)", verb:"played", creatorLabel:"Made by", lengthLabel:"Hours", unit:" h",
-    craft:["how it plays","the controls","the art","the sound","the story","the world","the levels","the ending","the pacing"],
+    craft:["how it plays","the story","the world","how it looked","the music","the levels","the ending","couldn't stop playing"],
     ticks:[["first","First play","Replay"],["where","Finished it","Dropped it"]] }
 };
 const K = k => KINDS[k] || KINDS.film;
@@ -3790,11 +3792,19 @@ function peopleOf(w) { const c = w.credits || {}, out = [];
    refresh puts it back exactly as it was. */
 const DEMO = /(^|[#?&])demo\b/.test(location.hash + location.search);
 const LOCAL = !window.__mockSb && (DEMO || SUPABASE_URL.includes("YOUR-"));
+/* the words for what you loved used to be a critic's (the directing, the editing, the
+   pacing); they're plainer now. An old word turns into its new one. */
+const LOVE_OLD = { "the directing":"how it looked", "the sets":"how it looked", "the look":"how it looked", "the art":"how it looked", "the editing":"kept me hooked",
+  "the atmosphere":"the vibe", "the dialogue":"great lines", "the season":"the story", "the cast":"the acting", "the structure":"the story", "the voice":"the writing",
+  "the controls":"how it plays", "the sound":"the music" };
+const loveWord = (k, kind) => k === "the pacing" ? (kind === "book" ? "couldn't put it down" : kind === "game" ? "couldn't stop playing" : "kept me hooked")
+  : k === "the writing" && (kind === "film" || kind === "tv") ? "the story" : LOVE_OLD[k] || k;
 const GAME_KEYS = { reactions:["entry_id","user_id"], room_answers:["room_id","week","user_id"], room_brackets:["room_id","month"], room_votes:["room_id","game","voter"], room_ask_answers:["ask_id","user_id","work_id"], daily_scores:["user_id","game","day"] };
 function makeLocalSb(seed) {
   const KEY = "rooms.db";
   const blank = { profile:null, signedOut:false, works:{}, profiles:[], entries:[], lists:[], list_items:[], rooms:[], room_members:[], clubs:[], club_members:[], club_votes:[], reactions:[], replies:[], top_lists:[], top_list_items:[], follows:[], nows:[], handovers:[], seen:[], blocks:[], reports:[], settings:[], handles:[], room_answers:[], room_brackets:[], room_votes:[], room_nights:[], room_asks:[], room_ask_answers:[], daily_scores:[], room_rounds:[], round_answers:[], theme_lists:[], theme_list_items:[], theme_list_likes:[] };
   const db = Object.assign({}, blank, seed || JSON.parse(localStorage.getItem(KEY) || "{}"));
+  for (const e of db.entries || []) if (Array.isArray(e.loved)) e.loved = [...new Set(e.loved.map(k => loveWord(k, String(e.work_id).split(":")[0])))];
   if (!db.nows) db.nows = [];                 /* a log written before v15 has no such key */
   if (!db.handovers) db.handovers = [];       /* nor one written before v16 */
   if (!db.seen) db.seen = [];                 /* nor one written before v20 */
@@ -4651,7 +4661,7 @@ async function tagStats(workId) { if (tagCache[workId]) return tagCache[workId];
      so a tag counts as popular only on a work people have actually turned up to. */
   const hot = k => n >= 5 && (counts[k]||0) >= 3 && share(k) >= 25;
   return (tagCache[workId] = { n, counts, share, hot }); }
-function myCustomTags(kind) { const known = new Set(K(kind).craft), counts = {};
+function myCustomTags(kind) { const known = new Set(Object.keys(KINDS).flatMap(k => K(k).craft)), counts = {};
   for (const e of myEntries) for (const k of (e.loved||[])) if (!k.startsWith("person:") && !known.has(k)) counts[k] = (counts[k]||0)+1;
   return Object.entries(counts).sort((a,b)=>b[1]-a[1]).map(x=>x[0]).slice(0,8); }
 
@@ -10038,26 +10048,27 @@ async function rankInsert(kind, workId, again = false, ask = askRank) {
   const was = t.items.indexOf(workId);
   const items = t.items.filter(id => id !== workId);
   if (!items.length) { const out = [workId]; await persistRank(t.id, out); if (rankCache[kind]) rankCache[kind] = out; return { pos:1, of:1 }; }
+  /* Your stars put it in place. Only the things you gave the same stars are asked about,
+     starting in the middle of them, and it stops the moment it has one it beat below it
+     and one it lost to above it — or reaches the end of that star level. Nothing scored
+     the same, and no questions at all. */
   const myScore = scoreOf(workId);
-  let lo = 0, hi = items.length;
-  let suggested = myScore == null ? null : items.findIndex(id => { const s = scoreOf(id); return s != null && s <= myScore; });
-  if (suggested === -1) suggested = items.length - 1;
-  /* where the rating alone would put it — what skipping means, and where the questions
-     stop: three is enough to get close, and nobody logs something to sit an exam */
   const byScore = myScore == null ? items.length : (i => i < 0 ? items.length : i)(items.findIndex(id => { const s = scoreOf(id); return s != null && s < myScore; }));
-  let asked = 0;
-  while (lo < hi) {
-    if (!again && asked >= 3) { lo = hi = Math.max(lo, Math.min(hi, byScore)); break; }
-    asked++;
-    const mid = suggested != null ? Math.max(lo, Math.min(hi - 1, suggested)) : (lo + hi) >> 1;
-    suggested = null;
-    const w = works[workId], other = works[items[mid]];
-    if (!w || !other) break;
-    const preferNew = await ask(w, other, again && was >= 0);
-    if (preferNew === undefined) return null;
-    if (preferNew === null) { if (again && was >= 0) return null; lo = hi = Math.max(lo, Math.min(hi, byScore)); break; }
-    if (preferNew) hi = mid; else lo = mid + 1;
-  }
+  const same = myScore == null ? [] : items.map((id, i) => scoreOf(id) === myScore ? i : -1).filter(i => i >= 0);
+  let lo = byScore, asked = 0;
+  if (same.length) {
+    const w = works[workId], q = async j => { const other = works[items[same[j]]]; if (!w || !other) return null; asked++; return ask(w, other, again && was >= 0); };
+    let k = same.length >> 1, first = await q(k);
+    if (first === undefined) return null;
+    if (first === null) { if (again && was >= 0) return null; }
+    else if (first) { /* better than the middle one: up until it meets one it doesn't beat */
+      let top = k;
+      for (let j = k - 1; j >= 0 && asked < 4; j--) { const r = await q(j); if (r === undefined) return null; if (r === null) break; if (r) top = j; else break; }
+      lo = same[top]; }
+    else { /* not as good: down until it beats one */
+      let bottom = k;
+      for (let j = k + 1; j < same.length && asked < 4; j++) { const r = await q(j); if (r === undefined) return null; if (r === null) break; if (!r) bottom = j; else break; }
+      lo = same[bottom] + 1; } }
   /* taken back (Undo, delete) while the questions were still on screen */
   if (!inArchive(workId)) return null;
   const out = items.slice(); out.splice(lo, 0, workId);
@@ -13792,17 +13803,16 @@ function openLog(w, edit = null, preset = 0) { setDoing("logging"); const cfg = 
   let faces = w.meta?.faces || {};
   const chip = (key, label, cls = "") => { const who = cls.includes("who") && key.startsWith("person:") ? key.slice(7) : null;
     return `<button class="chip ${cls} ${who?"hasface":""} ${loved.includes(key)?"on":""}" data-lv="${esc(key)}">${
-      who ? faceEl(who, faces[who]) : ""}${esc(label)}${stats.hot(key)?`<u>${stats.share(key)}%</u>`:""}</button>`; };
+      who ? faceEl(who, faces[who]) : ""}${esc(label)}</button>`; };
   const lovedCat = k => k.startsWith("person:") ? "who" : cfg.craft.includes(k) ? "craft" : "own";
-  const paintLoved = () => { const el = $("#lovedWrap"); if (!el) return; const people = peopleOf(w);
-    const pop = Object.entries(stats.counts).sort((a,b)=>b[1]-a[1]).map(x=>x[0]).filter(stats.hot).slice(0,5); const popSet = new Set(pop);
-    const crafts = cfg.craft.filter(c => !popSet.has(c)), persons = people.filter(([n]) => !popSet.has("person:"+n)), mine = myCustomTags(w.kind).filter(t => !popSet.has(t) && !cfg.craft.includes(t));
-    const extras = loved.filter(k => !k.startsWith("person:") && !cfg.craft.includes(k) && !mine.includes(k) && !popSet.has(k));
-    el.innerHTML = (pop.length ? `<div class="tagrow"><span class="lbl">Loved most often</span><span class="cnt">${stats.n} ${stats.n===1?"entry":"entries"}</span></div><div class="chips">${pop.map(k => chip(k, k.startsWith("person:")?lc(k.slice(7)):k, k.startsWith("person:")?"who":"")).join("")}</div>` : "")
-      + `<div class="lbl">${pop.length ? "Everything else" : "The best thing about it"} <small class="pick1">pick one</small></div><div class="chips">${crafts.map(c => chip(c,c)).join("")}</div>`
-      + (persons.length ? `<div class="lbl">${w.kind === "book" ? "Who wrote it" : "Who made it"} <small class="pick1">your favourite</small></div><div class="chips">${persons.map(([n]) => chip("person:"+n, n, "who")).join("")}</div>` : "")
-      + ((mine.length || extras.length) ? `<div class="lbl">Your own <small class="pick1">pick one</small></div><div class="chips">${[...extras, ...mine].map(t => chip(t,t)).join("")}</div>` : "")
-      + `<div class="custom"><input id="lvNew" maxlength="28" placeholder="Add your own" autocapitalize="none"><button id="lvAdd">Add</button></div>`;
+  /* one row of plain words, anyone who made it, and your own if none of those say it */
+  const paintLoved = () => { const el = $("#lovedWrap"); if (!el) return; const people = peopleOf(w).slice(0, 4);
+    const mine = myCustomTags(w.kind).filter(t => !cfg.craft.includes(t)).slice(0, 2);
+    const extras = loved.filter(k => !k.startsWith("person:") && !cfg.craft.includes(k) && !mine.includes(k));
+    el.innerHTML = `<div class="lbl">What did you love? <small class="pick1">pick one</small></div><div class="chips">${cfg.craft.map(c => chip(c, c)).join("")}${[...extras, ...mine].map(t => chip(t, t, "own")).join("")}<button class="chip addown" id="lvMore" type="button">+ Something else</button></div>
+      <div class="custom" id="lvBox" hidden><input id="lvNew" maxlength="28" placeholder="Say it in a few words" autocapitalize="none"><button id="lvAdd">Add</button></div>
+      ${people.length ? `<div class="lbl">Anyone in particular? <small class="pick1">pick one</small></div><div class="chips">${people.map(([n]) => chip("person:" + n, n, "who")).join("")}</div>` : ""}`;
+    $("#lvMore", el).onclick = () => { $("#lvMore", el).remove(); $("#lvBox", el).hidden = false; $("#lvNew", el).focus(); };
     /* one favourite per kind of thing: a single best part, a single person, one of your own.
        Choosing another swaps it, so it's a decision rather than a checklist. */
     $$("[data-lv]", el).forEach(b => b.onclick = () => { const k = b.dataset.lv, i = loved.indexOf(k);
