@@ -37,6 +37,18 @@ notes, your bio. All of it typed by the person.
 
 The account's UUID. It is how a row knows whose it is.
 
+### Identifiers → Device ID — **Collected**
+- Linked to the user: **Yes** · Used for tracking: **No** · Purpose: **App Functionality** only
+
+The phone's notification token (APNs), kept so notifications reach the right phone. Removed
+when Apple says it's gone or notifications are switched off.
+
+### Diagnostics → Crash Data — **Collected**
+- Linked to the user: **Yes** · Used for tracking: **No** · Purpose: **App Functionality** only
+
+The app's own error reports: what broke and where, so it can be fixed. The account id is
+dropped from them when an account is closed.
+
 ### Everything else — **Not Collected**
 
 Worth knowing *why*, because App Review may ask:
@@ -50,8 +62,6 @@ Worth knowing *why*, because App Review may ask:
 | Browsing History | None kept. |
 | Search History | Searches are passed to the proxy and forgotten. The proxy caches by *title*, never by person, so there is nothing to attribute to anyone. |
 | Usage Data | **There is no analytics in the app at all** — no tag manager, no session recorder, no advertising kit, no pixel, no beacon. `offsite.test.mjs` fails if one is added. |
-| Diagnostics | No crash reporter. Worth revisiting if you add one in the wrapper — it would become Collected. |
-| Identifiers → Device ID | None today. **Adding push notifications adds an APNs token here.** |
 | Other Data | Nothing left over. |
 
 ### Data Used to Track You: **None**
