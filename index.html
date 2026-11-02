@@ -2955,6 +2955,7 @@ html.svopen .toast{z-index:21}
 @keyframes svHeart{0%{transform:translate(-50%,-50%) scale(.3);opacity:0}30%{transform:translate(-50%,-50%) scale(1.15);opacity:1}100%{transform:translate(-50%,-75%);opacity:0}}
 @media (prefers-reduced-motion:reduce){.storyv,.storyv.out,.sv-heart{animation:none}}
 .nowpill .ndo{font-style:normal;color:var(--mute)}
+.addacts{display:flex;gap:6px;flex:none}
 </style>
 </head>
 <body>
@@ -9477,7 +9478,7 @@ function openAdd(only) {
     ${canScan() ? `<button class="chip" id="aScan" style="margin-top:8px">Scan a book's barcode</button>` : ""}
     <div class="chips">${Object.keys(KINDS).map(k => `<button class="chip k ${P.kinds.includes(k)?"on":""}" data-ak="${k}">${K(k).label}</button>`).join("")}</div>
     <div class="msg" id="aMsg"></div><div id="aResults"></div>
-    ${shelf.length ? `<div class="lbl">Up next</div><div class="card" style="margin-top:0">${shelf.map(w => `<div class="row" data-aw="${esc(w.id)}">${cover(w)}<div class="t"><b>${esc(w.title)}</b><small>${tag(w.kind)} ${esc(w.year||"")}</small></div><span class="chip">Log</span></div>`).join("")}</div>` : ""}
+    ${shelf.length ? `<div class="lbl">Up next</div><div class="card" style="margin-top:0">${shelf.map(w => `<div class="row" data-aw="${esc(w.id)}">${cover(w)}<div class="t"><b>${esc(w.title)}</b><small>${tag(w.kind)} ${esc(w.year||"")}</small></div><span class="addacts">${nowOf(w.id) ? `<span class="chip on">${nowVerb(w.kind)}</span>` : `<button class="chip" data-anow="${esc(w.id)}">${nowVerb(w.kind)}</button>`}<span class="chip">Log</span></span></div>`).join("")}</div>` : ""}
     ${recent.length ? `<div class="lbl">Again</div><div class="card" style="margin-top:0">${recent.map(e => { const w = works[e.work_id]||{};
       return `<div class="row" data-aw="${esc(e.work_id)}">${cover(w)}<div class="t"><b>${esc(w.title)}</b><small>${tag(w.kind)} last ${K(w.kind).verb} ${when(e.rated_on)}</small></div><span class="chip">Again</span></div>`; }).join("")}</div>` : ""}
     ${logBlock("addLog", { label:`Your log · ${logCount()}` })}
@@ -9485,6 +9486,8 @@ function openAdd(only) {
   $("#aClose").onclick = closeSheet;
   $$("[data-ak]").forEach(b => b.onclick = () => { addKeep = null; const k = b.dataset.ak; if (P.kinds.includes(k)) { if (P.kinds.length > 1) P.kinds = P.kinds.filter(x => x !== k); } else P.kinds = [...P.kinds, k]; saveP(); b.classList.toggle("on"); });
   $$("[data-aw]").forEach(x => x.onclick = () => openLog(works[x.dataset.aw]));
+  $$("[data-anow]").forEach(b => b.onclick = async ev => { ev.stopPropagation(); const w = works[b.dataset.anow]; if (!w) return;
+    b.disabled = true; if (await startNow(w.id)) { buzz(8); closeSheet(); say(`${nowVerb(w.kind)} ${w.title}`, "good"); refresh(); } else b.disabled = false; });
   wireLog("addLog", 6);
   setTimeout(() => $("#aSearch")?.focus(), 350);
   const asc = $("#aScan"); if (asc) asc.onclick = openScan;
@@ -13446,7 +13449,10 @@ function openLog(w, edit = null, preset = 0) { setDoing("logging"); const cfg = 
         [["all","Everyone"], ["room", rooms.length > 1 ? "My rooms" : "Just the room"], ["me","Just me"]].map(([k,l]) =>
           `<button data-who="${k}">${l}</button>`).join("")}</div>
         <p class="sub" id="whoNote"></p>` : ""}</details>
-    <div class="stack"><button class="btn" id="wSave" ${edit||preset?"":"disabled"}>${edit?"Save changes":preset?"Save the entry":"Rate it to save"}</button><button class="btn quiet" id="wCancel">Not now</button></div><p class="msg" id="wMsg"></p>`);
+    <div class="stack"><button class="btn" id="wSave" ${edit||preset?"":"disabled"}>${edit?"Save changes":preset?"Save the entry":"Rate it to save"}</button>${!edit && !preset && !isPart(w.id) && !nowOf(w.id) ? `<button class="btn ghost" id="wNow">Not finished? I'm ${lc(nowVerb(w.kind))} it</button>` : ""}<button class="btn quiet" id="wCancel">Not now</button></div><p class="msg" id="wMsg"></p>`);
+  /* you opened the log on something you haven't finished: it goes on the room's now row instead */
+  const wn = $("#wNow"); if (wn) wn.onclick = async () => { wn.disabled = true;
+    if (await startNow(w.id)) { buzz(8); closeSheet(); say(`${nowVerb(w.kind)} ${w.title}`, "good"); refresh(); } else wn.disabled = false; };
   /* the folded line says what it's set to, so nothing in there is a surprise */
   const paintSum = () => { const el = $("#lmSum"); if (!el) return; const d = $("#wDate")?.value || today();
     const bits = [d === today() ? "Today" : when(d).replace(/^./, c => c.toUpperCase()),
