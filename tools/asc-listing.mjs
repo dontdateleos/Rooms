@@ -164,18 +164,27 @@ async function availability(appId) {
 
 async function submit() {
   const { app, version } = await find();
-  /* reuse an unsent submission if one is lying around (Apple allows only one), else make one */
-  const sub = ((await api("GET", `/v1/reviewSubmissions?filter[app]=${app.id}&filter[platform]=IOS&filter[state]=READY_FOR_REVIEW&limit=5`)).data || [])[0]
-    || (await api("POST", "/v1/reviewSubmissions", { data:{ type:"reviewSubmissions", attributes:{ platform:"IOS" }, relationships:{ app:{ data:{ type:"apps", id:app.id } } } } })).data;
+  /* a version can be in only one open submission: if one already holds it (say after a build was
+     refused), send that one again; otherwise reuse an empty unsent one, or make one */
+  const subs = (await api("GET", `/v1/reviewSubmissions?filter[app]=${app.id}&filter[platform]=IOS&limit=20`)).data || [];
+  const open = subs.filter(x => !/COMPLETE|CANCELING|CANCELED|WAITING_FOR_REVIEW|IN_REVIEW/.test(x.attributes.state));
+  let sub = null; const empty = [];
+  for (const x of open) {
+    const its = (await api("GET", `/v1/reviewSubmissions/${x.id}/items?include=appStoreVersion`).catch(() => ({}))).data || [];
+    console.log(`  submission ${x.id.slice(0, 8)}: ${x.attributes.state}, ${its.length} item(s)`);
+    if (its.some(it => it.relationships?.appStoreVersion?.data?.id === version.id)) sub = sub || x; else if (!its.length) empty.push(x); }
+  if (sub) { for (const x of empty) await api("PATCH", `/v1/reviewSubmissions/${x.id}`, { data:{ type:"reviewSubmissions", id:x.id, attributes:{ canceled:true } } }).catch(() => {}); }
+  else sub = empty[0] || (await api("POST", "/v1/reviewSubmissions", { data:{ type:"reviewSubmissions", attributes:{ platform:"IOS" }, relationships:{ app:{ data:{ type:"apps", id:app.id } } } } })).data;
   const items = (await api("GET", `/v1/reviewSubmissions/${sub.id}/items`).catch(() => ({}))).data || [];
   /* freshly uploaded screenshots take a minute or two to process, and the version can't be sent until they have */
-  const addItem = async () => { for (let i = 0; ; i++) {
-    try { return await api("POST", "/v1/reviewSubmissionItems", ITEM); }
-    catch (e) { if (!/IN_POST_PROCESSING/.test(e.message) || i >= 20) throw e; console.log("  screenshots still processing, waiting…"); await new Promise(r => setTimeout(r, 30000)); } } };
   const ITEM = { data:{ type:"reviewSubmissionItems", relationships:{ reviewSubmission:{ data:{ type:"reviewSubmissions", id:sub.id } },
     appStoreVersion:{ data:{ type:"appStoreVersions", id:version.id } } } } };
-  if (!items.length) await addItem();
-  await api("PATCH", `/v1/reviewSubmissions/${sub.id}`, { data:{ type:"reviewSubmissions", id:sub.id, attributes:{ submitted:true } } });
+  if (!items.length) for (let i = 0; ; i++) {
+    try { await api("POST", "/v1/reviewSubmissionItems", ITEM); break; }
+    catch (e) { if (!/IN_POST_PROCESSING/.test(e.message) || i >= 20) throw e; console.log("  screenshots still processing, waiting…"); await new Promise(r => setTimeout(r, 30000)); } }
+  for (let i = 0; ; i++) {
+    try { await api("PATCH", `/v1/reviewSubmissions/${sub.id}`, { data:{ type:"reviewSubmissions", id:sub.id, attributes:{ submitted:true } } }); break; }
+    catch (e) { if (!/IN_POST_PROCESSING/.test(e.message) || i >= 20) throw e; console.log("  screenshots still processing, waiting…"); await new Promise(r => setTimeout(r, 30000)); } }
   console.log(`Submitted version ${version.attributes.versionString} for review.`); }
 
 /* swap a newer build into a version that's already waiting for review: wait for the build to finish
