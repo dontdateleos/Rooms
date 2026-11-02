@@ -25,7 +25,7 @@ async function api(method, path, body) {
   const r = await fetch(path.startsWith("http") ? path : `https://api.appstoreconnect.apple.com${path}`, { method,
     headers:{ Authorization:`Bearer ${token()}`, "Content-Type":"application/json" }, body:body ? JSON.stringify(body) : undefined });
   const text = await r.text(); let j = {}; try { j = text ? JSON.parse(text) : {}; } catch {}
-  if (!r.ok) { const e = new Error(`${method} ${path.split("?")[0]} → ${r.status}: ${(j.errors || []).map(e => [e.title, e.detail, e.source?.pointer].filter(Boolean).join(" — ")).join("; ") || text.slice(0, 300)}`); e.status = r.status; throw e; }
+  if (!r.ok) { const e = new Error(`${method} ${path.split("?")[0]} → ${r.status}: ${(j.errors || []).map(e => [e.title, e.detail, e.source?.pointer, e.meta?.associatedErrors && JSON.stringify(e.meta.associatedErrors).slice(0, 1500)].filter(Boolean).join(" — ")).join("; ") || text.slice(0, 300)}`); e.status = r.status; throw e; }
   return j; }
 let failed = 0;
 async function step(name, fn) { try { const r = await fn(); console.log(`✓ ${name}${typeof r === "string" ? ` — ${r}` : ""}`); return true; }
@@ -164,8 +164,11 @@ async function availability(appId) {
 
 async function submit() {
   const { app, version } = await find();
-  const sub = (await api("POST", "/v1/reviewSubmissions", { data:{ type:"reviewSubmissions", attributes:{ platform:"IOS" }, relationships:{ app:{ data:{ type:"apps", id:app.id } } } } })).data;
-  await api("POST", "/v1/reviewSubmissionItems", { data:{ type:"reviewSubmissionItems", relationships:{ reviewSubmission:{ data:{ type:"reviewSubmissions", id:sub.id } },
+  /* reuse an unsent submission if one is lying around (Apple allows only one), else make one */
+  const sub = ((await api("GET", `/v1/reviewSubmissions?filter[app]=${app.id}&filter[platform]=IOS&filter[state]=READY_FOR_REVIEW&limit=5`)).data || [])[0]
+    || (await api("POST", "/v1/reviewSubmissions", { data:{ type:"reviewSubmissions", attributes:{ platform:"IOS" }, relationships:{ app:{ data:{ type:"apps", id:app.id } } } } })).data;
+  const items = (await api("GET", `/v1/reviewSubmissions/${sub.id}/items`).catch(() => ({}))).data || [];
+  if (!items.length) await api("POST", "/v1/reviewSubmissionItems", { data:{ type:"reviewSubmissionItems", relationships:{ reviewSubmission:{ data:{ type:"reviewSubmissions", id:sub.id } },
     appStoreVersion:{ data:{ type:"appStoreVersions", id:version.id } } } } });
   await api("PATCH", `/v1/reviewSubmissions/${sub.id}`, { data:{ type:"reviewSubmissions", id:sub.id, attributes:{ submitted:true } } });
   console.log(`Submitted version ${version.attributes.versionString} for review.`); }
