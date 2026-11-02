@@ -1784,3 +1784,36 @@ do $$ begin
     alter table entries add constraint entries_line_clean check (not bad_word(context->>'line')
       and char_length(coalesce(context->>'line', '')) <= 300) not valid; end if;
 end $$;
+
+-- ---------- stacks ----------
+-- The Challenges tab is gone and lists have the tab instead, under the name Stacks. A stack
+-- is public now, the way a Letterboxd list is: anyone signed in can read it, unless one of
+-- you has blocked the other. It can carry an end date, which is what a club was: a list
+-- your room adds to, with a deadline. Each club becomes a stack once (from_club keeps
+-- that to once, so this is safe to re-run). Safe to re-run.
+alter table theme_lists add column if not exists due date;
+alter table theme_lists add column if not exists from_club uuid unique;
+
+create or replace function can_see_list(l uuid)
+returns boolean language sql security definer stable set search_path = public as $$
+  select exists (select 1 from theme_lists t where t.id = l and (t.owner = auth.uid() or not apart_from(t.owner)))
+$$;
+revoke all on function can_see_list(uuid) from public, anon;
+grant execute on function can_see_list(uuid) to authenticated;
+
+create index if not exists theme_lists_updated_idx on theme_lists (updated_at desc);
+create index if not exists theme_list_likes_list_idx on theme_list_likes (list_id);
+
+with made as (
+  insert into theme_lists (owner, title, note, ranked, open, due, from_club, created_at, updated_at)
+    select c.created_by, left(c.name, 60), null, false, true, c.due, c.id, coalesce(c.created_at, now()), coalesce(c.created_at, now())
+    from clubs c
+    where c.created_by is not null and char_length(btrim(c.name)) > 0 and not bad_name(left(c.name, 60))
+    on conflict (from_club) do nothing
+    returning id, owner, from_club)
+insert into theme_list_items (list_id, work_id, added_by, position)
+  select m.id, i.work_id, m.owner, (i.n - 1)::int
+  from made m join clubs c on c.id = m.from_club
+  cross join lateral unnest(c.items) with ordinality as i(work_id, n)
+  where exists (select 1 from works w where w.id = i.work_id)
+  on conflict (list_id, work_id) do nothing;

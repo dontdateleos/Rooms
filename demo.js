@@ -349,11 +349,15 @@ export function demoSeed() {
       { id:"tl1", owner:"u-mo", title:"Two hours or less, no notes", note:"For a weeknight. Add yours.", ranked:false, open:true, created_at:ago(40), updated_at:ago(2) },
       { id:"tl2", owner:"u-cass", title:"Cities at night", note:"Sodium light and somebody driving.", ranked:true, open:false, created_at:ago(30), updated_at:ago(6) },
       { id:"tl3", owner:"me", title:"The long ones worth it", note:"", ranked:false, open:false, created_at:ago(20), updated_at:ago(9) },
+      { id:"tl4", owner:"u-ali", title:"Sunday Club: slow and strange", note:"One a week until the end of the month. Add what you'd put on.", ranked:false, open:true, due:soon(26), created_at:ago(12), updated_at:ago(1) },
+      { id:"tl5", owner:"u-rue", title:"Games that feel like a film", note:"And the film they feel like.", ranked:true, open:false, created_at:ago(3), updated_at:ago(3) },
     ],
     theme_list_items:[
       ...["film:5","film:7","film:8","film:32","film:2"].map((work_id, i) => ({ list_id:"tl1", work_id, added_by:i === 4 ? "u-cass" : "u-mo", position:i, added_at:ago(40 - i) })),
       ...["film:3","film:1","film:43","film:40","tv:3"].map((work_id, i) => ({ list_id:"tl2", work_id, added_by:"u-cass", position:i, added_at:ago(30 - i) })),
       ...["film:1","tv:1","book:2","film:4"].map((work_id, i) => ({ list_id:"tl3", work_id, added_by:"me", position:i, added_at:ago(20 - i) })),
+      ...["film:9","film:40","book:1","tv:2"].map((work_id, i) => ({ list_id:"tl4", work_id, added_by:i === 3 ? "u-mo" : "u-ali", position:i, added_at:ago(12 - i) })),
+      ...["game:1","game:2","film:3"].map((work_id, i) => ({ list_id:"tl5", work_id, added_by:"u-rue", position:i, added_at:ago(3) })),
     ],
     theme_list_likes:[{ list_id:"tl1", user_id:"u-cass" }, { list_id:"tl1", user_id:"u-rue" }, { list_id:"tl2", user_id:"me" }, { list_id:"tl3", user_id:"u-mo" }],
     /* where a few of Up next's things stream, for the services filter; Thief has just

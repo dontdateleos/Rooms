@@ -1924,6 +1924,27 @@ nav button .dot{top:0;right:calc(50% - 24px)}
 .lbl .sn-key,.lbl small{font-family:var(--body);font-weight:600;letter-spacing:0;text-transform:none;color:var(--mute);margin-left:auto;font-size:11.5px}
 .lbl:has(small){display:flex;align-items:baseline;gap:10px}
 .sn-tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.stk-bar{display:flex;gap:8px;align-items:center;margin:12px 0 14px}
+.stk-bar input{flex:1;min-width:0;margin:0}
+.stk-bar .btn{flex:none;width:auto;padding:11px 14px;font-size:14px;white-space:nowrap}
+.stks{display:grid;gap:10px}
+@media (min-width:760px){.stks{grid-template-columns:1fr 1fr}}
+.stk{display:grid;gap:10px;width:100%;border:0;background:var(--card);color:var(--ink);font:inherit;text-align:left;border-radius:20px;padding:12px 14px 14px;cursor:pointer}
+.stk:active{transform:scale(.985)}
+.stk-strip{display:flex;height:96px;align-items:flex-end;padding-left:2px}
+.stk-strip > span{position:relative;z-index:calc(10 - var(--i));margin-left:-22px;transform:rotate(calc((var(--i) - 2) * 1.2deg));transition:transform .25s}
+.stk-strip > span:first-child{margin-left:0}
+.stk-strip .co{width:66px;height:96px;border-radius:9px;box-shadow:4px 0 10px -4px rgba(0,0,0,.55);display:block;object-fit:cover}
+.stk:hover .stk-strip > span{transform:translateX(calc(var(--i) * 3px))}
+.stk-none{align-self:center;color:var(--mute);font-size:13px}
+.stk-t{display:grid;gap:3px;min-width:0}
+.stk-t b{font:800 16.5px/1.2 var(--head);letter-spacing:-.01em}
+.stk-t small{color:var(--mute);font-size:12.5px;line-height:1.35}
+.stk-seen{display:flex;align-items:center;gap:8px;margin-top:4px}
+.stk-seen .pbar{flex:1;height:5px}
+.stk-seen em{font-style:normal;font-size:11.5px;font-weight:700;color:var(--mute);white-space:nowrap}
+.ledue{display:flex;gap:8px;align-items:center}.ledue input{flex:1;margin:0}
+.chgoal{margin-top:12px}
 .cab-count{display:flex;gap:18px;align-items:center;margin:6px 0 4px}
 .cab-count span{display:flex;align-items:center;gap:7px}.cab-count svg{width:28px;height:28px}
 .cab-count b{font:900 21px var(--head)}
@@ -3124,7 +3145,7 @@ html.svopen .toast{z-index:21}
   <button data-tab="people"><svg class="ni ni-o" viewBox="0 0 24 24" aria-hidden="true"><mask id="feedCut"><rect x="-2" y="-2" width="28" height="28" fill="#fff"/><path d="M8.4 19.1A7.6 7.6 0 1 1 11.3 20.3L7.4 21.6Z" fill="#000" stroke="#000" stroke-width="4.4" stroke-linejoin="round"/></mask><g fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><circle cx="7" cy="7.5" r="4.6" mask="url(#feedCut)"/><path d="M8.4 19.1A7.6 7.6 0 1 1 11.3 20.3L7.4 21.6Z"/></g><g fill="currentColor"><rect x="11.55" y="10.4" width="1.8" height="4" rx=".9"/><rect x="14.65" y="10.65" width="1.8" height="4" rx=".9"/></g></svg><svg class="ni ni-f" viewBox="0 0 24 24" aria-hidden="true"><circle cx="7" cy="7.5" r="4.6" fill="currentColor" opacity=".45"/><path d="M8.4 19.1A7.6 7.6 0 1 1 11.3 20.3L7.4 21.6Z" fill="currentColor"/><g fill="var(--cream)"><rect x="11.55" y="10.4" width="1.8" height="4" rx=".9"/><rect x="14.65" y="10.65" width="1.8" height="4" rx=".9"/></g></svg><span>Feed</span></button>
   <button id="add" aria-label="Log something"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
   <button data-tab="library"><svg class="ni ni-o" viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><path d="M7 3.5h10"/><path d="M5.5 7h13"/><rect x="4" y="10.5" width="16" height="10" rx="2.8"/></g></svg><svg class="ni ni-f" viewBox="0 0 24 24" aria-hidden="true"><g fill="currentColor"><rect x="6.5" y="2.5" width="11" height="2.4" rx="1.2" opacity=".45"/><rect x="5" y="6" width="14" height="2.6" rx="1.3" opacity=".7"/><rect x="3.5" y="10" width="17" height="11" rx="3"/></g></svg><span>Queue</span></button>
-  <button data-tab="clubs"><svg class="ni ni-o" viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><path d="M7.5 4h9v5.5a4.5 4.5 0 0 1-9 0z"/><path d="M7.5 6H5a3 3 0 0 0 3 4.2M16.5 6H19a3 3 0 0 1-3 4.2M12 14v3.5M8.5 20h7"/></g></svg><svg class="ni ni-f" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3.5h10v6a5 5 0 0 1-10 0z" fill="currentColor"/><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 6H5a3 3 0 0 0 3 4.2M16.5 6H19a3 3 0 0 1-3 4.2M12 14v3.5M8.5 20h7"/></g><path d="M12 6.4l.8 1.6 1.7.25-1.25 1.2.3 1.7-1.55-.8-1.55.8.3-1.7-1.25-1.2 1.7-.25z" fill="var(--cream)"/></svg><span>Challenges</span></button>
+  <button data-tab="clubs"><svg class="ni ni-o" viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><rect x="2.5" y="8.5" width="13" height="13" rx="2.8"/><path d="M6.5 5h10.5a2.5 2.5 0 0 1 2.5 2.5V18M10 1.8h9.5A2.5 2.5 0 0 1 22 4.3V14"/></g></svg><svg class="ni ni-f" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="8" width="14" height="14" rx="3" fill="currentColor"/><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"><path d="M6.5 5h10.5a2.5 2.5 0 0 1 2.5 2.5V18M10 1.8h9.5A2.5 2.5 0 0 1 22 4.3V14"/></g></svg><span>Stacks</span></button>
 </div></nav>
 <div class="demobar" id="demobar" role="region" aria-label="Demo" hidden>Demo &middot; invented people &middot; nothing is saved</div>
 <div class="offline" id="offline" role="status" aria-live="polite"></div>
@@ -4228,7 +4249,7 @@ async function loadMine() {
      no title, no poster and no row anywhere. Fetch the shows the parts point at. */
   const need = [...new Set(myParts.map(e => showOf(e.work_id)))].filter(id => !works[id]);
   if (need.length) { try { (await q(sb.from("works").select("*").in("id", need))).forEach(remember); } catch {} }
-  myRing(); medalCheck(); }
+  myRing(); }
 /* your own ring, from the log that has just landed. No club query and no taste match —
    both need a round trip, and the two marks that want them light up when you open your
    own profile, which is the one place anybody goes looking. */
@@ -4929,7 +4950,7 @@ function takeRoomLink() { const m = /[#&]room=([\w-]{8,40})(?:&sec=(\w+))?/.exec
   if (rooms.some(r => r.id === m[1])) { P.activeRoom = m[1]; P.feed = "room"; P.feedPicked = true; if (m[2]) P.roomSec = m[2]; saveP(); } }
 addEventListener("hashchange", () => { if (!me?.id) return;
   if (/[#&]room=/.test(location.hash)) { takeRoomLink(); switchTab("doors"); }
-  else if (/^#seasons\b/.test(location.hash)) { history.replaceState(null, "", location.pathname + location.search); P.clubTab = "season"; switchTab("clubs"); } });
+  else if (/^#(seasons|stacks)\b/.test(location.hash)) { history.replaceState(null, "", location.pathname + location.search); switchTab("clubs"); } });
 /* the switch, wherever it's shown */
 async function pushSwitchHTML() {
   if (pushNeedsHome()) return `<p class="sub">To get notifications on an iPhone, add Rooms to your Home Screen first: Share → Add to Home Screen, then open it from there.</p>`;
@@ -5792,7 +5813,7 @@ function together(e, all) {
 }
 
 /* ============ shell ============ */
-const RENDER = { doors:renderDoors, people:renderPeople, archive:renderCabinet, shelf:renderShelf, taste:renderTaste, clubs:renderClubs };
+const RENDER = { doors:renderDoors, people:renderPeople, archive:renderCabinet, shelf:renderShelf, taste:renderTaste, clubs:renderStacks };
 /* 19 — the pill follows the tab you land on.
    It caches pixel geometry in inline styles, which means anything that moves the nav
    behind its back leaves it pointing at a layout that no longer exists. The way to see
@@ -6076,7 +6097,7 @@ const currentTab = () => $$("main section").find(s => s.classList.contains("on")
 /* what changed shows everywhere: the tab you're on redraws now, and the ones beside it
    are marked stale so a swipe draws them fresh instead of showing how they were */
 const refresh = () => { const t = currentTab(); staleAll(); RENDER[t]?.(); drawnAt[t] = Date.now(); };
-function staleAll() { for (const k in drawnAt) drawnAt[k] = 0; for (const k in snRoomCache) delete snRoomCache[k]; }
+function staleAll() { for (const k in drawnAt) drawnAt[k] = 0; }
 /* ---------- pulling the page down ----------
    refresh() only redraws what is already in memory, which is the wrong thing to do when
    somebody asks for new. This fetches first. It is deliberately the shared things rather
@@ -6562,7 +6583,7 @@ async function enter() { hideSplash();
   takeRoomLink(); pushKeepUp(); takeShare(); paintMeAv(); flushQueue().catch(() => {});
   booting = true;
   /* a "season ends in three nights" notification opens on the season */
-  const toSeasons = /^#seasons\b/.test(location.hash); if (toSeasons) { history.replaceState(null, "", location.pathname + location.search); P.clubTab = "season"; }
+  const toSeasons = /^#(seasons|stacks)\b/.test(location.hash); if (toSeasons) history.replaceState(null, "", location.pathname + location.search);
   switchTab(toSeasons ? "clubs" : rooms.length ? "doors" : "people"); movePill(true); checkNew(); joinMeChannel();
   if (!P.onboarded && !myEntries.length) setTimeout(openWelcome, 400); else if (P.tourDue) maybeTour();
   setTimeout(askTerms, 900);
@@ -6664,7 +6685,7 @@ const TOUR = [
   { at:'nav button[data-tab="doors"]', title:"Rooms", body:"What your friends log lands here. Hold a heart to answer with your face, or tap the bubble to reply.", col:"#F5A3C7" },
   { at:'nav button[data-tab="people"]', title:"Feed", body:"The people you follow, then everyone else. A ring means they've logged something in the last two days — tap it to see.", col:"#9EF0C9" },
   { at:'nav button[data-tab="library"]', title:"Queue", body:"Up next is everything you mean to get to. Diary is everything you've finished, by date, and Ranked is your order of them.", col:"#B9A6FF" },
-  { at:'nav button[data-tab="clubs"]', title:"Challenges", body:"Set a goal for the year, and join this month's season with the room.", col:"#FFE86A" },
+  { at:'nav button[data-tab="clubs"]', title:"Stacks", body:"Lists of films, shows, books and games that anyone can make and find. Start one of your own.", col:"#B9A6FF" },
   { at:'#meBtn', title:"You", body:"Your taste, your year and your settings are behind your name. That's the whole tour.", col:"#8FD3FF", last:true },
 ];
 function maybeTour() { if (!P.tourDue || !me) return;
@@ -7061,7 +7082,7 @@ function wireTonight() { const c = $("#tonight"); if (!c) return;
   $$("[data-w]", c).forEach(x => x.onclick = () => openWork(x.dataset.w));
   const sp = $("#tonightSpin"); if (sp) sp.onclick = () => openWheel();
   const lg = $("#tonightLog"); if (lg) lg.onclick = () => { const w = works[lg.dataset.log]; if (w) openLog(w); };
-  const ss = $("#tonightSeason"); if (ss) ss.onclick = () => { P.clubTab = "season"; saveP(); switchTab("clubs"); }; }
+}
 async function renderDoors() {
   const body = $("#doorsBody"); const R = activeRoom();
   const mem = memories()[0], rev = dueReview();
@@ -7575,7 +7596,7 @@ function slipHTML(e, opts = {}) { const w = remember(e.works) || works[e.work_id
   const same = (e.reactions||[]).some(r => r.user_id === me.id), n = (e.reactions||[]).length;
   return `<div class="slip" data-slip="${e.id}" style="animation-delay:-${(avHash(e.id) % 65) / 10}s">
     <div class="who" data-prof="${esc(e.user_id)}" style="cursor:pointer">${avatar(e.profiles)} <b>${esc(mine ? "you" : e.profiles?.handle)}</b>${stars(e.score, "sm")}<span class="when">${whenE(e)}</span></div>
-    ${opts.here ? (dnfOf(e) ? `<div class="here-dnf">${dnfLine(e)}</div>` : "") : `<div class="ttl" data-work="${esc(e.work_id)}"><span class="season-cover">${cover(w)}${seasonEntryStamp(e)}</span><div><b>${esc(w.title)}</b><small>${esc(w.year||"")}${w.creator ? ` \u00b7 ${esc(String(w.creator).split(",")[0])}` : ""}${dnfOf(e) ? ` ${dnfLine(e)}` : ""}</small></div></div>`}
+    ${opts.here ? (dnfOf(e) ? `<div class="here-dnf">${dnfLine(e)}</div>` : "") : `<div class="ttl" data-work="${esc(e.work_id)}"><span class="season-cover">${cover(w)}</span><div><b>${esc(w.title)}</b><small>${esc(w.year||"")}${w.creator ? ` \u00b7 ${esc(String(w.creator).split(",")[0])}` : ""}${dnfOf(e) ? ` ${dnfLine(e)}` : ""}</small></div></div>`}
     ${e.note?`<div class="q${String(e.note).length > 210 ? " clip" : ""}">“${noteHTML(e.note)}”</div>${String(e.note).length > 210 ? `<button class="more" data-more="${e.id}">More</button>` : ""}`:""}
     ${lineOf(e) ? `<blockquote class="kept" style="--k:${K(w.kind || "film").colour}">${esc(lineOf(e))}</blockquote>` : ""}
     ${e.loved?.length ? `<p class="lovedline">Loved ${e.loved.slice(0,3).map(k => `<b>${esc(k.startsWith("person:") ? k.slice(7) : k)}</b>`).join(", ").replace(/, ([^,]*)$/, " and $1")}</p>` : ""}
@@ -7828,7 +7849,7 @@ async function renderRoomFeed(fb, R) {
     `;
   endLine($('[data-rsec="talk"]', fb), es, 60);
   paintRoomGoals(R, es); paintAwards(R);
-  paintListsCard($("#roomLists"), { build:x => x.in("owner", R.members.map(m => m.id)), title:"Lists from the room" });
+  paintListsCard($("#roomLists"), { build:x => x.in("owner", R.members.map(m => m.id)), title:"Stacks from the room" });
   if (awardsPhase() === "vote" && R.members.length > 1 && P.awardCoach !== `${R.id}:${awardYear()}` && currentTab() === "doors") {
     P.awardCoach = `${R.id}:${awardYear()}`; saveP(); setTimeout(() => coach(`${awardsName(R)} are open. Vote in the Year tab`), 2600); }
   if (!P.holdTip && myEntries.length >= 3 && currentTab() === "doors") { P.holdTip = 1; saveP(); setTimeout(() => coach("Hold any poster to rate it, shelve it or pass it on"), 1600); }
@@ -8629,7 +8650,7 @@ function renderShelf() {
     <div class="msg" id="msg"></div><div id="results"></div>${arrivedHTML()}
     ${all.length ? `${pickBar}
       <div class="grid" id="shelfGrid">${rows.map(w => { const soon = isSoon(w), n = nowOf(w.id);
-        return `<div class="cell" data-cell="${esc(w.id)}"><div class="po ${logged(w.id)?"done":""} ${soon?"soon":""} ${n?"onit":""}" data-w="${esc(w.id)}">${cover(w,"")}<b>${esc(w.title)}</b>${logged(w.id) ? "" : snBadge(w)}
+        return `<div class="cell" data-cell="${esc(w.id)}"><div class="po ${logged(w.id)?"done":""} ${soon?"soon":""} ${n?"onit":""}" data-w="${esc(w.id)}">${cover(w,"")}<b>${esc(w.title)}</b>
           ${soon ? `<span class="soon-tag">${when(w.release)}</span>` : `<button class="tick ${logged(w.id)?"done":""}" data-t="${esc(w.id)}" aria-label="log it"></button>`}</div>
           <div class="cap"><span>${soon ? "Coming" : n ? nowLine(n) : (() => { const f = cameFrom(w.id), sv = svcMine(w.id)[0];
             return f ? `from ${esc(f.sender_p?.handle || "a friend")}` : sv ? `<em class="onsvc">on ${esc(svcName(sv))}</em>` : ""; })()}</span></div></div>`; }).join("")}</div>`
@@ -9543,7 +9564,7 @@ async function doSearch(term, onPick, resEl, msgEl, box, acts = null) {
     return; } window.__hits = Object.assign(window.__hits||{}, Object.fromEntries([...hits, ...byThem].map(h => [h.id, h])));
   paintHits(resEl, [{ hits }, ...(byThem.length ? [{ label:`${person.role} ${person.name}`, hits:byThem }] : [])], onPick, box, acts); }
 function paintHits(resEl, groups, onPick, box, acts) {
-  const inner = h => `${cover(h)}<div class="t"><b>${esc(h.title)}</b><small>${tag(h.kind)} ${isSoon(h)?`Coming ${when(h.release)}`:esc(h.year||"")}${h.creator?" · "+esc(h.creator):""}${logged(h.id) ? " · \u2713" : ""}${snBadge(works[h.id] || h)}</small></div>`;
+  const inner = h => `${cover(h)}<div class="t"><b>${esc(h.title)}</b><small>${tag(h.kind)} ${isSoon(h)?`Coming ${when(h.release)}`:esc(h.year||"")}${h.creator?" · "+esc(h.creator):""}${logged(h.id) ? " · \u2713" : ""}</small></div>`;
   /* with nothing to choose between, the row is still one tap — that path is untouched */
   const rowHTML = h => acts === "open"
     ? `<div class="row openrow" data-add="${esc(h.id)}" role="button" tabindex="0" aria-label="${esc(h.title)}${h.year ? ", " + esc(h.year) : ""}. Hold to log it">${inner(h)}<span class="chev" aria-hidden="true">›</span></div>`
@@ -11394,7 +11415,7 @@ async function renderTaste() { const body = $("#tasteBody"); const t = tasteOf(m
     ${myEntries.length ? `<div id="podium"></div>
     <button class="card tastemini" id="tasteMore" aria-label="See your whole taste">${tasteMiniHTML(t)}</button>
     ${yourNumbersHTML()}
-    ${cabinetHTML(myEntries, true)}
+    <div class="chgoal">${goalHTML()}</div>
     <div id="myLists"></div>
     <div id="hotTakes"></div>
     <div class="card" id="recCard"><div class="h"><span>You might like</span><span class="tag dim">picked for you</span></div><div id="recBody">${skeleton(1)}</div></div>
@@ -11406,9 +11427,10 @@ async function renderTaste() { const body = $("#tasteBody"); const t = tasteOf(m
      card the header used to — nothing that was one tap away got further */
   $("#tasteMe").onclick = () => openProfile(me.id);
   $("#tasteCog").onclick = () => openYou();
+  { const gs = $("#goalSet"); if (gs) gs.onclick = setGoal; }
   const ts = $("#tasteStory"); if (ts) ts.onclick = () => openYearStory();
   paintPodium(); playNumbers(); paintHotTakes();
-  paintListsCard($("#myLists"), { build:x => x.eq("owner", me.id), title:"Your lists", empty:"Make one: heist films, books for a long flight, the ones that made you cry.", mine:true });
+  paintListsCard($("#myLists"), { build:x => x.eq("owner", me.id), title:"Your stacks", empty:"Make one: heist films, books for a long flight, the ones that made you cry.", mine:true });
   [$("#tasteMore"), $("#tasteAll")].forEach(b => { if (b) b.onclick = openTasteDetail; });
   const rb = $("#recBody"); if (!rb) return;
   /* a card that loads forever is worse than no card: if nothing comes back in a few
@@ -12108,767 +12130,6 @@ function openWholeLog() {
     <div class="stack"><button class="btn quiet" id="wlClose">Close</button></div>`);
   wireLog("wholeLog"); $("#wlClose").onclick = closeSheet; }
 
-/* ============ CLUBS ============
-   The full feature — a programme with a deadline, ballots, and open clubs anybody can
-   join — lives under the "Friend clubs" tab, alongside the public season. It renders
-   into whatever element the season screen hands it, so it owns none of the outer
-   heading or tabs; P.clubSub is its own yours/open toggle, kept apart from P.clubTab
-   (season vs. friend clubs) so the two screens don't fight over one preference. */
-async function renderFriendClubs(el) { const R = activeRoom();
-  P.clubSub = P.clubSub || "yours";
-  const daysTo = d => d ? Math.ceil((new Date(d + "T12:00:00Z") - Date.now()) / 864e5) : null;
-  const clubCard = (c, joined) => { const items = c.items || [], done = items.filter(id => logged(id)).length,
-      pct = items.length ? Math.round(done/items.length*100) : 0, ks = [...new Set(items.map(kindOf))], d = daysTo(c.due);
-    return `<div class="club ${c.scope === "open" ? "open" : ""}" data-c="${c.id}">
-      <div class="top"><span class="tag" style="background:${c.scope === "open" ? "var(--lilac)" : "var(--sky)"}">${esc(c.label || (c.scope === "open" ? "Open" : "Your room"))}</span>
-        <span class="deadline ${d !== null && d <= 7 ? "soon" : ""}">${d === null ? "no end date" : d < 0 ? "finished" : d === 0 ? "ends today" : d + " days left"}</span></div>
-      <b>${esc(c.name)}</b>
-      ${items.length ? `<div class="clubposters">${items.slice(0, 8).map(id => { const w = works[id];
-        return `<span class="cp${logged(id) ? " done" : ""}" style="${w?.cover ? "" : `background:${K(kindOf(id)).colour}`}">${w ? cover(w, "cpi") : ""}</span>`; }).join("")}${items.length > 8 ? `<span class="cpmore">+${items.length - 8}</span>` : ""}</div>` : ""}
-      <div class="tr"><i data-pct="${pct}" style="width:${clubWas[c.id] != null ? clubWas[c.id] : pct}%"></i></div>
-      <div class="pr"><b data-done="${done}">${clubDone[c.id] != null ? clubDone[c.id] : done}</b> of ${items.length}${pct === 100 ? " · you finished it" : ""} ${ks.map(tag).join(" ")}</div>
-      ${ballotClosed(c) ? `<div class="pr" style="color:var(--good)">Results are in</div>` : ""}
-      <div class="who" id="who-${c.id}"></div>
-      ${c.scope === "open" && !joined ? `<div class="stack"><button class="btn soft" data-join="${c.id}">Join</button></div>` : ""}</div>`; };
-
-  /* a bar drawn at its final width was always there. Drawn at the width it had last time
-     and then let go, it shows you the one you just finished moving. */
-  const paintBars = () => $$("#clubsBody .club").forEach(el => {
-    const id = el.dataset.c, bar = $(".tr i", el); if (!bar) return;
-    const to = +bar.dataset.pct || 0, from = clubWas[id];
-    if (REDUCED || from == null || from === to) { bar.style.width = to + "%"; clubWas[id] = to;
-      const n0 = $(".pr b", el); if (n0) { n0.textContent = +n0.dataset.done || 0; clubDone[id] = +n0.dataset.done || 0; }
-      return; }
-    bar.style.transition = "none"; bar.style.width = from + "%";
-    requestAnimationFrame(() => { bar.style.transition = ""; bar.style.width = to + "%"; });
-    const n = $(".pr b", el); if (n) tickTo(n, +n.dataset.done || 0);
-    clubWas[id] = to; if (n) clubDone[id] = +n.dataset.done || 0; });
-
-  const yours = [...clubs, ...openClubs.filter(c => myClubIds.has(c.id))];
-  const open = openClubs.filter(c => !myClubIds.has(c.id));
-  el.innerHTML = `<div class="chiprow clubchips">${[["yours",`Yours${yours.length?" · "+yours.length:""}`],["open",`Open to everyone${open.length?" · "+open.length:""}`]].map(([k,l]) =>
-      `<button data-ct2="${k}" class="chip pchip ${P.clubSub===k?"on":""}">${l}</button>`).join("")}</div>
-    <div id="clubList"></div>
-    ${P.clubSub === "yours" ? `<div class="stack"><button class="btn soft" id="newClub">Start a club</button>${R ? "" : ""}</div>` : `<div class="stack"><button class="btn ghost" id="newOpenClub">Start one for everyone</button></div>`}`;
-  $$("[data-ct2]", el).forEach(b => b.onclick = () => { P.clubSub = b.dataset.ct2; saveP(); renderClubs(); });
-  const nc = $("#newClub"); if (nc) nc.onclick = () => openClubEditor(null, R ? "room" : "open");
-  const noc = $("#newOpenClub"); if (noc) noc.onclick = () => openClubEditor(null, "open");
-  const list2 = $("#clubList"), list = P.clubSub === "yours" ? yours : open;
-  if (!list.length) { list2.innerHTML = P.clubSub === "yours"
-    ? blank("var(--lilac)","◷","No clubs yet","Thirteen horrors before Halloween, every Le Guin, six games before winter. Start one for your room, or join an open one.",[["clubJoinOpen","See open clubs"]])
-    : blank("var(--lilac)","◷","Nothing open right now","Open clubs are programmes anyone can join — a season, a director, a shared deadline. Start the first one.",[["clubStartOpen","Start one for everyone"]]);
-    const j = $("#clubJoinOpen"); if (j) j.onclick = () => { P.clubSub = "open"; saveP(); renderClubs(); };
-    const so = $("#clubStartOpen"); if (so) so.onclick = () => openClubEditor(null, "open");
-    return; }
-  list2.innerHTML = list.map(c => clubCard(c, myClubIds.has(c.id))).join("");
-  requestAnimationFrame(paintBars);
-  $$("[data-c]", list2).forEach(x => x.onclick = e => { if (e.target.closest("[data-join]")) return;
-    openClub([...clubs, ...openClubs].find(c => c.id === x.dataset.c)); });
-  $$("[data-join]", list2).forEach(b => b.onclick = async e => { e.stopPropagation();
-    try { await q(sb.from("club_members").insert({ club_id:b.dataset.join, user_id:me.id })); await loadClubs(); renderClubs(); } catch (err) { alert(err.message); } });
-  revealIn(list2);
-  /* who else is in each one */
-  for (const c of list) { const people = await clubMembers(c.id); const box = $("#who-"+c.id); if (!box) continue;
-    if (!people.length) { box.innerHTML = `<span class="more" style="margin-left:0">just you so far</span>`; continue; }
-    box.innerHTML = people.slice(0,5).map(p => avatar(p)).join("") + (people.length > 5 ? `<span class="more">+${people.length-5}</span>` : `<span class="more">${people.length} in</span>`); }
-}
-/* ============ SEASONS ============
-   Seasons are public and count what somebody actually logs during a window.  That is
-   intentionally unlike a Club's fixed reading list: finishing every title is not the
-   point, and repeated logs of the same title do not inflate a medal. */
-/* the four challenge marks are built the exact way the season's own ghost is, and the
-   way a profile avatar is underneath that: flat tones, no gradient, two capsule eyes.
-   The stamp on a logged entry stays the plain glyph in `icon` — that badge is 22px, too
-   small for a shape with any detail to read, so it keeps the simpler mark. One shape,
-   the season's own ghost, in each medium's own colour — four faces of the same idea
-   rather than four different animals. */
-function ghostMark(tilt, base) {
-  const light = avShade(base, .30), dark = avShade(base, -.18);
-  return `<svg viewBox="0 0 100 100" aria-hidden="true"><g transform="rotate(${tilt} 50 54)">
-    <path d="M18 46a32 32 0 0 1 64 0v30q-8 10-16 0t-16 0t-16 0t-16 0z" fill="${base}"/>
-    <path d="M50 14a32 32 0 0 1 32 32H18a32 32 0 0 1 32-32z" fill="${light}"/>
-    <path d="M82 46v30q-8 10-16 0V46a14 14 0 0 0-8-13 32 32 0 0 1 24 13z" fill="${dark}"/>
-    <g class="eyes" fill="#151320"><rect x="40" y="44" width="7" height="20" rx="3.5"/><rect x="55" y="42" width="7" height="22" rx="3.5"/></g>
-  </g></svg>`;
-}
-/* each challenge is a tiny room in its medium's colour, the same soft shape as the logo:
-   a lighter lid on top, a darker right side, two eyes */
-const KIND_ROOM = { film:"#FFB36B", tv:"#F5A3C7", book:"#FFE36B", game:"#9EF0C9" };
-function roomMark(kind) {
-  const c = KIND_ROOM[kind] || "#B9A6FF";
-  return `<svg viewBox="0 0 26 26" aria-hidden="true"><rect x="2" y="2" width="22" height="22" rx="8.5" fill="${c}"/>
-    <rect x="19.6" y="2" width="4.4" height="22" rx="4" fill="#000" opacity=".14"/><path d="M4 8.6A8.5 8.5 0 0 1 10.5 2H15.5A8.5 8.5 0 0 1 22 8.6Z" fill="#fff" opacity=".35"/>
-    <g class="eyes" fill="#151320"><rect x="7.6" y="10" width="3" height="6.8" rx="1.5"/><rect x="13.6" y="10" width="3" height="6.8" rx="1.5"/></g></svg>`; }
-/* a medal is a small pill in its own metal */
-const medalPill = m => m ? `<span class="mpill ${m.tier}">${m.name}</span>` : "";
-/* ---------- what counts ----------
-   Whether a title would count for the season that's on, so it can say so wherever the
-   title turns up: in your Queue, in search, on its own page. */
-const SN_TUB = `<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 7h10l-1.4 8H4.4z" fill="#F4EDE2"/><path d="M5.6 7l.5 8M8 7v8M10.4 7l-.5 8" stroke="#F5A3C7" stroke-width="1.3"/><circle cx="5" cy="5.6" r="2.1" fill="#FFF6D8"/><circle cx="8" cy="4.4" r="2.3" fill="#FFF6D8"/><circle cx="11" cy="5.6" r="2.1" fill="#FFF6D8"/></svg>`;
-function snCounts(w, S = currentSeason()) {
-  if (!w?.id || !S || seasonPhase(S).key !== "live" || !S.challenges.some(c => c.kind === w.kind)) return false;
-  try { return !!S.qualifies({ work_id:w.id, works:w, context:{} }); } catch { return false; } }
-const snIcon = S => S.pic === "dozing" ? SN_TUB : `<i class="sndot" style="background:var(--${S.tone})"></i>`;
-const snBadge = w => { const S = currentSeason(); return snCounts(w, S) ? `<span class="snbadge" title="Counts for ${esc(S.name)}" aria-label="Counts for ${esc(S.name)}">${snIcon(S)}</span>` : ""; };
-const snTag = w => { const S = currentSeason(); return snCounts(w, S) ? `<span class="sntag" style="--tone:var(--${S.tone})">${snIcon(S)}Counts for ${esc(S.name)}</span>` : ""; };
-/* Long Nights' picture: your room dozing off with a tub of popcorn, a few pieces spilled */
-const SEASON_PICS = { dozing:`<svg class="snpic" viewBox="0 0 120 120" aria-hidden="true"><circle cx="100" cy="12" r="1.4" fill="#FFF4C2"/><circle cx="110" cy="32" r="1" fill="#FFF4C2"/><rect x="16" y="30" width="62" height="62" rx="23.56" fill="#F7B3CF"/><rect x="65.6" y="30" width="12.4" height="62" rx="14.14" fill="#000" opacity=".14"/><path d="M21.89 48.6A23.56 23.56 0 0 1 39.56 30H54.44A23.56 23.56 0 0 1 72.11 48.6Z" fill="#fff" opacity=".35"/><path d="M28.4 61q4.96 4.34 9.92 0M45.76 61q4.96 4.34 9.92 0" stroke="#151320" stroke-width="3.72" fill="none" stroke-linecap="round"/><g transform=""><path d="M54 70h44l-5.28 44h-33.44z" fill="#F4EDE2"/><clipPath id="snpop547044"><path d="M54 70h44l-5.28 44h-33.44z"/></clipPath><g clip-path="url(#snpop547044)"><path d="M62.8 70L65.97 114" stroke="#F5A3C7" stroke-width="5.28"/><path d="M76 70L76 114" stroke="#F5A3C7" stroke-width="5.28"/><path d="M89.2 70L86.03 114" stroke="#F5A3C7" stroke-width="5.28"/></g><g class=""><circle cx="59.5" cy="68" r="4.4" fill="#FFF6D8"/><circle cx="56.86" cy="69.54" r="3.17" fill="#FFF6D8"/><circle cx="62.23" cy="69.32" r="3.08" fill="#FFF6D8"/><circle cx="60.16" cy="70.2" r="1.23" fill="#FFE36B" opacity=".8"/></g><g class=""><circle cx="70.5" cy="65" r="4.4" fill="#FFF6D8"/><circle cx="67.86" cy="66.54" r="3.17" fill="#FFF6D8"/><circle cx="73.23" cy="66.32" r="3.08" fill="#FFF6D8"/><circle cx="71.16" cy="67.2" r="1.23" fill="#FFE36B" opacity=".8"/></g><g class=""><circle cx="81.5" cy="68" r="4.4" fill="#FFF6D8"/><circle cx="78.86" cy="69.54" r="3.17" fill="#FFF6D8"/><circle cx="84.23" cy="69.32" r="3.08" fill="#FFF6D8"/><circle cx="82.16" cy="70.2" r="1.23" fill="#FFE36B" opacity=".8"/></g><g class=""><circle cx="92.5" cy="65" r="4.4" fill="#FFF6D8"/><circle cx="89.86" cy="66.54" r="3.17" fill="#FFF6D8"/><circle cx="95.23" cy="66.32" r="3.08" fill="#FFF6D8"/><circle cx="93.16" cy="67.2" r="1.23" fill="#FFE36B" opacity=".8"/></g><g class=""><circle cx="65" cy="62.52" r="4.4" fill="#FFF6D8"/><circle cx="62.36" cy="64.06" r="3.17" fill="#FFF6D8"/><circle cx="67.73" cy="63.84" r="3.08" fill="#FFF6D8"/><circle cx="65.66" cy="64.72" r="1.23" fill="#FFE36B" opacity=".8"/></g><g class=""><circle cx="76" cy="60.52" r="4.4" fill="#FFF6D8"/><circle cx="73.36" cy="62.06" r="3.17" fill="#FFF6D8"/><circle cx="78.73" cy="61.84" r="3.08" fill="#FFF6D8"/><circle cx="76.66" cy="62.72" r="1.23" fill="#FFE36B" opacity=".8"/></g><g class=""><circle cx="87" cy="62.52" r="4.4" fill="#FFF6D8"/><circle cx="84.36" cy="64.06" r="3.17" fill="#FFF6D8"/><circle cx="89.73" cy="63.84" r="3.08" fill="#FFF6D8"/><circle cx="87.66" cy="64.72" r="1.23" fill="#FFE36B" opacity=".8"/></g><g class=""><circle cx="76" cy="56.8" r="4.4" fill="#FFF6D8"/><circle cx="73.36" cy="58.34" r="3.17" fill="#FFF6D8"/><circle cx="78.73" cy="58.12" r="3.08" fill="#FFF6D8"/><circle cx="76.66" cy="59" r="1.23" fill="#FFE36B" opacity=".8"/></g></g><g class=""><circle cx="30" cy="108" r="5" fill="#FFF6D8"/><circle cx="27" cy="109.75" r="3.6" fill="#FFF6D8"/><circle cx="33.1" cy="109.5" r="3.5" fill="#FFF6D8"/><circle cx="30.75" cy="110.5" r="1.4" fill="#FFE36B" opacity=".8"/></g><g class=""><circle cx="44" cy="112" r="4.5" fill="#FFF6D8"/><circle cx="41.3" cy="113.58" r="3.24" fill="#FFF6D8"/><circle cx="46.79" cy="113.35" r="3.15" fill="#FFF6D8"/><circle cx="44.67" cy="114.25" r="1.26" fill="#FFE36B" opacity=".8"/></g><text class="zz" x="80" y="26" font-family="Outfit,sans-serif" font-weight="900" font-size="19" fill="#c9c1d9">z</text><text class="zz" x="94" y="14" font-family="Outfit,sans-serif" font-weight="900" font-size="13" fill="#c9c1d9">z</text></svg>` };
-const HALLOWEEN_2026 = {
-  id:"halloween-2026", name:"31 Nights In", label:"Halloween", tone:"apricot", mk:"ghost", starts:"2026-10-01", ends:"2026-10-31",
-  rule:"Horror-tagged logs only.", pitch:"Horror, all October.",
-  challenges:[
-    { id:"midnight-matinee", kind:"film", icon:"◒", name:"Midnight Matinee", copy:"Log horror films through October.",
-      mark:roomMark("film") },
-    { id:"after-dark", kind:"tv", icon:"▤", name:"After Dark", copy:"Log horror shows through October.",
-      mark:roomMark("tv") },
-    { id:"haunted-shelf", kind:"book", icon:"✦", name:"Haunted Shelf", copy:"Log horror books through October.",
-      mark:roomMark("book") },
-    { id:"ghost-machine", kind:"game", icon:"◇", name:"Ghost in the Machine", copy:"Log horror games through October.",
-      mark:roomMark("game") }
-  ]
-};
-const SEASON_MEDALS = [
-  { tier:"bronze", at:1, icon:"●", name:"Bronze" },
-  { tier:"silver", at:3, icon:"◐", name:"Silver" },
-  { tier:"gold", at:6, icon:"✦", name:"Gold" },
-  { tier:"platinum", at:10, icon:"✺", name:"Platinum" }
-];
-const SEASON_PICKS = [
-  /* Every challenge opens as a real reading / watching list, rather than two examples.
-     These stay hand-picked: a seasonal recommendation should feel chosen, not scraped. */
-  ...["The Thing","The Witch","Get Out","The Descent","Hereditary","The Babadook","The Shining","Alien","The Texas Chain Saw Massacre","The Blair Witch Project","The Others","The Ring","Candyman","Scream","Raw","The Wailing","Train to Busan","The Lighthouse","Suspiria","The Invisible Man","Barbarian","Talk to Me","The Black Phone","Saint Maud","The Night House"].map(title => ["film",title]),
-  ...["The Haunting of Hill House","Yellowjackets","Midnight Mass","The Fall of the House of Usher","Hannibal","Twin Peaks","Penny Dreadful","Channel Zero","The Terror","Brand New Cherry Flavor","Marianne","Archive 81","From","The Outsider","The Exorcist","The Walking Dead","Ash vs Evil Dead","The Last of Us","Black Mirror","Creepshow","The X-Files","Ju-On: Origins","AHS: Murder House","Servant","The Curse"].map(title => ["tv",title]),
-  ...["Beloved","The Only Good Indians","The Haunting of Hill House","The Shining","House of Leaves","Mexican Gothic","The Fisherman","The Ruins","Our Wives Under the Sea","The Little Stranger","The Silent Companions","The Cabin at the End of the World","The Passage","Dracula","Frankenstein","The Exorcist","The Woman in Black","We Have Always Lived in the Castle","The Turn of the Screw","The Changeling","The Troop","The Hollow Places","The Last House on Needless Street","A Head Full of Ghosts","The September House"].map(title => ["book",title]),
-  ...["Alan Wake 2","Resident Evil 4","Silent Hill 2","Dead Space","Signalis","Amnesia: The Dark Descent","SOMA","Alien: Isolation","Bloodborne","The Last of Us Part II","Control","Fatal Frame II","Outlast","Little Nightmares II","The Evil Within","Darkwood","Mundaun","Detention","Oxenfree","Dredge","Inscryption","Slay the Princess","Pathologic 2","World of Horror","Crow Country"].map(title => ["game",title])
-];
-const seasonDate = e => String(e.created_at || e.rated_on || "").slice(0,10);
-const seasonKind = e => e.works?.kind || works[e.work_id]?.kind || kindOf(e.work_id);
-const seasonGenres = e => (e.works?.meta?.genres || works[e.work_id]?.meta?.genres || []).map(g => String(g).toLowerCase());
-/* Open Library doesn't have a "Horror" subject, it has "Horror tales", "Horror stories",
-   "Horror fiction", "Fiction, horror" — an exact match against "horror" only ever caught
-   the TMDB case. A plain substring covers all of them, films and TV included. */
-const isSeasonHorror = e => seasonGenres(e).some(g => g.includes("horror"));
-HALLOWEEN_2026.qualifies = isSeasonHorror;
-HALLOWEEN_2026.picks = SEASON_PICKS;
-/* ---------- Long Nights ----------
-   November and December, the long dark: the ones you've been putting off because they're
-   long. A film over two and a half hours, a show of forty episodes or more, a book of five
-   hundred pages, a game of forty hours. Length is already on every title, so nothing new
-   has to be looked up to know what counts. */
-const LONG_ENOUGH = { film:150, tv:40, book:500, game:40 };
-const seasonLength = e => +(e.works?.length || works[e.work_id]?.length || 0);
-const LONG_NIGHTS_2026 = {
-  id:"long-nights-2026", name:"Long Nights", label:"Long Nights", tone:"butter", mk:"moon", pic:"dozing", find:"Find me a long one", together:"long ones",
-  counts:{ film:"2½ hours or more", tv:"40+ episodes", book:"500+ pages", game:"40+ hours" }, starts:"2026-11-01", ends:"2026-12-31",
-  rule:"Long ones only: films over 2½ hours, shows of 40+ episodes, books of 500+ pages, games of 40+ hours.", pitch:"The long ones, while the nights are long.",
-  qualifies: e => { const n = seasonLength(e), min = LONG_ENOUGH[seasonKind(e)]; return !!min && n >= min; },
-  challenges:[
-    { id:"the-long-sit", kind:"film", icon:"◒", name:"The Long Sit", copy:"Films over two and a half hours.", mark:roomMark("film") },
-    { id:"the-long-haul", kind:"tv", icon:"▤", name:"The Long Haul", copy:"Shows of forty episodes or more.", mark:roomMark("tv") },
-    { id:"doorstoppers", kind:"book", icon:"✦", name:"Doorstoppers", copy:"Books of five hundred pages or more.", mark:roomMark("book") },
-    { id:"hundred-hour-club", kind:"game", icon:"◇", name:"The Forty-Hour Club", copy:"Games of forty hours or more.", mark:roomMark("game") }
-  ],
-  picks:[
-    ...["Lawrence of Arabia","Seven Samurai","The Godfather Part II","Once Upon a Time in America","Barry Lyndon","Magnolia","Fanny and Alexander","The Irishman","Killers of the Flower Moon","Oppenheimer","Andrei Rublev","Heat","The Deer Hunter","Malcolm X","Dune: Part Two"].map(t => ["film", t]),
-    ...["The Wire","The Sopranos","Mad Men","Breaking Bad","Better Call Saul","The Americans","Six Feet Under","Halt and Catch Fire","Friday Night Lights","Avatar: The Last Airbender","Buffy the Vampire Slayer","Battlestar Galactica","Twin Peaks","Deadwood","Columbo"].map(t => ["tv", t]),
-    ...["Middlemarch","The Count of Monte Cristo","War and Peace","Lonesome Dove","Shōgun","A Little Life","The Goldfinch","2666","Jonathan Strange & Mr Norrell","The Stand","The Brothers Karamazov","Anna Karenina","East of Eden","Infinite Jest","The Secret History"].map(t => ["book", t]),
-    ...["The Witcher 3: Wild Hunt","Elden Ring","Baldur's Gate 3","Red Dead Redemption 2","Persona 5 Royal","The Legend of Zelda: Breath of the Wild","Final Fantasy VII Rebirth","Metaphor: ReFantazio","Mass Effect Legendary Edition","Dragon Age: Origins","Yakuza 0","Xenoblade Chronicles 3","Kingdom Come: Deliverance II","Disco Elysium","Hollow Knight"].map(t => ["game", t])
-  ]
-};
-/* ---------- The Catch-Up ----------
-   January and February: everything from last year you meant to get to. What counts is
-   the year a title came out, which every title already carries. The "start here" list is
-   the 2026 titles already going round your rooms and your shelf, rather than a list
-   written in advance. */
-const CATCH_UP_2027 = {
-  id:"catch-up-2027", name:"The Catch-Up", label:"Catch-Up", tone:"mint", mk:"archive", starts:"2027-01-01", ends:"2027-02-28",
-  rule:"Anything first released in 2026.", pitch:"Last year's, before it's too late.",
-  qualifies: e => String(e.works?.year || works[e.work_id]?.year || "") === "2026",
-  challenges:[
-    { id:"catch-up-film", kind:"film", icon:"◒", name:"Missed It in Cinemas", copy:"Films from 2026.", mark:roomMark("film") },
-    { id:"catch-up-tv", kind:"tv", icon:"▤", name:"Everyone Was Talking About", copy:"Shows from 2026.", mark:roomMark("tv") },
-    { id:"catch-up-book", kind:"book", icon:"✦", name:"The Pile by the Bed", copy:"Books from 2026.", mark:roomMark("book") },
-    { id:"catch-up-game", kind:"game", icon:"◇", name:"The Backlog", copy:"Games from 2026.", mark:roomMark("game") }
-  ],
-  picks:[]
-};
-/* ---------- the rest of the year ----------
-   There's always a season on. After the three above, the calendar repeats every year:
-   the Catch-Up (Jan–Feb), Short Ones (Mar), Old Masters (Apr), Laugh Lines (May),
-   Whodunnit (Jun), Far, Far Away (Jul–Aug), Second Time Round (Sep), 31 Nights In (Oct)
-   and Long Nights (Nov–Dec). Each is worked out from what every title already carries —
-   its length, its year, its genres, or the rewatch tick — so nothing new is looked up. */
-const lastDay = (y, m) => new Date(Date.UTC(y, m, 0)).toISOString().slice(0, 10);   /* m is 1-12 */
-const hasGenre = (e, words) => seasonGenres(e).some(g => words.some(w => g.includes(w)));
-const SHORT_ENOUGH = { film:100, tv:10, book:200, game:8 };
-const fourWays = (slug, y, names, copies) => ["film", "tv", "book", "game"].map((kind, i) => ({ id:`${slug}-${kind}-${y}`, kind,
-  icon:["◒", "▤", "✦", "◇"][i], name:names[i], copy:copies[i], mark:roomMark(kind) }));
-const picksOf = (kind, titles) => titles.map(t => [kind, t]);
-const SEASON_YEAR = [
-  { slug:"short-ones", m:[3, 3], name:"Short Ones", label:"Short Ones", tone:"sky", mk:"film",
-    rule:"Short ones only: films under 100 minutes, shows of 10 episodes or fewer, books under 200 pages, games under 8 hours.",
-    pitch:"Short and sweet, all March.", qualifies:e => { const n = seasonLength(e), max = SHORT_ENOUGH[seasonKind(e)]; return !!max && n > 0 && n <= max; },
-    names:["Under the Hour Hand", "One Weekend", "Pocket Books", "One Sitting"], copies:["Films under 100 minutes.", "Shows of ten episodes or fewer.", "Books under 200 pages.", "Games under eight hours."],
-    picks:[...picksOf("film", ["Run Lola Run", "Primer", "Cléo from 5 to 7", "Frances Ha", "Coherence", "Rope", "Palm Springs", "Moonrise Kingdom"]),
-      ...picksOf("tv", ["Chernobyl", "Baby Reindeer", "The Queen's Gambit", "Adolescence", "Station Eleven", "Beef", "Watchmen", "Mare of Easttown"]),
-      ...picksOf("book", ["Train Dreams", "Small Things Like These", "Of Mice and Men", "Convenience Store Woman", "Giovanni's Room", "Foster", "The Old Man and the Sea"]),
-      ...picksOf("game", ["Journey", "Inside", "What Remains of Edith Finch", "Gone Home", "Firewatch", "Portal", "A Short Hike"])] },
-  { slug:"old-masters", m:[4, 4], name:"Old Masters", label:"Old Masters", tone:"lilac", mk:"archive",
-    rule:"Anything first released before 1990.", pitch:"Before 1990, all April.", qualifies:e => { const y = +(e.works?.year || works[e.work_id]?.year || 0); return y > 0 && y < 1990; },
-    names:["Repertory", "Reruns", "The Old Shelf", "Cartridge"], copies:["Films from before 1990.", "Shows from before 1990.", "Books from before 1990.", "Games from before 1990."],
-    picks:[...picksOf("film", ["Seven Samurai", "Vertigo", "Chinatown", "The Apartment", "Stalker", "Jaws", "Tokyo Story", "Network"]),
-      ...picksOf("tv", ["Fawlty Towers", "I, Claudius", "The Prisoner", "Cheers", "Blackadder", "Tinker Tailor Soldier Spy"]),
-      ...picksOf("book", ["Middlemarch", "Rebecca", "Beloved", "The Remains of the Day", "Things Fall Apart", "Dune"]),
-      ...picksOf("game", ["Super Mario Bros. 3", "The Legend of Zelda", "Tetris", "Metroid", "Prince of Persia"])] },
-  { slug:"laugh-lines", m:[5, 5], name:"Laugh Lines", label:"Laugh Lines", tone:"butter", mk:"crowd",
-    rule:"Comedy-tagged logs only.", pitch:"Funny ones, all May.", qualifies:e => hasGenre(e, ["comed", "humor", "humour", "comic", "satire"]),
-    names:["Big Laughs", "Sitcom Club", "Funny Books", "Silly Games"], copies:["Comedies through May.", "Comedy shows through May.", "Funny books through May.", "Funny games through May."],
-    picks:[...picksOf("film", ["Groundhog Day", "Airplane!", "Some Like It Hot", "Paddington 2", "Hot Fuzz", "What We Do in the Shadows"]),
-      ...picksOf("tv", ["Fleabag", "Arrested Development", "Veep", "Schitt's Creek", "Detectorists", "The Office"]),
-      ...picksOf("book", ["Lucky Jim", "Three Men in a Boat", "Good Omens", "Catch-22", "Cold Comfort Farm"]),
-      ...picksOf("game", ["Untitled Goose Game", "Portal 2", "Psychonauts 2", "It Takes Two", "Hi-Fi Rush"])] },
-  { slug:"whodunnit", m:[6, 6], name:"Whodunnit", label:"Whodunnit", tone:"pink", mk:"ghost",
-    rule:"Mystery, crime and thriller logs only.", pitch:"Mysteries, all June.", qualifies:e => hasGenre(e, ["myster", "crime", "thriller", "detective", "suspense", "noir"]),
-    names:["The Usual Suspects", "Case Files", "Page Turners", "Detective Work"], copies:["Mystery and crime films.", "Mystery and crime shows.", "Mystery and crime books.", "Mystery and crime games."],
-    picks:[...picksOf("film", ["Knives Out", "Memories of Murder", "Zodiac", "Rear Window", "Gone Girl", "L.A. Confidential"]),
-      ...picksOf("tv", ["Twin Peaks", "Mare of Easttown", "Only Murders in the Building", "True Detective", "Broadchurch"]),
-      ...picksOf("book", ["The Secret History", "And Then There Were None", "The Big Sleep", "In the Woods", "Gone Girl"]),
-      ...picksOf("game", ["Return of the Obra Dinn", "Disco Elysium", "Her Story", "L.A. Noire", "The Case of the Golden Idol"])] },
-  { slug:"far-far-away", m:[7, 8], name:"Far, Far Away", label:"Far Away", tone:"mint", mk:"globe",
-    rule:"Science fiction and fantasy logs only.", pitch:"Other worlds, July and August.", qualifies:e => hasGenre(e, ["science fiction", "sci-fi", "fantasy", "space"]),
-    names:["Other Worlds", "Long Voyages", "Strange Shelves", "Elsewhere"], copies:["Sci-fi and fantasy films.", "Sci-fi and fantasy shows.", "Sci-fi and fantasy books.", "Sci-fi and fantasy games."],
-    picks:[...picksOf("film", ["Arrival", "Spirited Away", "Blade Runner", "The Fellowship of the Ring", "Children of Men", "Dune: Part Two"]),
-      ...picksOf("tv", ["Severance", "Andor", "The Expanse", "Arcane", "Battlestar Galactica"]),
-      ...picksOf("book", ["The Left Hand of Darkness", "Piranesi", "Project Hail Mary", "A Wizard of Earthsea", "Hyperion", "The Name of the Wind"]),
-      ...picksOf("game", ["Outer Wilds", "Mass Effect 2", "Hollow Knight", "Hades", "Chrono Trigger"])] },
-  { slug:"second-time-round", m:[9, 9], name:"Second Time Round", label:"Second Time", tone:"apricot", mk:"shelf",
-    rule:"Rewatches, rereads and replays only — tick it when you log.", pitch:"Old favourites, all September.", qualifies:e => /^(Rewatch|Reread|Replay)$/.test(e.context?.first || ""),
-    names:["Rewatch", "Back for More", "Reread", "One More Run"], copies:["Films you've seen before.", "Shows you've watched before.", "Books you've read before.", "Games you've played before."],
-    picks:[] },
-];
-const seasonsOf = y => [
-  /* the Catch-Up, the Halloween month and Long Nights come round again, with the year in
-     their challenge names so one year's notches never count towards another's */
-  ...(y > 2027 ? [{ ...CATCH_UP_2027, id:`catch-up-${y}`, starts:`${y}-01-01`, ends:lastDay(y, 2), rule:`Anything first released in ${y - 1}.`,
-    qualifies:e => String(e.works?.year || works[e.work_id]?.year || "") === String(y - 1),
-    challenges:CATCH_UP_2027.challenges.map(c => ({ ...c, id:`${c.id}-${y}`, copy:c.copy.replace("2026", String(y - 1)) })) }] : []),
-  ...(y >= 2027 ? SEASON_YEAR.map(t => ({ id:`${t.slug}-${y}`, name:t.name, label:t.label, tone:t.tone, mk:t.mk, rule:t.rule, pitch:t.pitch,
-    starts:`${y}-${String(t.m[0]).padStart(2, "0")}-01`, ends:lastDay(y, t.m[1]), qualifies:t.qualifies, picks:t.picks,
-    challenges:fourWays(t.slug, y, t.names, t.copies) })) : []),
-  ...(y > 2026 ? [{ ...HALLOWEEN_2026, id:`halloween-${y}`, starts:`${y}-10-01`, ends:`${y}-10-31`, challenges:HALLOWEEN_2026.challenges.map(c => ({ ...c, id:`${c.id}-${y}` })) },
-    { ...LONG_NIGHTS_2026, id:`long-nights-${y}`, starts:`${y}-11-01`, ends:`${y}-12-31`, challenges:LONG_NIGHTS_2026.challenges.map(c => ({ ...c, id:`${c.id}-${y}` })) }] : [])];
-const SEASONS = [HALLOWEEN_2026, LONG_NIGHTS_2026, CATCH_UP_2027,
-  ...Array.from({ length:Math.max(1, new Date().getFullYear() + 2 - 2027) }, (_, i) => seasonsOf(2027 + i)).flat()]
-  .sort((a, b) => a.starts.localeCompare(b.starts));
-/* The season the Seasons tab is about: the one running; between seasons, the next one
-   (so the tab says what's coming, not what's over); after the last, the last. */
-function currentSeason(d = today()) {
-  return SEASONS.find(s => d >= s.starts && d <= s.ends) || SEASONS.find(s => s.starts > d) || SEASONS[SEASONS.length - 1]; }
-/* a season that ended in the last fortnight still gets a word on how it went */
-const recentlyEnded = (d = today()) => SEASONS.filter(s => s.ends < d && dayNo(d) - dayNo(s.ends) <= 14).at(-1) || null;
-const challengeSeason = id => SEASONS.find(s => s.challenges.some(c => c.id === id)) || currentSeason();
-function seasonChallengeFor(e, season = currentSeason()) {
-  const d = seasonDate(e); if (!d || d < season.starts || d > season.ends || !season.qualifies(e)) return null;
-  return season.challenges.find(c => c.kind === seasonKind(e)) || null;
-}
-function seasonEntries(challenge, rows = myEntries, season = challengeSeason(challenge.id)) {
-  /* A title is a single notch no matter how many times someone edits or rewatches it. */
-  const seen = new Set();
-  return rows.filter(e => { if (isQuiet(e) || seasonChallengeFor(e, season)?.id !== challenge.id || seen.has(e.work_id)) return false;
-    seen.add(e.work_id); return true; });
-}
-function seasonMedal(n) { return [...SEASON_MEDALS].reverse().find(m => n >= m.at) || null; }
-function seasonEntryStamp(e) {
-  if (!me || e.user_id !== me.id) return "";
-  const c = SEASONS.map(S => seasonChallengeFor(e, S)).find(Boolean); if (!c) return "";
-  const n = seasonEntries(c).length, medal = seasonMedal(n);
-  const label = `${c.name} · ${n} logged${medal ? ` · ${medal.name}` : ""}`;
-  return `<span class="season-stamp ${medal?.tier || ""}" aria-label="${esc(label)}" title="${esc(label)}">${medal?.icon || c.icon}</span>`;
-}
-function openSeasonChallenge(challenge) {
-  if (!challenge) return;
-  const S = challengeSeason(challenge.id);
-  let picks = S.picks.filter(([kind]) => kind === challenge.kind);
-  /* a second time round starts from what you loved the first time */
-  if (!picks.length && /^second-time-round/.test(challenge.id)) picks = [...new Map(myEntries.filter(e => !e.part && kindOf(e.work_id) === challenge.kind && e.score >= 8)
-    .sort((a, b) => b.score - a.score).map(e => [e.work_id, works[e.work_id]])).values()].filter(Boolean).slice(0, 10).map(w => [w.kind, w.title]);
-  if (!picks.length) picks = Object.values(works).filter(w => w.kind === challenge.kind && !logged(w.id) && S.qualifies({ work_id:w.id, works:w }))
-    .slice(0, 15).map(w => [w.kind, w.title]);
-  const entries = seasonEntries(challenge), medal = seasonMedal(entries.length);
-  openSheet(`<div class="head"><div class="season-object ${challenge.kind}">${challenge.mark}</div><div class="hh"><h3>${esc(challenge.name)}</h3><p class="sub">${esc(challenge.copy)} ${esc(S.rule)}</p></div></div>
-    <div class="card" style="margin-top:14px"><b>${entries.length} logged</b><p class="sub" style="margin-top:4px">${medal ? medalPill(medal) + " earned so far." : `Your first qualifying log earns ${medalPill(SEASON_MEDALS[0])}.`}</p></div>
-    <div class="lbl">Start here</div><div class="season-picks">${picks.map(([kind,title], i) => `<button class="row" type="button" data-season-pick="${esc(title)}" data-season-kind="${kind}"><span class="rk">${i+1}</span><div class="t"><b>${esc(title)}</b><small>${tag(kind)}${/^second-time-round/.test(challenge.id) ? " · you loved it" : ""}</small></div><span class="chip">Find</span></button>`).join("")}</div>
-    <div class="stack"><button class="btn quiet" id="seasonClose">Back</button></div>`);
-  $("#seasonClose").onclick = closeSheet;
-  $$('[data-season-pick]').forEach(row => row.onclick = () => { P.kinds = [row.dataset.seasonKind]; P.shelfFilter = row.dataset.seasonKind; saveP(); closeSheet(); switchTab("shelf"); setTimeout(() => { const search = $("#search"); if (!search) return; search.value = row.dataset.seasonPick; search.dispatchEvent(new Event("input", { bubbles:true })); search.focus(); }, 100); });
-}
-function seasonPhase(season = currentSeason()) {
-  const d = today();
-  return d < season.starts ? { key:"upcoming", text:`Starts ${when(season.starts)}` }
-    : d > season.ends ? { key:"finished", text:`Finished ${when(season.ends)}` }
-    : { key:"live", text:`Ends ${when(season.ends)}` };
-}
-async function seasonRank(season = currentSeason()) {
-  if (seasonPhase(season).key === "upcoming") return null;
-  try {
-    /* This used to pull the whole entries table with no ORDER BY and a flat limit — an
-       arbitrary slice past 2000 rows, silently wrong in whichever direction the database
-       happened to hand rows back. A season is a month long, so bound the fetch to the
-       month it's asking about: smaller, and an ordered slice is at least a consistent one
-       if a very large season ever does hit the limit. */
-    const rows = await q(sb.from("entries").select("user_id,work_id,created_at,rated_on,context,works(kind,meta,length)")
-      .gte("created_at", season.starts + "T00:00:00.000Z").lte("created_at", season.ends + "T23:59:59.999Z")
-      .order("created_at").limit(10000));
-    const by = new Map();
-    for (const e of rows) {
-      if (isQuiet(e) || !seasonChallengeFor(e, season)) continue;
-      const mine = by.get(e.user_id) || new Set(); mine.add(e.work_id); by.set(e.user_id, mine);
-    }
-    const scores = [...by.entries()].map(([id, ids]) => ({ id, n:ids.size })).filter(x => x.n > 0).sort((a,b) => b.n-a.n);
-    if (!scores.length) return { people:0, inTop:false };
-    const cut = scores[Math.min(scores.length - 1, Math.ceil(scores.length * .1) - 1)].n;
-    const mine = scores.find(x => x.id === me.id);
-    return { people:scores.length, inTop:!!mine && mine.n >= 3 && mine.n >= cut, mine:mine?.n || 0, cut };
-  } catch { return { people:0, inTop:false }; }
-}
-/* ---------- when a season ends ----------
-   For a fortnight afterwards it gets a card above the next one: what you logged and what
-   you earned, and who in your room went furthest — so the end of a season is a moment,
-   not just the challenges quietly being swapped for new ones. */
-function seasonRecapHTML(S) {
-  const rows = S.challenges.map(c => { const n = seasonEntries(c, myEntries, S).length, m = seasonMedal(n); return { c, n, m }; });
-  const total = rows.reduce((t, r) => t + r.n, 0);
-  return `<div class="card season-recap" id="seasonRecap"><div class="h"><span>${esc(S.name)} is over</span><span class="tag dim">ended ${when(S.ends)}</span></div>
-    <p class="gprompt" style="font-size:22px;margin:8px 0 10px">${total ? `You logged ${total} for it.` : "You sat this one out."}</p>
-    <div class="recap-rows">${rows.map(({ c, n, m }) => `<div class="recap-row"><span class="season-object ${c.kind}">${c.mark}</span><b>${esc(c.name)}</b><span>${n ? `${n}${m ? ` · ${medalPill(m)}` : ""}` : "—"}</span></div>`).join("")}</div>
-    <p class="sub gline" id="seasonRecapRoom"></p></div>`; }
-async function fillSeasonRecap(S) {
-  const el = $("#seasonRecapRoom"), R = activeRoom(); if (!el || !R || R.members.length < 2) return;
-  try { const es = await q(sb.from("entries").select("user_id,work_id,created_at,rated_on,context,works(kind,meta,length)")
-      .in("user_id", R.members.map(m => m.id)).gte("created_at", S.starts + "T00:00:00.000Z").lte("created_at", S.ends + "T23:59:59.999Z").limit(2000));
-    const by = {}; for (const e of es) if (!isQuiet(e) && seasonChallengeFor(e, S)) (by[e.user_id] ||= new Set()).add(e.work_id);
-    const top = Object.entries(by).sort((a, b) => b[1].size - a[1].size)[0];
-    if ($("#seasonRecapRoom") === el && top) el.innerHTML = `<b>${esc(R.name)}</b> · ${esc(who(R, top[0]))} went furthest, with ${top[1].size}.`; } catch {} }
-/* the first three picks of each challenge, as covers: looked up once, then remembered */
-async function paintPickPosters(S, root) {
-  const store = P.pickCovers || {};
-  for (const c of S.challenges) {
-    const slot = $(`[data-season-challenge="${c.id}"] .pick-posters`, root); if (!slot) continue;
-    const titles = S.picks.filter(([k]) => k === c.kind).slice(0, 3).map(([, t]) => t);
-    const draw = () => { slot.innerHTML = titles.map(t => store[t] ? `<img src="${esc(store[t])}" alt="" loading="lazy">` : `<span>${esc(t)}</span>`).join(""); };
-    draw();
-    const missing = titles.filter(t => !(t in store)); if (!missing.length || !SOURCES[c.kind]) continue;
-    await Promise.all(missing.map(t => SOURCES[c.kind](t).then(r => { store[t] = r?.[0]?.cover || ""; }).catch(() => {})));
-    P.pickCovers = store; saveP(); if (slot.isConnected) draw(); } }
-/* what's after this one, so the tab never feels finished */
-function nextSeasonHTML(S) {
-  const n = SEASONS.find(x => x.starts > S.ends); if (!n) return "";
-  return `<div class="lbl">Next season</div><div class="card sn-next" style="--tone:var(--${n.tone})"><span class="sn-nmark">${n.pic ? SEASON_PICS[n.pic] : n.mk === "ghost" ? ghostMark(2, "#8FD3FF") : placeMark({ mk:n.mk, tone:n.tone })}</span>
-    <div><b>${esc(n.name)}</b><small>from ${esc(when(n.starts))} · ${esc(n.pitch)}</small></div></div>`; }
-/* ---------- a medal moment ----------
-   When a log takes a challenge up a medal, it lands: the medal drops in as a little room
-   in its metal, with a buzz, and a card you can share. The first look at a season only
-   remembers where you are, so medals you already had don't all go off at once. */
-const TIER_AT = t => SEASON_MEDALS.findIndex(m => m.tier === t);
-function medalCheck() {
-  try { if (!me) return; const S = currentSeason(); if (seasonPhase(S).key !== "live") return;
-    const got = P.medals || (P.medals = {}), known = (P.medalSeasons || []).includes(S.id), fresh = [];
-    for (const c of S.challenges) { const n = seasonEntries(c, myEntries, S).length, m = seasonMedal(n); if (!m) continue;
-      if (!got[c.id] || TIER_AT(m.tier) > TIER_AT(got[c.id])) { if (known) fresh.push({ c, m, n }); got[c.id] = m.tier; } }
-    if (!known) P.medalSeasons = [...(P.medalSeasons || []), S.id].slice(-8);
-    saveP(); if (fresh.length) setTimeout(() => medalMoment(S, fresh.at(-1)), 900); } catch (e) { console.warn("medals", e); } }
-const metalRoom = (tier, id = "mr" + Math.random().toString(36).slice(2, 7)) => { const [a, b] = MEDAL_METAL[tier] || MEDAL_METAL.bronze;
-  return `<svg viewBox="0 0 26 26" aria-hidden="true"><defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${b}"/></linearGradient></defs>
-    <rect x="2" y="2" width="22" height="22" rx="8.5" fill="url(#${id})"/><path d="M4 8.6A8.5 8.5 0 0 1 10.5 2H15.5A8.5 8.5 0 0 1 22 8.6Z" fill="#fff" opacity=".35"/>
-    <g class="eyes" fill="#151320"><rect x="7.6" y="10" width="3" height="6.8" rx="1.5"/><rect x="13.6" y="10" width="3" height="6.8" rx="1.5"/></g></svg>`; };
-const MEDAL_METAL = { bronze:["#E0A06A", "#9a5f33"], silver:["#E6E8F0", "#9aa0b4"], gold:["#FFE36B", "#c99b1c"], platinum:["#E8FBFF", "#7fc6d8"] };
-function medalMoment(S, { c, m, n }) {
-  $("#medalMoment")?.remove();
-  const nx = SEASON_MEDALS.find(x => x.at > n), el = document.createElement("div");
-  el.id = "medalMoment"; el.className = "medalmo"; el.setAttribute("role", "dialog"); el.setAttribute("aria-label", `${m.name} in ${c.name}`);
-  el.innerHTML = `<div class="mm-card"><div class="mm-room">${metalRoom(m.tier)}</div>${medalPill(m)}<h3>${esc(m.name)} in ${esc(c.name)}</h3>
-    <p class="sub">${n} for ${esc(S.name)}.${nx ? ` ${nx.at - n} more for ${nx.name}.` : " That's the lot."}</p>
-    <div class="stack"><button class="btn" id="mmShare">Share it</button><button class="btn quiet" id="mmOk">Nice</button></div></div>`;
-  document.body.appendChild(el); requestAnimationFrame(() => el.classList.add("on")); buzz([10, 50, 20]);
-  setTimeout(() => { const r = $(".mm-room", el); if (r && !REDUCED) burstAt(r, 26); }, 420);
-  const close = () => { el.classList.remove("on"); setTimeout(() => el.remove(), 260); };
-  $("#mmOk", el).onclick = close; el.onclick = e => { if (e.target === el) close(); };
-  $("#mmShare", el).onclick = async () => { try { await cardOut(await drawMedal(S, c, m, n), `rooms-${m.tier}.png`); } catch (e) { oops(e, "Couldn't make the card"); } }; }
-async function drawMedal(S, c, m, n) {
-  await ready();
-  const W = 1080, H = 1350, M = 80, cv = document.createElement("canvas"); cv.width = W; cv.height = H; const x = cv.getContext("2d");
-  const [a, b] = MEDAL_METAL[m.tier];
-  x.fillStyle = "#16131C"; x.fillRect(0, 0, W, H);
-  const g = x.createRadialGradient(W / 2, 560, 40, W / 2, 560, 700); g.addColorStop(0, a + "55"); g.addColorStop(1, a + "00"); x.fillStyle = g; x.fillRect(0, 0, W, H);
-  cardMark(x, M, 92, 44); x.fillStyle = "#F4EDE2"; x.font = "900 46px Outfit, sans-serif"; x.fillText("ROOMS", M + 82, 132);
-  x.fillStyle = "#A099B4"; x.font = "700 28px Inter, sans-serif"; x.textAlign = "right"; x.fillText(S.name.toUpperCase(), W - M, 128); x.textAlign = "left";
-  const im = await imgLoad("data:image/svg+xml;charset=utf-8," + encodeURIComponent(metalRoom(m.tier, "cardm").replace("<svg ", '<svg xmlns="http://www.w3.org/2000/svg" width="520" height="520" ')), false);
-  if (im) x.drawImage(im, (W - 420) / 2, 300, 420, 420);
-  x.textAlign = "center"; x.fillStyle = "#F4EDE2"; x.font = "900 120px Outfit, sans-serif"; x.fillText(m.name, W / 2, 860);
-  x.fillStyle = a; x.font = "800 56px Outfit, sans-serif"; x.fillText(fitText(x, c.name, W - M * 2), W / 2, 950);
-  x.fillStyle = "#A099B4"; x.font = "600 38px Inter, sans-serif"; x.fillText(`${n} ${SN_NOUN[c.kind]?.[n === 1 ? 0 : 1] || "logged"} · ${S.name}`, W / 2, 1020);
-  x.textAlign = "left"; return cv; }
-
-/* ---------- find me one that counts ----------
-   Starts from what you've loved most lately, asks the find-similar search for more like it
-   in each medium, and keeps only what the season would count. Your Queue's own counted
-   titles come first; the season's hand-picked list fills in where the search comes up short. */
-async function openSeasonFind(S) {
-  const kinds = S.challenges.map(c => c.kind);
-  let kind = P.snFindKind && kinds.includes(P.snFindKind) ? P.snFindKind : kinds[0];
-  openSheet(`<h3>${esc(S.find || "Find me one that counts")}</h3><p class="sub">Picked from what you've loved, and only ones that count for ${esc(S.name)}.</p>
-    <div class="chips" id="snfKinds" style="margin-top:12px">${kinds.map(k => `<button class="chip ${k === kind ? "on" : ""}" data-snk="${k}">${K(k).plural}</button>`).join("")}</div>
-    <div id="snfList" style="margin-top:10px"></div>`);
-  const paint = async () => { const box = $("#snfList"); if (!box) return; const want = kind;
-    box.innerHTML = `<div class="card">${skeleton(4)}</div>`;
-    const rows = await seasonFinds(S, want); if (!$("#snfList") || want !== kind) return;
-    box.innerHTML = rows.length ? `<div class="card">${rows.map(r => `<div class="row" data-snf="${esc(r.w.id)}" role="button" tabindex="0">${cover(r.w)}<div class="t"><b>${esc(r.w.title)}</b>
-        <small>${tag(r.w.kind)} ${esc(r.w.year || "")}${r.w.length ? ` · ${r.w.length}${K(r.w.kind).unit || ""}` : ""}${r.why ? ` · ${r.why}` : ""}</small></div><span class="chev" aria-hidden="true">›</span></div>`).join("")}</div>`
-      : `<p class="sub">Nothing found that counts just now. The challenge's own list has some.</p>`;
-    $$("[data-snf]", box).forEach(b => b.onclick = () => { const r = rows.find(x => x.w.id === b.dataset.snf); closeSheet(); remember(r.w); openWork(r.w.id); }); };
-  $$("[data-snk]").forEach(b => b.onclick = () => { kind = b.dataset.snk; P.snFindKind = kind; saveP();
-    $$("[data-snk]").forEach(x => x.classList.toggle("on", x === b)); paint(); });
-  paint(); }
-const snFindCache = {};
-async function seasonFinds(S, kind) {
-  const key = S.id + ":" + kind; if (snFindCache[key]) return snFindCache[key];
-  const out = [], seen = new Set(), add = (w, why) => { if (!w?.id || seen.has(w.id) || logged(w.id)) return; seen.add(w.id); out.push({ w, why }); };
-  /* your Queue first */
-  (activeList()?.items || []).map(id => works[id]).filter(w => w?.kind === kind && snCounts(w, S)).forEach(w => add(w, "in your Queue"));
-  /* then like the things you rated highest lately */
-  const seeds = [...myEntries].filter(e => e.score >= 8 && !e.part).sort((a, b) => String(b.rated_on).localeCompare(String(a.rated_on)))
-    .map(e => works[e.work_id]).filter(Boolean).sort((a, b) => (b.kind === kind) - (a.kind === kind)).slice(0, 3);
-  for (const seed of seeds) { if (out.length >= 8) break;
-    let hits = []; try { hits = await crossLike(seed, kind); } catch {}
-    for (const h of hits.slice(0, 10)) { if (out.length >= 8) break; if (seen.has(h.id) || logged(h.id)) continue;
-      let w = { ...h };
-      /* how long it is lives in the details, not the search result */
-      if (!w.length && DETAIL[kind] && (kind === "film" || kind === "tv")) try { const d = await DETAIL[kind](h.id.split(":")[1]); w.length = d.length || 0; w.meta = { ...(w.meta || {}), ...(d.meta || {}) }; } catch {}
-      if (!w.meta?.genres && w.genres) w.meta = { ...(w.meta || {}), genres:w.genres };
-      if (snCounts(w, S)) add(w, `like ${esc(seed.title)}`); } }
-  /* and the season's own picks to fill in */
-  if (out.length < 5) for (const [k, t] of S.picks.filter(([k]) => k === kind)) { if (out.length >= 8) break;
-    try { const h = (await SOURCES[k](t))?.[0]; if (h) add(h, "a season pick"); } catch {} }
-  return snFindCache[key] = out; }
-/* ---------- the trophy shelf ----------
-   Every season medal somebody has earned, kept on their profile after the season ends:
-   a count of each metal, then each season with its picture and what was won in it. */
-const MONTH_LONG = ["January","February","March","April","May","June","July","August","September","October","November","December"];
-const seasonSpan = S => { const [y, a] = S.starts.split("-").map(Number), b = +S.ends.split("-")[1];
-  return a === b ? `${MONTH_LONG[a - 1]} ${y}` : `${MON[a - 1]}–${MON[b - 1]} ${y}`; };
-const seasonPicHTML = S => S.pic ? SEASON_PICS[S.pic] : S.mk === "ghost" ? ghostMark(2, "#8FD3FF") : placeMark({ mk:S.mk, tone:S.tone });
-function cabinetHTML(es, self) {
-  const won = SEASONS.filter(S => S.starts <= today()).reverse().map(S => ({ S, rows:S.challenges.map(c => ({ c, n:seasonEntries(c, es, S).length }))
-    .map(r => ({ ...r, m:seasonMedal(r.n) })).filter(r => r.m) })).filter(x => x.rows.length);
-  if (!won.length) return self ? `<div class="card cabinet"><div class="h"><span>Trophy shelf</span></div>
-    <p class="sub" style="margin:4px 0 0">Season medals land here and stay. Your first one is a single log away in Challenges.</p></div>` : "";
-  const all = won.flatMap(x => x.rows), tiers = [...SEASON_MEDALS].reverse().map(m => [m, all.filter(r => r.m.tier === m.tier).length]).filter(([, n]) => n);
-  return `<div class="card cabinet"><div class="h"><span>Trophy shelf</span><span class="tag dim">${won.length} ${won.length === 1 ? "season" : "seasons"}</span></div>
-    <div class="cab-count">${tiers.map(([m, n]) => `<span title="${n} ${m.name}">${metalRoom(m.tier)}<b>${n}</b></span>`).join("")}</div>
-    ${won.map(({ S, rows }) => `<div class="cab-season"><div class="cab-sh"><span class="cab-pic">${seasonPicHTML(S)}</span><div><b>${esc(S.name)}</b><small>${esc(seasonSpan(S))}${seasonPhase(S).key === "live" ? " · on now" : ""}</small></div></div>
-      ${rows.map(({ c, m }) => `<div class="cab-row">${roomMark(c.kind)}<span>${esc(c.name)}</span>${medalPill(m)}</div>`).join("")}</div>`).join("")}</div>`; }
-let seasonTurn = 0;
-async function renderClubs() {
-  const body = $("#clubsBody");
-  if (!["season", "clubs"].includes(P.clubTab)) P.clubTab = "season";
-  const season = currentSeason(), phase = seasonPhase(season), ended = recentlyEnded();
-  const nClubs = clubs.length + openClubs.length;
-  const places = [place("season", season.label, season.tone, season.mk), place("clubs", "Friend clubs", "lilac", "clubs")];
-  /* everything with a finish line in one place: your goal for the year heads the page,
-     then the public season and your room's clubs */
-  /* the first time you see your year's goal met, it gets the confetti */
-  { const yr = goalYear(), goal = myGoal();
-    if (goal && goalCount(myEntries) >= goal && !(P.goalParty || []).includes(yr) && currentTab() === "clubs") {
-      P.goalParty = [...(P.goalParty || []), yr]; saveP();
-      setTimeout(() => { const ring = $(".goalcard .gring"); if (!ring) return; burstAt(ring, 34); buzz([12, 60, 18]);
-        if (!REDUCED) ring.animate([{ transform:"scale(.8)" }, { transform:"scale(1.12)", offset:.5 }, { transform:"none" }], { duration:600, easing:"cubic-bezier(.3,1.4,.5,1)" });
-        say(`${yr}'s goal, done`, "good"); }, 500); } }
-  setTimeout(() => rollAll(body), 0);
-  body.innerHTML = `${pagerHTML(places, P.clubTab, { id:"seasonPager", mode:"tabs", title:"Challenges", under:`<div class="chgoal">${goalHTML()}</div>` })}
-    <p class="sub seasonsub">${P.clubTab === "season" ? (phase.key === "upcoming" ? `Next up · ${esc(season.pitch)}` : esc(season.pitch)) : "A list with a deadline, done together. Yours stay in your room; open ones anyone can join."}</p>
-    <div id="seasonContent"></div>`;
-  /* the page is lit in the season's colour, the way a room is lit in its own */
-  body.classList.add("washed"); body.style.setProperty("--rc", `var(--${P.clubTab === "clubs" ? "lilac" : season.tone})`);
-  body.insertAdjacentHTML("afterbegin", `<div class="roomwash" aria-hidden="true"></div>`);
-  /* and you're next to your goal, pleased or not depending on how it's going */
-  { const gc = $(".chgoal .goalcard", body), goal = myGoal();
-    if (gc && goal) { const n = goalCount(myEntries), pace = goalPace(n, goal);
-      const mood = n >= goal ? "love" : pace.d >= 0 ? "happy" : pace.d >= -2 ? "meh" : "sad";
-      gc.insertAdjacentHTML("beforeend", `<span class="goalface av" aria-hidden="true">${avSVG(avFor(me))}</span>`); faceMood($(".goalface", gc), mood); } }
-  wirePager($("#seasonPager", body), places, P.clubTab, (k, d) => { P.clubTab = k; saveP(); seasonTurn = d; renderClubs(); });
-  { const gs = $("#goalSet", body); if (gs) gs.onclick = setGoal; }
-  pagerArrive(seasonTurn, $("#seasonPager", body), $("#seasonContent", body)); seasonTurn = 0;
-  const out = $("#seasonContent");
-  if (P.clubTab === "clubs") { await renderFriendClubs(out); return; }
-  /* The season, in four parts. A card that says how long is left and what you've earned;
-     the season's month as a calendar, your nights lit in the colour of what you logged and
-     your room's nights as dots; the four ways in as small tiles; and the room's race. */
-  const mine = season.challenges.flatMap(c => seasonEntries(c, myEntries, season).map(e => ({ e, c })));
-  const total = mine.length;
-  const earned = season.challenges.map(c => { const n = seasonEntries(c, myEntries, season).length; return { c, n, m:seasonMedal(n) }; });
-  const span = Math.max(1, dayNo(season.ends) - dayNo(season.starts) + 1);
-  /* tonight counts: on the last day there's one night left, not none */
-  const left = Math.max(1, dayNo(season.ends) - dayNo(today()) + 1);
-  const gone = phase.key === "live" ? Math.min(span, dayNo(today()) - dayNo(season.starts) + 1) : phase.key === "finished" ? span : 0;
-  const R = 26, C = 2 * Math.PI * R;
-  const ringNum = phase.key === "upcoming" ? Math.max(0, dayNo(season.starts) - dayNo(today())) : phase.key === "finished" ? total : left;
-  const ringWord = phase.key === "upcoming" ? (ringNum === 1 ? "day to go" : "days to go") : phase.key === "finished" ? "logged" : left === 1 ? "night left" : "nights left";
-  const best = earned.filter(x => x.m).sort((x, y) => y.n - x.n);
-  const next = earned.map(x => ({ ...x, to:SEASON_MEDALS.find(m => m.at > x.n) })).filter(x => x.to).sort((x, y) => (x.to.at - x.n) - (y.to.at - y.n))[0];
-  const recapNew = ended && ended !== season && !(P.recapSeen || []).includes(ended.id);
-  out.innerHTML = `${recapNew ? seasonRecapHTML(ended) : ""}
-    <div class="season-hero sn-hero" style="--tone:var(--${season.tone})">
-      <span class="tag">${phase.key === "upcoming" ? "Next season" : phase.key === "finished" ? "Between seasons" : "Public season"}</span>
-      <h3>${esc(season.name)}</h3>
-      <div class="sn-rules" title="${esc(season.rule)}">${season.challenges.map(c => `<span class="snr">${roomMark(c.kind)}<span><b>${K(c.kind).plural}</b>${esc(season.counts?.[c.kind] || c.copy.replace(/\.$/, ""))}</span></span>`).join("")}</div>
-      <span class="season-ghost${season.pic ? " pic" : ""}" aria-hidden="true">${season.pic ? SEASON_PICS[season.pic] : season.mk === "ghost" ? ghostMark(2, "#8FD3FF") : placeMark({ mk:season.mk, tone:season.tone })}</span>
-      <div class="sn-prog">
-        <div class="sn-ring" role="img" aria-label="${ringNum} ${ringWord}"><svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="${R}" class="tk"/><circle cx="32" cy="32" r="${R}" class="fl" stroke-dasharray="${(C * (phase.key === "finished" ? 1 : gone / span)).toFixed(1)} ${C.toFixed(1)}"/></svg>
-          <b>${ringNum}</b><small>${ringWord}</small></div>
-        <div class="sn-sum"><b>${total ? `${total} logged` : phase.key === "upcoming" ? "Starts " + esc(when(season.starts)) : phase.key === "finished" ? "You sat this one out" : "Nothing logged yet"}</b>
-          <p>${best.length ? best.map(x => `${x.m.name} in ${esc(x.c.name)}`).slice(0, 2).join(" · ") : phase.key === "upcoming" ? esc(season.pitch) : phase.key === "finished" ? "The next season's on its way." : "Log one that counts and your first medal lands."}${next && phase.key === "live" ? `<br>${next.to.at - next.n} more ${SN_NOUN[next.c.kind][next.to.at - next.n === 1 ? 0 : 1]} for ${next.to.name}.` : ""}</p></div>
-      </div>
-      ${phase.key === "live" ? (() => { const qc = (activeList()?.items || []).map(id => works[id]).filter(w => w && !logged(w.id) && snCounts(w, season));
-        return `<div class="sn-queue">${qc.length ? `<b>${qc.length === 1 ? "One" : said(qc.length).replace(/^./, x => x.toUpperCase())} in your Queue ${qc.length === 1 ? "counts" : "count"}</b>
-          <div class="snq">${qc.slice(0, 5).map(w => `<button type="button" data-work="${esc(w.id)}" aria-label="${esc(w.title)}">${cover(w)}</button>`).join("")}</div>` : ""}
-          <button class="btn soft sn-find" id="snFind" type="button">${esc(season.find || "Find me one that counts")}</button></div>`; })() : ""}</div>
-    <div class="lbl">Four ways in</div>
-    <div class="sn-tiles">${earned.map(({ c, n, m }) => `<button class="sn-tile${n ? " going" : ""}" type="button" data-season-challenge="${c.id}" style="--k:${K(c.kind).colour}">
-        <span class="top"><span class="tag" style="background:${K(c.kind).colour}">${K(c.kind).label}</span><small>${n ? `${n} logged` : phase.key === "finished" ? "none logged" : "not started"}</small></span>
-        <b>${esc(c.name)}</b>
-        ${n ? `<span class="sn-covers">${seasonEntries(c, myEntries, season).slice(0, 4).map(e => `<span class="snc">${cover(works[e.work_id] || e.works, "snci")}</span>`).join("")}</span>` : ""}
-        <span class="sn-ladder" aria-label="${m ? m.name + " earned" : "no medal yet"}">${SEASON_MEDALS.map(x => `<i class="${x.tier}${n >= x.at ? " on" : ""}" title="${x.name} at ${x.at}">${x.at}</i>`).join("")}</span>
-        <small>${(() => { const nx = SEASON_MEDALS.find(x => x.at > n);
-          return m ? `${medalPill(m)}${nx ? ` · ${nx.at - n} more for ${nx.name}` : " · all done"}` : esc(c.copy); })()}</small></button>`).join("")}</div>
-    <div id="snLately"></div>
-    <div id="snRace"></div>
-    ${ended && ended !== season && !recapNew ? (() => { const rows = ended.challenges.map(c => seasonMedal(seasonEntries(c, myEntries, ended).length)).filter(Boolean);
-      const n = ended.challenges.reduce((t, c) => t + seasonEntries(c, myEntries, ended).length, 0);
-      return `<button class="sn-recapline" id="snRecapOpen" type="button"><b>${esc(ended.name)}</b><span>${n ? `${n} logged` : "sat it out"}${rows.length ? " · " + rows.map(medalPill).join(" ") : ""}</span><i aria-hidden="true">›</i></button><div id="snRecapBox"></div>`; })() : ""}
-    ${nextSeasonHTML(season)}
-`;
-  if (recapNew) { P.recapSeen = [...(P.recapSeen || []), ended.id].slice(-6); saveP(); }
-  const ro = $("#snRecapOpen", out); if (ro) ro.onclick = () => { ro.remove(); $("#snRecapBox").innerHTML = seasonRecapHTML(ended); fillSeasonRecap(ended); };
-  $$(".sn-queue [data-work]", out).forEach(b => b.onclick = () => openWork(b.dataset.work));
-  const sf = $("#snFind", out); if (sf) sf.onclick = () => openSeasonFind(season);
-  $$('[data-season-challenge]', out).forEach(row => row.onclick = () => openSeasonChallenge(season.challenges.find(c => c.id === row.dataset.seasonChallenge)));
-  if (recapNew) fillSeasonRecap(ended);
-  /* the ring fills and the number counts up as the page opens */
-  if (!REDUCED) { const fl = $(".sn-ring .fl", out), nb = $(".sn-ring b", out), to = fl?.getAttribute("stroke-dasharray");
-    if (fl && to) fl.animate([{ strokeDasharray:`0 ${C.toFixed(1)}` }, { strokeDasharray:to }], { duration:900, delay:150, easing:"cubic-bezier(.2,.8,.2,1)", fill:"backwards" });
-    if (nb && ringNum > 0) { nb.textContent = "0"; setTimeout(() => tickTo(nb, ringNum), 150); } }
-  revealIn(out);
-  /* the room's half arrives after: their nights on the calendar, and the race */
-  seasonRoom(season).then(room => { if (!$("#snRace")) return; paintSeasonLately(room); paintSeasonRace(season, room, total); }).catch(() => {});
-  /* Night Owl (the top-10% mark) is off for now; seasonRank still works if it comes back */
-}
-const SN_NOUN = { film:["film", "films"], tv:["show", "shows"], book:["book", "books"], game:["game", "games"] };
-/* everyone in your room's entries for the season, once a visit */
-const snRoomCache = {};
-async function seasonRoom(S) {
-  const R = activeRoom(); if (!R || R.members.length < 2) return null;
-  const key = S.id + ":" + R.id; if (snRoomCache[key]) return snRoomCache[key];
-  const rows = await q(sb.from("entries").select("user_id,work_id,created_at,rated_on,context,works(kind,meta,length,year,title,cover)")
-    .in("user_id", R.members.map(m => m.id)).gte("created_at", S.starts + "T00:00:00.000Z").lte("created_at", S.ends + "T23:59:59.999Z").limit(4000));
-  const count = {}, seen = {}, recent = [];
-  for (const e of rows) { if (isQuiet(e) || !seasonChallengeFor(e, S)) continue;
-    const u = e.user_id, k = u + ":" + e.work_id; if (seen[k]) continue; seen[k] = 1;
-    count[u] = (count[u] || 0) + 1; if (e.works?.id) remember(e.works); recent.push(e); }
-  recent.sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
-  const people = Object.fromEntries(R.members.map(m => [m.id, m]));
-  const fresh = new Set(recent.filter(e => Date.now() - new Date(e.created_at) < 864e5).map(e => e.user_id));
-  return snRoomCache[key] = { count, recent:recent.slice(0, 12), people, fresh, members:R.members, room:R }; }
-/* Lately: the room's newest season logs as posters, a face on each, newest first, so the
-   page shows people doing the thing rather than only a score */
-function paintSeasonLately(room) {
-  const el = $("#snLately"); if (!el || !room?.recent.length) return;
-  el.innerHTML = `<div class="lbl">Lately in the room</div><div class="sn-lately">${room.recent.map(e => { const w = works[e.work_id] || e.works || {}, p = room.people[e.user_id];
-      return `<button class="sn-late" type="button" data-work="${esc(e.work_id)}" aria-label="${esc(w.title || "")} · ${p?.id === me.id ? "you" : esc(p?.handle || "someone")} · ${esc(noteAgo(e.created_at))}"><span class="po">${cover(w, "co")}<b>${esc(w.title || "")}</b><span class="who">${p ? avatar(p) : ""}</span></span>
-        <small><b>${p?.id === me.id ? "you" : esc(p?.handle || "someone")}</b> · ${esc(noteAgo(e.created_at))}</small></button>`; }).join("")}</div>`;
-  $$("[data-work]", el).forEach(b => b.onclick = () => openWork(b.dataset.work));
-  if (!REDUCED) $$(".sn-late", el).slice(0, 5).forEach((x, i) => x.animate([{ opacity:0, transform:"translateX(18px)" }, { opacity:1, transform:"none" }], { duration:360, delay:i * 60, easing:"cubic-bezier(.2,.8,.2,1)", fill:"backwards" })); }
-function paintSeasonRace(S, room, myTotal) {
-  const el = $("#snRace"); if (!el || !room) return;
-  const rows = room.members.map(p => ({ p, n:p.id === me.id ? myTotal : room.count[p.id] || 0 })).sort((a, b) => b.n - a.n || (a.p.id === me.id ? -1 : 1));
-  const lead = rows[0], meAt = rows.findIndex(r => r.p.id === me.id);
-  const line = !lead.n ? "Nobody's on the board yet." : lead.p.id === me.id ? (rows[1]?.n === lead.n ? `You're level with ${esc(rows[1].p.handle)}.` : "You're out in front.") : meAt === -1 ? "" : `${esc(lead.p.handle)}'s ahead${rows[meAt].n < lead.n ? ` by ${lead.n - rows[meAt].n}` : ""}.`;
-  el.innerHTML = `<div class="lbl">The room's race<small>${line}</small></div>
-    <div class="card sn-race">${(() => { const all = rows.reduce((t, r) => t + r.n, 0), goal = room.members.length * 5, pct = Math.min(100, Math.round(all / goal * 100));
-      return `<div class="sn-together"><div><b>${esc(room.room.name)} together</b><span>${all >= goal ? `${all} · done, together` : `${all} of ${goal} ${esc(S.together || "logged")}`}</span></div>
-        <span class="sn-tbar"><i style="width:${pct}%"></i></span></div>`; })()}${rows.slice(0, 8).map((r, i) => { const pct = lead.n ? Math.round(r.n / lead.n * 100) : 0;
-      return `<div class="sn-rr${r.p.id === me.id ? " mine" : ""}${i === 0 && r.n ? " lead" : ""}" data-prof="${esc(r.p.id)}">
-        <b>${esc(r.p.handle)}${r.p.id === me.id ? " <small>(you)</small>" : ""}${room.fresh.has(r.p.id) ? ` <em>new today</em>` : ""}</b>
-        <span class="sn-lane"><i class="fill" style="width:${pct}%"></i><span class="runner" style="left:${pct}%">${avatar(r.p)}</span></span>
-        <span class="n">${r.n}</span></div>`; }).join("")}</div>`;
-  $$("[data-prof]", el).forEach(x => x.onclick = () => { if (x.dataset.prof !== me.id) openProfile(x.dataset.prof); });
-  /* off the line: each face runs out to where it's got to, a beat apart */
-  if (!REDUCED) $$(".sn-rr", el).forEach((row, i) => { const f = $(".fill", row), r = $(".runner", row), to = r.style.left;
-    f.animate([{ width:"0%" }, { width:f.style.width }], { duration:800, delay:120 + i * 90, easing:"cubic-bezier(.2,.8,.2,1)", fill:"backwards" });
-    r.animate([{ left:"0%" }, { left:to }], { duration:800, delay:120 + i * 90, easing:"cubic-bezier(.2,.8,.2,1)", fill:"backwards" }); }); }
-
-/* renderClubsOld is gone: it was already dead before the season screen arrived,
-   superseded twice over, and nothing routed to it. */
-async function openClub(c) {
-  const owner = sb.__local || !c.created_by || c.created_by === me.id;
-  const joined = myClubIds.has(c.id), isOpen = c.scope === "open";
-  const run = await myRun(c);
-  const since = run?.started_at ? String(run.started_at).slice(0,10) : null;
-  const doneIds = doneSince(c, since);
-  const rows = (c.items||[]).map(id => works[id]).filter(Boolean);
-  const left = rows.filter(w => !doneIds.includes(w.id));
-  const finished = (c.items||[]).length > 0 && left.length === 0;
-  const closed = ballotClosed(c);
-  const canVote = finished && !closed;      /* vote while it's open, once you've done the work */
-  openSheet(`<h3>${esc(c.name)}</h3>
-    <p class="sub">${esc(c.label)} · ${isSeason(c) ? (closed ? "closed " + when(c.due) : "ends " + when(c.due)) : "no deadline — finish it when you finish it"}${isOpen ? " · open to everyone" : " · " + esc(activeRoom()?.name || "your room")}</p>
-    ${finished ? `<p class="sub" style="color:var(--good);font-weight:700">You finished it${since ? " this run" : ""}.</p>` : ""}
-    ${rows.length ? `<div class="card" id="clubItems">${rows.map(w => { const d = doneIds.includes(w.id);
-      return `<div class="row ${d?"done":""}" data-cl="${esc(w.id)}">${cover(w)}<div class="t"><b>${esc(w.title)}</b><small>${tag(w.kind)} ${esc(w.year||"")}</small></div><span class="chip" data-slot="${esc(w.id)}">${d?"Done":"Log"}</span></div>`; }).join("")}</div>`
-      : blank("var(--lilac)","+","An empty programme","A club is a list with a deadline. Add what everyone's working through — any medium, mixed if you like.",[["clubFill","Add the first thing"]])}
-    <div id="clubPal"></div>
-    <div id="clubWho"></div>
-    <div class="stack">${canVote ? `<button class="btn blue" id="ballotBtn">${"Cast your ballot"}</button>` : ""}
-      ${finished && !isSeason(c) && joined ? `<button class="btn ghost" id="runAgain">Run it again</button>` : ""}
-      ${left.length?`<button class="btn soft" id="pickClub">Pick one of the ${left.length} left</button>`:""}
-      ${isOpen && !joined ? `<button class="btn blue" id="joinClub">Join this club</button>` : ""}
-      ${isOpen && joined ? `<button class="btn quiet" id="leaveClub">Leave</button>` : ""}
-      ${owner?`<button class="btn quiet" id="editClub">Edit</button><button class="btn quiet" id="delClub">Delete</button>`:""}
-      <button class="btn quiet" id="closeClub">Close</button></div>`);
-  $$("[data-cl]").forEach(b => b.onclick = () => { const w = works[b.dataset.cl];
-    if (doneIds.includes(b.dataset.cl)) openWork(b.dataset.cl); else openLog(w); });
-  $("#closeClub").onclick = closeSheet;
-  const cf = $("#clubFill"); if (cf) cf.onclick = () => openClubEditor(c);
-  const pc = $("#pickClub"); if (pc) pc.onclick = () => { const w = left[Math.floor(Math.random()*left.length)]; openLog(w); };
-  const ec = $("#editClub"); if (ec) ec.onclick = () => openClubEditor(c);
-  const dc = $("#delClub"); if (dc) dc.onclick = async () => { if (!await askYesNo({ title:"Delete this club?", sub:"Everything anybody logged for it stays in their log. Only the club goes.", ok:"Delete it", bad:true })) return; try { await q(sb.from("clubs").delete().eq("id", c.id)); await loadClubs(); closeSheet(); renderClubs(); } catch (err) { oops(err, "Couldn't delete the club"); } };
-  const jc = $("#joinClub"); if (jc) jc.onclick = async () => { try { await q(sb.from("club_members").insert({ club_id:c.id, user_id:me.id })); await loadClubs(); closeSheet(); renderClubs(); } catch (e) { alert(e.message); } };
-  const lc2 = $("#leaveClub"); if (lc2) lc2.onclick = async () => { try { await q(sb.from("club_members").delete().eq("club_id", c.id).eq("user_id", me.id)); await loadClubs(); closeSheet(); renderClubs(); } catch (err) { oops(err, "Couldn't leave the club"); } };
-  const ra = $("#runAgain"); if (ra) ra.onclick = async () => {
-    if (!await askYesNo({ title:"Run it again?", sub:"Your entries stay where they are. The progress starts over from today.", ok:"Start again" })) return;
-    try { await q(sb.from("club_members").update({ started_at:new Date().toISOString(), finished_at:null }).eq("club_id", c.id).eq("user_id", me.id));
-      await loadClubs(); openClub(c); } catch (e) { alert(e.message); } };
-  const bb = $("#ballotBtn"); if (bb) bb.onclick = () => openBallot(c);
-  /* mark the run finished the first time it completes */
-  if (finished && run && !run.finished_at) { try { await q(sb.from("club_members").update({ finished_at:new Date().toISOString() }).eq("club_id", c.id).eq("user_id", me.id)); } catch {} }
-  /* how the club rated each title, and how everyone did — visible once you've finished it */
-  const memberIds = [me.id, ...(await clubMembers(c.id)).map(p => p.id)];
-  if (finished || closed) { const sc = await clubScores(c, memberIds);
-    for (const id of (c.items || [])) { const slot = $(`[data-slot="${CSS.escape(id)}"]`); if (!slot) continue;
-      const a = sc.club[id], b2 = sc.all[id];
-      slot.outerHTML = `<div class="avgs"><div class="club"><b>${a.avg !== null ? a.avg.toFixed(1) : "—"}</b><span>Club</span></div>
-        <div class="all"><b>${b2.avg !== null ? b2.avg.toFixed(1) : "—"}</b><span>All time</span></div></div>`;
-      const g = gapLine(a.avg, b2.avg);
-      if (g) { const row = $(`[data-cl="${CSS.escape(id)}"] .t`); if (row) row.insertAdjacentHTML("beforeend", `<span class="drift ${g.cls}">${esc(g.text)}</span>`); } }
-    const v = clubVerdict(sc, c.items || [], c.name);
-    if (v) { const box = $("#clubItems"); if (box) box.insertAdjacentHTML("afterend", `<div class="verdict">${v}</div>`); } }
-
-  /* ballots go in all along; nobody sees the standings until it closes */
-  const votes = await clubBallots(c.id); const pal = palmares(votes, c.items || []);
-  const pbox = $("#clubPal"); const myVotes = votes.filter(v => v.user_id === me.id).length;
-  if (pbox && !closed) {
-    const voters = new Set(votes.map(v => v.user_id)).size;
-    pbox.innerHTML = `<div class="sealed"><div class="ic">✕</div>
-      <h3>The ballot is sealed</h3>
-      <p>${isSeason(c) ? `Everything stays hidden until it closes ${when(c.due)}.` : "Nobody sees the standings until the ballot is called."}
-        ${myVotes ? "Your ballot is in — you can change it until then." : finished ? "You've finished it, so you can vote." : "Finish it to earn a vote."}</p>
-      <span class="count">${voters}<small>${voters === 1 ? "ballot in" : "ballots in"}</small></span>
-      <div class="stack">
-        ${canVote ? `<button class="btn soft" id="palVote">${myVotes ? "Change your ballot" : "Cast your ballot"}</button>` : ""}
-        ${owner && !isSeason(c) ? `<button class="btn ghost" id="closeBallot" style="border-color:var(--onInkLine);color:var(--cream)">Call it — open the results</button>` : ""}
-      </div></div>`;
-    const pv2 = $("#palVote"); if (pv2) pv2.onclick = () => openBallot(c);
-    const cb = $("#closeBallot"); if (cb) cb.onclick = async () => {
-      if (!await askYesNo({ title:"Call it?", sub:`${voters} ${voters === 1 ? "person has" : "people have"} voted. Nobody can vote after this, and everybody sees the standings.`, ok:"Open the results" })) return;
-      try { await q(sb.from("clubs").update({ closed_at:new Date().toISOString() }).eq("id", c.id)); await loadClubs();
-        openClub([...clubs, ...openClubs].find(x => x.id === c.id) || Object.assign({}, c, { closed_at:new Date().toISOString() })); }
-      catch (e) { alert(e.message); } };
-  }
-  else if (pbox && pal) { const mine = myVotes;
-    pbox.innerHTML = `<div class="pal"><div class="h"><span>The club's best</span><span class="tag dim" style="background:var(--onInkLine);color:var(--cream)">${pal.voters} ${pal.voters===1?"ballot":"ballots"}</span></div>
-      <div class="win">${esc(works[pal.ranked[0].id]?.title || "")} <span>won</span></div>
-      ${pal.ranked.slice(0,6).map((r,i) => `<div class="row" data-pw="${esc(r.id)}"><span class="rk">${i+1}</span>
-        <div class="t"><b>${esc(works[r.id]?.title || "")}</b>
-          <div class="tr" style="height:8px;border-radius:99px;background:var(--onInkLine);margin-top:6px;overflow:hidden"><i style="display:block;height:100%;width:${Math.round(r.p/pal.max*100)}%;background:var(--butter)"></i></div></div>
-        <span class="n" style="font-size:16px;color:var(--butter)">${r.p}</span></div>`).join("")}
-      <p class="sub" style="color:var(--onInkMute);margin-top:12px">Closed${c.closed_at ? " " + when(String(c.closed_at).slice(0,10)) : isSeason(c) ? " " + when(c.due) : ""} · ${pal.voters} ${pal.voters===1?"ballot":"ballots"}${mine ? " · yours counted" : ""}</p></div>`;
-    $$("[data-pw]", pbox).forEach(x => x.onclick = () => openWork(x.dataset.pw));
-    pbox.insertAdjacentHTML("beforeend", `<div class="stack"><button class="btn soft" id="clubCard">Save the card</button></div>`);
-    $("#clubCard").onclick = () => openCuts("club", { club:c, pal }, "Share the result"); }
-  else if (pbox && closed) { pbox.innerHTML = `<div class="pal"><div class="h"><span>The club's best</span></div>
-    <p class="sub" style="color:var(--onInkMute);margin-top:8px">It closed with nobody voting. The list stays as it was.</p></div>`; }
-  /* everyone's progress through it */
-  const people = await clubMembers(c.id); const per = await clubProgress(c); const box = $("#clubWho"); if (!box) return;
-  const rowsFor = [{ id:me.id, handle:"you" }, ...people.filter(p => p.id !== me.id)];
-  box.innerHTML = `<div class="card"><div class="h"><span>Who's in</span><span class="tag dim">${rowsFor.length}</span></div>
-    ${rowsFor.map(p => { const n = (per[p.id] || new Set()).size, total = (c.items||[]).length, pct = total ? Math.round(n/total*100) : 0;
-      return `<div class="row" data-cp="${esc(p.id)}">${avatar(p)}<div class="t"><b>${esc(p.handle)}</b>
-        <div class="tr" style="height:8px;border-radius:99px;background:var(--cream2);margin-top:6px;overflow:hidden"><i style="display:block;height:100%;width:${pct}%;background:var(--ink)"></i></div></div>
-        <span class="n" style="font-size:16px">${n}/${total}</span></div>`; }).join("")}</div>`;
-  $$("[data-cp]", box).forEach(x => x.onclick = () => { if (x.dataset.cp !== me.id) openProfile(x.dataset.cp); }); }
-/* rank your five — the club's list is the only ballot paper */
-async function openBallot(club) {
-  let existing = []; try { existing = await q(sb.from("club_votes").select("work_id,rank").eq("club_id", club.id).eq("user_id", me.id)); } catch {}
-  let picks = existing.sort((a,b) => a.rank - b.rank).map(v => v.work_id);
-  const draw = () => {
-    $("#ballotBody").innerHTML = (club.items || []).map(id => { const w = works[id] || {}; const at = picks.indexOf(id);
-      return `<div class="row" data-bp="${esc(id)}">${cover(w)}<div class="t"><b>${esc(w.title||"")}</b><small>${tag(kindOf(id))} ${esc(w.year||"")}</small></div>
-        <span class="pick ${at >= 0 ? "on" : ""}">${at >= 0 ? at + 1 : ""}</span></div>`; }).join("");
-    $("#ballotMsg").textContent = picks.length ? `${picks.length} of 5 ranked` : "Tap in order — best first";
-    $("#ballotSave").disabled = !picks.length;
-    $$("[data-bp]").forEach(x => x.onclick = () => { const id = x.dataset.bp, at = picks.indexOf(id);
-      if (at >= 0) picks.splice(at, 1); else if (picks.length < 5) picks.push(id); else return;
-      buzz(5); draw(); }); };
-  openSheet(`<h3>Your ballot</h3><p class="sub">${esc(club.name)} — rank up to five, best first.
-    Sealed until the club closes${isSeason(club) ? " " + when(club.due) : ""}, then everyone's ballots make its best-of.</p>
-    <div class="card ballot" id="ballotBody"></div><p class="msg" id="ballotMsg"></p>
-    <div class="stack"><button class="btn blue" id="ballotSave">Submit</button><button class="btn quiet" id="ballotCancel">Not now</button></div>`);
-  draw();
-  $("#ballotCancel").onclick = () => openClub(club);
-  $("#ballotSave").onclick = async () => {
-    try { await q(sb.from("club_votes").delete().eq("club_id", club.id).eq("user_id", me.id));
-      if (picks.length) await q(sb.from("club_votes").insert(picks.map((id, i) => ({ club_id:club.id, user_id:me.id, work_id:id, rank:i+1 }))));
-      openClub(club); } catch (e) { $("#ballotMsg").textContent = e.message; } };
-}
-
-function openClubEditor(existing = null, scope = "room") { const c = existing
-  ? { name:existing.name, label:existing.label, due:existing.due||"", items:(existing.items||[]).slice(), scope:existing.scope || "room" }
-  : { name:"", label:"programme", items:[], due:"", scope };
-  const draw = () => { $("#cItems").innerHTML = c.items.map((id,i) => `<div class="row" style="cursor:default"><div class="t"><b>${esc(works[id]?.title||"")}</b><small>${tag(kindOf(id))}</small></div><button class="chip" data-rm="${i}">×</button></div>`).join("") || `<p class="empty">Search below to add anything.</p>`; $$("[data-rm]").forEach(b => b.onclick = () => { c.items.splice(+b.dataset.rm,1); draw(); }); };
-  openSheet(`<h3>${existing?"Edit the club":"Start a club"}</h3>
-    <div class="lbl">Who can see it</div><div class="chips">${[["room","Just my room"],["open","Anyone can join"]].map(([k,l]) =>
-      `<button class="chip ${c.scope===k?"on":""}" data-cs="${k}" ${k==="room"&&!activeRoom()?"disabled style=opacity:.4":""}>${l}</button>`).join("")}</div>
-    <div class="lbl">Name</div><input id="cName" placeholder="The midnight club" value="${esc(c.name)}"><div class="lbl">Strand</div><div class="chips">${["midnight","retrospective","premieres","a season","the canon","programme"].map(l => `<button class="chip ${l===c.label?"on":""}" data-lab="${l}">${l}</button>`).join("")}</div>
-    <div class="lbl">How it ends</div><div class="chips">${[["season","On a date"],["standing","When you finish it"]].map(([k,l]) =>
-      `<button class="chip ${(c.due?"season":"standing")===k?"on":""}" data-cm="${k}">${l}</button>`).join("")}</div>
-    <div id="dueWrap" style="${c.due?"":"display:none"}"><div class="lbl">Ends</div><input id="cDue" type="date" value="${esc(c.due||"")}"></div>
-    <p class="sub" id="modeNote">${c.due ? "A season: it closes on the date and everyone votes." : "Standing: no deadline. Finish it whenever, vote when you do, and run it again if you like."}</p><div class="lbl">In the club</div><div id="cItems"></div><input id="cSearch" type="search" placeholder="Add anything" style="margin-top:10px"><div class="msg" id="cMsg"></div><div id="cResults"></div>
-    <div class="stack"><button class="btn" id="cSave">${existing?"Save":"Start it"}</button><button class="btn quiet" id="cCancel">Not now</button></div>`); draw();
-  $$("[data-lab]").forEach(b => b.onclick = () => { c.label = b.dataset.lab; $$("[data-lab]").forEach(x => x.classList.toggle("on", x===b)); });
-  $$("[data-cs]").forEach(b => b.onclick = () => { if (b.disabled) return; c.scope = b.dataset.cs; $$("[data-cs]").forEach(x => x.classList.toggle("on", x===b)); });
-  $$("[data-cm]").forEach(b => b.onclick = () => { const season = b.dataset.cm === "season";
-    $$("[data-cm]").forEach(x => x.classList.toggle("on", x===b));
-    $("#dueWrap").style.display = season ? "" : "none"; if (!season) $("#cDue").value = "";
-    $("#modeNote").textContent = season ? "A season: it closes on the date and everyone votes."
-      : "Standing: no deadline. Finish it whenever, vote when you do, and run it again if you like."; });
-  let t; $("#cSearch").oninput = e => { clearTimeout(t); const v = e.target.value.trim(); if (!v) { $("#cResults").innerHTML = ""; return; } t = setTimeout(() => doSearch(v, async r => { try { const w = await ensureWork(window.__hits[r.dataset.add]); if (!c.items.includes(w.id)) c.items.push(w.id);
-        const row = $(`[data-add="${CSS.escape(w.id)}"]`, $("#cResults"));
-        if (row) { row.classList.add("done"); const ch = $(".chip", row); if (ch) ch.textContent = "In the club"; }
-        draw(); } catch (err) { $("#cMsg").textContent = err.message; } }, $("#cResults"), $("#cMsg"), $("#cSearch")), 400); };
-  $("#cCancel").onclick = closeSheet;
-  $("#cSave").onclick = async () => { c.name = $("#cName").value.trim(); c.due = $("#cDue").value || null; if (!c.name) { $("#cMsg").textContent = "It needs a name"; return; }
-    if (willNotName(c.name)) { $("#cMsg").textContent = NAME_NO; return; }
-    try {
-      if (existing) await q(sb.from("clubs").update({ name:c.name, label:c.label, due:c.due, items:c.items, scope:c.scope, room_id: c.scope === "open" ? null : (activeRoom()?.id || null) }).eq("id", existing.id));
-      else { const row = await q(sb.from("clubs").insert({ room_id: c.scope === "open" ? null : (activeRoom()?.id || null), scope:c.scope,
-          name:c.name, label:c.label, due:c.due, items:c.items, created_by:me.id }).select().single());
-        if (c.scope === "open" && row?.id) { try { await q(sb.from("club_members").insert({ club_id:row.id, user_id:me.id })); } catch (err) { oops(err, "Couldn't join the club"); } } }
-      /* whatever scope you made it in, a club lives under Friend clubs — the season
-         tab is the public Halloween programme and nothing you create belongs there */
-      P.clubTab = "clubs"; P.clubSub = c.scope === "open" ? "open" : "yours"; saveP();
-      await loadClubs(); closeSheet(); renderClubs(); } catch (e) { $("#cMsg").textContent = e.message; } }; }
-
-/* numbers that mean a quantity count up to it */
-/* 16 — each digit rolls up to its value; the strip reads down from the target */
 function odometer(el, to, suffix = "") { if (!el) return;
   if (to === "—" || to === null || to === undefined) { el.textContent = "—"; return; }
   const text = String(to) + suffix;
@@ -12911,7 +12172,7 @@ async function openWork(id, back = null) { let w = works[id]; if (!w) { try { co
      sets a title in its own colour; with no poster, its medium's colour does it */
   openSheet(`<div class="whero" aria-hidden="true" style="--wk:${cfg.colour}${w.cover ? `;background-image:url('${esc(blurSrc(w.cover))}')` : ""}"></div>
     ${back ? `<button class="wback" id="wBack" type="button">‹ Back to results</button>` : ""}
-    <div class="head whead" style="--wk:${cfg.colour}">${cover(w)}<div class="hh"><h3>${esc(w.title)}</h3><p class="sub">${tag(w.kind)} ${esc(w.year||"")}${w.creator?" · "+creatorLinks(w):""}${w.length?` · ${w.length}${cfg.unit.replace(" ", "\u00a0")}`:""}</p>${snTag(w)}${(w.meta?.genres || []).length ? `<div class="wgenres">${(w.meta.genres).slice(0, 4).map(g =>
+    <div class="head whead" style="--wk:${cfg.colour}">${cover(w)}<div class="hh"><h3>${esc(w.title)}</h3><p class="sub">${tag(w.kind)} ${esc(w.year||"")}${w.creator?" · "+creatorLinks(w):""}${w.length?` · ${w.length}${cfg.unit.replace(" ", "\u00a0")}`:""}</p>${(w.meta?.genres || []).length ? `<div class="wgenres">${(w.meta.genres).slice(0, 4).map(g =>
       `<button class="wgenre" data-wgenre="${esc(g)}" aria-label="Your favourite ${esc(g)} in your diary">${esc(g)}</button>`).join("")}</div>` : ""}</div></div>
     ${w.meta?.overview ? `<p class="wabout" id="wAbout" role="button" tabindex="0" aria-expanded="false">${esc(String(w.meta.overview).slice(0, 900))}</p>` : ""}
     <div class="wacts">
@@ -12919,8 +12180,6 @@ async function openWork(id, back = null) { let w = works[id]; if (!w) { try { co
       <button class="wact ${activeList()?.items.includes(w.id) ? "on" : ""}" id="wShelf" aria-pressed="${!!activeList()?.items.includes(w.id)}">${ICON_MARK}<span>Up next</span></button>
       ${isPart(w.id) || isSoon(w) ? "" : `<button class="wact ${nowOf(w.id) ? "on" : ""}" id="wOnIt" aria-pressed="${!!nowOf(w.id)}">${ICON_PLAY}<span>${nowVerb(w.kind)}</span></button>`}
       <button class="wact" id="wMore" aria-label="More">${ICON_MORE}<span>More</span></button></div>
-    <div class="chips" id="wClubs" hidden style="margin-top:10px"><p class="sub" style="width:100%;margin:0 0 2px">Highlighted clubs have it. Tap one to add or remove it.</p>${myOpenClubs().map(c =>
-      `<button class="chip ${(c.items || []).includes(w.id) ? "on" : ""}" data-addclub="${esc(c.id)}">${esc(c.name)}</button>`).join("")}</div>
     <div class="numbers wnums" id="wNumbers" style="--wk:${cfg.colour}"><div><b>—</b><span>You</span></div><div><b>—</b><span>Your room</span></div><div><b>—</b><span>Following</span></div><div><b>—</b><span>Everyone</span></div></div>
     <div id="wFriends"></div>
     <p class="sumup mine" id="wAgain" hidden></p>
@@ -12957,12 +12216,11 @@ async function openWork(id, back = null) { let w = works[id]; if (!w) { try { co
   /* everything else you might do with it, behind one button */
   let shareIt = null;
   $("#wMore").onclick = async () => { const verbTo = cfg.verb === "read" ? "read" : cfg.verb === "played" ? "play" : "watch";
-    const opts = [[isPart(w.id) ? null : "list", "Put it on a list"], [reachable().length ? "hand" : null, `Tell someone to ${verbTo} it`],
-      [myOpenClubs().length ? "club" : null, "Add it to a club"], ["share", "Share it"]].filter(([k]) => k);
+    const opts = [[isPart(w.id) ? null : "list", "Put it on a stack"], [reachable().length ? "hand" : null, `Tell someone to ${verbTo} it`],
+      ["share", "Share it"]].filter(([k]) => k);
     const v = await openAsk(`<h3>${esc(w.title)}</h3><div class="stack menu">${opts.map(([k, l]) => `<button class="btn quiet" data-more="${k}">${l}</button>`).join("")}<button class="btn quiet" id="moreNo">Not now</button></div>`,
       done => { $$("[data-more]", $("#askBox")).forEach(b => b.onclick = () => done(b.dataset.more)); $("#moreNo").onclick = () => done(null); });
     if (v === "list") openAddToList(w); else if (v === "hand") openHand(w);
-    else if (v === "club") { const row = $("#wClubs"); if (row) { row.hidden = false; row.scrollIntoView({ block:"center", behavior:REDUCED ? "auto" : "smooth" }); } }
     else if (v === "share") { if (shareIt) shareIt(); else say("One moment, still adding it up"); } };
   /* the fold costs nothing until it is opened, which is the whole point of it */
   const pf = $("#wParts");
@@ -13049,16 +12307,6 @@ async function openWork(id, back = null) { let w = works[id]; if (!w) { try { co
         clearTimeout(t2); t2 = setTimeout(async () => { await startNow(w.id, words); const tg = $("#nowTag"); if (tg) tg.innerHTML = nowLine(nowOf(w.id)); }, 500); }; } };
   paintNow();
   const hb = $("#wHand"); if (hb) hb.onclick = () => openHand(w);
-  /* a club is a list with a deadline, so putting something in one belongs on the title
-     itself rather than behind the club's editor and a search for the same title again */
-  const wcb = $("#wClub"); if (wcb) wcb.onclick = () => { const row = $("#wClubs"); row.hidden = !row.hidden; };
-  $$("[data-addclub]").forEach(b => b.onclick = async () => { const c = clubs.find(x => x.id === b.dataset.addclub); if (!c) return;
-    const had = (c.items || []).includes(w.id), items = had ? c.items.filter(id => id !== w.id) : [...(c.items || []), w.id];
-    b.disabled = true;
-    try { await q(sb.from("clubs").update({ items }).eq("id", c.id)); c.items = items; b.classList.toggle("on", !had);
-      say(had ? `Out of ${c.name}` : `Added to ${c.name}`); if (currentTab() === "clubs") renderClubs(); }
-    catch (e) { oops(e, "Couldn't change the club"); }
-    b.disabled = false; });
   paintWatch(w, "wWatch", true); paintBorrow(w); paintSeries(w); paintLike(w);
   const ab = $("#wAbout"); if (ab) ab.onclick = () => { const open = ab.classList.toggle("open"); ab.setAttribute("aria-expanded", String(open)); };
   { const ln = $("#wLines"), withLines = es.filter(lineOf);
@@ -13162,30 +12410,30 @@ async function paintListsCard(el, { build, title, empty = "", mine = false }) {
   if (!ls.length && !mine) { el.innerHTML = ""; return; }
   if (behind.has("v37")) { el.innerHTML = ""; return; }
   el.innerHTML = `<div class="card tlcard"><div class="h"><span>${esc(title)}</span><span class="tag dim">${ls.length}</span></div>
-    ${ls.length || mine ? `<div class="tlrow">${ls.slice(0, 8).map(listTileHTML).join("")}${mine ? `<button class="tlist tlnew" data-newlist>+ New list</button>` : ""}</div>` : ""}
+    ${ls.length || mine ? `<div class="tlrow">${ls.slice(0, 8).map(listTileHTML).join("")}${mine ? `<button class="tlist tlnew" data-newlist>+ New stack</button>` : ""}</div>` : ""}
     ${!ls.length && empty ? `<p class="sub" style="margin-top:10px">${empty}</p>` : ""}</div>`;
   wireListTiles(el, () => paintListsCard(el, { build, title, empty, mine }));
   const nl = $("[data-newlist]", el); if (nl) nl.onclick = async () => { const l = await newThemeList(); if (l) openThemeList(l.id); }; }
 async function newThemeList(first = null) {
-  const title = await askText({ title:"A new list", sub:"What's it of? Heist films, books for a long flight, the ones that made you cry.", placeholder:"Two hours or less", ok:"Make it", max:60 });
+  const title = await askText({ title:"A new stack", sub:"What's it of? Heist films, books for a long flight, the ones that made you cry.", placeholder:"Two hours or less", ok:"Make it", max:60 });
   if (!title) return null;
   if (willNotName(title)) { say(NAME_NO); return null; }
   try { const l = await q(sb.from("theme_lists").insert({ owner:me.id, title, note:null, ranked:false, open:false }).select().single());
     if (first) await q(sb.from("theme_list_items").insert({ list_id:l.id, work_id:first, added_by:me.id, position:0 }));
     say(first ? `On ${title}` : "Made it", "good"); return l; }
-  catch (e) { if (missingBit(e)) { needs("v37", "lists"); say("Lists need the latest database update"); } else oops(e, "Couldn't make that list"); return null; } }
+  catch (e) { if (missingBit(e)) { needs("v37", "lists"); say("Stacks need the latest database update"); } else oops(e, "Couldn't make that stack"); return null; } }
 /* "Put it on a list": yours, ticked if it's on them, and the open ones in your rooms */
 async function openAddToList(w) {
   const R = new Set(rooms.flatMap(r => r.members.map(m => m.id)));
   const ls = await loadThemeLists(x => x);
-  if (behind.has("v37")) { say("Lists need the latest database update"); return; }
+  if (behind.has("v37")) { say("Stacks need the latest database update"); return; }
   const mine = ls.filter(l => l.owner === me.id), open = ls.filter(l => l.owner !== me.id && l.open && R.has(l.owner));
   const row = l => { const on = l.items.some(i => i.work_id === w.id);
     return `<button class="row tladd ${on ? "on" : ""}" data-addl="${esc(l.id)}">${listFan(l)}<div class="t"><b>${esc(l.title)}</b><small>${l.items.length} ${l.items.length === 1 ? "thing" : "things"}${l.owner === me.id ? "" : " · " + esc(handleOf(l.owner)) + "'s, open"}</small></div><span class="chip ${on ? "on" : ""}">${on ? "On it" : "Add"}</span></button>`; };
-  openSheet(`<div class="head">${cover(w)}<div class="hh"><h3>Put it on a list</h3><p class="sub">${esc(w.title)}</p></div></div>
-    ${mine.length ? `<div class="lbl">Your lists</div><div class="card">${mine.map(row).join("")}</div>` : `<p class="sub" style="margin-top:14px">You haven't made a list yet. Name one and ${esc(w.title)} goes straight on it.</p>`}
+  openSheet(`<div class="head">${cover(w)}<div class="hh"><h3>Put it on a stack</h3><p class="sub">${esc(w.title)}</p></div></div>
+    ${mine.length ? `<div class="lbl">Your stacks</div><div class="card">${mine.map(row).join("")}</div>` : `<p class="sub" style="margin-top:14px">You haven't made a stack yet. Name one and ${esc(w.title)} goes straight on it.</p>`}
     ${open.length ? `<div class="lbl">Open in your rooms</div><div class="card">${open.map(row).join("")}</div>` : ""}
-    <div class="stack"><button class="btn" id="tlNew">A new list with it on</button><button class="btn quiet" id="tlBack">Back to ${esc(w.title)}</button></div>`);
+    <div class="stack"><button class="btn" id="tlNew">A new stack with it on</button><button class="btn quiet" id="tlBack">Back to ${esc(w.title)}</button></div>`);
   $("#tlBack").onclick = () => openWork(w.id);
   $("#tlNew").onclick = async () => { const l = await newThemeList(w.id); if (l) openAddToList(w); };
   $$("[data-addl]").forEach(b => b.onclick = async () => { const l = ls.find(x => x.id === b.dataset.addl); if (!l) return;
@@ -13209,7 +12457,7 @@ async function openThemeList(id, after = null) {
   const liked = l.likes.includes(me.id);
   const myScore = id2 => { const e = myEntries.filter(e => e.work_id === id2).sort(newestFirst)[0]; return e ? e.score : 0; };
   const draw = () => {
-    openSheet(`<div class="tlhead">${listFan(l, true)}<div><h3>${esc(l.title)}</h3><p class="sub">${owner ? "Your list" : `By <button class="linky" data-prof="${esc(l.owner)}">${esc(handleOf(l.owner))}</button>`} · ${ws.length} ${ws.length === 1 ? "thing" : "things"}${l.ranked ? " · in order" : ""}${l.open ? " · the room can add" : ""}</p></div></div>
+    openSheet(`<div class="tlhead">${listFan(l, true)}<div><h3>${esc(l.title)}</h3><p class="sub">${owner ? "Your stack" : `By <button class="linky" data-prof="${esc(l.owner)}">${esc(handleOf(l.owner))}</button>`} · ${ws.length} ${ws.length === 1 ? "thing" : "things"}${l.ranked ? " · in order" : ""}${l.open ? " · the room can add" : ""}${l.due ? ` · ${stackDue(l)}` : ""}</p></div></div>
       ${l.note ? `<p class="tlnote">${esc(l.note)}</p>` : ""}
       <div class="tlbar"><button class="lk tllike ${liked ? "on" : ""}" id="tlLike" aria-pressed="${liked}" ${owner ? "disabled" : ""}>♥ <b>${l.likes.length}</b></button>
         ${ws.length ? `<div class="tlseen"><small>You've got to <b>${seen}</b> of ${ws.length}</small><span class="pbar"><i style="width:${Math.max(2, pct)}%"></i></span></div>` : ""}</div>
@@ -13220,7 +12468,7 @@ async function openThemeList(id, after = null) {
             : myScore(w.id) ? stars(myScore(w.id), "sm") : (i.added_by === me.id && !owner) ? `<button class="chip" data-tlrm="${esc(w.id)}">Take mine off</button>` : ""}</div>`).join("")
         : `<p class="empty">Nothing on it yet.${canAdd ? " Search below to add the first one." : ""}</p>`}</div>
       ${canAdd ? `<input id="tlSearch" type="search" placeholder="Add something to it" style="margin-top:12px"><div class="msg" id="tlMsg"></div><div id="tlResults"></div>` : ""}
-      <div class="stack">${owner ? `<button class="btn ghost" id="tlOrder">${listEditing ? "Done" : "Reorder or take things off"}</button><button class="btn quiet" id="tlEdit">Name, note and who can add</button>` : ""}<button class="btn quiet" id="tlClose">${after ? "Back" : "Close"}</button></div>`);
+      <div class="stack">${owner ? `<button class="btn ghost" id="tlOrder">${listEditing ? "Done" : "Reorder or take things off"}</button><button class="btn quiet" id="tlEdit">Name, end date and who can add</button>` : ""}<button class="btn quiet" id="tlClose">${after ? "Back" : "Close"}</button></div>`);
     $("#tlClose").onclick = () => { listEditing = false; if (after) { closeSheet(); after(); } else closeSheet(); };
     $$("[data-prof]", $("#sheetBody")).forEach(b => b.onclick = () => openProfile(b.dataset.prof));
     $$("[data-tw]").forEach(r => r.onclick = ev => { if (ev.target.closest("button")) return; openWork(r.dataset.tw); });
@@ -13255,24 +12503,80 @@ async function openThemeList(id, after = null) {
   draw(); }
 function openListEditor(l, after) {
   let ranked = !!l.ranked, open = !!l.open;
-  openSheet(`<h3>Your list</h3><div class="lbl">Called</div><input id="leTitle" maxlength="60" value="${esc(l.title)}">
+  openSheet(`<h3>Your stack</h3><div class="lbl">Called</div><input id="leTitle" maxlength="60" value="${esc(l.title)}">
     <div class="lbl">A line about it</div><textarea id="leNote" maxlength="300" rows="2" placeholder="Optional">${esc(l.note || "")}</textarea>
-    <div class="lbl">Order</div><div class="seg" id="leRanked">${[[false, "Just a list"], [true, "Numbered, in order"]].map(([k, t]) => `<button data-ler="${k}" class="${ranked === k ? "on" : ""}">${t}</button>`).join("")}</div>
+    <div class="lbl">Order</div><div class="seg" id="leRanked">${[[false, "Any order"], [true, "Numbered, in order"]].map(([k, t]) => `<button data-ler="${k}" class="${ranked === k ? "on" : ""}">${t}</button>`).join("")}</div>
     <div class="lbl">Who can add</div><div class="seg" id="leOpen">${[[false, "Only me"], [true, "Anyone in my rooms"]].map(([k, t]) => `<button data-leo="${k}" class="${open === k ? "on" : ""}">${t}</button>`).join("")}</div>
-    <p class="sub" style="margin-top:8px">Your rooms and the people who follow you can see it either way.</p>
-    <div class="stack"><button class="btn" id="leSave">Save</button><button class="btn quiet" id="leBack">Back to the list</button><button class="btn quiet bad" id="leDel">Delete the list</button></div><p class="msg" id="leMsg"></p>`);
+    <div class="lbl">Ends</div><div class="ledue"><input type="date" id="leDue" value="${esc(l.due || "")}"><button class="chip" id="leNoDue" type="button">No end date</button></div>
+    <p class="sub" style="margin-top:8px">Anyone can find and see it. An end date makes it a stack your room works through together, by then.</p>
+    <div class="stack"><button class="btn" id="leSave">Save</button><button class="btn quiet" id="leBack">Back to the stack</button><button class="btn quiet bad" id="leDel">Delete the stack</button></div><p class="msg" id="leMsg"></p>`);
   $$("[data-ler]").forEach(b => b.onclick = () => { ranked = b.dataset.ler === "true"; $$("[data-ler]").forEach(x => x.classList.toggle("on", x === b)); });
   $$("[data-leo]").forEach(b => b.onclick = () => { open = b.dataset.leo === "true"; $$("[data-leo]").forEach(x => x.classList.toggle("on", x === b)); });
   $("#leBack").onclick = () => openThemeList(l.id, after);
+  $("#leNoDue").onclick = () => { $("#leDue").value = ""; };
   $("#leSave").onclick = async () => { const title = $("#leTitle").value.trim(), note = $("#leNote").value.trim() || null;
     if (!title) { $("#leMsg").textContent = "It needs a name"; return; }
     if (willNotName(title)) { $("#leMsg").textContent = NAME_NO; return; }
     if (note && willNotPost(note)) { $("#leMsg").textContent = "That word doesn't go up here. Say it another way."; return; }
-    try { await q(sb.from("theme_lists").update({ title, note, ranked, open, updated_at:new Date().toISOString() }).eq("id", l.id)); say("Saved", "good"); openThemeList(l.id, after); }
+    const due = $("#leDue").value || null;
+    try { await q(sb.from("theme_lists").update({ title, note, ranked, open, ...(due !== (l.due || null) ? { due } : {}), updated_at:new Date().toISOString() }).eq("id", l.id)); say("Saved", "good"); openThemeList(l.id, after); }
     catch (e) { $("#leMsg").textContent = e.message; } };
-  $("#leDel").onclick = async () => { if (!await askYesNo({ title:`Delete ${l.title}?`, sub:"The list goes for everyone. The things on it stay in your log.", ok:"Delete it", bad:true })) return;
+  $("#leDel").onclick = async () => { if (!await askYesNo({ title:`Delete ${l.title}?`, sub:"The stack goes for everyone. The things on it stay in your log.", ok:"Delete it", bad:true })) return;
     try { await q(sb.from("theme_list_items").delete().eq("list_id", l.id)); await q(sb.from("theme_lists").delete().eq("id", l.id)); closeSheet(); say("Deleted"); if (after) after(); else refresh(); }
     catch (e) { oops(e, "Couldn't delete it"); } }; }
+
+/* ============ STACKS ============
+   The tab Challenges used to have. A stack is a list anyone can make of films, shows,
+   books and games — heist films, books for a long flight — and anyone can find it, the
+   way Letterboxd lists work. Popular is the most liked lately, New is just made, Friends
+   is your rooms and the people you follow, Yours is yours. A stack can have an end date,
+   which is what a club was: one your room adds to, with a deadline. */
+let stackTurn = 0, stackQ = "";
+const STACK_TABS = [["popular", "Popular"], ["new", "New"], ["friends", "Friends"], ["yours", "Yours"]];
+const stackDue = l => l.due ? (l.due < today() ? `ended ${when(l.due)}` : `ends ${when(l.due)}`) : "";
+function stackCardHTML(l) {
+  const ws = l.items.map(i => works[i.work_id]).filter(Boolean), seen = ws.filter(w => logged(w.id)).length;
+  const pct = ws.length ? Math.round(seen / ws.length * 100) : 0;
+  return `<button class="stk" data-tlist="${esc(l.id)}" type="button">
+    <span class="stk-strip">${ws.slice(0, 5).map((w, i) => `<span style="--i:${i}">${tileCover(w)}</span>`).join("") || `<span class="stk-none">Nothing on it yet</span>`}</span>
+    <span class="stk-t"><b>${esc(l.title)}</b>
+      <small>${l.owner === me.id ? "yours" : `by ${esc(handleOf(l.owner))}`} · ${l.items.length} ${l.items.length === 1 ? "thing" : "things"}${l.likes.length ? ` · ♥ ${l.likes.length}` : ""}${l.open ? " · your rooms add to it" : ""}${l.due ? ` · ${stackDue(l)}` : ""}</small>
+      ${ws.length && seen ? `<span class="stk-seen"><span class="pbar"><i style="width:${Math.max(3, pct)}%"></i></span><em>${seen} of ${ws.length}</em></span>` : ""}</span></button>`; }
+async function stacksFor(tab, query) {
+  if (query) return loadThemeLists(x => x.ilike("title", `%${query.replace(/[%_]/g, "")}%`));
+  if (tab === "yours") return loadThemeLists(x => x.eq("owner", me.id));
+  if (tab === "friends") { const ids = [...new Set([...rooms.flatMap(r => r.members.map(m => m.id)), ...follows.filter(f => f.follower === me.id).map(f => f.followee)])].filter(id => id !== me.id);
+    return ids.length ? loadThemeLists(x => x.in("owner", ids)) : []; }
+  const ls = (await loadThemeLists(x => x)).filter(l => l.items.length > 0);
+  if (tab === "new") return ls.sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
+  /* popular: liked most, and among those the ones that moved lately */
+  return ls.sort((a, b) => b.likes.length - a.likes.length || String(b.updated_at).localeCompare(String(a.updated_at))); }
+async function renderStacks() {
+  const body = $("#clubsBody"); if (!body) return;
+  const tab = STACK_TABS.some(([k]) => k === P.stackTab) ? P.stackTab : "popular";
+  const places = STACK_TABS.map(([k, n]) => place(k, n, "lilac", "clubs"));
+  body.innerHTML = `${pagerHTML(places, tab, { id:"stackPager", mode:"tabs", title:"Stacks" })}
+    <p class="sub seasonsub">Films, shows, books and games, stacked by anyone. Make one of your own.</p>
+    <div class="stk-bar"><input id="stkSearch" type="search" placeholder="Search stacks" aria-label="Search stacks" value="${esc(stackQ)}" autocomplete="off"><button class="btn" id="stkNew" type="button">+ New stack</button></div>
+    <div id="stkList"><div class="card">${skeleton(3)}</div></div>`;
+  body.classList.add("washed"); body.style.setProperty("--rc", "var(--lilac)");
+  if (!$(".roomwash", body)) body.insertAdjacentHTML("afterbegin", `<div class="roomwash" aria-hidden="true"></div>`);
+  wirePager($("#stackPager", body), places, tab, (k, d) => { P.stackTab = k; saveP(); stackTurn = d; renderStacks(); });
+  pagerArrive(stackTurn, $("#stackPager", body), $("#stkList", body)); stackTurn = 0;
+  $("#stkNew").onclick = async () => { const l = await newThemeList(); if (l) { P.stackTab = "yours"; saveP(); openThemeList(l.id, renderStacks); } };
+  let t; $("#stkSearch").oninput = e => { clearTimeout(t); t = setTimeout(() => { stackQ = e.target.value.trim(); paint(); }, 300); };
+  const paint = async () => { const want = stackQ + "|" + tab, box = $("#stkList"); if (!box) return;
+    const ls = await stacksFor(tab, stackQ);
+    if (!$("#stkList") || stackQ + "|" + tab !== want) return;
+    await fillWorks(ls.flatMap(l => l.items.slice(0, 5).map(i => i.work_id)));
+    box.innerHTML = ls.length ? `<div class="stks">${ls.map(stackCardHTML).join("")}</div>`
+      : stackQ ? `<p class="empty">No stacks called anything like “${esc(stackQ)}”.</p>`
+      : tab === "yours" ? blank("var(--lilac)", "+", "No stacks yet", "Heist films, books for a long flight, the ones that made you cry. Make one and anyone can find it.", [["stkFirst", "Make a stack"]])
+      : tab === "friends" ? `<p class="empty">Nobody in your rooms or the people you follow has made one yet.</p>`
+      : `<p class="empty">No stacks yet. Be the first.</p>`;
+    const sf = $("#stkFirst"); if (sf) sf.onclick = () => $("#stkNew").click();
+    wireListTiles(box, renderStacks); revealIn(box); };
+  paint(); }
 
 /* ============ who made it ============
    Tap a director, a showrunner, an author or a studio and see everything they made,
@@ -13926,7 +13230,6 @@ async function openProfile(userId) { const self = userId === me.id;
         ${w2.title ? `Furthest apart: <b>${esc(w2.title)}</b> — you <b>${(g.far.mine/2).toFixed(1)}</b>, them <b>${(g.far.them/2).toFixed(1)}</b>.` : ""}</p>`; })()}
     ${marksHTML(marks)}
     <div class="card">${tasteHTML(t, { third:!self })}</div>
-    ${cabinetHTML(self ? myEntries : es, self)}
     ${top?.items.length ? `<div class="card"><div class="h"><span>${self?"Your":esc(p.handle)+"'s"} four</span></div>${fourHTML(top.items)}</div>` : ""}
     ${Object.keys(theirTens).length ? `<div class="card"><div class="h"><span>${self?"Your":esc(p.handle)+"'s"} tens</span><span class="tag dim">by medium</span></div>
       ${Object.entries(theirTens).map(([k,items]) => `<div class="lbl" style="margin-top:10px">${K(k).plural}</div>
@@ -13945,7 +13248,7 @@ async function openProfile(userId) { const self = userId === me.id;
   const pb = $("#pBlock"); if (pb) pb.onclick = () => openBlock(userId, p.handle);
   $("#pCard").onclick = () => openCuts("taste", { p, t }, "Share this taste");
   $("#pClose").onclick = closeSheet; wireSlips($("#sheetBody"), es); revealIn($("#sheetBody")); $$("#sheetBody .four [data-work], #sheetBody .archcard[data-work], #sheetBody .kline [data-work]").forEach(x => x.onclick = () => openWork(x.dataset.work));
-  paintListsCard($("#pLists"), { build:x => x.eq("owner", userId), title:self ? "Your lists" : `${p.handle}'s lists`, mine:self, empty:"Nothing yet." });
+  paintListsCard($("#pLists"), { build:x => x.eq("owner", userId), title:self ? "Your stacks" : `${p.handle}'s stacks`, mine:self, empty:"Nothing yet." });
   const fb = $("#followBtn"); if (fb) fb.onclick = async () => {
     if (await setFollow(p.id, !isFollowing(p.id))) openProfile(p.id); };
   const em = $("#editMe"); if (em) em.onclick = openYou;
@@ -14854,8 +14157,7 @@ window.__rooms = { blank, kindBlank, playMatch, coach, logoCheer, logoHere, open
   addToShelf, __isSoon:isSoon, __list:activeList,
   marksFor, COMET, loadFounders, get founderIds(){return founderIds},
   CAB_SORTS, CAB_ORDER, cabinetRows, cabSort, CHART_WINDOWS, chartSince, chartWin, chartFor, competition,
-  findPeople, handleMatch, handleDistance, deleteReview, seasonRank, seasonPhase, seasonEntries,
-  isSeasonHorror, seasonChallengeFor, renderClubs, renderFriendClubs };
+  findPeople, handleMatch, handleDistance, deleteReview, renderStacks };
 
 /* ============ boot ============ */
 if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("./sw.js", { scope: "./" }).catch(() => {});
