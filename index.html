@@ -1597,6 +1597,10 @@ html.storying{overflow:hidden}
 .nopt.lead{box-shadow:0 0 0 3px var(--butter)}
 .linkish{border:0;background:none;padding:0;font:inherit;color:inherit;text-decoration:underline;cursor:pointer}
 .likehint{font-size:12.5px;margin:6px 2px 0}
+.openrow{cursor:pointer;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.openrow .chev{margin-left:auto;padding-left:8px;font:400 24px/1 var(--body);color:var(--mute)}
+.openrow:active{opacity:.7}
+.wback{position:relative;z-index:2;border:0;background:var(--glass, rgba(0,0,0,.25));color:var(--ink);font:700 13px var(--body);padding:7px 12px;border-radius:99px;cursor:pointer;margin:0 0 8px}
 .nverdict{display:flex;gap:14px;align-items:flex-start;margin-top:6px}
 .nverdict>.co{width:74px;height:110px;border-radius:10px;object-fit:cover;flex:none}
 .nverdict b{font-family:var(--head);font-weight:900;font-size:19px;display:block}
@@ -9314,7 +9318,9 @@ async function doSearch(term, onPick, resEl, msgEl, box, acts = null) {
 function paintHits(resEl, groups, onPick, box, acts) {
   const inner = h => `${cover(h)}<div class="t"><b>${esc(h.title)}</b><small>${tag(h.kind)} ${isSoon(h)?`Coming ${when(h.release)}`:esc(h.year||"")}${h.creator?" · "+esc(h.creator):""}${logged(h.id) ? " · \u2713" : ""}</small></div>`;
   /* with nothing to choose between, the row is still one tap — that path is untouched */
-  const rowHTML = h => acts
+  const rowHTML = h => acts === "open"
+    ? `<div class="row openrow" data-add="${esc(h.id)}" role="button" tabindex="0" aria-label="${esc(h.title)}${h.year ? ", " + esc(h.year) : ""}. Hold to log it">${inner(h)}<span class="chev" aria-hidden="true">›</span></div>`
+    : acts
     ? `<div class="pick" data-add="${esc(h.id)}"><div class="row">${inner(h)}</div>
         <div class="acts">${acts.map(([k,l]) => `<button data-act="${k}">${typeof l === "function" ? l(h) : l}</button>`).join("")}</div></div>`
     : `<div class="row" data-add="${esc(h.id)}">${inner(h)}<span class="chip">Add</span></div>`;
@@ -9322,7 +9328,8 @@ function paintHits(resEl, groups, onPick, box, acts) {
   settleIn(resEl);
   $$("[data-add]", resEl).forEach(r => {
     r.addEventListener("mousedown", e => e.preventDefault());
-    if (!acts) { r.onclick = () => { onPick(r, null); box?.focus(); }; return; }
+    if (!acts || acts === "open") { r.onclick = () => { onPick(r, null); box?.focus(); };
+      if (acts === "open") r.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onPick(r, null); } }; return; }
     /* one open at a time: two sets of three buttons is the crowding again, one row down */
     $(".row", r).onclick = () => { const was = r.classList.contains("open");
       $$(".pick.open", resEl).forEach(o => o.classList.remove("open"));
@@ -9535,7 +9542,7 @@ async function renderWaiting() { const el = $("#waitBody"); if (!el) return;
   $$("[data-up]", el).forEach(x => x.onclick = () => addToShelf(x.dataset.up)); }
 
 /* ============ THE ADD BUTTON ============ */
-function openAdd(only) {
+function openAdd(only, again = "") {
   /* opened from one medium's empty archive: search that medium first (the chips can widen it) */
   /* only for this once: the next + opens on whatever you search normally */
   addKeep = null; if (only && KINDS[only]) { addKeep = P.kinds; P.kinds = [only]; }
@@ -9544,21 +9551,22 @@ function openAdd(only) {
   /* the example is the last thing you finished, so the first try shows something you'd want */
   const likeEg = myEntries.map(e => works[e.work_id]).find(w => w?.title && !isPart(w.id) && P.kinds.includes(w.kind))?.title || "Heat";
   openSheet(`<h3>What are you up to?</h3><p class="sub">Search it, or pick one from Up next.
-    <b>Log</b> if you've finished it, <b>Up next</b> if you haven't got to it, and <b>Watching</b>
-    (or Reading, or Playing) if you're in the middle of it right now.</p>
+    <b>Tap</b> a title to open it, with Log, Up next and Watching on its page. <b>Hold</b> one to log it in a tap.</p>
     <input id="aSearch" type="search" placeholder="Search film, TV, books, games" autocomplete="off" style="margin-top:12px">
     <p class="sub likehint">Find things similar to a title, in any medium: <button class="linkish" id="aLikeTry">like ${esc(likeEg)}</button> or <button class="linkish" id="aLikeTry2">games like ${esc(likeEg)}</button></p>
     ${canScan() ? `<button class="chip" id="aScan" style="margin-top:8px">Scan a book's barcode</button>` : ""}
     <div class="chips">${Object.keys(KINDS).map(k => `<button class="chip k ${P.kinds.includes(k)?"on":""}" data-ak="${k}">${K(k).label}</button>`).join("")}</div>
     <div class="msg" id="aMsg"></div><div id="aResults"></div>
-    ${shelf.length ? `<div class="lbl">Up next</div><div class="card" style="margin-top:0">${shelf.map(w => `<div class="row" data-aw="${esc(w.id)}">${cover(w)}<div class="t"><b>${esc(w.title)}</b><small>${tag(w.kind)} ${esc(w.year||"")}</small></div><span class="addacts">${nowOf(w.id) ? `<span class="chip on">${nowVerb(w.kind)}</span>` : `<button class="chip" data-anow="${esc(w.id)}">${nowVerb(w.kind)}</button>`}<span class="chip">Log</span></span></div>`).join("")}</div>` : ""}
+    ${shelf.length ? `<div class="lbl">Up next</div><div class="card" style="margin-top:0">${shelf.map(w => `<div class="row" data-aw="${esc(w.id)}">${cover(w)}<div class="t"><b>${esc(w.title)}</b><small>${tag(w.kind)} ${esc(w.year||"")}</small></div><span class="addacts">${nowOf(w.id) ? `<span class="chip on">${nowVerb(w.kind)}</span>` : `<button class="chip" data-anow="${esc(w.id)}">${nowVerb(w.kind)}</button>`}<button class="chip" data-alog="${esc(w.id)}">Log</button></span></div>`).join("")}</div>` : ""}
     ${recent.length ? `<div class="lbl">Again</div><div class="card" style="margin-top:0">${recent.map(e => { const w = works[e.work_id]||{};
-      return `<div class="row" data-aw="${esc(e.work_id)}">${cover(w)}<div class="t"><b>${esc(w.title)}</b><small>${tag(w.kind)} last ${K(w.kind).verb} ${when(e.rated_on)}</small></div><span class="chip">Again</span></div>`; }).join("")}</div>` : ""}
+      return `<div class="row" data-aw="${esc(e.work_id)}">${cover(w)}<div class="t"><b>${esc(w.title)}</b><small>${tag(w.kind)} last ${K(w.kind).verb} ${when(e.rated_on)}</small></div><button class="chip" data-alog="${esc(e.work_id)}">Again</button></div>`; }).join("")}</div>` : ""}
     ${logBlock("addLog", { label:`Your log · ${logCount()}` })}
     <div class="stack"><button class="btn quiet" id="aClose">Not now</button></div>`);
   $("#aClose").onclick = closeSheet;
   $$("[data-ak]").forEach(b => b.onclick = () => { addKeep = null; const k = b.dataset.ak; if (P.kinds.includes(k)) { if (P.kinds.length > 1) P.kinds = P.kinds.filter(x => x !== k); } else P.kinds = [...P.kinds, k]; saveP(); b.classList.toggle("on"); });
-  $$("[data-aw]").forEach(x => x.onclick = () => openLog(works[x.dataset.aw]));
+  /* a row opens its page, with a way back here; its Log (or Again) button logs straight away */
+  $$("[data-aw]").forEach(x => { x.classList.add("openrow"); x.onclick = () => openWork(x.dataset.aw, () => openAdd(null, $("#aSearch")?.value.trim() || "")); });
+  $$("[data-alog]").forEach(b => b.onclick = ev => { ev.stopPropagation(); openLog(works[b.dataset.alog]); });
   $$("[data-anow]").forEach(b => b.onclick = async ev => { ev.stopPropagation(); const w = works[b.dataset.anow]; if (!w) return;
     b.disabled = true; if (await startNow(w.id)) { buzz(8); closeSheet(); say(`${nowVerb(w.kind)} ${w.title}`, "good"); refresh(); } else b.disabled = false; });
   wireLog("addLog", 6);
@@ -9568,15 +9576,11 @@ function openAdd(only) {
   let t; $("#aSearch").oninput = e => { clearTimeout(t); const v = e.target.value.trim(); if (!v) { $("#aResults").innerHTML = ""; return; }
     /* the + is for what you just finished, but you don't always arrive having finished it —
        the same result can go to the shelf without pretending you've watched it */
-    t = setTimeout(() => doSearch(v, async (r, act) => { const id = r.dataset.add;
-      if (act === "shelf") return addToShelf(id);
-      try { const w = await ensureWork(window.__hits[id]);
-        /* the moment you most want to say you have started something is the moment you
-           have just picked it up, which is exactly when it is not on any list yet */
-        if (act === "now") { if (await startNow(w.id)) { closeSheet(); say(`${nowVerb(w.kind)} it`); refresh(); } return; }
-        openLog(w); } catch (err) { $("#aMsg").textContent = err.message; }
-    }, $("#aResults"), $("#aMsg"), null,
-      [["log","Log"],["shelf","Up next"],["now", h => nowVerb(h.kind)]]), 400); };
+    /* a result opens its page (Log, Up next and Watching are all there), and the page has a way
+       back to these results; holding one instead logs it straight away (openHold) */
+    t = setTimeout(() => doSearch(v, r => hitOpen(window.__hits[r.dataset.add], null, () => openAdd(null, v)),
+      $("#aResults"), $("#aMsg"), null, "open"), 400); };
+  if (again) { $("#aSearch").value = again; $("#aSearch").dispatchEvent(new Event("input")); }
 }
 $("#add").onclick = () => { const b = $("#add"); b.classList.remove("busy"); void b.offsetWidth; b.classList.add("busy"); buzz(8); openAdd(); };
 
@@ -10208,7 +10212,7 @@ async function openHold(found) {
 (() => { let timer = null, start = null, fired = false;
   const cancel = () => { clearTimeout(timer); timer = null; };
   document.addEventListener("pointerdown", e => { fired = false;
-    const t = e.target.closest?.(".co, .tn-main, .aska, .swm, .ll-w, .nopt"); if (!t || !me) return;
+    const t = e.target.closest?.(".co, .tn-main, .aska, .swm, .ll-w, .nopt, .openrow, .lpart"); if (!t || !me) return;
     const found = workAt(t); if (!found) return;
     start = [e.clientX, e.clientY];
     timer = setTimeout(() => { timer = null; fired = true; buzz(12); openHold(found); }, 480); }, { passive:true });
@@ -10217,7 +10221,7 @@ async function openHold(found) {
   /* the tap that ends a hold isn't also a tap */
   /* the haptic tick is a click too (a hidden switch); it must not use up the guard */
   document.addEventListener("click", e => { if (fired && !buzz.l?.contains(e.target)) { fired = false; e.preventDefault(); e.stopPropagation(); } }, true);
-  document.addEventListener("contextmenu", e => { if (e.target.closest?.(".co")) e.preventDefault(); }); })();
+  document.addEventListener("contextmenu", e => { if (e.target.closest?.(".co, .openrow, .lpart")) e.preventDefault(); }); })();
 /* ---------- ask the room ----------
    The other way round from handing somebody a title: you say what you're after and the
    room answers with titles. Lives at the top of Talk for a fortnight, or until whoever
@@ -12536,11 +12540,12 @@ const ICON_DICE = `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4"
 const ICON_MARK = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3.5h10a1 1 0 0 1 1 1V21l-6-4-6 4V4.5a1 1 0 0 1 1-1z"/></svg>`;
 const ICON_PLAY = `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M10 8.5l5.5 3.5-5.5 3.5z"/></svg>`;
 const ICON_MORE = `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5.5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="18.5" cy="12" r="1.6"/></svg>`;
-async function openWork(id) { let w = works[id]; if (!w) { try { const rows = await q(sb.from("works").select("*").eq("id", id).limit(1)); w = remember(rows[0]); } catch {} } if (!w) return;
+async function openWork(id, back = null) { let w = works[id]; if (!w) { try { const rows = await q(sb.from("works").select("*").eq("id", id).limit(1)); w = remember(rows[0]); } catch {} } if (!w) return;
   const cfg = K(w.kind);
   /* the top of a title's page is lit by its own poster, blurred, the way a streaming app
      sets a title in its own colour; with no poster, its medium's colour does it */
   openSheet(`<div class="whero" aria-hidden="true" style="--wk:${cfg.colour}${w.cover ? `;background-image:url('${esc(blurSrc(w.cover))}')` : ""}"></div>
+    ${back ? `<button class="wback" id="wBack" type="button">‹ Back to results</button>` : ""}
     <div class="head whead" style="--wk:${cfg.colour}">${cover(w)}<div class="hh"><h3>${esc(w.title)}</h3><p class="sub">${tag(w.kind)} ${esc(w.year||"")}${w.creator?" · "+creatorLinks(w):""}${w.length?` · ${w.length}${cfg.unit.replace(" ", "\u00a0")}`:""}</p>${(w.meta?.genres || []).length ? `<div class="wgenres">${(w.meta.genres).slice(0, 4).map(g =>
       `<button class="wgenre" data-wgenre="${esc(g)}" aria-label="Your favourite ${esc(g)} in your diary">${esc(g)}</button>`).join("")}</div>` : ""}</div></div>
     ${w.meta?.overview ? `<p class="wabout" id="wAbout" role="button" tabindex="0" aria-expanded="false">${esc(String(w.meta.overview).slice(0, 900))}</p>` : ""}
@@ -12572,7 +12577,8 @@ async function openWork(id) { let w = works[id]; if (!w) { try { const rows = aw
     P.cabKind = logCount() && CAB_ORDER.includes(w.kind) ? w.kind : ""; saveP(); closeSheet(); switchTab("archive"); });
   $$("[data-creator]", $("#sheetBody")).forEach(b => b.onclick = () => openCreator(b.dataset.creator, w.kind, w.id));
   const wl = $("#wList"); if (wl) wl.onclick = () => openAddToList(w);
-  $("#wClose").onclick = closeSheet; $("#wLog").onclick = () => openLog(w); $("#wShelf").onclick = async () => { const b = $("#wShelf"); b.disabled = true;
+  $("#wClose").onclick = closeSheet; $("#wLog").onclick = () => openLog(w);
+  const wb = $("#wBack"); if (wb) wb.onclick = back; $("#wShelf").onclick = async () => { const b = $("#wShelf"); b.disabled = true;
     const on = activeList()?.items.includes(w.id);
     window.__hits = Object.assign(window.__hits || {}, { [w.id]:w });
     try { if (on) await removeFromShelf(w.id); else await addToShelf(w.id); } finally {
@@ -12750,9 +12756,9 @@ async function fillHandles(ids) { const need = [...new Set(ids)].filter(id => id
 /* the poster or, for something with no cover, its title on its medium's colour */
 const tileCover = (w, cls = "co") => w?.cover ? cover(w, cls)
   : `<span class="${cls} tcov" style="--k:${K(w?.kind || "film").colour}"><b>${esc(w?.title || "")}</b></span>`;
-const hitOpen = async (hit, from) => { try {
-    const w = works[hit.id]?.title ? works[hit.id] : hit.id ? await ensureWork(hit) : null;
-    if (w) { openWork(w.id); return; } } catch {}
+const hitOpen = async (hit, from, back = null) => { try {
+    const w = works[hit?.id]?.title ? works[hit.id] : hit?.id ? await ensureWork(hit) : null;
+    if (w) { openWork(w.id, back); return; } } catch {}
   say("Couldn't open that one just now"); };
 
 /* ============ lists ============
@@ -13031,7 +13037,7 @@ async function paintLike(w, kind = w.kind) {
   window.__hits = Object.assign(window.__hits || {}, Object.fromEntries(rows.filter(r => !works[r.id]).map(r => [r.id, r])));
   el.innerHTML = `<div class="card likes">${head}
     ${rows.length ? `<div class="srow">${rows.map((r, i) => { const x = works[r.id]?.title ? works[r.id] : r;
-      return `<button class="spart lpart ${logged(r.id) ? "done" : ""}" data-lpart="${i}" aria-label="${esc(x.title)}${x.year ? ", " + esc(x.year) : ""}${logged(r.id) ? ", you've " + esc(K(x.kind).verb) + " it" : ""}">
+      return `<button class="spart lpart ${logged(r.id) ? "done" : ""}" data-lpart="${i}" data-lw="${esc(r.id)}" aria-label="${esc(x.title)}${x.year ? ", " + esc(x.year) : ""}${logged(r.id) ? ", you've " + esc(K(x.kind).verb) + " it" : ""}">
       ${tileCover(x)}${x.cover ? `<small>${esc(x.title)}</small>` : ""}</button>`; }).join("")}</div>`
       : `<p class="sub" style="margin:10px 2px 4px">Nothing turned up for ${esc(KIND_PLURAL[kind].toLowerCase())} just now.</p>`}</div>`;
   settleIn(el); wireLikeKinds(w, el);
