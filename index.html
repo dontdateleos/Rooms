@@ -1990,6 +1990,14 @@ nav button .dot{top:0;right:calc(50% - 24px)}
 .pg-pk{border:0;text-align:left;font:inherit;color:var(--ink);background:var(--card);border-left:5px solid var(--pg);border-radius:14px;padding:11px 13px;cursor:pointer;display:grid;gap:3px}
 .pg-pk b{font:800 15px var(--head)}.pg-pk small{color:var(--mute);font-size:12.5px;line-height:1.35}
 .pg-pk:disabled{opacity:.5;cursor:default}
+.stk-filters{display:flex;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;gap:6px;margin:-4px -18px 12px;padding:0 18px 2px}
+.stk-filters::-webkit-scrollbar{display:none}
+.stk-filters .chip{flex:none}
+.stk-filters[hidden]{display:none}
+.stk-filters .kdot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:1px}
+.stk-sep{flex:none;width:1px;align-self:stretch;margin:4px 2px;background:var(--line)}
+.stk-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:3px}
+.stk-tags i{font-style:normal;font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:99px;background:color-mix(in srgb,var(--lilac) 22%,transparent);color:var(--ink)}
 .stk-bar{display:flex;gap:8px;align-items:center;margin:12px 0 14px}
 .stk-bar input{flex:1;min-width:0;margin:0}
 .stk-bar .btn{flex:none;width:auto;padding:11px 14px;font-size:14px;white-space:nowrap}
@@ -12728,9 +12736,9 @@ const hitOpen = async (hit, from, back = null) => { try {
    A list is a title, a line about it, the things on it (in an order if you say so),
    and who liked it. Your rooms and the people who follow you can see yours; an open
    list can be added to by anyone in your rooms. */
-async function loadThemeLists(build) {
+async function loadThemeLists(build, limit = 60) {
   let ls = [];
-  try { ls = await q(build(sb.from("theme_lists").select("*")).order("updated_at", { ascending:false }).limit(60)); }
+  try { ls = await q(build(sb.from("theme_lists").select("*")).order("updated_at", { ascending:false }).limit(limit)); }
   catch (e) { if (missingBit(e)) needs("v37", "lists"); return []; }
   ls = notApart(ls.map(l => ({ ...l, user_id:l.owner })));
   if (!ls.length) return [];
@@ -12881,52 +12889,86 @@ function openListEditor(l, after) {
    way Letterboxd lists work. Popular is the most liked lately, New is just made, Friends
    is your rooms and the people you follow, Yours is yours. A stack can have an end date,
    which is what a club was: one your room adds to, with a deadline. */
-let stackTurn = 0, stackQ = "";
-const STACK_TABS = [["popular", "Popular"], ["new", "New"], ["friends", "Friends"], ["yours", "Yours"]];
+let stackTurn = 0, stackQ = "", stackKind = "", stackTag = "";
+const STACK_TABS = [["popular", "Popular"], ["friends", "Friends"], ["yours", "Yours"]];
+const STACK_TAG_WORD = { crime:"Crime", horror:"Horror", scifi:"Sci-fi", fantasy:"Fantasy", western:"Western", war:"War", mystery:"Mystery", thriller:"Thriller",
+  romance:"Romance", comedy:"Comedy", history:"History", sport:"Sport", music:"Music", family:"Family", nonfiction:"True stories", adventure:"Adventure", action:"Action", drama:"Drama" };
 const stackDue = l => l.due ? (l.due < today() ? `ended ${when(l.due)}` : `ends ${when(l.due)}`) : "";
+/* what a stack is of, worked out from what's on it: the media, and the genres at least a
+   third of its things share, strongest first */
+function stackShape(l) {
+  const ws = l.items.map(i => works[i.work_id]).filter(Boolean), n = Math.max(1, ws.length), count = {};
+  for (const w of ws) for (const t of new Set(tagsOf(w.meta?.genres || w.genres || []))) count[t] = (count[t] || 0) + 1;
+  const tags = Object.entries(count).filter(([t, c]) => c >= Math.max(1, Math.ceil(n * .4)) && t !== "drama").sort((a, b) => b[1] - a[1]).map(([t]) => t);
+  if (count.drama >= n / 2 && tags.length < 2) tags.push("drama");
+  return { kinds:new Set(ws.map(w => w.kind)), tags:tags.slice(0, 3), ws }; }
 function stackCardHTML(l) {
-  const ws = l.items.map(i => works[i.work_id]).filter(Boolean), seen = ws.filter(w => logged(w.id)).length;
+  const { ws, tags } = stackShape(l), seen = ws.filter(w => logged(w.id)).length;
   const pct = ws.length ? Math.round(seen / ws.length * 100) : 0;
   return `<button class="stk" data-tlist="${esc(l.id)}" type="button">
     <span class="stk-strip">${ws.slice(0, 5).map((w, i) => `<span style="--i:${i}">${tileCover(w)}</span>`).join("") || `<span class="stk-none">Nothing on it yet</span>`}</span>
     <span class="stk-t"><b>${esc(l.title)}</b>
       <small>${l.owner === me.id ? "yours" : `by ${esc(handleOf(l.owner))}`} · ${l.items.length} ${l.items.length === 1 ? "thing" : "things"}${l.likes.length ? ` · ♥ ${l.likes.length}` : ""}${l.open ? " · your rooms add to it" : ""}${l.due ? ` · ${stackDue(l)}` : ""}</small>
+      ${tags.length ? `<span class="stk-tags">${tags.map(t => `<i>${STACK_TAG_WORD[t] || t}</i>`).join("")}</span>` : ""}
       ${ws.length && seen ? `<span class="stk-seen"><span class="pbar"><i style="width:${Math.max(3, pct)}%"></i></span><em>${seen} of ${ws.length}</em></span>` : ""}</span></button>`; }
-async function stacksFor(tab, query) {
-  if (query) return loadThemeLists(x => x.ilike("title", `%${query.replace(/[%_]/g, "")}%`));
-  if (tab === "yours") return loadThemeLists(x => x.eq("owner", me.id));
+async function stacksFor(tab) {
+  if (tab === "yours") return loadThemeLists(x => x.eq("owner", me.id), 200);
   if (tab === "friends") { const ids = [...new Set([...rooms.flatMap(r => r.members.map(m => m.id)), ...follows.filter(f => f.follower === me.id).map(f => f.followee)])].filter(id => id !== me.id);
-    return ids.length ? loadThemeLists(x => x.in("owner", ids)) : []; }
-  const ls = (await loadThemeLists(x => x)).filter(l => l.items.length > 0);
-  if (tab === "new") return ls.sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
+    return ids.length ? loadThemeLists(x => x.in("owner", ids), 200) : []; }
   /* popular: liked most, and among those the ones that moved lately */
-  return ls.sort((a, b) => b.likes.length - a.likes.length || String(b.updated_at).localeCompare(String(a.updated_at))); }
+  return (await loadThemeLists(x => x, 200)).filter(l => l.items.length > 0)
+    .sort((a, b) => b.likes.length - a.likes.length || String(b.updated_at).localeCompare(String(a.updated_at))); }
+/* search reads everything a stack says about itself: its name and note, who made it, the
+   genres it's of, and the titles and makers of what's on it */
+function stackMatches(l, query) {
+  if (!query) return true;
+  const { tags, ws } = stackShape(l);
+  const hay = lc([l.title, l.note, handleOf(l.owner), ...tags.map(t => STACK_TAG_WORD[t] || t), ...ws.flatMap(w => [w.title, w.creator, ...(w.meta?.genres || [])])].filter(Boolean).join(" · "));
+  return lc(query).split(/\s+/).filter(Boolean).every(word => hay.includes(word)); }
 async function renderStacks() {
   const body = $("#clubsBody"); if (!body) return;
   const tab = STACK_TABS.some(([k]) => k === P.stackTab) ? P.stackTab : "popular";
   const places = STACK_TABS.map(([k, n]) => place(k, n, "lilac", "clubs"));
   body.innerHTML = `${pagerHTML(places, tab, { id:"stackPager", mode:"tabs", title:"Stacks" })}
     <p class="sub seasonsub">Films, shows, books and games, stacked by anyone. Make one of your own.</p>
-    <div class="stk-bar"><input id="stkSearch" type="search" placeholder="Search stacks" aria-label="Search stacks" value="${esc(stackQ)}" autocomplete="off"><button class="btn" id="stkNew" type="button">+ New stack</button></div>
+    <div class="stk-bar"><input id="stkSearch" type="search" placeholder="Search stacks or titles" aria-label="Search stacks" value="${esc(stackQ)}" autocomplete="off"><button class="btn" id="stkNew" type="button">+ New stack</button></div>
+    <div class="chips scroll stk-filters" id="stkFilters"></div>
     <div id="stkList"><div class="card">${skeleton(3)}</div></div>`;
   body.classList.add("washed"); body.style.setProperty("--rc", "var(--lilac)");
   if (!$(".roomwash", body)) body.insertAdjacentHTML("afterbegin", `<div class="roomwash" aria-hidden="true"></div>`);
   wirePager($("#stackPager", body), places, tab, (k, d) => { P.stackTab = k; saveP(); stackTurn = d; renderStacks(); });
   pagerArrive(stackTurn, $("#stackPager", body), $("#stkList", body)); stackTurn = 0;
   $("#stkNew").onclick = async () => { const l = await newThemeList(); if (l) { P.stackTab = "yours"; saveP(); openThemeList(l.id, renderStacks); } };
-  let t; $("#stkSearch").oninput = e => { clearTimeout(t); t = setTimeout(() => { stackQ = e.target.value.trim(); paint(); }, 300); };
-  const paint = async () => { const want = stackQ + "|" + tab, box = $("#stkList"); if (!box) return;
-    const ls = await stacksFor(tab, stackQ);
-    if (!$("#stkList") || stackQ + "|" + tab !== want) return;
-    await fillWorks(ls.flatMap(l => l.items.slice(0, 5).map(i => i.work_id)));
-    box.innerHTML = ls.length ? `<div class="stks">${ls.map(stackCardHTML).join("")}</div>`
-      : stackQ ? `<p class="empty">No stacks called anything like “${esc(stackQ)}”.</p>`
+  const ls = await stacksFor(tab);
+  if (!$("#stkList")) return;
+  await fillWorks(ls.flatMap(l => l.items.map(i => i.work_id)));
+  if (!$("#stkList")) return;
+  const shapes = new Map(ls.map(l => [l.id, stackShape(l)]));
+  /* only the media and genres something here is actually of */
+  const kindsHere = Object.keys(KINDS).filter(k => ls.some(l => shapes.get(l.id).kinds.has(k)));
+  const tagCount = {}; ls.forEach(l => shapes.get(l.id).tags.forEach(t => tagCount[t] = (tagCount[t] || 0) + 1));
+  const tagsHere = Object.keys(tagCount).sort((a, b) => tagCount[b] - tagCount[a]);
+  if (stackKind && !kindsHere.includes(stackKind)) stackKind = "";
+  if (stackTag && !tagsHere.includes(stackTag)) stackTag = "";
+  const paintFilters = () => { const f = $("#stkFilters"); if (!f) return;
+    f.innerHTML = (kindsHere.length > 1 ? kindsHere.map(k => `<button class="chip ${stackKind === k ? "on" : ""}" data-sk="${k}"><i class="kdot" style="background:${K(k).colour}"></i>${K(k).plural}</button>`).join("") + `<span class="stk-sep"></span>` : "")
+      + tagsHere.map(t => `<button class="chip ${stackTag === t ? "on" : ""}" data-st="${t}">${STACK_TAG_WORD[t] || t}</button>`).join("");
+    f.hidden = !f.innerHTML;
+    $$("[data-sk]", f).forEach(b => b.onclick = () => { stackKind = stackKind === b.dataset.sk ? "" : b.dataset.sk; buzz(4); paintFilters(); paint(); });
+    $$("[data-st]", f).forEach(b => b.onclick = () => { stackTag = stackTag === b.dataset.st ? "" : b.dataset.st; buzz(4); paintFilters(); paint(); }); };
+  const paint = () => { const box = $("#stkList"); if (!box) return;
+    const show = ls.filter(l => { const sh = shapes.get(l.id);
+      return (!stackKind || sh.kinds.has(stackKind)) && (!stackTag || sh.tags.includes(stackTag)) && stackMatches(l, stackQ); });
+    const filtered = stackQ || stackKind || stackTag;
+    box.innerHTML = show.length ? `<div class="stks">${show.map(stackCardHTML).join("")}</div>`
+      : filtered ? `<p class="empty">No stacks like that${tab === "popular" ? "" : " here"} yet.${tab !== "popular" ? " Try Popular." : ""}</p>`
       : tab === "yours" ? blank("var(--lilac)", "+", "No stacks yet", "Heist films, books for a long flight, the ones that made you cry. Make one and anyone can find it.", [["stkFirst", "Make a stack"]])
       : tab === "friends" ? `<p class="empty">Nobody in your rooms or the people you follow has made one yet.</p>`
       : `<p class="empty">No stacks yet. Be the first.</p>`;
     const sf = $("#stkFirst"); if (sf) sf.onclick = () => $("#stkNew").click();
     wireListTiles(box, renderStacks); revealIn(box); };
-  paint(); }
+  let t; $("#stkSearch").oninput = e => { clearTimeout(t); t = setTimeout(() => { stackQ = e.target.value.trim(); paint(); }, 200); };
+  paintFilters(); paint(); }
 
 /* ============ who made it ============
    Tap a director, a showrunner, an author or a studio and see everything they made,
