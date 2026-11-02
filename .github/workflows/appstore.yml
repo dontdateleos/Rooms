@@ -1,0 +1,45 @@
+# Fills in the App Store listing through App Store Connect's API (tools/asc-listing.mjs), and
+# makes the account App Review signs in with (tools/review-account.mjs). Run by hand from the
+# Actions tab: "status" only reads, "apply" fills everything in, "submit" sends it to review.
+# Uses the same App Store Connect key as the TestFlight upload, and the Supabase service key.
+name: App Store listing
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "status, apply or submit"
+        required: true
+        default: status
+        type: choice
+        options: [status, apply, submit]
+concurrency: appstore
+jobs:
+  listing:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+      SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+      REVIEW_EMAIL: joinroomsapp+review@gmail.com
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      # a fresh password each time the listing is applied; it's set on the account and handed to
+      # Apple in the same run, and never printed. A REVIEW_PASSWORD secret, if set, is used instead.
+      - name: Demo account password
+        if: inputs.mode == 'apply'
+        env:
+          FIXED: ${{ secrets.REVIEW_PASSWORD }}
+        run: |
+          pw="${FIXED:-Rooms-$(openssl rand -hex 6)}"
+          echo "::add-mask::$pw"
+          echo "REVIEW_PASSWORD=$pw" >> "$GITHUB_ENV"
+      - name: The review account
+        if: inputs.mode == 'apply'
+        run: node tools/review-account.mjs
+      - name: App Store Connect (${{ inputs.mode }})
+        run: node tools/asc-listing.mjs ${{ inputs.mode }}

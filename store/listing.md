@@ -3,11 +3,10 @@
 Ready to paste into App Store Connect → the app → **App Store** tab (iOS app, version 1.0).
 The character counts are checked against Apple's limits.
 
-## Name (5/30)
-Rooms
+## Name (24/30)
+Rooms: Watch, Read, Play
 
-If App Store Connect says the name is taken (names are unique across the whole store):
-**Rooms: Watch, Read, Play** (24/30). The icon on the phone still says Rooms either way.
+("Rooms" on its own is taken on the App Store. The icon on the phone still says Rooms.)
 
 ## Subtitle (27/30)
 Watch, read, play, together
@@ -24,7 +23,7 @@ Comma-separated, no spaces. No other apps' names: Apple rejects those (guideline
 film,movie,tv,books,games,diary,log,watchlist,reviews,ratings,friends,club,tracker,reading,shows
 ```
 
-## Description (1446/4000)
+## Description (1712/4000)
 
 Rooms is a small, private place for you and your friends to keep track of everything you watch, read and play, and to see what everyone else made of it.
 
@@ -33,6 +32,9 @@ Films, TV, books and games, side by side. Rate in half stars, say what you loved
 
 YOUR ROOM
 Make a room with the people whose taste you trust, up to three rooms each. See what they're in the middle of, what they just finished and what they thought. React, reply, and ask the room for something short and tense for Friday.
+
+FEED
+A ring for everyone who's logged something in the last two days. Tap it to see what they finished, what they gave it and what they said, one card at a time, then reply or add it to your list. Below: the people you follow, then what everyone else is finishing.
 
 PICK SOMETHING TOGETHER
 Plan a watch night: swipe through options, match on the ones you all want, and vote. Rooms suggests things that suit all of you, not just one person, and tells you which ones are on your streaming services.
@@ -50,7 +52,7 @@ No ads and no tracking. Your rooms are yours. Report and block are always one ta
 The first version of Rooms on the App Store.
 
 ## Screenshots
-`store/screenshots/iphone-6.9-1.jpg` to `-6.jpg`, 1320×2868: drop all six into the **6.9" Display**
+`store/screenshots/iphone-6.9-1.jpg` to `-8.jpg`, 1320×2868: drop all eight into the **6.9" Display**
 slot, in order. Apple scales them for the smaller iPhones, so no other sizes are needed. They're
 taken from the demo, with invented people and placeholder covers, which keeps real film posters
 (other people's artwork) out of the listing. To make them again after a design change, see the
@@ -75,9 +77,10 @@ top of `tools/store-shots/raw.cjs`.
 - **Notes for the reviewer** (paste, then fill in the account):
 
 > Rooms is a private log of films, TV, books and games, shared with small rooms of friends.
-> Sign in with the demo account above: it is in a room with a few other test accounts, so the
-> feed, the room's games and the suggestions have something in them.
+> Sign in with the demo account above. It is in a room called Movie Night with two test
+> accounts (demo_mia and demo_tom) who have logged a few things, and it follows them, so the
+> room, the Feed tab and the suggestions have something in them.
 > Reporting and blocking: open anyone's entry (tap it) or profile, and both are at the bottom:
-> "Report this" and "Block". Blocks are undone in You → Settings → Blocked.
-> Deleting an account: You → Settings (the cog) → Close your account.
+> "Report this" and "Block". Blocks are undone from Settings → Blocked (tap your name at the top of the app, then the cog).
+> Deleting an account: tap your name at the top, then Settings (the cog) → Close your account.
 > Notifications are optional and only sent for things in your own rooms.
