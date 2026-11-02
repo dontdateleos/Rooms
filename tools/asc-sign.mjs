@@ -1,8 +1,12 @@
-// Signing for the TestFlight upload, made fresh on each run through the App Store Connect API
-// and taken away again afterwards, so there are no certificates to export or keep in step.
+// Signing for the TestFlight upload, made fresh on each run through the App Store Connect API,
+// so there are no certificates to export or keep in step.
 //   node tools/asc-sign.mjs make     a distribution certificate (into a temporary keychain) and
 //                                    an App Store profile for the app, both named for this run
-//   node tools/asc-sign.mjs cleanup  revokes the certificate and deletes the profile
+//   node tools/asc-sign.mjs cleanup  removes the temporary keychain
+// The certificate is NOT revoked after the upload: App Review checks a build's signature again
+// when it's submitted, and a build signed by a revoked certificate fails with ITMS-90035
+// "Invalid Signature". Apple allows only a few distribution certificates, so "make" first revokes
+// old ones, keeping the newest and the one that signed any build that's in or waiting for review.
 // Xcode's own automatic signing can't do this on a fresh account: it wants a registered iPhone
 // before it will make anything, even for a build that's only going to the App Store.
 // Needs ASC_KEY_ID, ASC_ISSUER_ID, ASC_KEY_P8 and BUNDLE_ID; writes what it made to GITHUB_ENV.
@@ -40,6 +44,7 @@ async function make() {
     await api("POST", "/v1/bundleIdCapabilities", { data:{ type:"bundleIdCapabilities", attributes:{ capabilityType:"PUSH_NOTIFICATIONS" },
       relationships:{ bundleId:{ data:{ type:"bundleIds", id:bundle.id } } } } });
     console.log("switched on push for the app id"); }
+  await makeRoom();
   /* a distribution certificate from a key made here; LibreSSL (/usr/bin/openssl) writes a .p12
      the macOS keychain can read */
   sh("/usr/bin/openssl", ["req", "-new", "-newkey", "rsa:2048", "-nodes", "-keyout", join(dir, "dist.key"), "-out", join(dir, "dist.csr"), "-subj", `/CN=Rooms TestFlight ${GITHUB_RUN_NUMBER}`]);
@@ -66,11 +71,32 @@ async function make() {
     mkdirSync(d, { recursive:true }); writeFileSync(join(d, `${uuid}.mobileprovision`), content); }
   env("ASC_PROFILE_ID", prof.data.id); env("ASC_PROFILE_NAME", name); env("ASC_PROFILE_UUID", uuid); }
 
+/* room for this run's certificate: keep the newest one, and the one that signed a build that's on
+   a version in or waiting for review (the certificate made last before that build was uploaded;
+   a certificate's life is a year, so it was made a year before it expires); revoke the rest */
+const madeAt = c => new Date(c.attributes.expirationDate).getTime() - 365 * 864e5;
+async function makeRoom() {
+  const certs = ((await api("GET", "/v1/certificates?filter[certificateType]=DISTRIBUTION&limit=50")).data || []).sort((a, b) => madeAt(b) - madeAt(a));
+  const keep = new Set(certs.slice(0, 1).map(c => c.id));
+  try {
+    const app = (await api("GET", `/v1/apps?filter[bundleId]=${encodeURIComponent(BUNDLE_ID)}`)).data?.[0];
+    const versions = app ? (await api("GET", `/v1/apps/${app.id}/appStoreVersions?filter[platform]=IOS&limit=10`)).data || [] : [];
+    for (const v of versions.filter(v => /WAITING_FOR_REVIEW|IN_REVIEW|PENDING_DEVELOPER_RELEASE|PENDING_APPLE_RELEASE|PROCESSING_FOR_APP_STORE/.test(v.attributes.appStoreState || ""))) {
+      const b = (await api("GET", `/v1/appStoreVersions/${v.id}/build`).catch(() => ({}))).data;
+      if (!b) continue;
+      const up = new Date(b.attributes.uploadedDate).getTime(), signer = certs.find(c => madeAt(c) <= up + 60e3);
+      if (signer) { keep.add(signer.id); console.log(`keeping the certificate that signed build ${b.attributes.version} (on version ${v.attributes.versionString}, ${v.attributes.appStoreState})`); } }
+  } catch (e) { console.log(`couldn't check versions (${e.message.slice(0, 120)}); keeping the two newest certificates`); certs.slice(0, 2).forEach(c => keep.add(c.id)); }
+  for (const c of certs.filter(c => !keep.has(c.id)))
+    await api("DELETE", `/v1/certificates/${c.id}`).then(() => console.log(`revoked an old certificate (${c.attributes.displayName || c.id}, expiring ${c.attributes.expirationDate.slice(0, 10)})`), e => console.log(String(e)));
+  /* profiles of earlier runs whose certificate has gone are no use to anyone */
+  const profs = (await api("GET", "/v1/profiles?filter[profileType]=IOS_APP_STORE&limit=100")).data || [];
+  for (const p of profs.filter(p => /^Rooms TestFlight /.test(p.attributes.name) && p.attributes.profileState !== "ACTIVE"))
+    await api("DELETE", `/v1/profiles/${p.id}`).then(() => console.log(`deleted the old profile "${p.attributes.name}"`), () => {}); }
+
 async function cleanup() {
-  /* revoking a distribution certificate doesn't touch builds already uploaded or on the store */
-  const { ASC_CERT_ID, ASC_PROFILE_ID, ROOMS_KEYCHAIN } = process.env;
-  if (ASC_PROFILE_ID) await api("DELETE", `/v1/profiles/${ASC_PROFILE_ID}`).then(() => console.log("profile deleted"), e => console.log(String(e)));
-  if (ASC_CERT_ID) await api("DELETE", `/v1/certificates/${ASC_CERT_ID}`).then(() => console.log("certificate revoked"), e => console.log(String(e)));
+  /* the certificate and profile stay: see the top of this file */
+  const { ROOMS_KEYCHAIN } = process.env;
   if (ROOMS_KEYCHAIN) try { sh("security", ["delete-keychain", ROOMS_KEYCHAIN]); } catch {} }
 
 const what = process.argv[2];

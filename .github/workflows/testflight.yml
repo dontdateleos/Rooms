@@ -8,8 +8,8 @@
 #   ASC_ISSUER_ID         the Issuer ID shown above the list of keys on that same page
 #   ASC_KEY_P8            the whole of the AuthKey_XXXX.p8 file, BEGIN and END lines included
 # The key needs the Admin role: each run makes its own distribution certificate and App Store
-# profile through the API (tools/asc-sign.mjs) and revokes them at the end, so there are no
-# certificates to export or keep track of, and no iPhone has to be registered first.
+# profile through the API (tools/asc-sign.mjs), revoking old ones that nothing in review needs,
+# so there are no certificates to export or keep track of, and no iPhone has to be registered first.
 name: Send to TestFlight
 on:
   workflow_dispatch:
@@ -125,7 +125,7 @@ jobs:
             -authenticationKeyPath "$RUNNER_TEMP/AuthKey.p8" \
             -authenticationKeyID "$KEY_ID" -authenticationKeyIssuerID "$ISSUER" | tail -40
           echo "::notice::Uploaded. It appears in TestFlight once Apple has processed it, usually 10-20 minutes."
-      - name: Revoke this run's certificate and profile
+      - name: Remove the temporary keychain
         if: always()
         env:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
