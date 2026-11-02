@@ -818,11 +818,10 @@ header:has(#meBtn:not([hidden])) .logoword{display:none}
 @keyframes cellOut{to{transform:scale(.55);opacity:0}}
 .cell.going{animation:cellOut .2s cubic-bezier(.4,0,.9,.35) forwards;pointer-events:none}
 
-/* 03 — the medium's colour floods the screen once, then clears */
-.wash{position:fixed;inset:0;z-index:11;pointer-events:none;background:var(--k,var(--mint));
-  animation:washOver .85s cubic-bezier(.4,.85,.3,1) both}
-@keyframes washOver{0%{clip-path:circle(0% at 50% 88%);opacity:.92}
-  52%{clip-path:circle(150% at 50% 88%);opacity:.92}100%{clip-path:circle(150% at 50% 88%);opacity:0}}
+/* a log lands: the Queue tab pops in mint and a +1 floats up off it */
+.tabplus{position:absolute;left:50%;top:-2px;z-index:2;pointer-events:none;font:800 11px/1 var(--head);color:#151320;background:var(--mint);
+  padding:3px 6px;border-radius:99px;animation:tabPlus 1.3s cubic-bezier(.3,1.6,.5,1) both}
+@keyframes tabPlus{0%{transform:translate(-50%,6px) scale(0);opacity:0}18%{transform:translate(-50%,-6px) scale(1.1);opacity:1}30%,72%{transform:translate(-50%,-8px) scale(1);opacity:1}100%{transform:translate(-50%,-18px) scale(.9);opacity:0}}
 
 /* 05 — the cuts tip down into place, like cards set on a table */
 .cuts button{transform-origin:50% 100%}
@@ -1710,7 +1709,7 @@ body.demomode .secbar{top:78px}
   svg .comet{animation:none}
   html,body{transition:none}
   img.co,.po img,.slot.full img,.ttl img{opacity:1;transform:none;transition:none}
-  .wash,.sheet.on .cuts button,.cell.dealt,.po .tick.swept,.po .tick.swept:after,.cell.landed .po,
+  .tabplus,.sheet.on .cuts button,.cell.dealt,.po .tick.swept,.po .tick.swept:after,.cell.landed .po,
   .themeveil,.feedOut,.feedIn,.likes .was,.likes.rolling>span,.folding,.dealt-in,
   .chip.filling:before,.leaving,.booting>*,::view-transition-new(root),
   .saying .w,.here .face.went,.settled,.struck svg.strike circle,.endline,
@@ -6001,11 +6000,27 @@ async function pullRefresh() {
   }, { passive:true });
 })();
 let sheetGoing = null;
-/* 03 — a flood of the medium's colour, once, on the way out of a save */
-function inkWash(kind) { if (REDUCED) return;
-  const el = document.createElement("span"); el.className = "wash";
-  el.style.setProperty("--k", `var(--${kind || "mint"})`);
-  document.body.appendChild(el); setTimeout(() => el.remove(), 900); }
+/* a log goes onto the shelf: the poster lifts, arcs down into the Queue tab, and the tab pops
+   with a +1 */
+function shelveTo(fromEl, toEl, src) {
+  if (!toEl) return;
+  const pop = () => { toEl.animate([{ transform:"none" }, { transform:"translateY(-5px) scale(1.22)", color:"var(--mint)" }, { transform:"none" }],
+      { duration:420, easing:"cubic-bezier(.3,1.6,.5,1)" });
+    const b = document.createElement("span"); b.className = "tabplus"; b.textContent = "+1"; b.setAttribute("aria-hidden", "true");
+    toEl.appendChild(b); setTimeout(() => b.remove(), 1400); buzz(10); };
+  if (REDUCED || !fromEl) { pop(); return; }
+  const a = fromEl.getBoundingClientRect(), z = toEl.getBoundingClientRect();
+  if (!a.width || !z.width) { pop(); return; }
+  const f = document.createElement("div"); f.className = "flyer";
+  f.style.cssText += `left:${a.left}px;top:${a.top}px;width:${a.width}px;height:${a.height}px`;
+  if (src) f.innerHTML = `<img src="${esc(src)}" alt="">`;
+  document.body.appendChild(f);
+  const dx = z.left + z.width / 2 - a.left - a.width / 2, dy = z.top + z.height / 2 - a.top - a.height / 2;
+  const anim = f.animate([{ transform:"none", opacity:1 },
+    { transform:`translate(${dx * .12}px,-34px) rotate(4deg) scale(.96)`, opacity:1, offset:.38 },
+    { transform:`translate(${dx}px,${dy}px) rotate(14deg) scale(.14)`, opacity:.35 }],
+    { duration:760, easing:"cubic-bezier(.5,0,.3,1)" });
+  anim.onfinish = () => { f.remove(); pop(); }; }
 
 /* ---------- asking something, in the app's own voice ----------
    prompt() and confirm() work, wrapped or not, but they arrive as a system alert with
@@ -13808,7 +13823,7 @@ function openLog(w, edit = null, preset = 0) { setDoing("logging"); const cfg = 
       /* a rewatch doesn't ask again — only the first time this work stands in the archive */
       const firstTime = who !== "me" && myEntries.filter(x => x.work_id === w.id && !x.private).length === 1
         && (!edit?.id || wasPrivate) && !(await ensureRankCache([w.kind]).then(() => (rankCache[w.kind] || []).includes(w.id)).catch(() => false));
-      justSwept = w.id; inkWash(w.kind); logoCheer(); setDoing(null); meReact(score); recs = null; if (!edit?.id) checkGuess(w, score); delete tagCache[w.id]; if (P.picked === w.id) { P.picked = null; saveP(); }
+      justSwept = w.id; logoCheer(); setDoing(null); meReact(score); recs = null; if (!edit?.id) checkGuess(w, score); delete tagCache[w.id]; if (P.picked === w.id) { P.picked = null; saveP(); }
       const saved = (edit ? myEntries.find(x => x.id === edit.id) : myEntries.find(x => x.work_id === w.id)) || e;
       /* rate it, place it, done: the placing happens in this sheet, and the end is a toast
          saying where it landed rather than a second sheet to close */
@@ -13817,7 +13832,7 @@ function openLog(w, edit = null, preset = 0) { setDoing("logging"); const cfg = 
       let placed = null;
       if (firstTime) { try { placed = await rankInsert(w.kind, w.id, false, askInSheet); } catch {} }
       if (onlyMine(w.id)) rankRemove(w.kind, w.id);          /* made private after it was ranked */
-      if (!edit?.id) { if (coverAt) flyTo({ getBoundingClientRect:() => coverAt }, $('nav button[data-tab="library"]'), w.cover);
+      if (!edit?.id) { shelveTo(coverAt ? { getBoundingClientRect:() => coverAt } : null, $('nav button[data-tab="library"]'), w.cover);
         if (offShelf) tickAway(w.id); }
       closeSheet(); refresh();
       if (offShelf) say("Out of Up next");
