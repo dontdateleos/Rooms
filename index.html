@@ -2780,6 +2780,8 @@ blockquote.kept.big{margin-top:14px;font-size:18px;padding:6px 0 6px 14px}
 .wdetails{margin-top:16px}
 /* the log sheet, in the order it's used */
 .lograte{margin-top:18px}
+.recap .rch{display:flex;align-items:center;gap:8px}
+.chip.sm{padding:4px 10px;font-size:12px}
 .lognote{margin-top:16px}
 .noteacts{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
 .noteacts .chip{font-size:12.5px;padding:6px 10px}
@@ -6734,10 +6736,66 @@ function recapHTML(R, es) { const d = new Date().getDay(); if (!R || ![1, 2, 3].
   const [busy, bn] = Object.entries(byU).sort((a, b) => b[1] - a[1])[0];
   const strip = [...new Set(wk.map(e => e.work_id))].slice(0, 8).map(id => works[id] || wk.find(e => e.work_id === id)?.works).filter(Boolean);
   const tw = works[top[0]] || {};
-  return `<div class="card recap" id="recap"><div class="h"><span>Last week in ${esc(R.name)}</span><button class="rcx" id="recapX" aria-label="Hide until next week">✕</button></div>
+  return `<div class="card recap" id="recap"><div class="h"><span>Last week in ${esc(R.name)}</span><span class="rch"><button class="chip sm" id="recapShare">Share</button><button class="rcx" id="recapX" aria-label="Hide until next week">✕</button></span></div>
     <div class="rstrip">${strip.map((w, i) => `<span style="--i:${i}">${cover(w)}</span>`).join("")}</div>
     <p class="rline"><span><b>${esc(tw.title || "")}</b> was the room's pick · ${(top[1] / 2).toFixed(1)}★${top[2] > 1 ? ` from ${said(top[2])} of you` : ""}</span></p>
     <p class="rline">${avatar(profOfId(busy))}<span><b>${esc(busy === me.id ? "You" : profOfId(busy).handle || "Someone")}</b> logged the most · ${bn}</span></p></div>`; }
+/* ---------- the room's week, as a picture to post ----------
+   Story-sized: the room's colour, its faces, the posters of the week, the room's pick and who
+   logged the most. Posters come in if their host lets a canvas use them; if not, a tile in
+   the medium's colour with the title stands in, so the card always draws. */
+const imgLoad = (src, cors = true) => new Promise(res => { if (!src) return res(null); const im = new Image(); if (cors) im.crossOrigin = "anonymous";
+  im.onload = () => res(im); im.onerror = () => res(null); im.src = src; setTimeout(() => res(null), 6000); });
+async function roomWeekData(R) {
+  const since = new Date(Date.now() - 7 * 864e5).toISOString(), ids = R.members.map(m => m.id);
+  let rows = []; try { rows = feedRows(await q(sb.from("entries").select("id,user_id,work_id,score,created_at,rated_on,context,part,works(*)")
+    .in("user_id", ids).eq("part", false).gte("created_at", since).order("created_at", { ascending:false }).limit(300))); } catch {}
+  rows = rows.filter(e => !isQuiet(e)); rows.forEach(e => remember(e.works));
+  const byW = {}; rows.forEach(e => (byW[e.work_id] ||= []).push(e.score));
+  const pick = Object.entries(byW).map(([id, ss]) => [id, ss.reduce((a, b) => a + b, 0) / ss.length, ss.length]).sort((a, b) => (b[2] > 1) - (a[2] > 1) || b[1] - a[1])[0];
+  const byU = {}; rows.forEach(e => byU[e.user_id] = (byU[e.user_id] || 0) + 1);
+  const busy = Object.entries(byU).sort((a, b) => b[1] - a[1])[0];
+  const posters = [...new Set(rows.map(e => e.work_id))].slice(0, 6).map(id => works[id] || rows.find(e => e.work_id === id)?.works).filter(Boolean);
+  return { R, n:rows.length, people:Object.keys(byU).length, pick, busy, posters, from:since.slice(0, 10) }; }
+async function drawRoomWeek(d) {
+  await ready();
+  const W = 1080, H = 1920, M = 80, c = document.createElement("canvas"); c.width = W; c.height = H; const x = c.getContext("2d");
+  const col = getComputedStyle(document.documentElement).getPropertyValue("--" + roomColour(d.R)).trim() || "#F7B3CF";
+  x.fillStyle = "#16131C"; x.fillRect(0, 0, W, H);
+  const glow = (cx, cy, r, a) => { const g = x.createRadialGradient(cx, cy, 20, cx, cy, r); g.addColorStop(0, col + a); g.addColorStop(1, col + "00"); x.fillStyle = g; x.fillRect(0, 0, W, H); };
+  glow(W * .85, -80, 900, "55"); glow(-100, H * .75, 800, "22");
+  cardMark(x, M, 92, 44); x.fillStyle = "#F4EDE2"; x.font = "900 46px Outfit, sans-serif"; x.fillText("ROOMS", M + 82, 132);
+  x.fillStyle = "#A099B4"; x.font = "700 28px Inter, sans-serif"; x.textAlign = "right"; x.fillText(("Week of " + stampDate(d.from)).toUpperCase(), W - M, 128); x.textAlign = "left";
+  x.fillStyle = "#A099B4"; x.font = "700 40px Inter, sans-serif"; x.fillText("This week in", M, 262);
+  x.fillStyle = "#F4EDE2"; x.font = "900 116px Outfit, sans-serif"; x.fillText(fitText(x, d.R.name, W - M * 2), M, 376);
+  /* the faces, in a row */
+  const faces = d.R.members.slice(0, 8); let fx = M;
+  for (const m of faces) { const im = await imgLoad("data:image/svg+xml;charset=utf-8," + encodeURIComponent(avSVG(avFor(m)).replace("<svg ", '<svg xmlns="http://www.w3.org/2000/svg" ')), false);
+    if (im) x.drawImage(im, fx, 408, 72, 72); fx += 82; }
+  /* the posters: two rows of three */
+  const pw = (W - M * 2 - 40) / 3, ph = pw * 1.3, top = 520;
+  for (let i = 0; i < 6; i++) { const w = d.posters[i]; const px = M + (i % 3) * (pw + 20), py = top + Math.floor(i / 3) * (ph + 20);
+    x.save(); x.beginPath(); x.roundRect(px, py, pw, ph, 22); x.clip();
+    const im = w?.cover ? await imgLoad(w.cover) : null;
+    if (im) { const r = Math.max(pw / im.width, ph / im.height); x.drawImage(im, px + (pw - im.width * r) / 2, py + (ph - im.height * r) / 2, im.width * r, im.height * r); }
+    else { x.fillStyle = w ? (CARD.cols[w.kind] || col) : "rgba(255,255,255,.06)"; x.fillRect(px, py, pw, ph);
+      if (w) cardWrap(x, w.title || "", px + 20, py + ph - 90, pw - 40, 36, "900 32px Outfit, sans-serif", "#151320"); }
+    x.restore(); }
+  let y = top + ph * 2 + 20 + 92;
+  const line = (label, value) => { x.fillStyle = "#A099B4"; x.font = "700 30px Inter, sans-serif"; x.fillText(label.toUpperCase(), M, y);
+    x.fillStyle = "#F4EDE2"; x.font = "900 54px Outfit, sans-serif"; x.fillText(fitText(x, value, W - M * 2), M, y + 64); y += 136; };
+  line("Logged", `${d.n} thing${d.n === 1 ? "" : "s"} · ${d.people} of us`);
+  if (d.pick) line("The room's pick", `${(works[d.pick[0]] || {}).title || ""} · ${(d.pick[1] / 2).toFixed(1)}★`);
+  if (d.busy) { const p = profOfId(d.busy[0]); line("Logged the most", `${d.busy[0] === me.id ? "Me" : p.handle || "Someone"} · ${d.busy[1]}`); }
+  x.fillStyle = "rgba(255,255,255,.18)"; x.fillRect(M, H - 150, W - M * 2, 2);
+  x.fillStyle = "#F4EDE2"; x.font = "700 32px Inter, sans-serif"; x.fillText("Watch, read and play together", M, H - 86);
+  x.fillStyle = col; x.font = "900 32px Outfit, sans-serif"; x.textAlign = "right"; x.fillText("Rooms", W - M, H - 86); x.textAlign = "left";
+  return c; }
+async function shareRoomWeek(R, btn) { if (!R) return; if (btn) btn.disabled = true;
+  try { const d = await roomWeekData(R);
+    if (!d.n) { say("Nothing logged in here this week yet"); return; }
+    await cardOut(await drawRoomWeek(d), `rooms-${String(R.name).replace(/[^a-z0-9]+/gi, "-").toLowerCase()}-week.png`); }
+  catch (e) { oops(e, "Couldn't make the picture"); } finally { if (btn) btn.disabled = false; } }
 /* the feed holds the newest sixty logs, which in a busy room is a week or two. The streak
    and last week's recap need whole weeks, so they ask for the last nine on their own and
    fill their places in when that comes back. */
@@ -6751,6 +6809,7 @@ async function roomWeeks(R) { if (!R) return;
   if (slot) slot.innerHTML = wk >= 2 ? ` · <span class="wstreak" title="Weeks in a row that ${R.members.length <= 4 ? "all of you" : "most of you"} logged something">${wk}-week streak</span>` : "";
   const rs = $("#recapSlot"); if (rs) { rs.innerHTML = recapHTML(R, rows); wireRecap(rs, R); } }
 function wireRecap(root, R) { const x = $("#recapX", root); if (!x) return;
+  const sh = $("#recapShare", root); if (sh) sh.onclick = () => shareRoomWeek(R, sh);
   x.onclick = () => { P.recapSeen = { ...(P.recapSeen || {}), [R.id]:weekStart(new Date()) }; saveP(); leaveOut($("#recap")); }; }
 /* ---------- the room's weekly streak ----------
    Weekly, not daily, so it never nags: a week counts when everyone (most of a bigger
@@ -7182,6 +7241,7 @@ function openRoomMenu(R) {
     <div class="seg" id="roomNote">${[["all","Everything"],["me","Just for me"],["off","Nothing"]].map(([k, l]) => `<button data-rn="${k}">${l}</button>`).join("")}</div>
     <p class="sub" id="roomNoteSay" style="margin-top:6px"></p>` : ""}
     <div class="stack">
+      <button class="btn soft" id="roomWeek">Share the room's week</button>
       <button class="btn soft" id="roomCode">Copy the code · ${esc(R.code)}</button>
       <div class="room-manage-actions"><button class="btn ghost" id="newRoom">Open another room</button><button class="btn ghost" id="joinRoom">Join with a code</button></div>
       <button class="btn quiet" id="leaveRoom">Leave this room</button></div>
@@ -7190,6 +7250,7 @@ function openRoomMenu(R) {
   wireRoomNote(R);
   $$("#roomSeats [data-prof]").forEach(x => x.onclick = () => { closeSheet(); openProfile(x.dataset.prof); });
   $("#invite").onclick = () => openInvite(R);
+  $("#roomWeek").onclick = () => shareRoomWeek(R, $("#roomWeek"));
   $$("[data-rcol]").forEach(b => b.onclick = async () => { const c = b.dataset.rcol;
     $$("[data-rcol]").forEach(x => x.classList.toggle("on", x === b));
     /* the whole room sees it once it's saved; a database without the column (and the
@@ -11454,16 +11515,14 @@ function cardCtx(kind) {
   return { c, x };
 }
 function cardMark(x, left, top, h = 34) {
-  /* the Rooms mark: four rooms, three with the lights off and one lit with someone home */
-  const S = h * 1.25, y0 = top - (S - h) / 2, c = S * .45, g = S - 2 * c, r = c * .28;
-  const box = (px, py, col, alpha) => { x.save(); x.globalAlpha = alpha; x.fillStyle = col;
-    x.beginPath(); x.roundRect(px, py, c, c, r); x.fill(); x.restore(); };
-  box(left, y0, "#F5A3C7", .32); box(left + c + g, y0, "#FFB36B", .4); box(left, y0 + c + g, "#B9A6FF", .32);
-  box(left + c + g, y0 + c + g, "#8FD3FF", 1);
-  const ex = left + c + g + c / 2, ey = y0 + c + g + c * .3, ew = c * .13;
-  x.fillStyle = "#151320";
-  [[-c * .13, 0, c * .28], [c * .13, c * .03, c * .31]].forEach(([dx, dy, eh]) => { x.beginPath(); x.roundRect(ex + dx - ew / 2, ey + dy, ew, eh, ew / 2); x.fill(); });
-}
+  /* the Rooms mark, as the logo is drawn: three dim rooms behind, yours in front in pink,
+     lit from the top left. Drawn in the logo's own 80-unit box, scaled to h. */
+  const k = h * 1.25 / 80, ox = left - 10 * k, oy = top - (h * 1.25 - h) / 2 - 10 * k;
+  const rr = (X, Y, w, hh, r, col, a = 1) => { x.save(); x.globalAlpha = a; x.fillStyle = col; x.beginPath(); x.roundRect(ox + X * k, oy + Y * k, w * k, hh * k, r * k); x.fill(); x.restore(); };
+  rr(12, 12, 34, 34, 14, "#52758e"); rr(54, 12, 34, 34, 14, "#8c6442"); rr(12, 54, 34, 34, 14, "#685d8e");
+  rr(41, 41, 47, 47, 19, "#c68fa6"); rr(41, 41, 37.6, 47, 19, "#F7B3CF");
+  x.save(); x.beginPath(); x.roundRect(ox + 41 * k, oy + 41 * k, 47 * k, 47 * k, 19 * k); x.clip(); rr(41, 41, 47, 14.1, 0, "#fbd2e3"); x.restore();
+  x.fillStyle = "#151320"; rr(49.46, 60.98, 6.7, 15, 3.35, "#151320"); rr(62.39, 61.36, 6.7, 15, 3.35, "#151320"); }
 function cardHead(x, label) { cardMark(x, CARD.M, 84, 36);
   x.fillStyle = x.__on; x.font = "900 40px Outfit, sans-serif"; x.fillText("ROOMS", CARD.M + 76, 116);
   x.fillStyle = x.__pale; x.font = "700 26px Inter, sans-serif"; x.textAlign = "right"; x.fillText(label.toUpperCase(), CARD.W - CARD.M, 112); x.textAlign = "left"; }
