@@ -1905,6 +1905,12 @@ nav button .dot{top:0;right:calc(50% - 24px)}
 /* ---------- Seasons ---------- */
 .sn-hero{padding-bottom:16px;padding-right:18px}
 .sn-hero .season-ghost{top:14px;transform:none;width:72px;height:72px}
+.sn-hero .season-ghost.pic{width:96px;height:96px;top:8px;right:4px}
+.season-ghost.pic svg{animation:none;overflow:visible}
+.snpic .zz{animation:zzFloat 3.6s ease-in-out infinite;transform-box:fill-box}
+.snpic .zz+.zz{animation-delay:1.2s}
+@keyframes zzFloat{0%,100%{transform:translate(0,0);opacity:.9}50%{transform:translate(3px,-5px);opacity:.4}}
+@media (prefers-reduced-motion:reduce){.snpic .zz{animation:none}}
 .sn-hero h3,.sn-hero > .sub{max-width:calc(100% - 80px)}
 .sn-prog{display:flex;align-items:center;gap:14px;margin-top:14px}
 .sn-ring{position:relative;width:82px;height:82px;flex:none;display:grid;place-items:center;text-align:center}
@@ -12140,6 +12146,8 @@ function roomMark(kind) {
     <g class="eyes" fill="#151320"><rect x="7.6" y="10" width="3" height="6.8" rx="1.5"/><rect x="13.6" y="10" width="3" height="6.8" rx="1.5"/></g></svg>`; }
 /* a medal is a small pill in its own metal */
 const medalPill = m => m ? `<span class="mpill ${m.tier}">${m.name}</span>` : "";
+/* Long Nights' picture: your room dozing off with a tub of popcorn, a few pieces spilled */
+const SEASON_PICS = { dozing:`<svg class="snpic" viewBox="0 0 120 120" aria-hidden="true"><circle cx="100" cy="12" r="1.4" fill="#FFF4C2"/><circle cx="110" cy="32" r="1" fill="#FFF4C2"/><rect x="16" y="30" width="62" height="62" rx="23.56" fill="#F7B3CF"/><rect x="65.6" y="30" width="12.4" height="62" rx="14.14" fill="#000" opacity=".14"/><path d="M21.89 48.6A23.56 23.56 0 0 1 39.56 30H54.44A23.56 23.56 0 0 1 72.11 48.6Z" fill="#fff" opacity=".35"/><path d="M28.4 61q4.96 4.34 9.92 0M45.76 61q4.96 4.34 9.92 0" stroke="#151320" stroke-width="3.72" fill="none" stroke-linecap="round"/><g transform=""><path d="M54 70h44l-5.28 44h-33.44z" fill="#F4EDE2"/><clipPath id="snpop547044"><path d="M54 70h44l-5.28 44h-33.44z"/></clipPath><g clip-path="url(#snpop547044)"><path d="M62.8 70L65.97 114" stroke="#F5A3C7" stroke-width="5.28"/><path d="M76 70L76 114" stroke="#F5A3C7" stroke-width="5.28"/><path d="M89.2 70L86.03 114" stroke="#F5A3C7" stroke-width="5.28"/></g><g class=""><circle cx="59.5" cy="68" r="4.4" fill="#FFF6D8"/><circle cx="56.86" cy="69.54" r="3.17" fill="#FFF6D8"/><circle cx="62.23" cy="69.32" r="3.08" fill="#FFF6D8"/><circle cx="60.16" cy="70.2" r="1.23" fill="#FFE36B" opacity=".8"/></g><g class=""><circle cx="70.5" cy="65" r="4.4" fill="#FFF6D8"/><circle cx="67.86" cy="66.54" r="3.17" fill="#FFF6D8"/><circle cx="73.23" cy="66.32" r="3.08" fill="#FFF6D8"/><circle cx="71.16" cy="67.2" r="1.23" fill="#FFE36B" opacity=".8"/></g><g class=""><circle cx="81.5" cy="68" r="4.4" fill="#FFF6D8"/><circle cx="78.86" cy="69.54" r="3.17" fill="#FFF6D8"/><circle cx="84.23" cy="69.32" r="3.08" fill="#FFF6D8"/><circle cx="82.16" cy="70.2" r="1.23" fill="#FFE36B" opacity=".8"/></g><g class=""><circle cx="92.5" cy="65" r="4.4" fill="#FFF6D8"/><circle cx="89.86" cy="66.54" r="3.17" fill="#FFF6D8"/><circle cx="95.23" cy="66.32" r="3.08" fill="#FFF6D8"/><circle cx="93.16" cy="67.2" r="1.23" fill="#FFE36B" opacity=".8"/></g><g class=""><circle cx="65" cy="62.52" r="4.4" fill="#FFF6D8"/><circle cx="62.36" cy="64.06" r="3.17" fill="#FFF6D8"/><circle cx="67.73" cy="63.84" r="3.08" fill="#FFF6D8"/><circle cx="65.66" cy="64.72" r="1.23" fill="#FFE36B" opacity=".8"/></g><g class=""><circle cx="76" cy="60.52" r="4.4" fill="#FFF6D8"/><circle cx="73.36" cy="62.06" r="3.17" fill="#FFF6D8"/><circle cx="78.73" cy="61.84" r="3.08" fill="#FFF6D8"/><circle cx="76.66" cy="62.72" r="1.23" fill="#FFE36B" opacity=".8"/></g><g class=""><circle cx="87" cy="62.52" r="4.4" fill="#FFF6D8"/><circle cx="84.36" cy="64.06" r="3.17" fill="#FFF6D8"/><circle cx="89.73" cy="63.84" r="3.08" fill="#FFF6D8"/><circle cx="87.66" cy="64.72" r="1.23" fill="#FFE36B" opacity=".8"/></g><g class=""><circle cx="76" cy="56.8" r="4.4" fill="#FFF6D8"/><circle cx="73.36" cy="58.34" r="3.17" fill="#FFF6D8"/><circle cx="78.73" cy="58.12" r="3.08" fill="#FFF6D8"/><circle cx="76.66" cy="59" r="1.23" fill="#FFE36B" opacity=".8"/></g></g><g class=""><circle cx="30" cy="108" r="5" fill="#FFF6D8"/><circle cx="27" cy="109.75" r="3.6" fill="#FFF6D8"/><circle cx="33.1" cy="109.5" r="3.5" fill="#FFF6D8"/><circle cx="30.75" cy="110.5" r="1.4" fill="#FFE36B" opacity=".8"/></g><g class=""><circle cx="44" cy="112" r="4.5" fill="#FFF6D8"/><circle cx="41.3" cy="113.58" r="3.24" fill="#FFF6D8"/><circle cx="46.79" cy="113.35" r="3.15" fill="#FFF6D8"/><circle cx="44.67" cy="114.25" r="1.26" fill="#FFE36B" opacity=".8"/></g><text class="zz" x="80" y="26" font-family="Outfit,sans-serif" font-weight="900" font-size="19" fill="#c9c1d9">z</text><text class="zz" x="94" y="14" font-family="Outfit,sans-serif" font-weight="900" font-size="13" fill="#c9c1d9">z</text></svg>` };
 const HALLOWEEN_2026 = {
   id:"halloween-2026", name:"31 Nights In", label:"Halloween", tone:"apricot", mk:"ghost", starts:"2026-10-01", ends:"2026-10-31",
   rule:"Horror-tagged logs only.", pitch:"Horror, all October.",
@@ -12185,7 +12193,7 @@ HALLOWEEN_2026.picks = SEASON_PICKS;
 const LONG_ENOUGH = { film:150, tv:40, book:500, game:40 };
 const seasonLength = e => +(e.works?.length || works[e.work_id]?.length || 0);
 const LONG_NIGHTS_2026 = {
-  id:"long-nights-2026", name:"Long Nights", label:"Long Nights", tone:"butter", mk:"moon", starts:"2026-11-01", ends:"2026-12-31",
+  id:"long-nights-2026", name:"Long Nights", label:"Long Nights", tone:"butter", mk:"moon", pic:"dozing", starts:"2026-11-01", ends:"2026-12-31",
   rule:"Long ones only: films over 2½ hours, shows of 40+ episodes, books of 500+ pages, games of 40+ hours.", pitch:"The long ones, while the nights are long.",
   qualifies: e => { const n = seasonLength(e), min = LONG_ENOUGH[seasonKind(e)]; return !!min && n >= min; },
   challenges:[
@@ -12439,7 +12447,7 @@ async function renderClubs() {
       <span class="tag">${phase.key === "upcoming" ? "Next season" : phase.key === "finished" ? "Between seasons" : "Public season"}</span>
       <h3>${esc(season.name)}</h3>
       <p class="sub">${esc(season.rule)}</p>
-      <span class="season-ghost" aria-hidden="true">${season.mk === "ghost" ? ghostMark(2, "#8FD3FF") : placeMark({ mk:season.mk, tone:season.tone })}</span>
+      <span class="season-ghost${season.pic ? " pic" : ""}" aria-hidden="true">${season.pic ? SEASON_PICS[season.pic] : season.mk === "ghost" ? ghostMark(2, "#8FD3FF") : placeMark({ mk:season.mk, tone:season.tone })}</span>
       <div class="sn-prog">
         <div class="sn-ring" role="img" aria-label="${ringNum} ${ringWord}"><svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="${R}" class="tk"/><circle cx="32" cy="32" r="${R}" class="fl" stroke-dasharray="${(C * (phase.key === "finished" ? 1 : gone / span)).toFixed(1)} ${C.toFixed(1)}"/></svg>
           <b>${ringNum}</b><small>${ringWord}</small></div>
