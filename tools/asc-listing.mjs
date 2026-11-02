@@ -168,8 +168,13 @@ async function submit() {
   const sub = ((await api("GET", `/v1/reviewSubmissions?filter[app]=${app.id}&filter[platform]=IOS&filter[state]=READY_FOR_REVIEW&limit=5`)).data || [])[0]
     || (await api("POST", "/v1/reviewSubmissions", { data:{ type:"reviewSubmissions", attributes:{ platform:"IOS" }, relationships:{ app:{ data:{ type:"apps", id:app.id } } } } })).data;
   const items = (await api("GET", `/v1/reviewSubmissions/${sub.id}/items`).catch(() => ({}))).data || [];
-  if (!items.length) await api("POST", "/v1/reviewSubmissionItems", { data:{ type:"reviewSubmissionItems", relationships:{ reviewSubmission:{ data:{ type:"reviewSubmissions", id:sub.id } },
-    appStoreVersion:{ data:{ type:"appStoreVersions", id:version.id } } } } });
+  /* freshly uploaded screenshots take a minute or two to process, and the version can't be sent until they have */
+  const addItem = async () => { for (let i = 0; ; i++) {
+    try { return await api("POST", "/v1/reviewSubmissionItems", ITEM); }
+    catch (e) { if (!/IN_POST_PROCESSING/.test(e.message) || i >= 20) throw e; console.log("  screenshots still processing, waiting…"); await new Promise(r => setTimeout(r, 30000)); } } };
+  const ITEM = { data:{ type:"reviewSubmissionItems", relationships:{ reviewSubmission:{ data:{ type:"reviewSubmissions", id:sub.id } },
+    appStoreVersion:{ data:{ type:"appStoreVersions", id:version.id } } } } };
+  if (!items.length) await addItem();
   await api("PATCH", `/v1/reviewSubmissions/${sub.id}`, { data:{ type:"reviewSubmissions", id:sub.id, attributes:{ submitted:true } } });
   console.log(`Submitted version ${version.attributes.versionString} for review.`); }
 
@@ -202,13 +207,7 @@ async function resubmit() {
       await wait(30000); } }
   await apply();
   if (failed) throw new Error("something in the listing didn't save, so it wasn't sent to review");
-  const open = ((await api("GET", `/v1/reviewSubmissions?filter[app]=${app.id}&filter[platform]=IOS&filter[state]=READY_FOR_REVIEW&limit=5`)).data || [])[0];
-  if (open) {   // an unsent submission left over from taking it out of review: send that one
-    await api("POST", "/v1/reviewSubmissionItems", { data:{ type:"reviewSubmissionItems", relationships:{ reviewSubmission:{ data:{ type:"reviewSubmissions", id:open.id } },
-      appStoreVersion:{ data:{ type:"appStoreVersions", id:version.id } } } } }).catch(e => console.log(`  (item: ${e.message.slice(0, 160)})`));
-    await api("PATCH", `/v1/reviewSubmissions/${open.id}`, { data:{ type:"reviewSubmissions", id:open.id, attributes:{ submitted:true } } });
-    console.log(`Submitted version ${version.attributes.versionString} with build ${newest.attributes.version} for review.`); }
-  else { await submit(); console.log(`(with build ${newest.attributes.version})`); } }
+  await submit(); console.log(`(with build ${newest.attributes.version})`); }
 
 const mode = process.argv[2] || "status";
 ({ status, apply, submit, resubmit })[mode]?.().catch(e => { console.error(e.message); process.exit(1); }).then(() => { if (failed) process.exitCode = 1; });
