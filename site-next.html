@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#16131C">
+<title>Rooms: watch, read and play together</title>
+<meta name="description" content="Log films, shows, books and games with the few people whose taste you trust. Five Clues every day, party games for your room, and stacks of what you love.">
+<meta property="og:title" content="Rooms: watch, read and play together">
+<meta property="og:description" content="Log films, shows, books and games with your people. Five Clues every day, party games, and stacks of what you love.">
+<meta property="og:image" content="https://dontdateleos.github.io/Rooms/icons/og.png">
+<link rel="icon" href="icons/rooms-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* the app's own palette and type: Outfit for titles, Inter for reading */
+:root{--ground:#16131C;--card:#221E2D;--ink:#F4EDE2;--mute:#A099B4;--on:#151320;--paper:#FFF7EC;
+  --apricot:#FFB36B;--pink:#F5A3C7;--butter:#FFE86A;--mint:#9EF0C9;--sky:#8FD3FF;--lilac:#B99CFF;
+  --head:Outfit,"Avenir Next",system-ui,sans-serif;--body:Inter,system-ui,sans-serif;color-scheme:dark}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--ground);color:var(--ink);font:400 17px/1.55 var(--body);-webkit-font-smoothing:antialiased;overflow-x:clip}
+a{color:inherit}
+.wrap{max-width:1080px;margin:0 auto;padding-left:max(20px,env(safe-area-inset-left));padding-right:max(20px,env(safe-area-inset-right))}
+h1,h2,h3{font-family:var(--head);font-weight:900;letter-spacing:-.035em;line-height:1;margin:0;text-wrap:balance}
+p{margin:0}
+/* the block in a title, as in the app: part of the word in its own colour, tipped a little */
+.mk{display:inline-block;background:var(--c,var(--butter));color:var(--on);border-radius:var(--rad,.16em);padding:.03em .08em .06em;margin:0 .02em;rotate:var(--r,0deg);line-height:.95}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;font:800 16px var(--head);padding:14px 22px;border-radius:999px;background:var(--paper);color:var(--on);text-decoration:none;border:0;cursor:pointer;transition:transform .15s}
+.btn:hover{transform:translateY(-2px)}
+.btn.dark{background:var(--on);color:var(--paper)}
+.btn.line{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 2px rgba(244,237,226,.35)}
+.btn svg{width:18px;height:18px;flex:none}
+.btn:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid var(--butter);outline-offset:3px}
+
+/* top bar */
+.top{position:sticky;top:0;z-index:10;background:rgba(22,19,28,.82);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);padding-top:env(safe-area-inset-top)}
+.top .wrap{display:flex;align-items:center;justify-content:space-between;height:62px}
+.logo{display:flex;align-items:center;gap:10px;font:900 22px var(--head);letter-spacing:-.03em;text-decoration:none}
+.logo svg{width:32px;height:32px}
+.top .btn{padding:9px 16px;font-size:14px}
+
+/* hero */
+.hero{padding:34px 0 10px}
+.eyebrow{font:800 12.5px var(--head);letter-spacing:.09em;text-transform:uppercase;color:var(--mute)}
+.eyebrow i{display:inline-block;width:7px;height:7px;border-radius:50%;margin:0 6px 1px 0;vertical-align:middle}
+.hero h1{font-size:clamp(46px,12vw,92px);margin:14px 0 16px}
+.hero .lede{font-size:clamp(17px,2.2vw,20px);color:#D9D2C6;max-width:34ch}
+.cta{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
+.cta small{flex-basis:100%;color:var(--mute);font-size:13px}
+/* the screens: a row you can swipe on a phone */
+.shots{display:flex;gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;padding:30px max(20px,env(safe-area-inset-left)) 18px;margin:0 auto;max-width:1120px;scrollbar-width:none}
+.shots::-webkit-scrollbar{display:none}
+.shot{flex:none;width:min(62vw,250px);scroll-snap-align:center;text-align:center}
+.shot img{width:100%;border-radius:28px;display:block;box-shadow:0 0 0 6px #2C2738,0 24px 50px rgba(0,0,0,.45);rotate:var(--r,0deg);background:#000}
+.shot span{display:block;margin-top:16px;font:800 14px var(--head);color:var(--mute)}
+.shot:nth-child(1){--r:-2deg}.shot:nth-child(2){--r:1.5deg}.shot:nth-child(3){--r:-1deg}.shot:nth-child(4){--r:2deg}.shot:nth-child(5){--r:-1.5deg}
+
+/* the coloured blocks */
+.blocks{display:grid;gap:14px;padding:26px 0 10px}
+@media (min-width:820px){ .blocks{grid-template-columns:1fr 1fr} .blocks .wide{grid-column:1/-1} }
+.block{background:var(--c);color:var(--on);border-radius:28px;padding:26px 22px 24px;position:relative;overflow:hidden;display:grid;gap:12px;align-content:start}
+.block::before{content:"\201C";position:absolute;right:16px;bottom:-104px;font:900 190px/1 var(--head);opacity:.12;pointer-events:none}
+.block>*{position:relative}
+.block .label{font:800 12.5px var(--head);letter-spacing:.09em;text-transform:uppercase;opacity:.7}
+.block h2{font-size:clamp(30px,6vw,44px)}
+.block p{font-size:16.5px;max-width:46ch}
+.block .mk{--c:var(--paper)}
+.tiles{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+.tiles span{background:var(--paper);color:var(--on);font:900 14px var(--head);letter-spacing:-.01em;padding:9px 12px;border-radius:12px;box-shadow:0 6px 14px rgba(21,19,32,.14)}
+.tiles span:nth-child(odd){rotate:-1.5deg}.tiles span:nth-child(even){rotate:1.2deg}
+.dots{display:flex;gap:6px;margin:2px 0}
+.dots i{width:30px;height:9px;border-radius:99px;background:rgba(21,19,32,.18)}
+.dots i:first-child{background:var(--on)}
+.block .btn{justify-self:start;margin-top:4px}
+
+/* the newsletter */
+.news{margin:14px 0 0}
+.news form{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.news input{flex:1 1 220px;min-width:0;font:500 16px var(--body);padding:14px 18px;border-radius:999px;border:0;background:var(--paper);color:var(--on)}
+.news .msg{font-size:14px;font-weight:600;min-height:1.4em}
+
+footer{padding:40px 0 calc(40px + env(safe-area-inset-bottom));color:var(--mute);font-size:14px}
+footer .wrap{display:flex;flex-wrap:wrap;gap:12px 22px;align-items:center}
+footer a{text-decoration:none}footer a:hover{color:var(--ink)}
+footer .who{flex-basis:100%}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.btn{transition:none}}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <a class="logo" href="#" aria-label="Rooms">
+    <svg viewBox="0 0 80 80" aria-hidden="true"><rect x="12" y="12" width="26" height="26" rx="10" fill="#52758e"/><rect x="42" y="12" width="26" height="26" rx="10" fill="#8c6442"/><rect x="12" y="42" width="26" height="26" rx="10" fill="#685d8e"/><rect x="38" y="38" width="34" height="34" rx="13" fill="#F7B3CF"/><rect x="47" y="49" width="5" height="12" rx="2.5" fill="#151320"/><rect x="57" y="49" width="5" height="12" rx="2.5" fill="#151320"/></svg>
+    Rooms</a>
+  <a class="btn" href="index.html">Open Rooms</a>
+</div></header>
+
+<main>
+  <section class="hero"><div class="wrap">
+    <p class="eyebrow"><i style="background:var(--apricot)"></i>Films <i style="background:var(--pink)"></i>TV <i style="background:var(--butter)"></i>Books <i style="background:var(--mint)"></i>Games</p>
+    <h1>Watch, read and <span class="mk" style="--c:var(--mint);--r:-3deg;--rad:.2em">play</span> together.</h1>
+    <p class="lede">Log what you finish with the few people whose taste you trust. Rate it, say what you loved, and argue about it in your room.</p>
+    <div class="cta">
+      <a class="btn" href="https://apps.apple.com/app/id6829551215"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.4 12.6c0-2.4 2-3.6 2.1-3.7-1.2-1.7-3-1.9-3.6-2-1.5-.2-3 .9-3.8.9-.8 0-2-.9-3.3-.9-1.7 0-3.3 1-4.2 2.6-1.8 3.1-.5 7.7 1.3 10.2.9 1.2 1.9 2.6 3.2 2.6 1.3-.1 1.8-.8 3.3-.8s2 .8 3.3.8c1.4 0 2.2-1.2 3.1-2.5 1-1.4 1.4-2.8 1.4-2.9-.1 0-2.8-1.1-2.8-4.3zM13.9 5.2c.7-.8 1.2-2 1-3.2-1 0-2.2.7-3 1.5-.6.7-1.2 1.9-1.1 3.1 1.2.1 2.3-.6 3.1-1.4z"/></svg>Get it on the App Store</a>
+      <a class="btn line" href="index.html">Use it in your browser</a>
+      <small>Free. No ads. Nothing sold.</small>
+    </div>
+  </div></section>
+
+  <div class="shots" aria-label="Screens from the app">
+    <figure class="shot" style="margin:0"><img src="site/room.jpg" alt="A room: who's in, what they're on, and last week's logs" loading="eager" width="330" height="715"><span>Your room</span></figure>
+    <figure class="shot" style="margin:0"><img src="site/play.jpg" alt="The room's Play card: Five Clues, the weekly prompt, party games and the bracket" loading="lazy" width="330" height="715"><span>Games for the room</span></figure>
+    <figure class="shot" style="margin:0"><img src="site/stacks.jpg" alt="Stacks: themed lists of films, shows, books and games" loading="lazy" width="330" height="715"><span>Stacks</span></figure>
+    <figure class="shot" style="margin:0"><img src="site/feed.jpg" alt="The feed, with today's Five Clues at the top" loading="lazy" width="330" height="715"><span>Five Clues, daily</span></figure>
+    <figure class="shot" style="margin:0"><img src="site/diary.jpg" alt="Your diary of everything you've finished" loading="lazy" width="330" height="715"><span>Your diary</span></figure>
+  </div>
+
+  <div class="wrap">
+    <div class="blocks">
+      <section class="block wide" style="--c:var(--sky)" id="clues">
+        <span class="label">Five Clues · a new one every day</span>
+        <h2>Guess today's in <span class="mk" style="--r:3deg;--rad:.14em">five</span> clues.</h2>
+        <div class="dots" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+        <p>A film, a show, a book or a game. Each clue gives away a little more. Get it on the first and you're unbearable for the rest of the day.</p>
+        <a class="btn dark" href="index.html#clues">Play today's · no sign-up</a>
+      </section>
+
+      <section class="block" style="--c:var(--pink)">
+        <span class="label">Rooms</span>
+        <h2>Small rooms. <span class="mk" style="--r:-2deg;--rad:.22em">Real</span> arguments.</h2>
+        <p>A room is a handful of friends. See what everyone's on, who loved it and who walked out, and where you all agree, or very much don't.</p>
+      </section>
+
+      <section class="block" style="--c:var(--mint)">
+        <span class="label">Play</span>
+        <h2>Party games for your <span class="mk" style="--r:2deg;--rad:.16em">room</span>.</h2>
+        <div class="tiles"><span>Fake Blurb</span><span>Bad Pitch</span><span>Title Mash</span><span>Who Rated It?</span><span>Hot Take Court</span></div>
+        <p>Everyone plays on their own phone, in their own time, then the room votes. Plus a weekly prompt, a monthly bracket and watch nights.</p>
+      </section>
+
+      <section class="block" style="--c:var(--lilac)">
+        <span class="label">Stacks</span>
+        <h2>Stacks of what you <span class="mk" style="--r:-3deg;--rad:.2em">love</span>.</h2>
+        <p>Themed lists anyone can make: films, shows, books and games together. Save the ones you like, or watch one with your room.</p>
+      </section>
+
+      <section class="block" style="--c:var(--apricot)">
+        <span class="label">Queue</span>
+        <h2>Can't decide? We'll <span class="mk" style="--r:2.5deg;--rad:.14em">pick</span>.</h2>
+        <p>Everything you mean to get to, what's out now and what's on your services. Then your diary, and your favourites in your own order.</p>
+      </section>
+
+      <section class="block wide news" style="--c:var(--butter)" id="newsletter">
+        <span class="label">Room Service · once a month</span>
+        <h2>What everyone <span class="mk" style="--r:-2deg;--rad:.18em">logged</span> this month.</h2>
+        <p>The most logged, the one nobody agreed on, the stacks people saved and the Five Clues hardly anyone got. One email a month, and you can leave any time.</p>
+        <form id="nl" novalidate>
+          <label for="nlEmail" class="label" style="position:absolute;left:-9999px">Your email</label>
+          <input id="nlEmail" name="email" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com" required>
+          <button class="btn dark" type="submit">Sign me up</button>
+          <p class="msg" id="nlMsg" role="status" aria-live="polite"></p>
+        </form>
+      </section>
+    </div>
+  </div>
+</main>
+
+<footer><div class="wrap">
+  <a href="index.html">Open Rooms</a>
+  <a href="privacy.html">Privacy</a>
+  <a href="terms.html">Terms</a>
+  <span>joinroomsapp@gmail.com</span>
+  <span class="who">Rooms · watch, read and play together</span>
+</div></footer>
+
+<script>
+/* the newsletter box keeps an address in Rooms' own database, for the monthly email
+   and nothing else; anyone can add one, nobody can read the list back */
+const SUPABASE_URL = "https://caaxycmobhssxclrakim.supabase.co", KEY = "sb_publishable_zvZhatlvUg6F_CDzTmxX9A_Vlv0n3PX";
+const form = document.getElementById("nl"), box = document.getElementById("nlEmail"), msg = document.getElementById("nlMsg");
+form.addEventListener("submit", async ev => { ev.preventDefault();
+  const email = box.value.trim().toLowerCase();
+  if (!/^[^@\s]+@[^@\s]+\.[a-z]{2,24}$/i.test(email)) { msg.textContent = "That email doesn't look right. Check it and try again."; box.focus(); return; }
+  const btn = form.querySelector("button"); btn.disabled = true; msg.textContent = "Signing you up…";
+  try { const r = await fetch(`${SUPABASE_URL}/rest/v1/newsletter_web`, { method:"POST",
+      headers:{ "Content-Type":"application/json", apikey:KEY, Authorization:`Bearer ${KEY}`, Prefer:"return=minimal" }, body:JSON.stringify({ email }) });
+    /* already on the list counts as done */
+    if (r.ok || r.status === 409) { msg.textContent = "You're on the list. The next one comes at the start of the month."; form.reset(); }
+    else msg.textContent = "Couldn't sign you up just now. Try again in a minute."; }
+  catch { msg.textContent = "Couldn't reach Rooms. Check your connection and try again."; }
+  btn.disabled = false; });
+</script>
+</body>
+</html>

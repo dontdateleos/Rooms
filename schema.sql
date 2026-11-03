@@ -2138,3 +2138,26 @@ begin
 end $$;
 revoke all on function newsletter_list() from public, anon;
 grant execute on function newsletter_list() to authenticated;
+
+-- ---------- the newsletter, from the website ----------
+-- The website's sign-up box: somebody without the app leaves an address and that's all.
+-- Anyone may add one; nobody can read the list back through the API (no select policy).
+-- The founder's export (newsletter_list) takes these along with the app's switches.
+create table if not exists newsletter_web (
+  email text primary key check (char_length(email) <= 254 and email ~* '^[^@\s]+@[^@\s]+\.[a-z]{2,24}$'),
+  created_at timestamptz not null default now()
+);
+alter table newsletter_web enable row level security;
+drop policy if exists newsletter_web_add on newsletter_web;
+create policy newsletter_web_add on newsletter_web for insert to anon, authenticated with check (true);
+grant insert on newsletter_web to anon, authenticated;
+create or replace function newsletter_list()
+returns table (email text, joined timestamptz)
+language plpgsql security definer stable set search_path = public, auth as $$
+begin
+  if not exists (select 1 from public.profiles where id = auth.uid() and founder) then raise exception 'not allowed'; end if;
+  return query select distinct on (lower(x.email)) x.email, x.joined from (
+      select u.email::text as email, n.created_at as joined from public.newsletter n join auth.users u on u.id = n.user_id where u.email is not null
+      union all select w.email, w.created_at from public.newsletter_web w) x
+    order by lower(x.email), x.joined;
+end $$;
