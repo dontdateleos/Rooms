@@ -2055,3 +2055,86 @@ language sql security definer stable set search_path = public as $$
 $$;
 revoke all on function push_targets_clues(int) from public, anon, authenticated;
 grant execute on function push_targets_clues(int) to service_role;
+
+-- ---------- the week on Rooms: totals for the founder's weekly report ----------
+-- What people logged, added up across everyone, for the weekly video and the newsletter.
+-- Only the founder can ask for it. It never names anyone: a title only shows once at
+-- least p_min different people logged it (never fewer than 5), and "just me" logs,
+-- episode logs, imports and things logged from before never count. Safe to re-run.
+create or replace function weekly_trends(p_from date, p_min int default 5)
+returns jsonb language plpgsql security definer stable set search_path = public as $$
+declare k int := greatest(coalesce(p_min, 5), 5); a timestamptz := p_from::timestamptz; b timestamptz := (p_from + 7)::timestamptz;
+  out jsonb;
+begin
+  if not exists (select 1 from profiles where id = auth.uid() and founder) then raise exception 'not allowed'; end if;
+  with e as (
+    select x.user_id, x.work_id, x.score, x.loved, x.created_at >= a as now_wk from entries x
+    where x.created_at >= a - interval '7 days' and x.created_at < b and not x.private and not x.part and not x.room_only
+      and (x.context->>'before') is distinct from 'true' and (x.context->>'imported') is distinct from 'true'),
+  cur as (select * from e where now_wk), prev as (select * from e where not now_wk),
+  per as (select c.work_id, count(distinct c.user_id) n, round(avg(c.score)::numeric / 2, 2) avg, round(stddev_pop(c.score)::numeric / 2, 2) spread,
+            (select count(distinct p.user_id) from prev p where p.work_id = c.work_id) before
+          from cur c group by c.work_id having count(distinct c.user_id) >= k),
+  w as (select per.*, jsonb_build_object('id', wk.id, 'kind', wk.kind, 'title', wk.title, 'year', wk.year, 'cover', wk.cover, 'creator', wk.creator,
+           'n', per.n, 'avg', per.avg, 'spread', per.spread, 'before', per.before) j, wk.kind
+        from per join works wk on wk.id = per.work_id)
+  select jsonb_build_object(
+    'from', p_from, 'min', k,
+    'logs', (select count(*) from cur), 'people', (select count(distinct user_id) from cur),
+    'logs_before', (select count(*) from prev),
+    'by_kind', (select coalesce(jsonb_object_agg(kind, n), '{}') from (select wk.kind, count(*) n from cur join works wk on wk.id = cur.work_id group by wk.kind) t),
+    'top', (select coalesce(jsonb_agg(j order by n desc, avg desc), '[]') from (select * from w order by n desc, avg desc limit 10) t),
+    'top_kind', (select coalesce(jsonb_object_agg(kind, l), '{}') from (select kind, jsonb_agg(j order by n desc, avg desc) l from
+                  (select *, row_number() over (partition by kind order by n desc, avg desc) r from w) t where r <= 5 group by kind) t2),
+    'rising', (select coalesce(jsonb_agg(j order by n - before desc), '[]') from (select * from w where n > before order by n - before desc limit 5) t),
+    'best', (select coalesce(jsonb_agg(j order by avg desc), '[]') from (select * from w order by avg desc, n desc limit 5) t),
+    'worst', (select coalesce(jsonb_agg(j order by avg), '[]') from (select * from w order by avg, n desc limit 5) t),
+    'divisive', (select coalesce(jsonb_agg(j order by spread desc), '[]') from (select * from w where spread >= 1 order by spread desc limit 5) t),
+    'loved', (select coalesce(jsonb_agg(jsonb_build_object('word', word, 'n', n) order by n desc), '[]') from
+               (select l word, count(distinct user_id) n from cur, unnest(coalesce(loved, '{}')) l where l not like 'person:%' and l not like 'own:%'
+                group by l having count(distinct user_id) >= k order by n desc limit 6) t),
+    'stacks', (select coalesce(jsonb_agg(jsonb_build_object('id', id, 'title', title, 'n', n,
+                  'covers', (select coalesce(jsonb_agg(c), '[]') from (select wk.cover c from theme_list_items i join works wk on wk.id = i.work_id
+                             where i.list_id = t.id and wk.cover is not null order by i.position nulls last limit 4) cc)) order by n desc), '[]') from
+               (select tl.id, tl.title, count(distinct s.user_id) n from theme_lists tl join
+                  (select list_id, user_id, created_at from theme_list_saves union all select list_id, user_id, created_at from theme_list_likes) s on s.list_id = tl.id
+                where s.created_at >= a and s.created_at < b group by tl.id, tl.title having count(distinct s.user_id) >= k order by n desc limit 5) t),
+    'clues', (select coalesce(jsonb_agg(jsonb_build_object('day', day, 'game', game, 'played', played, 'solved', solved, 'avg', avg) order by day, game), '[]') from
+               (select day, game, count(*) played, count(*) filter (where solved) solved, round(avg(clues) filter (where solved)::numeric, 1) avg
+                from daily_scores where day >= p_from and day < p_from + 7 and game like 'clues%' group by day, game having count(*) >= k) t)
+  ) into out;
+  return out;
+end $$;
+revoke all on function weekly_trends(date, int) from public, anon;
+grant execute on function weekly_trends(date, int) to authenticated;
+
+-- the Monday nudge that the week's report is ready: the founder's phones only
+create or replace function push_targets_founders()
+returns table (endpoint text, p256dh text, auth text)
+language sql security definer stable set search_path = public as $$
+  select s.endpoint, s.p256dh, s.auth from push_subs s join profiles p on p.id = s.user_id where p.founder;
+$$;
+revoke all on function push_targets_founders() from public, anon, authenticated;
+grant execute on function push_targets_founders() to service_role;
+
+-- ---------- the monthly newsletter ----------
+-- Saying yes keeps a row here, nothing more; the address it goes to is the one on the
+-- account, looked up only when the founder exports the list. Saying no deletes the row.
+create table if not exists newsletter (
+  user_id uuid primary key references profiles(id) on delete cascade,
+  created_at timestamptz not null default now()
+);
+alter table newsletter enable row level security;
+drop policy if exists newsletter_mine on newsletter;
+create policy newsletter_mine on newsletter for all to authenticated
+  using (user_id = auth.uid()) with check (user_id = auth.uid());
+create or replace function newsletter_list()
+returns table (email text, joined timestamptz)
+language plpgsql security definer stable set search_path = public, auth as $$
+begin
+  if not exists (select 1 from public.profiles where id = auth.uid() and founder) then raise exception 'not allowed'; end if;
+  return query select u.email::text, n.created_at from public.newsletter n join auth.users u on u.id = n.user_id
+    where u.email is not null order by n.created_at;
+end $$;
+revoke all on function newsletter_list() from public, anon;
+grant execute on function newsletter_list() to authenticated;

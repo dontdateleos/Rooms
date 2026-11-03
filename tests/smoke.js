@@ -106,7 +106,9 @@ const BASE = (process.env.BASE || "http://127.0.0.1:8934").replace(/\/$/, "");
       await tap("#wMore"); await wait(500); await tap('[data-more="list"]'); await wait(800); await expect("[data-addl]", "your lists to add it to"); await closeSheet();
       await tap('#feedBody [data-work="film:1"]'); await wait(1200);
       await tap(".whead [data-creator]"); await wait(1200); await expect(".crgrid .crw", "the director's films"); await closeSheet(); });
-    await step("your page", async () => { await tap("#meBtn"); await wait(1200); await expect("#tasteCog", "settings"); });
+    await step("your page", async () => { await tap("#meBtn"); await wait(1200); await expect("#tasteCog", "settings");
+      await tap("#tasteCog"); await wait(900); await expect("#nlSw", "the newsletter switch"); await tap("#nlSw"); await wait(700);
+      await expect("#nlSw.on", "the newsletter switch on"); await tap("#nlSw"); await wait(700); await closeSheet(); });
     await step("log something", async () => { await tap("#add"); await wait(700);
       if (!(await page.$("#sheet.on"))) throw new Error("the + button didn't open anything"); await closeSheet(); });
 

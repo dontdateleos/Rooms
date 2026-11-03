@@ -2134,6 +2134,15 @@ nav button .dot{top:0;right:calc(50% - 24px)}
 .uqtop .gline{margin:0 0 12px;position:relative}
 .uqtop #spinOpen{width:100%;position:relative;display:flex;align-items:center;justify-content:center;gap:8px}
 .uqtop #spinOpen svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2}.uqtop #spinOpen svg circle{fill:currentColor;stroke:none}
+/* last week on Rooms */
+.tr-head{display:flex;align-items:center;gap:10px;padding-right:50px}.tr-head>div{flex:1;min-width:0}.tr-head h3{margin:0}.tr-head small{color:var(--mute);font-weight:700}
+.tr-top{margin-top:12px}.tr-nums{display:grid;grid-template-columns:1fr 1fr;gap:10px;position:relative}
+.tr-nums b{display:block;font:900 40px var(--head);letter-spacing:-.03em;line-height:1}.tr-nums small{display:block;font-weight:700;opacity:.75;margin-top:4px}
+.tr-top .gline{margin:10px 0 0;position:relative}
+.tr-cards{display:flex;gap:10px;overflow-x:auto;padding:2px 2px 8px;scrollbar-width:none}.tr-cards::-webkit-scrollbar{display:none}
+.wk-card{flex:none;width:96px;border:0;background:none;padding:0;font:inherit;cursor:pointer;text-align:left;color:var(--ink)}
+.tr-thumb{display:block;width:96px;height:171px;border-radius:12px;overflow:hidden;background:var(--cream2)}.tr-thumb img{width:100%;height:100%;display:block}
+.wk-card small{display:block;font-size:11.5px;font-weight:700;margin-top:5px;color:var(--mute);line-height:1.25}
 .chip.addown{border:1.5px dashed color-mix(in srgb,var(--mute) 60%,transparent);background:none;color:var(--mute)}
 .stk-bar{display:flex;gap:8px;align-items:center;margin:12px 0 14px}
 .stk-bar input{flex:1;min-width:0;margin:0}
@@ -3933,7 +3942,7 @@ const loveWord = (k, kind) => k === "the pacing" ? (kind === "book" ? "couldn't 
 const GAME_KEYS = { reactions:["entry_id","user_id"], room_answers:["room_id","week","user_id"], room_brackets:["room_id","month"], room_votes:["room_id","game","voter"], room_ask_answers:["ask_id","user_id","work_id"], daily_scores:["user_id","game","day"] };
 function makeLocalSb(seed) {
   const KEY = "rooms.db";
-  const blank = { profile:null, signedOut:false, works:{}, profiles:[], entries:[], lists:[], list_items:[], rooms:[], room_members:[], clubs:[], club_members:[], club_votes:[], reactions:[], replies:[], top_lists:[], top_list_items:[], follows:[], nows:[], handovers:[], seen:[], blocks:[], reports:[], settings:[], handles:[], room_answers:[], room_brackets:[], room_votes:[], room_nights:[], room_asks:[], room_ask_answers:[], daily_scores:[], room_rounds:[], round_answers:[], theme_lists:[], theme_list_items:[], theme_list_likes:[], theme_list_saves:[] };
+  const blank = { profile:null, signedOut:false, works:{}, profiles:[], entries:[], lists:[], list_items:[], rooms:[], room_members:[], clubs:[], club_members:[], club_votes:[], reactions:[], replies:[], top_lists:[], top_list_items:[], follows:[], nows:[], handovers:[], seen:[], blocks:[], reports:[], settings:[], handles:[], room_answers:[], room_brackets:[], room_votes:[], room_nights:[], room_asks:[], room_ask_answers:[], daily_scores:[], room_rounds:[], round_answers:[], theme_lists:[], theme_list_items:[], theme_list_likes:[], theme_list_saves:[], newsletter:[] };
   const db = Object.assign({}, blank, seed || JSON.parse(localStorage.getItem(KEY) || "{}"));
   for (const e of db.entries || []) if (Array.isArray(e.loved)) e.loved = [...new Set(e.loved.map(k => loveWord(k, String(e.work_id).split(":")[0])))];
   if (!db.nows) db.nows = [];                 /* a log written before v15 has no such key */
@@ -4046,6 +4055,29 @@ function makeLocalSb(seed) {
         if (had && had !== want) { const old2 = db.handles.find(h => h.handle === had);
           if (old2) old2.owner = db.profile?.id; else db.handles.push({ handle:had, owner:db.profile?.id, taken_at:now() }); }
         save(); return Promise.resolve({ data:null, error:null }); }
+      if (name === "weekly_trends") { const a = Date.parse(args.p_from + "T00:00:00Z"), b = a + 7 * 864e5, k = 2;
+        const at = e => Date.parse(e.created_at || String(e.rated_on).slice(0, 10) + "T12:00:00Z");
+        const ok = e => !e.private && !e.part && !e.room_only && !e.context?.before && !e.context?.imported;
+        const cur = db.entries.filter(e => ok(e) && at(e) >= a && at(e) < b), prev = db.entries.filter(e => ok(e) && at(e) >= a - 7 * 864e5 && at(e) < a);
+        const by = {}; cur.forEach(e => (by[e.work_id] ||= []).push(e));
+        const w = Object.entries(by).map(([id, es]) => { const ss = es.map(e => e.score), n = new Set(es.map(e => e.user_id)).size, m = ss.reduce((t, x) => t + x, 0) / ss.length;
+          const sd = Math.sqrt(ss.reduce((t, x) => t + (x - m) ** 2, 0) / ss.length), W = db.works[id] || {};
+          return { id, kind:W.kind, title:W.title, year:W.year, cover:W.cover, creator:W.creator, n, avg:+(m / 2).toFixed(2), spread:+(sd / 2).toFixed(2),
+            before:new Set(prev.filter(e => e.work_id === id).map(e => e.user_id)).size }; }).filter(x => x.n >= k && x.kind);
+        const srt = f => w.slice().sort(f);
+        const top_kind = {}; srt((x, y) => y.n - x.n || y.avg - x.avg).forEach(x => { const l = (top_kind[x.kind] ||= []); if (l.length < 5) l.push(x); });
+        const lov = {}; cur.forEach(e => (e.loved || []).filter(l => !/^(person|own):/.test(l)).forEach(l => (lov[l] ||= new Set()).add(e.user_id)));
+        const dd = d => String(d).slice(0, 10), from = args.p_from, to = new Date(b).toISOString().slice(0, 10);
+        const cg = {}; db.daily_scores.filter(r => /^clues/.test(r.game) && dd(r.day) >= from && dd(r.day) < to).forEach(r => { const g = (cg[dd(r.day) + "|" + r.game] ||= { day:dd(r.day), game:r.game, played:0, solved:0, sum:0 }); g.played++; if (r.solved) { g.solved++; g.sum += r.clues; } });
+        const by_kind = {}; cur.forEach(e => { const kk = db.works[e.work_id]?.kind; if (kk) by_kind[kk] = (by_kind[kk] || 0) + 1; });
+        return Promise.resolve({ data:{ from, min:k, logs:cur.length, people:new Set(cur.map(e => e.user_id)).size, logs_before:prev.length, by_kind,
+          top:srt((x, y) => y.n - x.n || y.avg - x.avg).slice(0, 10), top_kind,
+          rising:w.filter(x => x.n > x.before).sort((x, y) => (y.n - y.before) - (x.n - x.before)).slice(0, 5),
+          best:srt((x, y) => y.avg - x.avg || y.n - x.n).slice(0, 5), worst:srt((x, y) => x.avg - y.avg || y.n - x.n).slice(0, 5),
+          divisive:w.filter(x => x.spread >= 1).sort((x, y) => y.spread - x.spread).slice(0, 5),
+          loved:Object.entries(lov).filter(([, v]) => v.size >= k).map(([word, v]) => ({ word, n:v.size })).sort((x, y) => y.n - x.n).slice(0, 6),
+          stacks:[], clues:Object.values(cg).filter(g => g.played >= k).map(g => ({ day:g.day, game:g.game, played:g.played, solved:g.solved, avg:g.solved ? +(g.sum / g.solved).toFixed(1) : null })) }, error:null }); }
+      if (name === "newsletter_list") return Promise.resolve({ data:[], error:null });
       if (name === "peek_room") { const code = String(args.p_code || "").trim().toUpperCase();
         const r = db.rooms.find(x => String(x.code).toUpperCase() === code);
         if (!r) return Promise.resolve({ data:[], error:null });
@@ -5174,12 +5206,13 @@ function takeRoomLink() { const m = /[#&]room=([\w-]{8,40})(?:&sec=(\w+))?/.exec
 /* a shared Five Clues or stack link: kept until there's a page to open it on */
 const DEEP_KEY = "rooms.deep";
 function takeDeep() {
-  const h = location.hash, c = /^#clues(?:-(film|tv|book|game|any))?$/.exec(h), st = /^#stack=([\w:-]{2,60})$/.exec(h);
-  if (c || st) { try { localStorage.setItem(DEEP_KEY, JSON.stringify(c ? { clues:c[1] || "any" } : { stack:st[1] })); } catch {}
+  const h = location.hash, c = /^#clues(?:-(film|tv|book|game|any))?$/.exec(h), st = /^#stack=([\w:-]{2,60})$/.exec(h), tr = h === "#trends";
+  if (c || st || tr) { try { localStorage.setItem(DEEP_KEY, JSON.stringify(c ? { clues:c[1] || "any" } : st ? { stack:st[1] } : { trends:1 })); } catch {}
     history.replaceState(null, "", location.pathname + location.search); }
   try { return JSON.parse(localStorage.getItem(DEEP_KEY) || "null"); } catch { return null; } }
 const dropDeep = () => { try { localStorage.removeItem(DEEP_KEY); } catch {} };
 function useDeep() { const d = takeDeep(); if (!d) return; dropDeep();
+  if (d.trends) { if (isFounder()) setTimeout(() => openTrends(1), 700); return; }
   if (d.clues) { P.cluesKind = d.clues; saveP(); setTimeout(() => openClues(null, d.clues), 700); }
   if (d.stack) setTimeout(() => { const def = ROOMS_STACKS.find(x => x.id === d.stack); if (def) openCurated(def); else openThemeList(d.stack); }, 700); }
 /* nobody signed in yet: a shared Five Clues link still plays — the sign-in screen waits
@@ -5187,7 +5220,7 @@ function useDeep() { const d = takeDeep(); if (!d) return; dropDeep();
 function guestDeep() { const d = takeDeep(); if (!d?.clues) return; dropDeep(); hideSplash(); setTimeout(() => openClues(null, d.clues), 500); }
 const cluesLink = k => inviteViaWorker ? `${proxy()}/c/${k}${homePath()}` : `${homeUrl()}#clues${k !== "any" ? "-" + k : ""}`;
 const stackLink = id => inviteViaWorker ? `${proxy()}/s/${encodeURIComponent(id)}${homePath()}` : `${homeUrl()}#stack=${id}`;
-addEventListener("hashchange", () => { if (/^#(clues|stack=)/.test(location.hash)) { if (me?.id) useDeep(); else guestDeep(); return; }
+addEventListener("hashchange", () => { if (/^#(clues|stack=|trends$)/.test(location.hash)) { if (me?.id) useDeep(); else guestDeep(); return; }
   if (!me?.id) return;
   if (/[#&]room=/.test(location.hash)) { takeRoomLink(); switchTab("doors"); }
   else if (/^#(seasons|stacks)\b/.test(location.hash)) { history.replaceState(null, "", location.pathname + location.search); switchTab("clubs"); } });
@@ -14692,6 +14725,177 @@ function openImport() {
   }
 }
 
+/* ============ LAST WEEK ON ROOMS (the founder's) ============
+   What everyone logged last week, added up, for the weekly video and the newsletter.
+   The server only answers the founder, and only names a title once at least five
+   different people logged it, so nothing here can point at anybody. Each part of it
+   comes as a tall card (1080×1920) to drop straight into TikTok, Reels or Shorts; the
+   words are kept clear of the edges those apps cover with their own buttons. */
+const isFounder = () => !!(me && (me.founder || founderIds.has(me.id)));
+const trFrom = off => { const d = new Date(weekStart(new Date()) + "T12:00:00"); d.setDate(d.getDate() - 7 * off); return d.toISOString().slice(0, 10); };
+const trRange = from => { const a = new Date(from + "T12:00:00"), b = new Date(a); b.setDate(b.getDate() + 6);
+  const f = d => `${d.getDate()} ${MON[d.getMonth()]}`; return `${f(a)} – ${f(b)}`; };
+const trStars = v => `${(+v).toFixed(1)}★`;
+const trNum = n => (+n || 0).toLocaleString("en");
+const trKindWord = { film:"Film", tv:"TV", book:"Book", game:"Game" };
+const TR = { W:1080, H:1920, M:80, ink:"#F4EDE2", pale:"#A099B4", ground:"#16131C" };
+function trBase(label, col = "#9EF0C9") {
+  const c = document.createElement("canvas"); c.width = TR.W; c.height = TR.H; const x = c.getContext("2d");
+  x.fillStyle = TR.ground; x.fillRect(0, 0, TR.W, TR.H);
+  const glow = (cx, cy, r, a) => { const g = x.createRadialGradient(cx, cy, 20, cx, cy, r); g.addColorStop(0, col + a); g.addColorStop(1, col + "00"); x.fillStyle = g; x.fillRect(0, 0, TR.W, TR.H); };
+  glow(TR.W * .85, 40, 950, "55"); glow(-100, TR.H * .78, 800, "22");
+  cardMark(x, TR.M, 172, 44); x.fillStyle = TR.ink; x.font = "900 46px Outfit, sans-serif"; x.fillText("ROOMS", TR.M + 82, 212);
+  x.fillStyle = TR.pale; x.font = "700 28px Inter, sans-serif"; x.textAlign = "right"; x.fillText(label.toUpperCase(), TR.W - TR.M, 208); x.textAlign = "left";
+  return { c, x, col }; }
+function trTitle(x, small, big, col) {
+  x.fillStyle = col; x.font = "800 38px Outfit, sans-serif"; x.fillText(small.toUpperCase(), TR.M, 350);
+  return cardWrap(x, big, TR.M, 460, TR.W - TR.M * 2 - 60, 112, "900 104px Outfit, sans-serif", TR.ink); }
+function trFoot(x, col, line = "What did you watch, read and play?") {
+  x.fillStyle = "rgba(255,255,255,.18)"; x.fillRect(TR.M, 1540, TR.W - TR.M * 2, 2);
+  x.fillStyle = TR.ink; x.font = "700 34px Inter, sans-serif"; x.fillText(line, TR.M, 1604);
+  x.fillStyle = col; x.font = "900 34px Outfit, sans-serif"; x.fillText("Log it on Rooms", TR.M, 1654); }
+async function trPoster(x, w, px, py, pw, ph, r = 18) {
+  x.save(); x.beginPath(); x.roundRect(px, py, pw, ph, r); x.clip();
+  const im = w?.cover ? await imgLoad(w.cover) : null;
+  if (im) { const k = Math.max(pw / im.width, ph / im.height); x.drawImage(im, px + (pw - im.width * k) / 2, py + (ph - im.height * k) / 2, im.width * k, im.height * k); }
+  else { x.fillStyle = CARD.cols[w?.kind] || "#2A2533"; x.fillRect(px, py, pw, ph);
+    if (w) cardWrap(x, w.title || "", px + 12, py + ph - Math.max(28, pw * .3), pw - 24, Math.max(22, pw * .16), `900 ${Math.max(18, Math.round(pw * .14))}px Outfit, sans-serif`, "#151320"); }
+  x.restore(); }
+async function trRows(x, col, list, sub, top) { let y = top;
+  for (let i = 0; i < list.length; i++) { const w = list[i];
+    x.fillStyle = col; x.font = "900 64px Outfit, sans-serif"; x.fillText(String(i + 1), TR.M, y + 110);
+    await trPoster(x, w, TR.M + 72, y, 116, 174, 14);
+    x.fillStyle = TR.ink; x.font = "900 50px Outfit, sans-serif"; x.fillText(fitText(x, w.title, 600), TR.M + 220, y + 76);
+    x.fillStyle = TR.pale; x.font = "700 32px Inter, sans-serif"; x.fillText(fitText(x, sub(w), 600), TR.M + 220, y + 126);
+    y += 196; } return y; }
+/* the cards there are for a week: only the ones it has something to say in */
+function trCards(d, hard) {
+  const L = trRange(d.from), out = [], worst = (d.worst || []).filter(w => w.avg <= 3).slice(0, 2);
+  out.push(["The week", async () => { const { c, x, col } = trBase(L, "#9EF0C9");
+    let y = trTitle(x, "Last week on Rooms", "What everyone logged", col);
+    x.fillStyle = col; x.font = "900 150px Outfit, sans-serif"; x.fillText(trNum(d.logs), TR.M, y + 110);
+    x.fillStyle = TR.pale; x.font = "700 38px Inter, sans-serif"; x.fillText(`things logged by ${trNum(d.people)} people`, TR.M, y + 170);
+    const ps = (d.top || []).slice(0, 4), pw = (TR.W - TR.M * 2 - 60) / 4;
+    for (let i = 0; i < ps.length; i++) await trPoster(x, ps[i], TR.M + i * (pw + 20), y + 240, pw, pw * 1.5);
+    trFoot(x, col); return c; }]);
+  if (d.top?.length) out.push(["Most logged", async () => { const { c, x, col } = trBase(L, "#FFB36B");
+    const y = trTitle(x, "The week's most logged", "What everyone was on", col);
+    await trRows(x, col, d.top.slice(0, 5), w => `${trNum(w.n)} people · ${trStars(w.avg)}`, y - 40); trFoot(x, col); return c; }]);
+  const kinds = Object.keys(d.top_kind || {}).filter(k => d.top_kind[k]?.length);
+  if (kinds.length >= 2) out.push(["Top of each", async () => { const { c, x, col } = trBase(L, "#F5A3C7");
+    const y = trTitle(x, "Number one in each", "Film, TV, books, games", col), pw = 420, ph = 300;
+    const order = ["film", "tv", "book", "game"].filter(k => kinds.includes(k));
+    for (let i = 0; i < order.length; i++) { const w = d.top_kind[order[i]][0], px = TR.M + (i % 2) * (pw + 40), py = y + (i >> 1) * (ph + 130) - 50;
+      await trPoster(x, w, px, py, ph / 1.5, ph, 16);
+      x.fillStyle = CARD.cols[order[i]]; x.font = "900 30px Outfit, sans-serif"; x.fillText(trKindWord[order[i]].toUpperCase(), px, py + ph + 44);
+      x.fillStyle = TR.ink; x.font = "900 36px Outfit, sans-serif"; x.fillText(fitText(x, w.title, pw - 10), px, py + ph + 88); }
+    trFoot(x, col); return c; }]);
+  if (d.rising?.length) out.push(["On the rise", async () => { const { c, x, col } = trBase(L, "#9EF0C9");
+    const y = trTitle(x, "On the rise", "Everyone's starting these", col);
+    await trRows(x, col, d.rising.slice(0, 5), w => w.before ? `up from ${trNum(w.before)} to ${trNum(w.n)} people` : `new this week · ${trNum(w.n)} people`, y - 40); trFoot(x, col); return c; }]);
+  if (d.best?.length) out.push(["Loved, and not", async () => { const { c, x, col } = trBase(L, "#FFE86A");
+    let y = trTitle(x, "Best rated", "The ones people loved", col);
+    y = await trRows(x, col, d.best.slice(0, worst.length ? 3 : 5), w => `${trStars(w.avg)} from ${trNum(w.n)} people`, y - 40);
+    if (worst.length) { x.fillStyle = "#FF8A8A"; x.font = "800 38px Outfit, sans-serif"; x.fillText("AND NOT SO MUCH", TR.M, y + 30);
+      await trRows(x, "#FF8A8A", worst, w => `${trStars(w.avg)} from ${trNum(w.n)} people`, y + 60); }
+    trFoot(x, col); return c; }]);
+  if (d.divisive?.length) out.push(["Couldn't agree", async () => { const { c, x, col } = trBase(L, "#B99CFF");
+    const y = trTitle(x, "The most divisive", "Nobody could agree", col);
+    await trRows(x, col, d.divisive.slice(0, 4), w => `${trStars(w.avg)} on average · all over the place`, y - 40); trFoot(x, col, "Where do you land?"); return c; }]);
+  if (hard) { const kw = hard.k === "any" ? "film, show, book or game" : K(hard.k).label.toLowerCase(), pct = Math.round(hard.solved / hard.played * 100);
+    out.push(["Five Clues: can you?", async () => { const { c, x, col } = trBase(L, "#8FD3FF");
+      let y = trTitle(x, `Five Clues · #${hard.no}`, "Can you get it in five?", col) + 10;
+      x.fillStyle = TR.pale; x.font = "700 34px Inter, sans-serif"; x.fillText(`Guess the ${kw}. Only ${pct}% got it.`, TR.M, y); y += 70;
+      for (let i = 0; i < hard.clues.length; i++) { x.fillStyle = col; x.font = "900 44px Outfit, sans-serif"; x.fillText(String(i + 1), TR.M, y + 40);
+        y = cardWrap(x, hard.clues[i], TR.M + 60, y + 40, TR.W - TR.M * 2 - 120, 44, "600 36px Inter, sans-serif", TR.ink) + 22; }
+      trFoot(x, col, "Answer on the next card"); return c; }]);
+    out.push(["Five Clues: the answer", async () => { const { c, x, col } = trBase(L, "#8FD3FF");
+      trTitle(x, `Five Clues · #${hard.no}`, "It was…", col);
+      await trPoster(x, hard.w, (TR.W - 440) / 2, 560, 440, 660, 24);
+      x.textAlign = "center"; x.fillStyle = TR.ink; x.font = "900 72px Outfit, sans-serif"; x.fillText(fitText(x, hard.w.title, TR.W - TR.M * 2), TR.W / 2, 1320);
+      x.fillStyle = TR.pale; x.font = "700 36px Inter, sans-serif";
+      x.fillText(`Only ${pct}% got it${hard.avg ? ` · most needed ${Math.round(hard.avg)} clues` : ""}`, TR.W / 2, 1384); x.textAlign = "left";
+      trFoot(x, col, "A new Five Clues every day"); return c; }]); }
+  out.push(["See you next week", async () => { const { c, x, col } = trBase(L, "#F5A3C7");
+    trTitle(x, "Rooms", "Watch, read and play together", col);
+    x.fillStyle = TR.pale; x.font = "700 40px Inter, sans-serif";
+    cardWrap(x, "Log what you finish, rate it, and see what your friends think. Five Clues every day. Free on the App Store.", TR.M, 860, TR.W - TR.M * 2 - 60, 56, "700 40px Inter, sans-serif", TR.pale);
+    cardMark(x, TR.M, 1180, 150); trFoot(x, col, "See you next week"); return c; }]);
+  return out; }
+/* the hardest Five Clues of the week: fewest got it, with enough people playing */
+async function trHardest(d) {
+  const g = (d.clues || []).filter(r => r.played).sort((a, b) => a.solved / a.played - b.solved / b.played)[0]; if (!g) return null;
+  const k = g.game === "clues" ? "any" : g.game.split(":")[1] || "any";
+  try { const pz = await cluesToday(String(g.day).slice(0, 10), k); return pz?.w ? { ...g, k, w:pz.w, clues:pz.clues, no:pz.no } : null; } catch { return null; } }
+async function cardsOut(cs, base) {
+  if (cs.length === 1) return cardOut(cs[0], base + ".png");
+  if (NATIVE) { try { const files = [];
+      for (let i = 0; i < cs.length; i++) { const { uri } = await plug("Filesystem").writeFile({ path:`${base}-${i + 1}.png`, data:cs[i].toDataURL("image/png").split(",")[1], directory:"CACHE" }); files.push(uri); }
+      await plug("Share").share({ files }); } catch (e) { if (!/cancel/i.test(String(e?.message || e))) oops(e, "Couldn't share those"); } return; }
+  const fs = await Promise.all(cs.map((c, i) => new Promise(r => c.toBlob(b => r(new File([b], `${base}-${i + 1}.png`, { type:"image/png" })), "image/png"))));
+  if (navigator.canShare?.({ files:fs })) { try { await navigator.share({ files:fs }); return; } catch {} }
+  for (const f of fs) { const a = document.createElement("a"); a.href = URL.createObjectURL(f); a.download = f.name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); } }
+function trText(d, hard) {
+  const l = [`Last week on Rooms (${trRange(d.from)})`, `${trNum(d.logs)} things logged by ${trNum(d.people)} people${d.logs_before ? ` (${d.logs >= d.logs_before ? "+" : ""}${Math.round((d.logs - d.logs_before) / d.logs_before * 100)}% on the week before)` : ""}`];
+  const sec = (h, xs, f) => { if (xs?.length) l.push("", h, ...xs.map((w, i) => `${i + 1}. ${w.title}${w.year ? ` (${w.year})` : ""} · ${f(w)}`)); };
+  sec("Most logged", d.top?.slice(0, 5), w => `${w.n} people · ${trStars(w.avg)}`);
+  sec("On the rise", d.rising, w => w.before ? `up from ${w.before} to ${w.n}` : `new · ${w.n}`);
+  sec("Best rated", d.best?.slice(0, 3), w => `${trStars(w.avg)} from ${w.n}`);
+  sec("Most divisive", d.divisive?.slice(0, 3), w => `${trStars(w.avg)} average`);
+  if (d.loved?.length) l.push("", "What people loved most: " + d.loved.map(x => `${x.word} (${x.n})`).join(", "));
+  if (d.stacks?.length) l.push("", "Most saved stacks: " + d.stacks.map(x => `${x.title} (${x.n})`).join(", "));
+  if (hard) l.push("", `Hardest Five Clues: #${hard.no}, ${hard.w.title}. ${hard.solved} of ${hard.played} got it.`);
+  return l.join("\n"); }
+async function openTrends(off = 1) {
+  const from = trFrom(off);
+  openSheet(`<div class="tr-head"><div><h3>Last week on Rooms</h3><small>${esc(trRange(from))}</small></div></div>${skeleton(3)}`);
+  let d; try { d = await q(sb.rpc("weekly_trends", { p_from:from })); }
+  catch (e) { openSheet(`<h3>Last week on Rooms</h3><p class="sub">${/not allowed/.test(e?.message || "") ? "This one's only for the founder." : "Couldn't add the week up. Try again in a bit."}</p>`); return; }
+  [...(d.top || []), ...(d.rising || []), ...(d.best || []), ...(d.worst || []), ...(d.divisive || [])].forEach(w => { if (w?.id && !works[w.id]) remember({ id:w.id, kind:w.kind, title:w.title, year:w.year, cover:w.cover, creator:w.creator }); });
+  const hard = await trHardest(d), worst = (d.worst || []).filter(w => w.avg <= 3).slice(0, 2);
+  const row = (w, line) => `<div class="row" data-trw="${esc(w.id)}" role="button" tabindex="0">${cover(works[w.id] || w)}<div class="t"><b>${esc(w.title)}</b><small>${tag(w.kind)} ${esc(line)}</small></div></div>`;
+  const sec = (h, xs, f) => xs?.length ? `<div class="lbl">${h}</div><div class="card" style="margin-top:0">${xs.map(w => row(w, f(w))).join("")}</div>` : "";
+  const chg = d.logs_before ? Math.round((d.logs - d.logs_before) / d.logs_before * 100) : null;
+  const kinds = ["film", "tv", "book", "game"].filter(k => d.by_kind?.[k]).map(k => `${K(k).plural} ${trNum(d.by_kind[k])}`).join(" · ");
+  const cards = trCards(d, hard);
+  openSheet(`<div class="tr-head"><button class="iconbtn sm" id="trPrev" aria-label="The week before">‹</button><div><h3>Last week on Rooms</h3><small>${esc(trRange(from))}</small></div>
+      <button class="iconbtn sm" id="trNext" aria-label="The week after" ${off <= 1 ? "disabled" : ""}>›</button></div>
+    <div class="card game promptcard tr-top" style="--room:var(--mint)"><div class="tr-nums"><div><b>${trNum(d.logs)}</b><small>things logged${chg != null ? ` · ${chg >= 0 ? "+" : ""}${chg}% on the week before` : ""}</small></div>
+      <div><b>${trNum(d.people)}</b><small>people logging</small></div></div>${kinds ? `<p class="sub gline">${esc(kinds)}</p>` : ""}</div>
+    ${d.top?.length ? "" : `<p class="sub">Nothing reached ${d.min} different people last week, so there's no chart yet — only the totals.</p>`}
+    <div class="lbl">Cards for the video</div><div class="tr-cards" id="trCards">${cards.map(([n], i) => `<button class="wk-card" data-trc="${i}"><span class="tr-thumb"></span><small>${esc(n)}</small></button>`).join("")}</div>
+    <div class="stack"><button class="btn" id="trAll">Save all ${cards.length} cards</button><button class="btn quiet" id="trCopy">Copy the numbers</button></div>
+    ${sec("Most logged", d.top?.slice(0, 5), w => `${trNum(w.n)} people · ${trStars(w.avg)}`)}
+    ${sec("On the rise", d.rising, w => w.before ? `up from ${w.before} to ${w.n} people` : `new this week · ${w.n} people`)}
+    ${sec("Best rated", d.best?.slice(0, 3), w => `${trStars(w.avg)} from ${w.n} people`)}
+    ${sec("Not so much", worst, w => `${trStars(w.avg)} from ${w.n} people`)}
+    ${sec("Most divisive", d.divisive?.slice(0, 3), w => `${trStars(w.avg)} on average`)}
+    ${d.loved?.length ? `<div class="lbl">What people loved most</div><div class="chips">${d.loved.map(x => `<span class="chip">${esc(loveWord ? loveWord(x.word) : x.word)} · ${x.n}</span>`).join("")}</div>` : ""}
+    ${d.stacks?.length ? `<div class="lbl">Most saved stacks</div><div class="card" style="margin-top:0">${d.stacks.map(x => `<div class="row" data-trs="${esc(x.id)}" role="button" tabindex="0"><div class="t"><b>${esc(x.title)}</b><small>saved or liked by ${x.n}</small></div></div>`).join("")}</div>` : ""}
+    ${hard ? `<div class="lbl">The hardest Five Clues</div><div class="card" style="margin-top:0">${row(hard.w, `#${hard.no} · ${hard.solved} of ${hard.played} got it`)}</div>` : ""}
+    <p class="sub" style="margin-top:14px">A title only shows once at least ${d.min} different people logged it that week. "Just me" and room-only logs, episodes, imports and things logged as seen before never count. Weeks run Monday to Sunday.</p>`);
+  $("#trPrev").onclick = () => openTrends(off + 1); const nx = $("#trNext"); if (nx) nx.onclick = () => off > 1 && openTrends(off - 1);
+  $$("[data-trw]").forEach(r => r.onclick = () => { closeSheet(); openWork(r.dataset.trw); });
+  $$("[data-trs]").forEach(r => r.onclick = () => { closeSheet(); openThemeList(r.dataset.trs); });
+  $("#trCopy").onclick = async () => { try { await navigator.clipboard.writeText(trText(d, hard)); say("Copied the numbers"); } catch { say("Couldn't copy"); } };
+  await ready(); const made = [];
+  for (let i = 0; i < cards.length; i++) { let cv = null; try { cv = await cards[i][1](); } catch {} made[i] = cv;
+    const t = $(`[data-trc="${i}"] .tr-thumb`); if (!t) return;
+    if (cv) { const im = new Image(); im.alt = ""; im.src = cv.toDataURL("image/jpeg", .7); t.appendChild(im); } }
+  const base = `rooms-week-${from}`;
+  $$("[data-trc]").forEach(b => b.onclick = () => { const cv = made[+b.dataset.trc]; if (cv) cardOut(cv, `${base}-${+b.dataset.trc + 1}.png`); });
+  $("#trAll").onclick = () => cardsOut(made.filter(Boolean), base); }
+
+/* ---------- the newsletter, from your settings ---------- */
+async function paintNewsletter(el) { if (!el || !me) return;
+  let on = false; try { on = (await q(sb.from("newsletter").select("user_id").eq("user_id", me.id))).length > 0; } catch {}
+  el.innerHTML = `<button class="chip ${on ? "on" : ""}" id="nlSw" aria-pressed="${on}">${on ? "You're on the list" : "Send me the monthly one"}</button>`;
+  $("#nlSw", el).onclick = async () => { const b = $("#nlSw", el); b.disabled = true;
+    try { if (on) await q(sb.from("newsletter").delete().eq("user_id", me.id)); else await q(sb.from("newsletter").insert({ user_id:me.id }));
+      buzz(4); say(on ? "Off the list" : "You're on the list. The next one's at the start of the month", on ? "" : "good"); }
+    catch (e) { oops(e, "Couldn't change that"); }
+    paintNewsletter(el); }; }
+
 /* ============ YOU (behind your name) ============ */
 async function openYou() { let top = { items:[] }; try { top = await ensureMyTop(); } catch {}
   openSheet(`<div style="display:flex;align-items:center;gap:12px">${avatar(me)}<h3 style="flex:1">${esc(me.handle)}</h3></div>
@@ -14712,6 +14916,9 @@ async function openYou() { let top = { items:[] }; try { top = await ensureMyTop
     <div id="pushSlot"></div>
     <div class="lbl" style="margin-top:10px">Five Clues reminder</div><div class="chips" id="cluRemind">${[["", "Off"], ["9", "9am"], ["12", "Noon"], ["18", "6pm"], ["20", "8pm"]].map(([k, l]) => `<button class="chip ${String(P.cluesRemind ?? "") === k ? "on" : ""}" data-crh="${k}">${l}</button>`).join("")}</div>
     <p class="sub" style="margin-top:4px">A nudge when today's puzzle is up, at the time you pick. Skipped on days you've already played. Needs notifications on.</p>
+    <div class="lbl" style="margin-top:10px">The Rooms newsletter</div><div class="chips" id="nlSlot"></div>
+    <p class="sub" style="margin-top:4px">Once a month: what everyone logged, the stacks people saved and the Five Clues nobody got. It goes to the email on your account. Switch it off here any time.</p>
+    ${isFounder() ? `<div class="lbl" style="margin-top:10px">Founder</div><div class="stack"><button class="btn quiet" id="fTrends">Last week on Rooms</button><button class="btn quiet" id="fList">Copy the newsletter list</button></div>` : ""}
     <div class="lbl" style="margin-top:10px">How the app looks</div><div class="chips">${[["","Auto"],["light","Light"],["dark","Dark"]].map(([k,l]) => `<button class="chip ${(P.theme||"")===k?"on":""}" data-th="${k}">${l}</button>`).join("")}</div>
     <p class="sub" style="margin-top:4px">Auto follows your phone. The ground still warms and dims across the day either way.</p>
     <div class="lbl">The little guys</div><div class="chips"><button class="chip ${P.tilt ? "on" : ""}" id="tiltSw">Eyes follow your tilt</button></div>
@@ -14803,6 +15010,12 @@ async function openYou() { let top = { items:[] }; try { top = await ensureMyTop
   const ta = $("#tourAgain"); if (ta) ta.onclick = () => { P.tourDue = true; saveP(); closeSheet(); if (currentTab() !== "doors") switchTab("doors"); };
   $$("[data-crh]").forEach(b => b.onclick = async () => { const k = b.dataset.crh; P.cluesRemind = k === "" ? null : +k; saveP();
     $$("[data-crh]").forEach(x => x.classList.toggle("on", x === b)); buzz(4); await syncCluesRemind(true); say(k === "" ? "No reminder" : `Reminder at ${b.textContent}`); });
+  paintNewsletter($("#nlSlot"));
+  const ft = $("#fTrends"); if (ft) ft.onclick = () => openTrends(1);
+  const fl = $("#fList"); if (fl) fl.onclick = async () => { try { const rows = await q(sb.rpc("newsletter_list"));
+      if (!rows.length) { say("Nobody's on the list yet"); return; }
+      await navigator.clipboard.writeText(rows.map(r => r.email).join("\n")); say(`Copied ${rows.length} ${rows.length === 1 ? "address" : "addresses"}`); }
+    catch (e) { oops(e, "Couldn't get the list"); } };
   const fillPush = async () => { const el = $("#pushSlot"); if (!el) return; el.innerHTML = await pushSwitchHTML(); wirePushSwitch(el, fillPush); };
   fillPush();
   $("#ySave").onclick = async () => { const h = lc($("#yHandle").value.trim()), bio = $("#yBio").value.trim(); if (!/^[a-z0-9_]{2,24}$/.test(h)) { $("#yMsg").textContent = "two to twenty-four, lowercase, no spaces"; return; }
@@ -14982,7 +15195,7 @@ window.__rooms = { blank, kindBlank, playMatch, coach, logoCheer, logoHere, open
   get meCh(){return meCh}, secondThoughts, againLine, apart, shelfAge, waited, openProfile, openWork,
   setSkin:k => { P.cardSkin = k; saveP(); }, get deckItems(){return deckItems},
   addToShelf, __isSoon:isSoon, __list:activeList,
-  marksFor, COMET, loadFounders, get founderIds(){return founderIds},
+  marksFor, COMET, loadFounders, get founderIds(){return founderIds}, openTrends, trFrom, trCards, trHardest,
   CAB_SORTS, CAB_ORDER, cabinetRows, cabSort, CHART_WINDOWS, chartSince, chartWin, chartFor, competition,
   findPeople, handleMatch, handleDistance, deleteReview, renderStacks };
 

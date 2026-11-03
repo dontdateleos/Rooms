@@ -442,5 +442,9 @@ async function runSchedule(env, at = localNow(env.TZ || "Australia/Sydney")) {
   { const r = await svcRpc(env, "push_targets_clues", { p_hour:new Date().getUTCHours() }).catch(() => null);
     if (r?.ok) { const subs = await r.json(); if (subs.length) sent.push(await deliver(env, subs, { title:"Today's Five Clues is up",
       body:"A new one to guess. How few clues will it take you?", url:"./#clues", tag:"clues" })); } }
+  /* Monday morning: last week's totals are in, for the founder's video and newsletter */
+  if (wd === 0 && hour === 8) { const r = await svcRpc(env, "push_targets_founders", {}).catch(() => null);
+    if (r?.ok) { const subs = await r.json(); if (subs.length) sent.push(await deliver(env, subs, { title:"Last week on Rooms is ready",
+      body:"What people logged, what's rising and the cards for this week's video.", url:"./#trends", tag:"trends" })); } }
   return { at, sent };
 }
