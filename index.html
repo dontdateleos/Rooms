@@ -2161,6 +2161,14 @@ nav button .dot{top:0;right:calc(50% - 24px)}
 .wk-card{flex:none;width:96px;border:0;background:none;padding:0;font:inherit;cursor:pointer;text-align:left;color:var(--ink)}
 .tr-thumb{display:block;width:96px;height:171px;border-radius:12px;overflow:hidden;background:var(--cream2)}.tr-thumb img{width:100%;height:100%;display:block}
 .wk-card small{display:block;font-size:11.5px;font-weight:700;margin-top:5px;color:var(--mute);line-height:1.25}
+/* page titles: a thick marker stroke behind the word, in the page's colour */
+.pagetitle:not(:has(.feedpick)){width:fit-content;max-width:100%;position:relative;isolation:isolate}
+.pagetitle:not(:has(.feedpick))::before,.roomhero .feedpick::before{content:"";position:absolute;left:-.06em;right:-.1em;bottom:.08em;height:.36em;
+  background:var(--mk,var(--butter));border-radius:.2em .5em .3em .6em;rotate:-1.5deg;z-index:-1;opacity:.9;pointer-events:none}
+.roomhero .feedpick{position:relative;isolation:isolate}
+.roomhero .feedpick::before{right:30px;background:#FFF7EC;opacity:.75}
+#tab-people .pagetitle{--mk:var(--butter)}
+#tab-clubs .pagetitle{--mk:var(--pink)}
 .chip.addown{border:1.5px dashed color-mix(in srgb,var(--mute) 60%,transparent);background:none;color:var(--mute)}
 .stk-bar{display:flex;gap:8px;align-items:center;margin:12px 0 14px}
 .stk-bar input{flex:1;min-width:0;margin:0}
@@ -6162,6 +6170,7 @@ const navOf = n => LIB.includes(n) ? "library" : n;
 function paintLib(n, instant) { const bar = $("#libBar"); if (!bar) return;
   bar.hidden = !LIB.includes(n); if (bar.hidden) return;
   const lit = n === "archive" && cabRanked() ? "ranked" : n;
+  bar.style.setProperty("--mk", `var(--${lit === "shelf" ? "mint" : lit === "ranked" ? "lilac" : "sky"})`);
   $$("[data-lib]", bar).forEach(b => { const on = b.dataset.lib === lit;
     b.classList.toggle("on", on); b.setAttribute("aria-selected", on ? "true" : "false"); });
   glideSeg($(".seg", bar), instant); }
