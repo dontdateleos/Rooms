@@ -2039,6 +2039,37 @@ nav button .dot{top:0;right:calc(50% - 24px)}
 .clu-row .btn{width:auto;padding:10px 22px;font-size:15px}
 .promptcard .clu-dots i{background:rgba(21,19,32,.14)}
 #pplDaily{margin-top:6px}
+/* more of the room's questions in the prompt's look: Ask the room, watch night, the bracket */
+.card.askcard.promptcard,.card.promptcard.alonecard{background:var(--room,var(--butter));color:var(--onAccent);position:relative;overflow:hidden;box-shadow:none}
+.askcard.promptcard .askw{position:relative}
+.promptcard .pflow li.on{background:rgba(21,19,32,.12);color:var(--onAccent)}
+.askcard.promptcard .askq p{color:rgba(21,19,32,.72)}
+.askcard.promptcard .askq p b{color:var(--onAccent)}
+.askcard.promptcard .askq p span{color:var(--onAccent);font-size:22px;font-weight:900;letter-spacing:-.02em;margin-top:6px;opacity:1}
+.askcard.promptcard .askq p span{opacity:1}
+.askcard.promptcard .aska{background:var(--card);border-radius:12px;padding:6px 6px 8px;box-shadow:0 8px 18px rgba(21,19,32,.16)}
+.askcard.promptcard .aska:nth-child(odd){rotate:-.8deg}
+.askcard.promptcard .aska .co{width:84px;height:122px}
+.askcard.promptcard .aska{width:96px}
+.promptcard .askacts .chip,.promptcard .askacts .chip.pickchip{background:var(--onAccent)!important;color:#FFF7EC!important;border-color:transparent!important}
+.promptcard .askacts .tag.dim{background:rgba(21,19,32,.1);color:var(--onAccent)}
+.promptcard .nopt{background:var(--card);box-shadow:0 8px 18px rgba(21,19,32,.16)}
+.promptcard .nopts .nopt:nth-child(odd){rotate:-.6deg}.promptcard .nopts .nopt:nth-child(even){rotate:.6deg}
+.promptcard .nopt.on{border-color:var(--onAccent)}
+.promptcard .ngather small,.promptcard .linkish,.promptcard .pickown{color:var(--onAccent)}
+.promptcard .pflow li{color:var(--onAccent);opacity:.7}.promptcard .pflow li.on{opacity:1}
+.promptcard .pflow li i{background:rgba(21,19,32,.12);color:var(--onAccent)}
+.promptcard .pflow li.on i,.promptcard .pflow li.done i{background:var(--onAccent);color:#FFF7EC}
+.promptcard .bmatch .vsit{background:var(--card);border-color:transparent;box-shadow:0 8px 18px rgba(21,19,32,.16)}
+.promptcard .bmatch .vsit.on{border-color:var(--onAccent)}
+.promptcard .bmatch > span,.promptcard .bmatch em{color:var(--onAccent)}
+.promptcard .champ{background:var(--card);color:var(--ink);box-shadow:0 8px 18px rgba(21,19,32,.16)}
+.promptcard .nverdict small,.promptcard .nverdict b{color:var(--onAccent)}
+.card.promptcard.alonecard{background:var(--room,var(--butter))}
+.alonecard .alone{background:none;padding:0;margin:0}
+.alonecard .alone b{font-size:24px;font-weight:900;letter-spacing:-.02em;color:var(--onAccent)}
+.alonecard .alone span{color:var(--onAccent);opacity:.8}
+.alonecard .alone .btn{background:var(--onAccent);color:#FFF7EC}
 .chip.addown{border:1.5px dashed color-mix(in srgb,var(--mute) 60%,transparent);background:none;color:var(--mute)}
 .stk-bar{display:flex;gap:8px;align-items:center;margin:12px 0 14px}
 .stk-bar input{flex:1;min-width:0;margin:0}
@@ -7924,7 +7955,7 @@ async function renderRoomFeed(fb, R) {
   fb.innerHTML = `<div class="roomline"><div class="rl-l">${roomStreak(es, R)}<small class="herenote" id="hereNote" aria-live="polite" hidden></small></div>
       <span class="rl-r"><button class="herechip" id="hereRow"><b>${R.members.length} in here</b></button><button class="iconbtn sm" id="roomMenu" aria-label="Room options"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button></span></div>
       <p class="nowline" id="roomNow"></p>
-      ${R.members.length < 2 ? `<div class="card"><div class="alone"><b>It's just you in here.</b>
+      ${R.members.length < 2 ? `<div class="card promptcard alonecard"><div class="alone"><b>It's just you in here.</b>
         <span>Rooms only does anything with other people in it — agreement, the year, the arguments.
         Send one person the link and the whole thing switches on.</span>
         <button class="btn blue" id="aloneInvite">Send the invite link</button>
@@ -10462,11 +10493,11 @@ function bracketHTML(R, br, g) {
   const past = st.rounds.filter(r => r.closed && r !== st.current);
   const pastHTML = past.length ? `<p class="sub gline">${past.map(r => `<b>${esc(r.name)}</b>: ${r.matches.map(mt => esc(works[mt.winner]?.title || "")).join(", ")}`).join(" · ")}</p>` : "";
   if (st.champion) { const w = works[st.champion] || {}, f = st.final, lost = f.winner === f.a ? f.b : f.a;
-    return `<div class="card game">${head}<div class="champ" data-gw="${esc(st.champion)}">${cover(w)}<div><small>The room's ${esc(inWords(br.kind, 1))} of ${mon}</small>
+    return `<div class="card game promptcard" style="--room:var(--lilac)">${head}<div class="champ" data-gw="${esc(st.champion)}">${cover(w)}<div><small>The room's ${esc(inWords(br.kind, 1))} of ${mon}</small>
       <b>${esc(w.title || "")}</b><span>${f.na === f.nb ? `beat ${esc(works[lost]?.title || "")} in the final as the higher seed${f.na ? `, ${f.na}–${f.nb}` : ""}` : `beat ${esc(works[lost]?.title || "")} in the final, ${Math.max(f.na, f.nb)}–${Math.min(f.na, f.nb)}`}</span></div></div>${pastHTML}</div>`; }
   const cur = st.current, left = Math.max(0, cur.ends - new Date().getDate());
-  return `<div class="card game">${head}
-    <div class="gprompt" style="font-size:17px">${esc(cur.name)}</div>
+  return `<div class="card game promptcard" style="--room:var(--lilac)">${head}
+    <div class="gprompt" style="font-size:22px">${esc(cur.name)}: which goes through?</div>
     <p class="sub gline" style="margin-top:2px">${left ? `${left} ${left === 1 ? "day" : "days"} left` : "last day"} · or sooner, once everyone's voted</p>
     ${cur.matches.map((mt, i) => `<div class="bmatch">${[mt.a, mt.b].map(id => { const w = works[id] || {}, on = mt.mine === id;
         const n = id === mt.a ? mt.na : mt.nb;
@@ -10610,7 +10641,7 @@ async function loadAsks(R) {
 function asksHTML(R, asks) {
   if (asks == null) return "";
   return asks.map(a => { const mine = a.user_id === me.id;
-    return `<div class="card askcard" data-ask="${esc(a.id)}"><div class="askq">${avatar(R.members.find(m => m.id === a.user_id) || { id:a.user_id })}<p><b>${esc(who(R, a.user_id))}</b> ${mine ? "asked" : "asks"}<span>${esc(a.body)}</span></p></div>
+    return `<div class="card askcard promptcard" style="--room:var(--mint)" data-ask="${esc(a.id)}"><div class="askq">${avatar(R.members.find(m => m.id === a.user_id) || { id:a.user_id })}<p><b>${esc(who(R, a.user_id))}</b> ${mine ? "asked" : "asks"}<span>${esc(a.body)}</span></p></div>
       ${a.answers.length ? `<div class="askans">${a.answers.map(x => { const w = works[x.work_id] || {};
         return `<div class="askw"><button class="aska" data-gw="${esc(x.work_id)}">${cover(w)}<b>${esc(w.title || "")}</b><small>${esc(who(R, x.user_id))}${x.note ? ` · “${esc(x.note)}”` : ""}</small></button>${x.user_id === me.id ? `<button class="askx" data-unask="${esc(a.id)}|${esc(x.work_id)}">Take back</button>` : ""}</div>`; }).join("")}</div>` : `<p class="sub gline" style="margin:8px 0 0">No answers yet.</p>`}
       <div class="askacts">${a.closed ? `<span class="tag dim">answered</span>` : mine ? `<button class="chip" data-askdone="${esc(a.id)}">That's answered</button>` : `<button class="chip pickchip" data-askans="${esc(a.id)}">Suggest something</button>`}</div></div>`; }).join("")
@@ -10772,7 +10803,7 @@ function nightHTML(R, n, g) {
   const ahead = lead.n && vs.filter(v => v.choice === lead.id).length > Math.max(0, ...n.options.filter(id => id !== lead.id).map(id => vs.filter(v => v.choice === id).length));
   const date = new Date(n.at + "T12:00:00").toLocaleDateString("en-GB", { day:"numeric", month:"short" });
   const by = n.created_by === me.id ? "you" : (R.members.find(m => m.id === n.created_by)?.handle || "someone");
-  return `<div class="card game nightcard"><div class="h"><span>Watch night</span><span class="tag dim">${esc(date)}</span></div>
+  return `<div class="card game nightcard promptcard" style="--room:var(--pink)"><div class="h"><span>Watch night</span><span class="tag dim">${esc(date)}</span></div>
     <div class="gprompt" style="font-size:22px">${esc(nightLabel(n.at))}: which one?</div>
     ${gatherHTML(R, n, vs)}
     <div class="nopts">${n.options.map(id => { const w = works[id] || {}, c = vs.filter(v => v.choice === id).length;
@@ -10780,7 +10811,7 @@ function nightHTML(R, n, g) {
     <p class="sub gline">${mine ? "" : "<b>Tap one to vote.</b> "}${vs.length} of ${R.members.length} voted · put to the room by ${esc(by)}${n.created_by === me.id ? ` · <button class="linkish" id="nightOff">call it off</button>` : ""}</p></div>`; }
 function nightAfterHTML(R, n, g) {
   const lead = nightLeader(n, g), w = works[lead.id] || {};
-  return `<div class="card game nightcard" data-night="${esc(n.id)}"><div class="h"><span>The room's verdict</span><span class="tag dim">${esc(nightLabel(n.at))}</span></div>
+  return `<div class="card game nightcard promptcard" style="--room:var(--pink)" data-night="${esc(n.id)}"><div class="h"><span>The room's verdict</span><span class="tag dim">${esc(nightLabel(n.at))}</span></div>
     <div class="nverdict">${cover(w)}<div><b>${esc(w.title || "")}</b><small>won the vote, ${lead.n} ${lead.n === 1 ? "vote" : "votes"}</small><div id="nightScores"><p class="sub">Gathering the scores…</p></div></div></div></div>`; }
 /* Picking what to watch was three cards that did one job: swipe the room's lists, see the
    matches, plan a night and vote. Now it's one card that moves along — swipe, match,
