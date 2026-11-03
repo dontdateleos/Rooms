@@ -2161,14 +2161,12 @@ nav button .dot{top:0;right:calc(50% - 24px)}
 .wk-card{flex:none;width:96px;border:0;background:none;padding:0;font:inherit;cursor:pointer;text-align:left;color:var(--ink)}
 .tr-thumb{display:block;width:96px;height:171px;border-radius:12px;overflow:hidden;background:var(--cream2)}.tr-thumb img{width:100%;height:100%;display:block}
 .wk-card small{display:block;font-size:11.5px;font-weight:700;margin-top:5px;color:var(--mute);line-height:1.25}
-/* page titles: a thick marker stroke behind the word, in the page's colour */
-.pagetitle:not(:has(.feedpick)){width:fit-content;max-width:100%;position:relative;isolation:isolate}
-.pagetitle:not(:has(.feedpick))::before,.roomhero .feedpick::before{content:"";position:absolute;left:-.06em;right:-.1em;bottom:.08em;height:.36em;
-  background:var(--mk,var(--butter));border-radius:.2em .5em .3em .6em;rotate:-1.5deg;z-index:-1;opacity:.9;pointer-events:none}
-.roomhero .feedpick{position:relative;isolation:isolate}
-.roomhero .feedpick::before{right:30px;background:#FFF7EC;opacity:.75}
-#tab-people .pagetitle{--mk:var(--butter)}
-#tab-clubs .pagetitle{--mk:var(--pink)}
+/* page titles: part of the word sits in a coloured block, placed, tipped and rounded
+   differently on each one so no two titles look the same */
+.pagetitle .mk{display:inline-block;background:var(--mkc,var(--mk,var(--butter)));color:var(--onAccent);border-radius:var(--rad,.16em);
+  padding:.03em .07em .05em;margin:0 .03em;rotate:var(--r,0deg);line-height:.95}
+.roomhero .pagetitle .mk{--mkc:#FFF7EC}
+.roomhero .feedpick .hl{padding:.12em .1em;margin:-.12em -.1em}
 /* the slim top block: same colour, one short row */
 .hero.slim{display:flex;align-items:center;gap:12px;padding:12px 12px 12px 16px;border-radius:20px}
 .hero.slim::before{content:none}
@@ -3386,7 +3384,7 @@ html.svopen .toast{z-index:21}
   <section id="tab-auth" class="on"><div class="auth" id="authBody"></div></section>
   <section id="tab-doors"><div id="doorsBody"></div></section>
   <section id="tab-people"><div id="peopleBody"></div></section>
-  <div class="libbar" id="libBar" hidden><h2 class="pagetitle" data-pagetitle="Queue">Queue</h2><div class="seg glide ul" role="tablist" aria-label="Your queue"><span class="segglide"></span>
+  <div class="libbar" id="libBar" hidden><h2 class="pagetitle" data-pagetitle="Queue"><span class="mk" style="--r:5deg;--rad:.14em">Q</span>ueue</h2><div class="seg glide ul" role="tablist" aria-label="Your queue"><span class="segglide"></span>
     <button data-lib="shelf" role="tab">Up next</button><button data-lib="archive" role="tab">Diary</button><button data-lib="ranked" role="tab">Ranked</button></div></div>
   <section id="tab-archive"><div id="archiveBody"></div></section>
   <section id="tab-shelf"><div id="shelfBody"></div></section>
@@ -7542,6 +7540,22 @@ function wireCaughtUp(root) { const el = $(".caughtup", root); if (!el) return;
   if (REDUCED || !("IntersectionObserver" in window)) { el.classList.add("hit"); return; }
   const io = new IntersectionObserver(xs => { if (!xs.some(x => x.isIntersecting)) return; el.classList.add("hit"); buzz(5); io.disconnect(); }, { threshold:.9 });
   io.observe(el); }
+/* ---------- the block in a page title ----------
+   Each page's title has its own: which letters, which way it tips, how round it is. A
+   room's name picks its block from the name itself, so every room looks different but
+   the same room always looks the same. */
+const TITLE_MARKS = { Feed:{ at:[1, 3], r:-4, col:"butter", rad:".24em" }, Queue:{ at:[0, 1], r:5, rad:".14em" }, Stacks:{ at:[3, 6], r:-1.5, col:"pink", rad:".18em" } };
+function markHTML(t, sp) { const [a, b] = sp.at;
+  if (!(b > a) || !t.slice(a, b).trim()) return esc(t);
+  return `${esc(t.slice(0, a))}<span class="mk" style="--r:${sp.r}deg;--rad:${sp.rad}${sp.col ? `;--mkc:var(--${sp.col})` : ""}">${esc(t.slice(a, b))}</span>${esc(t.slice(b))}`; }
+const titleMark = t => TITLE_MARKS[t] ? markHTML(t, TITLE_MARKS[t]) : esc(t);
+function roomMark(name) { const t = String(name || ""); if (t.length < 2) return esc(t);
+  const h = avHash(t), sp = t.lastIndexOf(" "), first = t.indexOf(" "), pick = h % 4;
+  const at = pick === 0 && sp > 0 ? [sp + 1, t.length]
+    : pick === 1 ? [0, 1]
+    : pick === 2 && first > 0 && first <= 5 ? [0, first]
+    : [Math.max(sp + 1, t.length - 3), t.length];
+  return markHTML(t, { at, r:[-4, -2, 2, 4][(h >> 3) % 4], rad:[".12em", ".18em", ".24em"][(h >> 5) % 3] }); }
 function pagerHTML(places, curKey, o = {}) {
   const at = Math.max(0, places.findIndex(p => p.key === curKey)), cur = places[at], many = places.length > 1;
   const id = o.id ? ` id="${o.id}"` : "";
@@ -7549,12 +7563,12 @@ function pagerHTML(places, curKey, o = {}) {
   if (o.mode === "chips") return `<div class="pager pchips"${id}>${many ? `<div class="chiprow" role="tablist">${places.map((p, i) =>
       `<button class="chip pchip ${p === cur ? "on" : ""}" data-place="${esc(p.key)}" role="tab" aria-selected="${p === cur}">${p.key ? `<i style="background:${p.col}"></i>` : ""}${esc(i === 0 && o.allLabel ? o.allLabel : p.name)}</button>`).join("")}</div>` : ""}</div>`;
   /* a few places side by side (the season, your clubs): the page's name, then labelled tabs */
-  if (o.mode === "tabs") return `<div class="pager ptabs"${id}>${o.title ? `<h2 class="pagetitle" data-pagetitle="${esc(o.title)}">${esc(o.title)}</h2>` : ""}${o.under || ""}
+  if (o.mode === "tabs") return `<div class="pager ptabs"${id}>${o.title ? `<h2 class="pagetitle" data-pagetitle="${esc(o.title)}">${titleMark(o.title)}</h2>` : ""}${o.under || ""}
       <div class="seg glide ul" role="tablist"><span class="segglide" aria-hidden="true"></span>${places.map(p =>
       `<button class="${p === cur ? "on" : ""}" data-place="${esc(p.key)}" role="tab" aria-selected="${p === cur}">${esc(p.name)}</button>`).join("")}</div></div>`;
   /* which room you're in: its name is the title, and tapping it lists everywhere you can go */
   const DOWN = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>`;
-  const name = `<i class="tdot" style="background:${cur.col}"></i><span class="hl">${esc(cur.name)}</span>`;
+  const name = `<i class="tdot" style="background:${cur.col}"></i><span class="hl">${o.titleId === "feedPick" ? roomMark(cur.name) : esc(cur.name)}</span>`;
   return `<div class="pager ptitle"${id}><h2 class="pagetitle" data-pagetitle="${esc(cur.name)}">${o.titleId
       ? `<button class="feedpick" id="${o.titleId}" aria-haspopup="dialog" aria-label="${esc(cur.name)} · ${esc(o.titleHint || "see them all")}">${name}${DOWN}</button>`
       : `<span class="feedpick">${name}</span>`}</h2></div>`; }
@@ -8369,7 +8383,7 @@ function paintStoryRow() { const row = $("#storyRow"); if (!row) return; const {
 
 async function renderPeople() {
   const body = $("#peopleBody"); if (!body || !me) return; const gen = ++peopleGen;
-  if (!$("#storyRow", body)) body.innerHTML = `<h2 class="pagetitle" data-pagetitle="Feed">Feed</h2><div class="storyrow" id="storyRow"></div><div id="pplFol">${skeleton(3, true)}</div>`;
+  if (!$("#storyRow", body)) body.innerHTML = `<h2 class="pagetitle" data-pagetitle="Feed">${titleMark("Feed")}</h2><div class="storyrow" id="storyRow"></div><div id="pplFol">${skeleton(3, true)}</div>`;
   const ids = follows.map(f => f.followee);
   let fol = [], all = [];
   await Promise.all([
@@ -8386,7 +8400,7 @@ async function renderPeople() {
   const priv = new Set(myEntries.filter(e => e.private).map(e => e.id));
   storyGroups = storyGroupsOf([...fol, ...all], all.filter(e => e.user_id === me.id && !priv.has(e.id)));
   const shown = fol.slice(0, 40);
-  body.innerHTML = `<h2 class="pagetitle" data-pagetitle="Feed">Feed</h2>
+  body.innerHTML = `<h2 class="pagetitle" data-pagetitle="Feed">${titleMark("Feed")}</h2>
     <div class="storyrow" id="storyRow" role="list" aria-label="Who's logged something lately"></div>
     <div id="pplDaily"></div>
     <div id="pplFol">${!ids.length
