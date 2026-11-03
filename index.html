@@ -2143,6 +2143,14 @@ nav button .dot{top:0;right:calc(50% - 24px)}
 .hero .gline{margin:0 0 12px;position:relative}.hero .gline:last-child{margin-bottom:0}
 .hero .gline b{font-weight:750;opacity:1}
 .hero-go{width:100%;position:relative;display:flex;align-items:center;justify-content:center;gap:8px}
+/* Up next keeps its big posters: a tall fan that runs off the right edge */
+.hero.upbig{overflow:hidden}
+.hero.upbig .hero-body{min-height:226px;margin-bottom:6px}
+.hero.upbig .gprompt{font-size:25px;line-height:1.08;margin:0}
+.hero.upbig .hero-fan,.hero.upbig .hero-fan.four{padding:12px 0 6px;margin-right:-60px}
+.hero.upbig .hero-po,.hero.upbig .hero-fan.four .hero-po{width:134px;margin-right:-98px;filter:drop-shadow(0 12px 18px rgba(21,19,32,.3))}
+.hero.upbig .hero-po:last-child{margin-right:0}
+.hero.upbig .hero-po .co,.hero.upbig .hero-fan.four .hero-po .co{width:134px;height:201px;border-radius:13px}
 .hero-go svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2}.hero-go svg circle{fill:currentColor;stroke:none}
 /* your page: who you are, in your colour, the way a room's top is */
 .youhero .yh-top{display:flex;align-items:center;gap:12px;position:relative}
@@ -9041,7 +9049,7 @@ function renderShelf() {
       : first ? `Next up: ${esc(first.title)}.` : `All caught up. ${soonCount} still to come out.`;
     const bits = [on.length ? `${on.length} on the go` : "", soonCount ? `${soonCount} coming` : "", mineCount ? `${mineCount} on your services` : "", done ? `${done} done` : ""].filter(Boolean);
     const fan = left.slice(0, 3);
-    return heroHTML({ col:P.shelfFilter ? KIND_TONE[P.shelfFilter] : "mint", label:"Up next", tag:`${all.length} in here`, head, meta:bits.join(" · "), fan,
+    return heroHTML({ cls:"upbig", col:P.shelfFilter ? KIND_TONE[P.shelfFilter] : "mint", label:"Up next", tag:`${all.length} in here`, head, meta:bits.join(" · "), fan,
       btn:{ id:"spinOpen", icon:ICON_DICE, label:left.length >= 2 ? "Pick one for me" : "Find me something", aria:left.length >= 2 ? `Can't decide? Pick from ${left.length}` : "Spin the best of something" } }); })();
   $("#shelfBody").innerHTML = `${pagerHTML(places, P.shelfFilter || "", { id:"shelfPager", mode:"chips", allLabel:"All" })}${all.length ? upTop : `<p class="sub shelfsub">Everything you meant to get to.</p>`}
     <div class="shelfsearch"><input id="search" type="search" placeholder="Search ${esc(scope)}" aria-label="Search ${esc(scope)}" autocomplete="off">${all.length ? `<button class="cabfind ${P.when ? "on" : ""}" id="shelfFilterBtn" aria-label="Filter Up next">${SLIDERS}</button>` : ""}${
