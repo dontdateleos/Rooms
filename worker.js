@@ -39,6 +39,7 @@ export default {
        it — neither says where it came from, so this one route comes before the origin
        check. It only ever sends people on to the app's own address. */
     if (url.pathname.startsWith("/i/")) return await invitePage(request, url, env);
+    if (url.pathname.startsWith("/c/") || url.pathname.startsWith("/s/")) return await sharePage(request, url, env);
 
     /* fail closed. an unrestricted worker is an open proxy: anyone who finds the
        url spends this worker's TMDB key and IGDB credentials. so a missing ORIGIN
@@ -241,6 +242,42 @@ async function invitePage(request, url, env) {
   return new Response(request.method === "HEAD" ? null : html, { headers:{ "Content-Type":"text/html; charset=utf-8", "Cache-Control":"public, max-age=300", "Access-Control-Allow-Origin":"*" } });
 }
 
+/* ---------- a shared Five Clues or stack ----------
+   The same as an invite: a page a chat app can read for its preview, that sends a person
+   straight on to the app. /c/<medium> is today's Five Clues; /s/<id> is a stack, with its
+   name, who made it and its first poster. */
+async function sharePage(request, url, env) {
+  const [, kindOf, raw = "", ...rest] = url.pathname.split("/");
+  const home = (env.ORIGIN || "").split(",")[0].trim();
+  const path = ("/" + rest.join("/").replace(/[^A-Za-z0-9._\/-]/g, "")).replace(/\/{2,}/g, "/");
+  let title, desc, img = `${home}${path.replace(/[^/]*$/, "")}icons/og.png`, to, cover = null;
+  if (kindOf === "c") { const k = ["film", "tv", "book", "game"].includes(raw) ? raw : "any";
+    const what = { film:"film", tv:"show", book:"book", game:"game", any:"film, show, book or game" }[k];
+    title = "Five Clues · Rooms"; desc = `Can you guess today's ${what} in five clues? One a day, the same for everyone.`;
+    to = `${home}${path}#clues${k === "any" ? "" : "-" + k}`; }
+  else { const id = decodeURIComponent(raw).replace(/[^\w:-]/g, "").slice(0, 60);
+    to = `${home}${path}#stack=${id}`; title = "A stack on Rooms"; desc = "Films, shows, books and games, stacked by someone on Rooms.";
+    if (/^[0-9a-f-]{36}$/.test(id) && request.method !== "HEAD") try {
+      const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/peek_stack`, { method:"POST",
+        headers:{ "Content-Type":"application/json", apikey:env.SUPABASE_ANON || SUPABASE_ANON, Authorization:`Bearer ${env.SUPABASE_ANON || SUPABASE_ANON}` },
+        body:JSON.stringify({ p_id:id }) });
+      const st = r.ok ? (await r.json())[0] : null;
+      if (st) { title = st.title; desc = `A stack of ${st.n} by ${st.handle} on Rooms${st.note ? ` — ${st.note}` : ""}`;
+        cover = (st.covers || []).find(c => /^https:\/\/(image\.tmdb\.org|images\.igdb\.com|covers\.openlibrary\.org)\//.test(c)); } } catch {}
+    if (cover) img = cover.replace("/t/p/w342/", "/t/p/w780/"); }
+  const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${escHTML(title)}</title>
+<meta property="og:type" content="website"><meta property="og:site_name" content="Rooms">
+<meta property="og:title" content="${escHTML(title)}"><meta property="og:description" content="${escHTML(desc)}">
+<meta property="og:image" content="${escHTML(img)}">${cover ? "" : `<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">`}
+<meta name="twitter:card" content="summary_large_image"><meta name="theme-color" content="#16131C">
+<meta http-equiv="refresh" content="0;url=${escHTML(to)}">
+<style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#16131C;color:#F4EDE2;font:600 16px system-ui,sans-serif;text-align:center;padding:24px}a{color:#FFE066}</style>
+</head><body><p>${escHTML(title)}…<br><a href="${escHTML(to)}">Open Rooms</a></p>
+<script>location.replace(${JSON.stringify(to).replace(/</g, "\\u003c")})</script></body></html>`;
+  return new Response(request.method === "HEAD" ? null : html, { headers:{ "Content-Type":"text/html; charset=utf-8", "Cache-Control":"public, max-age=300", "Access-Control-Allow-Origin":"*" } });
+}
+
 /* ---------- notifications ----------
    Web push, done by hand with the platform's own crypto (RFC 8291 for the message,
    RFC 8292 for who's sending). The sender's own sign-in asks the database who may be
@@ -401,5 +438,9 @@ async function runSchedule(env, at = localNow(env.TZ || "Australia/Sydney")) {
         body:`${R.answers} answers to this week's question. Pick your favourite before Sunday.`, url:link, tag:`prompt-${R.room_id}`.slice(0, 60) });
       if (hour === 17 && R.night) await toRoom(R.room_id, { title:`Watch night tonight in ${R.name}`,
         body:"Vote on what you're watching before it starts.", url:link, tag:`night-${R.room_id}`.slice(0, 60) }); } }
+  /* Five Clues, for whoever asked for a nudge at this hour (the hour is kept in UTC) */
+  { const r = await svcRpc(env, "push_targets_clues", { p_hour:new Date().getUTCHours() }).catch(() => null);
+    if (r?.ok) { const subs = await r.json(); if (subs.length) sent.push(await deliver(env, subs, { title:"Today's Five Clues is up",
+      body:"A new one to guess. How few clues will it take you?", url:"./#clues", tag:"clues" })); } }
   return { at, sent };
 }

@@ -57,6 +57,10 @@ struct RoomSnapshot: Codable {
     var tonightCover: String?
     var logs: [Log]
     var updated: Double
+    /// today's Five Clues: the first clue (or how you did), its number and the day it's for
+    var clue: String? = nil
+    var clueNo: Int? = nil
+    var clueDay: String? = nil
 }
 
 #if canImport(ActivityKit)

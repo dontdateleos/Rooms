@@ -72,6 +72,13 @@ struct Poster: View {
     }
 }
 
+/// the puzzle line only counts on the day it was made for
+func todaysClue(_ s: RoomSnapshot) -> String? {
+    guard let c = s.clue, let d = s.clueDay else { return nil }
+    let f = DateFormatter(); f.dateFormat = "yyyy-MM-dd"; f.locale = Locale(identifier: "en_US_POSIX")
+    return d == f.string(from: Date()) ? c : nil
+}
+
 struct RoomWidgetView: View {
     @Environment(\.widgetFamily) var family
     let entry: RoomEntry
@@ -121,7 +128,9 @@ struct RoomWidgetView: View {
                 }
             }
             Spacer(minLength: 0)
-            if let t = s.tonight {
+            if let c = todaysClue(s) {
+                Text("Five Clues · \(c)").font(.system(size: 11, weight: .semibold)).foregroundColor(Color(hex: "#8FD3FF")).lineLimit(2)
+            } else if let t = s.tonight {
                 Text("Tonight · \(t)").font(.system(size: 11, weight: .semibold)).foregroundColor(Look.mute).lineLimit(1)
             }
         }
@@ -148,6 +157,13 @@ struct RoomWidgetView: View {
                 }
             }
             Spacer(minLength: 0)
+            if let c = todaysClue(s) {
+                HStack(spacing: 6) {
+                    Text(s.clueNo != nil ? "Five Clues #\(s.clueNo!)" : "Five Clues").font(.system(size: 11, weight: .heavy)).foregroundColor(Color(hex: "#151320"))
+                        .padding(.horizontal, 7).padding(.vertical, 2).background(Capsule().fill(Color(hex: "#8FD3FF")))
+                    Text(c).font(.system(size: 11, weight: .semibold)).foregroundColor(Look.ink).lineLimit(1)
+                }
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }

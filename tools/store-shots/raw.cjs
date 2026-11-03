@@ -26,11 +26,12 @@ const { chromium } = require('playwright'); const D = __dirname;
   await tab('Queue'); await p.locator("#libBar [data-lib='shelf']").click(); await p.waitForTimeout(1200);
   await p.locator('[data-t]').first().click(); await p.waitForTimeout(1300);
   const rb = await p.locator('#rateWrap').boundingBox(); await p.mouse.click(rb.x + rb.width * .9, rb.y + rb.height / 2); await p.waitForTimeout(700);
-  await p.locator('#sheetBody .chip', { hasText: 'the atmosphere' }).first().click().catch(() => {}); await shot(4); await back();
-  // 5 picks for you, on your own page (behind your name)
-  await p.locator('#meBtn').click(); await p.waitForTimeout(2500); await p.evaluate(() => { const r = document.querySelector('#recCard'); scrollTo(0, r.getBoundingClientRect().top + scrollY - 92); }); await shot(5);
-  // 6 watch together
-  await tab('Rooms'); await p.locator('[data-rsecbtn="play"]').first().evaluate(e => e.click()); await p.waitForTimeout(3200); await top(); await shot(6);
+  await p.locator('#sheetBody .chip', { hasText: 'the vibe' }).first().click().catch(() => {}); await shot(4); await back();
+  // 5 stacks: lists anyone can make and find
+  await tab('Stacks'); await p.waitForTimeout(2500); await top(); await shot(5);
+  // 6 play: Five Clues, the week's table and the party games
+  await tab('Rooms'); await p.locator('[data-rsecbtn="play"]').first().evaluate(e => e.click()); await p.waitForTimeout(3500);
+  await p.evaluate(() => { const r = document.querySelector('#dailyBox'); scrollTo(0, r.getBoundingClientRect().top + scrollY - 150); }); await shot(6);
   // 7 the Feed page: rings across the top, your people's logs below
   await tab('Feed'); await p.waitForTimeout(1500); await top(); await shot(7);
   // 8 diary and rankings

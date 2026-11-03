@@ -49,7 +49,15 @@ PRIVATE BY DESIGN
 No ads and no tracking. Your rooms are yours. Report and block are always one tap away, and you can download everything or close your account from Settings.
 
 ## What's new in this version
-The first version of Rooms on the App Store.
+(1.0 said: "The first version of Rooms on the App Store." This is for 1.0.1.)
+
+Stacks: make a stack of films, shows, books or games, find everyone else's, and save the ones you like. Filter by genre, search inside them, or turn one into a watch night with your room.
+
+Five Clues: a new puzzle every day. Guess the film, show, book or game in as few clues as you can, keep a streak going, and see how your room's doing this week.
+
+Party games for your room: Fake Blurb, Bad Pitch, Title Mash, Who Rated It? and Hot Take Court. Everyone plays on their own phone, in their own time.
+
+Also: Five Clues on your home-screen widget, a simpler way to say what you loved, quicker ranking, and new tab icons.
 
 ## Screenshots
 `store/screenshots/iphone-6.9-1.jpg` to `-8.jpg`, 1320×2868: drop all eight into the **6.9" Display**

@@ -2091,6 +2091,10 @@ nav button .dot{top:0;right:calc(50% - 24px)}
 .stkhead .tllike.on{background:var(--onAccent);color:#FFF7EC}
 .stkhead .tlseen small{color:rgba(21,19,32,.72)}.stkhead .tlseen b{color:var(--onAccent)}
 .stkhead .pbar{background:rgba(21,19,32,.14)}.stkhead .pbar i{background:var(--onAccent)}
+.pg-rep{display:block;margin:12px auto 0;font-size:12px;opacity:.7}
+.clu-streak{margin-top:4px}.clu-streak b{color:var(--onAccent)}
+.clu-st{margin:4px 0 0;font-size:13px;color:var(--good);font-weight:700}
+.youstreak{margin:8px 2px 0;font-size:13px}.youstreak b{color:var(--ink)}
 .chip.addown{border:1.5px dashed color-mix(in srgb,var(--mute) 60%,transparent);background:none;color:var(--mute)}
 .stk-bar{display:flex;gap:8px;align-items:center;margin:12px 0 14px}
 .stk-bar input{flex:1;min-width:0;margin:0}
@@ -3344,13 +3348,18 @@ const native = (fn, args) => { try { return plug("RoomsNative")?.[fn]?.(args)?.c
 const cssColour = name => getComputedStyle(document.documentElement).getPropertyValue("--" + name).trim();
 /* the room's newest logs and tonight's pick, for the widget */
 let widgetLast = "";
-function widgetSync(R, es) { if (!NATIVE || DEMO || !R) return;
+/* today's Five Clues rides along to the widget: the first clue, or how you did */
+let widgetArgs = null;
+function widgetClue() { const pz = cluesCache[today() + "any"], st = cluesState("any");
+  if (!pz) { if (NATIVE && !DEMO && !widgetClue.asked) { widgetClue.asked = 1; cluesToday(today(), "any").then(() => { widgetClue.asked = 0; if (widgetArgs) widgetSync(...widgetArgs); }).catch(() => {}); } return {}; }
+  return { clueNo:pz.no, clueDay:today(), clue:st.done ? (st.solved ? `You got it on clue ${st.shown}` : "Not today. A new one tomorrow") : pz.clues[0] }; }
+function widgetSync(R, es) { if (!NATIVE || DEMO || !R) return; widgetArgs = [R, es];
   const logs = es.filter(e => !e.part && !isQuiet(e)).slice(0, 4).map(e => { const w = works[e.work_id] || e.works || {};
     return { who:e.user_id === me.id ? "You" : (e.profiles?.handle || profOfId(e.user_id).handle || "Someone"), title:w.title || "", kind:w.kind || kindOf(e.work_id),
       stars:Math.round(e.score) / 2, cover:w.cover || null }; }).filter(l => l.title);
   const n = myNow.find(x => x.works || works[x.work_id]), nw = n && (n.works || works[n.work_id]);
   const next = nw || (activeList()?.items || []).map(id => works[id]).find(w => w && !logged(w.id) && !isSoon(w));
-  const snap = { room:R.name, colour:cssColour(roomColour(R)) || "#F7B3CF", tonight:next?.title || null, tonightCover:next?.cover || null, logs };
+  const snap = { room:R.name, colour:cssColour(roomColour(R)) || "#F7B3CF", tonight:next?.title || null, tonightCover:next?.cover || null, logs, ...widgetClue() };
   const json = JSON.stringify(snap); if (json === widgetLast) return; widgetLast = json;
   native("setWidget", { json:JSON.stringify({ ...snap, updated:Date.now() }) }); }
 /* "Watching now" on the lock screen follows what you're in the middle of */
@@ -3885,7 +3894,7 @@ const loveWord = (k, kind) => k === "the pacing" ? (kind === "book" ? "couldn't 
 const GAME_KEYS = { reactions:["entry_id","user_id"], room_answers:["room_id","week","user_id"], room_brackets:["room_id","month"], room_votes:["room_id","game","voter"], room_ask_answers:["ask_id","user_id","work_id"], daily_scores:["user_id","game","day"] };
 function makeLocalSb(seed) {
   const KEY = "rooms.db";
-  const blank = { profile:null, signedOut:false, works:{}, profiles:[], entries:[], lists:[], list_items:[], rooms:[], room_members:[], clubs:[], club_members:[], club_votes:[], reactions:[], replies:[], top_lists:[], top_list_items:[], follows:[], nows:[], handovers:[], seen:[], blocks:[], reports:[], settings:[], handles:[], room_answers:[], room_brackets:[], room_votes:[], room_nights:[], room_asks:[], room_ask_answers:[], daily_scores:[], room_rounds:[], round_answers:[], theme_lists:[], theme_list_items:[], theme_list_likes:[] };
+  const blank = { profile:null, signedOut:false, works:{}, profiles:[], entries:[], lists:[], list_items:[], rooms:[], room_members:[], clubs:[], club_members:[], club_votes:[], reactions:[], replies:[], top_lists:[], top_list_items:[], follows:[], nows:[], handovers:[], seen:[], blocks:[], reports:[], settings:[], handles:[], room_answers:[], room_brackets:[], room_votes:[], room_nights:[], room_asks:[], room_ask_answers:[], daily_scores:[], room_rounds:[], round_answers:[], theme_lists:[], theme_list_items:[], theme_list_likes:[], theme_list_saves:[] };
   const db = Object.assign({}, blank, seed || JSON.parse(localStorage.getItem(KEY) || "{}"));
   for (const e of db.entries || []) if (Array.isArray(e.loved)) e.loved = [...new Set(e.loved.map(k => loveWord(k, String(e.work_id).split(":")[0])))];
   if (!db.nows) db.nows = [];                 /* a log written before v15 has no such key */
@@ -5123,7 +5132,24 @@ async function notify({ room = null, to = null, title, body = "", tag = "", sec 
 function takeRoomLink() { const m = /[#&]room=([\w-]{8,40})(?:&sec=(\w+))?/.exec(location.hash); if (!m) return;
   history.replaceState(null, "", location.pathname + location.search);
   if (rooms.some(r => r.id === m[1])) { P.activeRoom = m[1]; P.feed = "room"; P.feedPicked = true; if (m[2]) P.roomSec = m[2]; saveP(); } }
-addEventListener("hashchange", () => { if (!me?.id) return;
+/* a shared Five Clues or stack link: kept until there's a page to open it on */
+const DEEP_KEY = "rooms.deep";
+function takeDeep() {
+  const h = location.hash, c = /^#clues(?:-(film|tv|book|game|any))?$/.exec(h), st = /^#stack=([\w:-]{2,60})$/.exec(h);
+  if (c || st) { try { localStorage.setItem(DEEP_KEY, JSON.stringify(c ? { clues:c[1] || "any" } : { stack:st[1] })); } catch {}
+    history.replaceState(null, "", location.pathname + location.search); }
+  try { return JSON.parse(localStorage.getItem(DEEP_KEY) || "null"); } catch { return null; } }
+const dropDeep = () => { try { localStorage.removeItem(DEEP_KEY); } catch {} };
+function useDeep() { const d = takeDeep(); if (!d) return; dropDeep();
+  if (d.clues) { P.cluesKind = d.clues; saveP(); setTimeout(() => openClues(null, d.clues), 700); }
+  if (d.stack) setTimeout(() => { const def = ROOMS_STACKS.find(x => x.id === d.stack); if (def) openCurated(def); else openThemeList(d.stack); }, 700); }
+/* nobody signed in yet: a shared Five Clues link still plays — the sign-in screen waits
+   underneath, and the result says what joining adds. A stack waits until they're in. */
+function guestDeep() { const d = takeDeep(); if (!d?.clues) return; dropDeep(); hideSplash(); setTimeout(() => openClues(null, d.clues), 500); }
+const cluesLink = k => inviteViaWorker ? `${proxy()}/c/${k}${homePath()}` : `${homeUrl()}#clues${k !== "any" ? "-" + k : ""}`;
+const stackLink = id => inviteViaWorker ? `${proxy()}/s/${encodeURIComponent(id)}${homePath()}` : `${homeUrl()}#stack=${id}`;
+addEventListener("hashchange", () => { if (/^#(clues|stack=)/.test(location.hash)) { if (me?.id) useDeep(); else guestDeep(); return; }
+  if (!me?.id) return;
   if (/[#&]room=/.test(location.hash)) { takeRoomLink(); switchTab("doors"); }
   else if (/^#(seasons|stacks)\b/.test(location.hash)) { history.replaceState(null, "", location.pathname + location.search); switchTab("clubs"); } });
 /* the switch, wherever it's shown */
@@ -6759,7 +6785,7 @@ async function enter() { hideSplash();
   booting = true;
   /* a "season ends in three nights" notification opens on the season */
   const toSeasons = /^#(seasons|stacks)\b/.test(location.hash); if (toSeasons) history.replaceState(null, "", location.pathname + location.search);
-  switchTab(toSeasons ? "clubs" : rooms.length ? "doors" : "people"); movePill(true); checkNew(); joinMeChannel();
+  switchTab(toSeasons ? "clubs" : rooms.length ? "doors" : "people"); movePill(true); checkNew(); joinMeChannel(); useDeep(); syncCluesRemind();
   if (!P.onboarded && !myEntries.length) setTimeout(openWelcome, 400); else if (P.tourDue) maybeTour();
   setTimeout(askTerms, 900);
 }
@@ -11155,8 +11181,9 @@ async function openClues(after, k = "any") {
   try { pz = await cluesToday(today(), k); } catch { openSheet(`<h3>Five Clues</h3><p class="sub">Today's couldn't load. Try again in a bit.</p>`); return; }
   let s = cluesState(k), t = null;
   const save = () => { P.cluesBy = { ...(P.cluesBy || {}), [k]:s }; saveP(); };
-  const finish = async () => { s.done = true; save(); cluesAll = null; buzz(s.solved ? [10, 40, 16] : 20);
-    if (!DEMO) try { await q(sb.from("daily_scores").insert({ user_id:me.id, game:cluesGame(k), day:s.day, clues:s.shown, solved:s.solved })); } catch {}
+  const finish = async () => { s.done = true; save(); cluesAll = null; if (widgetArgs) setTimeout(() => widgetSync(...widgetArgs), 0); buzz(s.solved ? [10, 40, 16] : 20);
+    if (!me) {}
+    else if (!DEMO) try { await q(sb.from("daily_scores").insert({ user_id:me.id, game:cluesGame(k), day:s.day, clues:s.shown, solved:s.solved })); } catch {}
     else try { await q(sb.from("daily_scores").upsert({ user_id:me.id, game:cluesGame(k), day:s.day, clues:s.shown, solved:s.solved })); } catch {}
     draw(); if (s.solved && !REDUCED) setTimeout(() => { const c = $(".clu-ans .co"); if (c) burstAt(c, 24); }, 200); after?.(); };
   const wrong = label => { s.guesses.push(label); if (s.shown >= 5) { s.shown = 6; s.solved = false; finish(); return; } s.shown++; save(); draw(true); };
@@ -11165,13 +11192,15 @@ async function openClues(after, k = "any") {
       <ol class="clu-list">${pz.clues.map((c, i) => `<li class="${i < Math.min(s.shown, 5) || s.done ? "on" : ""}${turned && i === s.shown - 1 ? " turn" : ""}"><span class="n">${i + 1}</span><span class="c">${i < Math.min(s.shown, 5) || s.done ? esc(c).replace(/“|”/g, m => m) : "·  ·  ·"}</span></li>`).join("")}</ol>
       ${s.guesses.length ? `<div class="clu-wrong">${s.guesses.map(g => `<span>${esc(g)}</span>`).join("")}</div>` : ""}
       ${s.done ? `<div class="clu-ans" data-cw="${esc(w.id)}">${cover(w)}<div><b>${esc(w.title)}</b><small>${tag(w.kind)} ${esc(w.year || "")}</small>
-          <p>${s.solved ? `Got it on clue ${s.shown} · <b>${cluePoints(s)} ${cluePoints(s) === 1 ? "point" : "points"}</b>` : "Not this time · 0 points"}</p></div></div>
-        <div class="stack"><button class="btn" id="cluShare">Share how you did</button><button class="btn quiet" id="cluGo">See ${esc(w.title)}</button></div>
+          <p>${s.solved ? `Got it on clue ${s.shown} · <b>${cluePoints(s)} ${cluePoints(s) === 1 ? "point" : "points"}</b>` : "Not this time · 0 points"}</p><p class="clu-st" id="cluSt"></p></div></div>
+        <div class="stack"><button class="btn" id="cluShare">Share how you did</button>${me ? `<button class="btn quiet" id="cluGo">See ${esc(w.title)}</button>` : `<button class="btn ghost" id="cluJoin">Join Rooms to keep a streak</button>`}</div>
         <p class="sub" style="text-align:center">A new one tomorrow.</p>`
       : `<input id="cluQ" type="search" placeholder="Guess the ${esc(K(w.kind).label.toLowerCase())}" autocomplete="off" autocapitalize="none"><div id="cluHits"></div>
         <div class="stack"><button class="btn quiet" id="cluSkip">${s.shown >= 5 ? "Give up" : "Skip to the next clue"}</button></div>`}</div>`);
-    if (s.done) { $("#cluGo").onclick = () => { closeSheet(); if (!works[w.id]) remember(w); openWork(w.id); };
-      $("#cluShare").onclick = async () => { const txt = cluesShare(s, pz);
+    if (s.done) { cluesStreak().then(st => { const el = $("#cluSt"); if (el && st?.cur) el.textContent = `${st.cur} ${st.cur === 1 ? "day" : "days"} in a row${st.cur >= st.best && st.cur > 1 ? " — your best" : ""}`; });
+      const cg = $("#cluGo"); if (cg) cg.onclick = () => { closeSheet(); if (!works[w.id]) remember(w); openWork(w.id); };
+      const cj = $("#cluJoin"); if (cj) cj.onclick = () => closeSheet();
+      $("#cluShare").onclick = async () => { const txt = cluesShare(s, pz) + "\n" + cluesLink(k);
         try { if (navigator.share) await navigator.share({ text:txt }); else { await navigator.clipboard.writeText(txt); say("Copied"); } }
         catch { try { await navigator.clipboard.writeText(txt); say("Copied"); } catch {} } };
       return; }
@@ -11188,6 +11217,27 @@ async function openClues(after, k = "any") {
           if (right) { s.solved = true; finish(); } else wrong(h.title); }); }, 300); }; };
   draw(); }
 /* the card at the top of the room's Play tab, and the room's week of it */
+/* your streak: days in a row you've played any Five Clues, and the longest you've managed.
+   A day not played yet doesn't break it until it's over. */
+let clueDays = null;
+async function cluesStreak() {
+  if (!me) return null;
+  if (!clueDays) try { clueDays = new Set((await q(sb.from("daily_scores").select("day").eq("user_id", me.id).like("game", "clues%"))).map(r => String(r.day).slice(0, 10))); } catch { return null; }
+  if (MEDIA_PICK.some(([k]) => cluesState(k).done)) clueDays.add(today());
+  const days = [...clueDays].sort(), n = d => dayNo(d);
+  let best = 0, run = 0, prev = null;
+  for (const d of days) { run = prev != null && n(d) - n(prev) === 1 ? run + 1 : 1; best = Math.max(best, run); prev = d; }
+  let cur = 0; for (let d = clueDays.has(today()) ? n(today()) : n(today()) - 1; days.some(x => n(x) === d); d--) cur++;
+  return { cur, best }; }
+/* the reminder lives on the server as an hour in UTC, so it's worked out from this phone's
+   clock each time the app opens — that keeps it right across a change of clocks */
+async function syncCluesRemind(force = false) {
+  if (!me || DEMO || sb.__local) return; const h = P.cluesRemind;
+  const utc = h == null ? null : ((h * 60 + new Date().getTimezoneOffset()) / 60 % 24 + 24) % 24;
+  if (!force && P.cluesRemindUtc === utc) return;
+  try { if (utc == null) await q(sb.from("clue_reminders").delete().eq("user_id", me.id));
+    else await q(sb.from("clue_reminders").upsert({ user_id:me.id, hour_utc:Math.round(utc) }));
+    P.cluesRemindUtc = utc; saveP(); } catch {} }
 /* how everyone did today, per puzzle: counts only, never who */
 let cluesAll = null;
 async function cluesEveryone() {
@@ -11208,11 +11258,13 @@ async function paintDaily(R, box, o = {}) {
       return `<button class="chip ${x === k ? "on" : ""}" data-ck="${x}" role="tab" aria-selected="${x === k}">${l}${st.done ? `<em class="${st.solved ? "ok" : "x"}">${st.solved ? cluePoints(st) : "×"}</em>` : ""}</button>`; }).join("")}</div>
     <div class="clu-row"><span class="clu-dots">${[1, 2, 3, 4, 5].map(i => `<i class="${s.done ? (s.solved && i === s.shown ? "ok" : i < s.shown || (!s.solved && i <= 5) ? "x" : "") : i <= s.guesses.length ? "x" : ""}"></i>`).join("")}</span>
       <button class="btn ${s.done ? "ghost" : ""}" id="cluOpen" type="button">${s.done ? "See the answer" : s.guesses.length ? "Keep going" : "Play"}</button></div>
-    <p class="sub gline" id="cluAll"></p></div>${o.everyone ? "" : `<div id="cluTable"></div>`}`;
+    <p class="sub gline" id="cluAll"></p><p class="sub gline clu-streak" id="cluStreak" hidden></p></div>${o.everyone ? "" : `<div id="cluTable"></div>`}`;
   $("#cluOpen", box).onclick = () => openClues(() => paintDaily(R, box, o), k);
   $$("[data-ck]", box).forEach(b => b.onclick = () => { P.cluesKind = b.dataset.ck; saveP(); buzz(4); paintDaily(R, box, o); });
   cluesEveryone().then(rows => { const el = $("#cluAll", box); if (!el) return; const g = rows.find(x => x.game === cluesGame(k));
     el.textContent = g?.played ? `Everyone today: ${g.played} played · ${Math.round(g.solved / g.played * 100)}% got it${g.solved ? ` · most by clue ${Math.round(+g.avg_clues)}` : ""}` : "Nobody's played this one yet today. Be the first."; });
+  cluesStreak().then(st => { const el = $("#cluStreak", box); if (!el || !st || !st.best) return;
+    el.hidden = false; el.innerHTML = st.cur ? `<b>${st.cur} ${st.cur === 1 ? "day" : "days"} in a row</b>${st.best > st.cur ? ` · best ${st.best}` : st.cur > 1 ? " · your best yet" : ""}` : `Your best: ${st.best} ${st.best === 1 ? "day" : "days"} in a row. Play today to start again.`; });
   if (!o.everyone) paintDailyTable(R, $("#cluTable", box)); }
 async function paintDailyTable(R, el) {
   if (!el || !R || R.members.length < 2) return;
@@ -11367,7 +11419,8 @@ function roundHTML(R, r, votes) {
       body = `<div class="pg-opts done">${os.map(o => `<div class="pg-opt ${o.real ? "real" : o.n && o.n === top ? "win" : ""}"><span>${esc(o.text)}</span>
         <small>${o.real ? `the real one · ${o.n ? `${o.n} found it` : "nobody found it"}` : `${esc(whoName(R, o.user))} · ${o.n} ${r.game === "blurb" ? (o.n === 1 ? "fooled" : "fooled") : o.n === 1 ? "vote" : "votes"}`}</small></div>`).join("")}</div>`; } }
   return `<div class="card game promptcard pg" style="--pg:${P2.col};--room:${P2.col}" data-round="${esc(r.id)}"><div class="h"><span>${esc(P2.name)}${p.kind && p.kind !== "any" ? ` <em class="pg-kind">${mediaWord(p.kind)}</em>` : ""}</span><span class="tag dim">${st.phase === "done" ? "the reveal" : st.phase === "vote" ? "voting" : st.phase === "answer" ? "answering" : "over"}</span></div>
-    <small class="pg-by">${esc(whoName(R, r.created_by))} started it · ${esc(noteAgo(r.created_at))}</small>${top}${body}</div>`; }
+    <small class="pg-by">${esc(whoName(R, r.created_by))} started it · ${esc(noteAgo(r.created_at))}</small>${top}${body}
+    ${r.answers.some(a => !a.mine) && st.phase !== "answer" ? `<button class="linky pg-rep" data-prep="${esc(r.id)}">Report an answer</button>` : ""}</div>`; }
 async function paintParty(R, es, box) {
   if (!box || !R || R.members.length < 2) { if (box) box.innerHTML = ""; return; }
   const { rounds, votes } = await loadRounds(R).catch(() => ({ rounds:[], votes:[] }));
@@ -11391,13 +11444,21 @@ async function paintParty(R, es, box) {
     catch (e) { say(/nothing to guess/.test(e.message) ? `Nobody's written enough reviews${pk === "any" ? "" : " of " + K(pk).plural.toLowerCase()} yet` : e.message || "Couldn't start it"); } };
   $$("[data-psend]", box).forEach(b => b.onclick = async () => { const id = b.dataset.psend, ta = $(`[data-pin="${CSS.escape(id)}"]`, box), body = ta.value.trim();
     if (!body) { ta.focus(); return; } if (willNotPost(body)) { say("That word doesn't go up here. Say it another way."); return; }
-    b.disabled = true; try { await q(sb.from("round_answers").insert({ round_id:id, user_id:me.id, body })); buzz(6); say("You're in"); again(); }
+    b.disabled = true; try { await q(sb.from("round_answers").insert({ round_id:id, user_id:me.id, body })); buzz(6); say("You're in");
+      const r = rounds.find(x => x.id === id);
+      if (r && new Set([...(r.answered || []), me.id]).size >= R.members.length) notify({ room:R.id, kind:"reminders", title:`Voting's open: ${PARTY[r.game].name}`, body:`Everyone's answered in ${R.name}. Pick the best one.`, tag:"party-" + id });
+      again(); }
     catch (e) { b.disabled = false; oops(e, "Couldn't send it"); } });
   $$("[data-pgo]", box).forEach(b => b.onclick = async () => { try { await q(sb.from("room_votes").upsert({ room_id:R.id, game:"roundgo:" + b.dataset.pgo, voter:me.id, choice:"go" })); again(); } catch (e) { oops(e, "Couldn't"); } });
   $$("[data-pv]", box).forEach(b => b.onclick = async () => { b.disabled = true;
     try { await q(sb.from("room_votes").upsert({ room_id:R.id, game:"round:" + b.dataset.pv, voter:me.id, choice:b.dataset.pc })); buzz(5); again(); }
     catch (e) { b.disabled = false; oops(e, "Couldn't vote"); } });
-  $$("[data-gw]", box).forEach(x => x.onclick = () => openWork(x.dataset.gw)); wireNudges(R, box); }
+  $$("[data-gw]", box).forEach(x => x.onclick = () => openWork(x.dataset.gw)); wireNudges(R, box);
+  $$("[data-prep]", box).forEach(b => b.onclick = async () => { const r = rounds.find(x => x.id === b.dataset.prep); if (!r) return;
+    const others = r.answers.filter(a => !a.mine);
+    const v = others.length === 1 ? others[0].id : await openAsk(`<h3>Which answer?</h3><div class="stack menu">${others.map(a => `<button class="btn quiet" data-rpa="${esc(a.id)}">${esc(a.body.slice(0, 60))}${a.body.length > 60 ? "…" : ""}</button>`).join("")}<button class="btn quiet" id="rpaNo">Not now</button></div>`,
+      done => { $$("[data-rpa]", $("#askBox")).forEach(x => x.onclick = () => done(x.dataset.rpa)); $("#rpaNo").onclick = () => done(null); });
+    if (v) { const a = others.find(x => x.id === v); openReport({ about_answer:v, about_user:a?.user_id || null, what:"this answer" }); } }); }
 
 const fourHTML = items => `<div class="four">${[0,1,2,3].map(i => { const w = works[items[i]]; return w ? `<div class="po" data-work="${esc(w.id)}">${cover(w,"")}<b>${esc(w.title)}</b></div>` : `<div class="po" style="opacity:.4"></div>`; }).join("")}</div>`;
 /* ---------- what to try next ----------
@@ -11928,6 +11989,7 @@ async function renderTaste() { const body = $("#tasteBody"); const t = tasteOf(m
     <button class="card tastemini" id="tasteMore" aria-label="See your whole taste">${tasteMiniHTML(t)}</button>
     ${yourNumbersHTML()}
     <div class="chgoal">${goalHTML()}</div>
+    <p class="sub youstreak" id="youStreak" hidden></p>
     <div id="myLists"></div>
     <div id="hotTakes"></div>
     <div class="card" id="recCard"><div class="h"><span>You might like</span><span class="tag dim">picked for you</span></div><div id="recBody">${skeleton(1)}</div></div>
@@ -11940,6 +12002,8 @@ async function renderTaste() { const body = $("#tasteBody"); const t = tasteOf(m
   $("#tasteMe").onclick = () => openProfile(me.id);
   $("#tasteCog").onclick = () => openYou();
   { const gs = $("#goalSet"); if (gs) gs.onclick = setGoal; }
+  cluesStreak().then(st => { const el = $("#youStreak"); if (!el || !st?.best) return; el.hidden = false;
+    el.innerHTML = `<b>Five Clues</b> · ${st.cur ? `${st.cur} ${st.cur === 1 ? "day" : "days"} in a row` : "no streak going"} · best ${st.best}`; });
   const ts = $("#tasteStory"); if (ts) ts.onclick = () => openYearStory();
   paintPodium(); playNumbers(); paintHotTakes();
   paintListsCard($("#myLists"), { build:x => x.eq("owner", me.id), title:"Your stacks", empty:"Make one: heist films, books for a long flight, the ones that made you cry.", mine:true });
@@ -12913,7 +12977,7 @@ const listFan = (l, big = false) => { const ws = l.items.slice(0, 4).map(i => wo
 const listTileHTML = l => `<button class="tlist" data-tlist="${esc(l.id)}">${listFan(l)}<span class="tl-t"><b>${esc(l.title)}</b>
   <small>${l.items.length} ${l.items.length === 1 ? "thing" : "things"} · ${l.owner === me.id ? "yours" : "by " + esc(handleOf(l.owner))}${
     l.likes.length ? ` · ♥ ${l.likes.length}` : ""}${l.open ? ` · open` : ""}</small></span></button>`;
-const wireListTiles = (root, after) => $$("[data-tlist]", root).forEach(b => b.onclick = () => openThemeList(b.dataset.tlist, after));
+const wireListTiles = (root, after) => $$("[data-tlist]", root).forEach(b => b.onclick = () => { const id = b.dataset.tlist, def = ROOMS_STACKS.find(d => d.id === id); if (def) openCurated(def, after); else openThemeList(id, after); });
 /* a card of lists, wherever lists are shown: yours on the You page, somebody's on their
    profile, everybody's in the room's Charts */
 async function paintListsCard(el, { build, title, empty = "", mine = false }) {
@@ -12967,11 +13031,12 @@ async function openThemeList(id, after = null) {
   const ws = l.items.map(i => ({ i, w:works[i.work_id] })).filter(x => x.w);
   const seen = ws.filter(x => logged(x.w.id)).length, pct = ws.length ? Math.round(seen / ws.length * 100) : 0;
   const liked = l.likes.includes(me.id);
+  let savedIt = false; if (!owner) try { savedIt = (await q(sb.from("theme_list_saves").select("list_id").eq("list_id", l.id).eq("user_id", me.id))).length > 0; } catch {}
   const myScore = id2 => { const e = myEntries.filter(e => e.work_id === id2).sort(newestFirst)[0]; return e ? e.score : 0; };
   const draw = () => {
     openSheet(`<div class="card promptcard stkhead" style="--room:var(--${["lilac", "pink", "sky", "mint", "butter", "apricot"][avHash(l.id) % 6]})"><div class="tlhead">${listFan(l, true)}<div><h3>${esc(l.title)}</h3><p class="sub">${owner ? "Your stack" : `By <button class="linky" data-prof="${esc(l.owner)}">${esc(handleOf(l.owner))}</button>`} · ${ws.length} ${ws.length === 1 ? "thing" : "things"}${l.ranked ? " · in order" : ""}${l.open ? " · the room can add" : ""}${l.due ? ` · ${stackDue(l)}` : ""}</p></div></div>
       ${l.note ? `<p class="tlnote">${esc(l.note)}</p>` : ""}
-      <div class="tlbar"><button class="lk tllike ${liked ? "on" : ""}" id="tlLike" aria-pressed="${liked}" ${owner ? "disabled" : ""}>♥ <b>${l.likes.length}</b></button>
+      <div class="tlbar"><button class="lk tllike ${liked ? "on" : ""}" id="tlLike" aria-pressed="${liked}" ${owner ? "disabled" : ""}>♥ <b>${l.likes.length}</b></button>${owner ? "" : `<button class="lk tllike tlsave ${savedIt ? "on" : ""}" id="tlSave" aria-pressed="${savedIt}">${savedIt ? "Saved" : "Save"}</button>`}<button class="lk tllike tlshare" id="tlShare" aria-label="Share this stack">Share</button>
         ${ws.length ? `<div class="tlseen"><small>You've got to <b>${seen}</b> of ${ws.length}</small><span class="pbar"><i style="width:${Math.max(2, pct)}%"></i></span></div>` : ""}</div></div>
       <div class="tlitems">${ws.length ? ws.map(({ i, w }, n) => `<div class="tlitem" data-tw="${esc(w.id)}">
           ${l.ranked ? `<span class="tlrk">${n + 1}</span>` : ""}${tileCover(w)}
@@ -12980,7 +13045,18 @@ async function openThemeList(id, after = null) {
             : myScore(w.id) ? stars(myScore(w.id), "sm") : (i.added_by === me.id && !owner) ? `<button class="chip" data-tlrm="${esc(w.id)}">Take mine off</button>` : ""}</div>`).join("")
         : `<p class="empty">Nothing on it yet.${canAdd ? " Search below to add the first one." : ""}</p>`}</div>
       ${canAdd ? `<input id="tlSearch" type="search" placeholder="Add something to it" style="margin-top:12px"><div class="msg" id="tlMsg"></div><div id="tlResults"></div>` : ""}
-      <div class="stack">${owner ? `<button class="btn ghost" id="tlOrder">${listEditing ? "Done" : "Reorder or take things off"}</button><button class="btn quiet" id="tlEdit">Name, end date and who can add</button>` : ""}<button class="btn quiet" id="tlClose">${after ? "Back" : "Close"}</button></div>`);
+      <div class="stack">${owner ? `<button class="btn ghost" id="tlOrder">${listEditing ? "Done" : "Reorder or take things off"}</button><button class="btn quiet" id="tlEdit">Name, end date and who can add</button>` : ""}${(() => { const R = activeRoom(), n = ws.filter(x => (x.w.kind === "film" || x.w.kind === "tv") && !logged(x.w.id)).length;
+        return n >= 2 && R && R.members.length > 1 ? `<button class="btn ghost" id="tlWatch">Watch it with ${esc(R.name)}</button>` : ""; })()}<button class="btn quiet" id="tlClose">${after ? "Back" : "Close"}</button></div>${owner ? "" : `<p class="sub" style="text-align:center;margin-top:14px"><button class="linky" id="tlReport">Report this stack</button></p>`}`);
+    $("#tlShare").onclick = async () => { const txt = `${l.title} — a stack on Rooms\n${stackLink(l.id)}`;
+      try { if (navigator.share) await navigator.share({ text:txt }); else { await navigator.clipboard.writeText(txt); say("Link copied"); } }
+      catch { try { await navigator.clipboard.writeText(txt); say("Link copied"); } catch {} } };
+    const sv = $("#tlSave"); if (sv) sv.onclick = async () => { sv.disabled = true;
+      try { if (savedIt) await q(sb.from("theme_list_saves").delete().eq("list_id", l.id).eq("user_id", me.id));
+        else await q(sb.from("theme_list_saves").insert({ list_id:l.id, user_id:me.id }));
+        savedIt = !savedIt; buzz(5); say(savedIt ? "Saved to Yours" : "Taken out of Yours"); draw(); }
+      catch (e) { sv.disabled = false; oops(e, "Couldn't save it"); } };
+    const tw = $("#tlWatch"); if (tw) tw.onclick = () => watchWithRoom(ws.map(x => x.w).filter(w => (w.kind === "film" || w.kind === "tv") && !logged(w.id)));
+    const trp = $("#tlReport"); if (trp) trp.onclick = () => openReport({ about_list:l.id, about_user:l.owner, what:"this stack" });
     $("#tlClose").onclick = () => { listEditing = false; if (after) { closeSheet(); after(); } else closeSheet(); };
     $$("[data-prof]", $("#sheetBody")).forEach(b => b.onclick = () => openProfile(b.dataset.prof));
     $$("[data-tw]").forEach(r => r.onclick = ev => { if (ev.target.closest("button")) return; openWork(r.dataset.tw); });
@@ -13043,6 +13119,84 @@ function openListEditor(l, after) {
    way Letterboxd lists work. Popular is the most liked lately, New is just made, Friends
    is your rooms and the people you follow, Yours is yours. A stack can have an end date,
    which is what a club was: one your room adds to, with a deadline. */
+/* ---------- picked by Rooms ----------
+   Stacks made by the app, so Popular has something good in it from the first day. They
+   live here rather than in the database: the titles are looked up the first time they're
+   shown and the answers kept on the phone. Anyone can save one as a stack of their own. */
+const sF = (t, y) => ["film", t, y], sT = (t, y) => ["tv", t, y], sB = (t, y) => ["book", t, y], sG = (t, y) => ["game", t, y];
+const ROOMS_STACKS = [
+  { id:"rooms:heist", title:"Heist films", note:"One last job. It never is.", tags:["crime", "thriller"], items:[sF("Heat",1995),sF("Ocean's Eleven",2001),sF("Inside Man",2006),sF("Thief",1981),sF("Baby Driver",2017),sF("Rififi",1955),sF("Hell or High Water",2016),sF("The Italian Job",1969)] },
+  { id:"rooms:flight", title:"Books for a long flight", note:"Page-turners that make eleven hours go in four.", tags:[], items:[sB("Project Hail Mary",2021),sB("The Martian",2011),sB("The Secret History",1992),sB("Gone Girl",2012),sB("Circe",2018),sB("The Thursday Murder Club",2020),sB("Station Eleven",2014)] },
+  { id:"rooms:gamefilm", title:"Games that feel like a film", note:"Put the controller down and you'd swear you were watching something.", tags:["adventure"], items:[sG("The Last of Us",2013),sG("Red Dead Redemption 2",2018),sG("Uncharted 2: Among Thieves",2009),sG("Death Stranding",2019),sG("Alan Wake 2",2023),sG("Firewatch",2016)] },
+  { id:"rooms:oneMore", title:"One more episode", note:"You said you'd go to bed an hour ago.", tags:["drama"], items:[sT("Breaking Bad",2008),sT("Severance",2022),sT("Succession",2018),sT("The Bear",2022),sT("Line of Duty",2012),sT("Mindhunter",2017),sT("Stranger Things",2016)] },
+  { id:"rooms:cry", title:"The ones that made us cry", note:"Tissues within reach.", tags:["drama"], items:[sF("Up",2009),sF("Aftersun",2022),sF("Past Lives",2023),sF("Grave of the Fireflies",1988),sF("Coco",2017),sF("Manchester by the Sea",2016),sF("The Iron Giant",1999)] },
+  { id:"rooms:cosy", title:"Cosy games", note:"Low stakes, warm drinks.", tags:["family"], items:[sG("Stardew Valley",2016),sG("Animal Crossing: New Horizons",2020),sG("A Short Hike",2019),sG("Unpacking",2021),sG("Spiritfarer",2020),sG("Dorfromantik",2022)] },
+  { id:"rooms:talked", title:"Books everyone's talking about", note:"So you can join in.", tags:[], items:[sB("Tomorrow, and Tomorrow, and Tomorrow",2022),sB("Lessons in Chemistry",2022),sB("Demon Copperhead",2022),sB("Fourth Wing",2023),sB("James",2024),sB("Intermezzo",2024)] },
+  { id:"rooms:comfort", title:"Comfort TV", note:"Seen it ten times. Watching it again.", tags:["comedy"], items:[sT("Friends",1994),sT("Parks and Recreation",2009),sT("Gilmore Girls",2000),sT("Brooklyn Nine-Nine",2013),sT("The Office",2005),sT("Schitt's Creek",2015),sT("Ted Lasso",2020)] },
+  { id:"rooms:mind", title:"Mind-benders", note:"Watch closely. Then watch again.", tags:["scifi", "mystery"], items:[sF("Inception",2010),sF("Memento",2000),sF("Primer",2004),sF("Arrival",2016),sF("Coherence",2013),sF("Predestination",2014),sF("Mulholland Drive",2001)] },
+  { id:"rooms:scary", title:"Scary, but good", note:"Lights on. Or off, if you're brave.", tags:["horror"], items:[sF("Hereditary",2018),sF("The Thing",1982),sF("Get Out",2017),sF("The Babadook",2014),sF("It Follows",2014),sF("The Witch",2015),sF("Alien",1979)] },
+  { id:"rooms:readwatch", title:"Read it, then watch it", note:"The book first. Then argue about the adaptation.", tags:[], items:[sB("Dune",1965),sF("Dune",2021),sB("Normal People",2018),sT("Normal People",2020),sB("The Shining",1977),sF("The Shining",1980)] },
+  { id:"rooms:weekend", title:"Games you can finish in a weekend", note:"Start Friday, done by Sunday.", tags:["adventure"], items:[sG("Portal",2007),sG("Journey",2012),sG("Inside",2016),sG("What Remains of Edith Finch",2017),sG("Gris",2018),sG("Celeste",2018)] },
+  { id:"rooms:animated", title:"Animated, for grown-ups", note:"Not just for kids. Sometimes not for kids at all.", tags:["family"], items:[sF("Spirited Away",2001),sF("Persepolis",2007),sF("Anomalisa",2015),sF("Fantastic Mr. Fox",2009),sF("Spider-Man: Into the Spider-Verse",2018),sF("Waltz with Bashir",2008)] },
+  { id:"rooms:short", title:"Short books, big feelings", note:"Done in an afternoon. Stays for years.", tags:[], items:[sB("Small Things Like These",2021),sB("Of Mice and Men",1937),sB("The Old Man and the Sea",1952),sB("Convenience Store Woman",2016),sB("Giovanni's Room",1956),sB("Breakfast at Tiffany's",1958)] },
+  { id:"rooms:limited", title:"Limited series, no filler", note:"A beginning, a middle and an ending.", tags:["drama"], items:[sT("Chernobyl",2019),sT("Band of Brothers",2001),sT("Mare of Easttown",2021),sT("The Queen's Gambit",2020),sT("Baby Reindeer",2024),sT("Adolescence",2025)] },
+  { id:"rooms:rpg", title:"Hundred-hour worlds", note:"Clear your calendar.", tags:["fantasy"], items:[sG("The Witcher 3: Wild Hunt",2015),sG("Elden Ring",2022),sG("Baldur's Gate 3",2023),sG("The Elder Scrolls V: Skyrim",2011),sG("Persona 5 Royal",2019),sG("Mass Effect 2",2010)] },
+];
+const rsKey = ([k, t]) => `${k}|${t}`;
+const rsHits = () => P.rsHits || (P.rsHits = {});
+/* one title of a picked stack, found once: by name and year, among what the sources hold */
+async function rsFind(it) {
+  const store = rsHits(), key = rsKey(it); if (store[key] !== undefined) return store[key];
+  const [kind, title, year] = it; let hit = null;
+  if (DEMO) { const w = Object.values(works).find(x => x?.kind === kind && normT(x.title) === normT(title)); hit = w ? { id:w.id, kind, title:w.title, year:w.year, cover:w.cover || "" } : null; }
+  else try { const hs = await SOURCES[kind](title);
+    const h = hs.find(x => normT(x.title) === normT(title) && Math.abs((+x.year || 0) - year) <= 1) || hs.find(x => normT(x.title) === normT(title));
+    if (h) hit = { id:h.id, kind, title:h.title, year:h.year, cover:h.cover || "", creator:h.creator || "" }; } catch { return null; }
+  store[key] = hit; return hit; }
+/* a picked stack, shaped like the stacks people make, from whatever has been found so far */
+function rsList(def) {
+  const store = rsHits(), found = def.items.map(it => store[rsKey(it)]).filter(Boolean);
+  found.forEach(h => { if (!works[h.id]?.title) remember({ ...h }); });
+  return { id:def.id, title:def.title, note:def.note, owner:"rooms", curated:true, def, likes:[], open:false, items:found.map(h => ({ work_id:h.id })), updated_at:"", created_at:"" }; }
+let rsBusy = false;
+async function rsFill(onSome) {
+  if (rsBusy || DEMO && !Object.keys(works).length) return; rsBusy = true;
+  const todo = ROOMS_STACKS.flatMap(d => d.items).filter(it => rsHits()[rsKey(it)] === undefined);
+  let n = 0;
+  for (let i = 0; i < todo.length; i += 4) { await Promise.all(todo.slice(i, i + 4).map(rsFind)); n += 4;
+    if (n % 12 === 0) { saveP(); onSome?.(); } }
+  saveP(); rsBusy = false; if (todo.length) onSome?.(); }
+async function openCurated(def, after = null) {
+  openSheet(`<div class="card">${skeleton(4)}</div>`);
+  const hits = (await Promise.all(def.items.map(rsFind))).filter(Boolean); saveP();
+  hits.forEach(h => { if (!works[h.id]?.title) remember({ ...h }); });
+  const l = rsList(def), ws = hits.map(h => works[h.id] || h), seen = ws.filter(w => logged(w.id)).length, pct = ws.length ? Math.round(seen / ws.length * 100) : 0;
+  const screen = ws.filter(w => (w.kind === "film" || w.kind === "tv") && !logged(w.id)), R = activeRoom();
+  openSheet(`<div class="card promptcard stkhead" style="--room:var(--${["lilac", "pink", "sky", "mint", "butter", "apricot"][avHash(def.id) % 6]})"><div class="tlhead">${listFan(l, true)}<div><h3>${esc(def.title)}</h3>
+      <p class="sub">Picked by Rooms · ${ws.length} ${ws.length === 1 ? "thing" : "things"}</p></div></div>
+      <p class="tlnote">${esc(def.note)}</p>
+      ${ws.length ? `<div class="tlbar"><div class="tlseen"><small>You've got to <b>${seen}</b> of ${ws.length}</small><span class="pbar"><i style="width:${Math.max(2, pct)}%"></i></span></div></div>` : ""}</div>
+    <div class="tlitems">${ws.map(w => `<div class="tlitem" data-rsw="${esc(w.id)}">${tileCover(w)}<div class="t"><b>${esc(w.title)}</b><small>${tag(w.kind)} ${esc(w.year || "")}</small></div>${logged(w.id) ? `<span class="chip on">Logged</span>` : ""}</div>`).join("")
+      || `<p class="empty">Couldn't find these just now. Try again in a bit.</p>`}</div>
+    <div class="stack"><button class="btn" id="rsSave">Save it as my stack</button>
+      ${screen.length >= 2 && R && R.members.length > 1 ? `<button class="btn ghost" id="rsWatch">Watch it with ${esc(R.name)}</button>` : ""}
+      <button class="btn quiet" id="rsClose">${after ? "Back" : "Close"}</button></div>`);
+  $("#rsClose").onclick = () => { closeSheet(); after?.(); };
+  $$("[data-rsw]").forEach(r => r.onclick = () => hitOpen(hits.find(h => h.id === r.dataset.rsw) || works[r.dataset.rsw]));
+  $("#rsSave").onclick = async () => { const b = $("#rsSave"); b.disabled = true;
+    try { const t = await q(sb.from("theme_lists").insert({ owner:me.id, title:def.title, note:def.note, ranked:false, open:false }).select().single());
+      let i = 0; for (const h of hits) { try { const w = await ensureWork(h); await q(sb.from("theme_list_items").insert({ list_id:t.id, work_id:w.id, added_by:me.id, position:i++ })); } catch {} }
+      say("Saved to your stacks", "good"); buzz(8); openThemeList(t.id, after); }
+    catch (e) { b.disabled = false; oops(e, "Couldn't save it"); } };
+  const rw = $("#rsWatch"); if (rw) rw.onclick = () => watchWithRoom(screen);
+}
+/* any stack's films and shows, put to the room as a watch night: two or three you haven't seen */
+async function watchWithRoom(screen) {
+  const R = activeRoom(); if (!R || R.members.length < 2) { say("You'll need a room with someone in it"); return; }
+  const pick = screen.slice().sort(() => Math.random() - .5).slice(0, 3);
+  const ws = []; for (const w of pick) { try { ws.push(works[w.id]?.credits ? works[w.id] : await ensureWork(w)); } catch {} }
+  openPlanNight(R, () => { switchTab("doors"); }, ws); }
+
 let stackTurn = 0, stackQ = "", stackKind = "", stackTag = "";
 const STACK_TABS = [["popular", "Popular"], ["friends", "Friends"], ["yours", "Yours"]];
 const STACK_TAG_WORD = { crime:"Crime", horror:"Horror", scifi:"Sci-fi", fantasy:"Fantasy", western:"Western", war:"War", mystery:"Mystery", thriller:"Thriller",
@@ -13052,6 +13206,7 @@ const stackDue = l => l.due ? (l.due < today() ? `ended ${when(l.due)}` : `ends 
    third of its things share, strongest first */
 function stackShape(l) {
   const ws = l.items.map(i => works[i.work_id]).filter(Boolean), n = Math.max(1, ws.length), count = {};
+  if (l.curated) return { kinds:new Set(l.def.items.map(x => x[0])), tags:l.def.tags.slice(0, 3), ws };
   for (const w of ws) for (const t of new Set(tagsOf(w.meta?.genres || w.genres || []))) count[t] = (count[t] || 0) + 1;
   const tags = Object.entries(count).filter(([t, c]) => c >= Math.max(1, Math.ceil(n * .4)) && t !== "drama").sort((a, b) => b[1] - a[1]).map(([t]) => t);
   if (count.drama >= n / 2 && tags.length < 2) tags.push("drama");
@@ -13061,24 +13216,32 @@ function stackCardHTML(l) {
   const pct = ws.length ? Math.round(seen / ws.length * 100) : 0;
   const col = ["lilac", "pink", "sky", "mint", "butter", "apricot"][avHash(l.id) % 6];
   return `<button class="stk promptcard" style="--room:var(--${col})" data-tlist="${esc(l.id)}" type="button">
-    <span class="stk-strip">${ws.slice(0, 5).map((w, i) => `<span style="--i:${i}">${tileCover(w)}</span>`).join("") || `<span class="stk-none">Nothing on it yet</span>`}</span>
+    <span class="stk-strip">${ws.slice(0, 5).map((w, i) => `<span style="--i:${i}">${tileCover(w)}</span>`).join("") || `<span class="stk-none">${l.curated ? "Finding the posters…" : "Nothing on it yet"}</span>`}</span>
     <span class="stk-t"><b>${esc(l.title)}</b>
-      <small>${l.owner === me.id ? "yours" : `by ${esc(handleOf(l.owner))}`} · ${l.items.length} ${l.items.length === 1 ? "thing" : "things"}${l.likes.length ? ` · ♥ ${l.likes.length}` : ""}${l.open ? " · your rooms add to it" : ""}${l.due ? ` · ${stackDue(l)}` : ""}</small>
+      <small>${l.curated ? "picked by Rooms" : l.owner === me.id ? "yours" : `by ${esc(handleOf(l.owner))}`}${l.saved ? " · saved" : ""} · ${l.curated ? l.def.items.length : l.items.length} ${l.items.length === 1 ? "thing" : "things"}${l.likes.length ? ` · ♥ ${l.likes.length}` : ""}${l.open ? " · your rooms add to it" : ""}${l.due ? ` · ${stackDue(l)}` : ""}</small>
       ${tags.length ? `<span class="stk-tags">${tags.map(t => `<i>${STACK_TAG_WORD[t] || t}</i>`).join("")}</span>` : ""}
       ${ws.length && seen ? `<span class="stk-seen"><span class="pbar"><i style="width:${Math.max(3, pct)}%"></i></span><em>${seen} of ${ws.length}</em></span>` : ""}</span></button>`; }
 async function stacksFor(tab) {
-  if (tab === "yours") return loadThemeLists(x => x.eq("owner", me.id), 200);
+  if (tab === "yours") { const mine = await loadThemeLists(x => x.eq("owner", me.id), 200);
+    let saved = []; try { const ids = (await q(sb.from("theme_list_saves").select("list_id").eq("user_id", me.id))).map(r => r.list_id);
+      if (ids.length) saved = (await loadThemeLists(x => x.in("id", ids), 200)).filter(l => l.owner !== me.id).map(l => ({ ...l, saved:true })); } catch {}
+    return [...mine, ...saved]; }
   if (tab === "friends") { const ids = [...new Set([...rooms.flatMap(r => r.members.map(m => m.id)), ...follows.filter(f => f.follower === me.id).map(f => f.followee)])].filter(id => id !== me.id);
     return ids.length ? loadThemeLists(x => x.in("owner", ids), 200) : []; }
-  /* popular: liked most, and among those the ones that moved lately */
-  return (await loadThemeLists(x => x, 200)).filter(l => l.items.length > 0)
-    .sort((a, b) => b.likes.length - a.likes.length || String(b.updated_at).localeCompare(String(a.updated_at))); }
+  /* popular: liked most, and among those the ones that moved lately; Rooms' own picks sit
+     first while there are only a few made by people, and after them once there are plenty */
+  const made = (await loadThemeLists(x => x, 200)).filter(l => l.items.length > 0)
+    .sort((a, b) => b.likes.length - a.likes.length || String(b.updated_at).localeCompare(String(a.updated_at)));
+  if (DEMO) await rsFill();      /* the demo's own titles are found at once */
+  /* (one whose titles all came back unfound isn't worth showing) */
+  const picked = ROOMS_STACKS.map(rsList).filter(l => l.items.length || l.def.items.some(it => rsHits()[rsKey(it)] === undefined));
+  return made.length < 6 && !DEMO ? [...picked, ...made] : [...made, ...picked]; }
 /* search reads everything a stack says about itself: its name and note, who made it, the
    genres it's of, and the titles and makers of what's on it */
 function stackMatches(l, query) {
   if (!query) return true;
   const { tags, ws } = stackShape(l);
-  const hay = lc([l.title, l.note, handleOf(l.owner), ...tags.map(t => STACK_TAG_WORD[t] || t), ...ws.flatMap(w => [w.title, w.creator, ...(w.meta?.genres || [])])].filter(Boolean).join(" · "));
+  const hay = lc([l.title, l.note, l.curated ? "Rooms" : handleOf(l.owner), ...(l.curated ? l.def.items.map(x => x[1]) : []), ...tags.map(t => STACK_TAG_WORD[t] || t), ...ws.flatMap(w => [w.title, w.creator, ...(w.meta?.genres || [])])].filter(Boolean).join(" · "));
   return lc(query).split(/\s+/).filter(Boolean).every(word => hay.includes(word)); }
 async function renderStacks() {
   const body = $("#clubsBody"); if (!body) return;
@@ -13123,7 +13286,10 @@ async function renderStacks() {
     const sf = $("#stkFirst"); if (sf) sf.onclick = () => $("#stkNew").click();
     wireListTiles(box, renderStacks); revealIn(box); };
   let t; $("#stkSearch").oninput = e => { clearTimeout(t); t = setTimeout(() => { stackQ = e.target.value.trim(); paint(); }, 200); };
-  paintFilters(); paint(); }
+  paintFilters(); paint();
+  if (tab === "popular" && ROOMS_STACKS.some(d => d.items.some(it => rsHits()[rsKey(it)] === undefined))) {
+    let t2; rsFill(() => { clearTimeout(t2); t2 = setTimeout(() => { if (!$("#stkList") || P.stackTab && P.stackTab !== "popular") return;
+      ls.forEach((l, i) => { if (l.curated) { const fresh = rsList(l.def); ls[i] = fresh; shapes.set(fresh.id, stackShape(fresh)); } }); paint(); }, 300); }); } }
 
 /* ============ who made it ============
    Tap a director, a showrunner, an author or a studio and see everything they made,
@@ -14069,9 +14235,9 @@ function firstOne(w) { if ($("#sheet").classList.contains("on")) return;
 
    The confirm step on blocking is there because it is symmetrical and it undoes a
    follow: worth one sentence before it happens, not a dialog people learn to dismiss. */
-function openReport({ about_entry = null, about_user = null, who = "" }) {
+function openReport({ about_entry = null, about_user = null, about_list = null, about_answer = null, who = "", what = "" }) {
   let why = null;
-  openSheet(`<h3>Report ${about_entry ? "this entry" : esc(who || "this person")}</h3>
+  openSheet(`<h3>Report ${what ? esc(what) : about_entry ? "this entry" : esc(who || "this person")}</h3>
     <p class="sub">A person reads these, within a day. Tell us which it is.</p>
     <div class="chips" id="whyChips" style="margin-top:14px">${REPORT_WHY.map(([k,l]) =>
       `<button class="chip" data-why="${k}">${l}</button>`).join("")}</div>
@@ -14083,7 +14249,7 @@ function openReport({ about_entry = null, about_user = null, who = "" }) {
     $$("[data-why]").forEach(x => x.classList.toggle("on", x === b)); $("#repGo").disabled = false; });
   $("#repCancel").onclick = closeSheet;
   $("#repGo").onclick = async () => { const g = $("#repGo"); g.disabled = true; $("#repMsg").textContent = "Sending";
-    try { await sendReport({ reporter:me.id, about_entry, about_user, reason:why,
+    try { await sendReport({ reporter:me.id, about_entry, about_user, ...(about_list ? { about_list } : {}), ...(about_answer ? { about_answer } : {}), reason:why,
         note:($("#repNote").value || "").trim() || null });
       closeSheet(); say("Reported \u2014 somebody will look at it"); }
     catch (err) { g.disabled = false; $("#repMsg").textContent = err.message || "That didn't send"; } };
@@ -14433,6 +14599,8 @@ async function openYou() { let top = { items:[] }; try { top = await ensureMyTop
     <div class="stack"><button class="btn" id="ySave">Save</button></div><p class="msg" id="yMsg"></p>
     <div class="lbl">Settings</div>
     <div id="pushSlot"></div>
+    <div class="lbl" style="margin-top:10px">Five Clues reminder</div><div class="chips" id="cluRemind">${[["", "Off"], ["9", "9am"], ["12", "Noon"], ["18", "6pm"], ["20", "8pm"]].map(([k, l]) => `<button class="chip ${String(P.cluesRemind ?? "") === k ? "on" : ""}" data-crh="${k}">${l}</button>`).join("")}</div>
+    <p class="sub" style="margin-top:4px">A nudge when today's puzzle is up, at the time you pick. Skipped on days you've already played. Needs notifications on.</p>
     <div class="lbl" style="margin-top:10px">How the app looks</div><div class="chips">${[["","Auto"],["light","Light"],["dark","Dark"]].map(([k,l]) => `<button class="chip ${(P.theme||"")===k?"on":""}" data-th="${k}">${l}</button>`).join("")}</div>
     <p class="sub" style="margin-top:4px">Auto follows your phone. The ground still warms and dims across the day either way.</p>
     <div class="lbl">The little guys</div><div class="chips"><button class="chip ${P.tilt ? "on" : ""}" id="tiltSw">Eyes follow your tilt</button></div>
@@ -14522,6 +14690,8 @@ async function openYou() { let top = { items:[] }; try { top = await ensureMyTop
     paintAv(); paintMeAv(); refresh(); };
 
   const ta = $("#tourAgain"); if (ta) ta.onclick = () => { P.tourDue = true; saveP(); closeSheet(); if (currentTab() !== "doors") switchTab("doors"); };
+  $$("[data-crh]").forEach(b => b.onclick = async () => { const k = b.dataset.crh; P.cluesRemind = k === "" ? null : +k; saveP();
+    $$("[data-crh]").forEach(x => x.classList.toggle("on", x === b)); buzz(4); await syncCluesRemind(true); say(k === "" ? "No reminder" : `Reminder at ${b.textContent}`); });
   const fillPush = async () => { const el = $("#pushSlot"); if (!el) return; el.innerHTML = await pushSwitchHTML(); wirePushSwitch(el, fillPush); };
   fillPush();
   $("#ySave").onclick = async () => { const h = lc($("#yHandle").value.trim()), bio = $("#yBio").value.trim(); if (!/^[a-z0-9_]{2,24}$/.test(h)) { $("#yMsg").textContent = "two to twenty-four, lowercase, no spaces"; return; }
@@ -14730,7 +14900,7 @@ function offerUpdate() {
 if (DEMO) { document.body.classList.add("demomode"); const bar = $("#demobar"); if (bar) bar.hidden = false; }
 renderAuth(); sb.auth.onAuthStateChange?.(async ev => {
   if (ev === "SIGNED_IN" && !me) { if (await loadMe()) enter(); else if (pendingUser) renderClaim(); } });
-if (await loadMe()) enter(); else if (pendingUser) renderClaim();
+if (await loadMe()) enter(); else if (pendingUser) renderClaim(); else guestDeep();
 </script>
 </body>
 </html>

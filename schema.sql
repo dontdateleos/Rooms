@@ -1991,3 +1991,67 @@ language sql stable security definer set search_path = public as $$
 $$;
 revoke all on function clues_today(date) from public, anon;
 grant execute on function clues_today(date) to authenticated;
+
+-- ---------- reporting a stack or a party-game answer ----------
+-- Stacks are public now and party answers are written for the room, so both can be
+-- reported the way a person or an entry can. Safe to re-run.
+alter table reports add column if not exists about_list uuid references theme_lists on delete cascade;
+alter table reports add column if not exists about_answer uuid references round_answers on delete cascade;
+alter table reports drop constraint if exists reports_check;
+alter table reports drop constraint if exists reports_about;
+alter table reports add constraint reports_about
+  check (num_nonnulls(about_user, about_entry, about_list, about_answer) >= 1);
+
+-- ---------- saving somebody else's stack ----------
+-- A stack you like but didn't make can be kept: it shows under Yours. Only you see what
+-- you've saved. Safe to re-run.
+create table if not exists theme_list_saves (
+  list_id uuid not null references theme_lists on delete cascade,
+  user_id uuid not null references profiles on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (list_id, user_id)
+);
+alter table theme_list_saves enable row level security;
+drop policy if exists theme_saves_mine on theme_list_saves;
+create policy theme_saves_mine on theme_list_saves for all to authenticated
+  using (user_id = auth.uid()) with check (user_id = auth.uid() and can_see_list(list_id));
+
+-- ---------- a shared stack's link preview ----------
+-- What a chat app shows for a shared stack link: its name and note, who made it, how many
+-- things, and the first few posters. Stacks are public, so this is no more than anyone
+-- signed in can already see. Safe to re-run.
+create or replace function peek_stack(p_id uuid)
+returns table (title text, note text, handle text, n int, covers text[])
+language sql stable security definer set search_path = public as $$
+  select t.title, t.note, p.handle,
+    (select count(*) from theme_list_items i where i.list_id = t.id)::int,
+    array(select w.cover from theme_list_items i join works w on w.id = i.work_id
+          where i.list_id = t.id and w.cover is not null order by i.position nulls last limit 4)
+  from theme_lists t join profiles p on p.id = t.owner where t.id = p_id
+$$;
+revoke all on function peek_stack(uuid) from public;
+grant execute on function peek_stack(uuid) to anon, authenticated;
+
+-- ---------- a daily nudge for Five Clues ----------
+-- Somebody who asks for it gets a nudge at the hour they picked (kept here in UTC; the
+-- app works it out from the phone's clock). Not on a day they've already played. Safe to
+-- re-run.
+create table if not exists clue_reminders (
+  user_id uuid primary key references profiles(id) on delete cascade,
+  hour_utc int not null check (hour_utc between 0 and 23),
+  updated_at timestamptz not null default now()
+);
+alter table clue_reminders enable row level security;
+drop policy if exists clue_reminders_mine on clue_reminders;
+create policy clue_reminders_mine on clue_reminders for all to authenticated
+  using (user_id = auth.uid()) with check (user_id = auth.uid());
+create or replace function push_targets_clues(p_hour int)
+returns table (endpoint text, p256dh text, auth text)
+language sql security definer stable set search_path = public as $$
+  select s.endpoint, s.p256dh, s.auth from push_subs s join clue_reminders c on c.user_id = s.user_id
+  where c.hour_utc = p_hour
+    and not exists (select 1 from daily_scores d where d.user_id = s.user_id and d.game like 'clues%'
+                    and d.created_at > now() - interval '18 hours');
+$$;
+revoke all on function push_targets_clues(int) from public, anon, authenticated;
+grant execute on function push_targets_clues(int) to service_role;
