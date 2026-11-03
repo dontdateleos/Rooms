@@ -2081,6 +2081,16 @@ nav button .dot{top:0;right:calc(50% - 24px)}
 .stk.promptcard .stk-seen .pbar i{background:var(--onAccent)}
 .stk.promptcard .stk-seen em{color:rgba(21,19,32,.72)}
 .stk.promptcard .stk-none{color:rgba(21,19,32,.6)}
+/* inside a stack: the top is the stack's own card */
+.card.promptcard.stkhead{background:var(--room);color:var(--onAccent);position:relative;overflow:hidden;box-shadow:none;margin-top:4px}
+.stkhead h3{font-size:24px;font-weight:900;letter-spacing:-.02em;line-height:1.15;color:var(--onAccent);text-wrap:balance}
+.stkhead .sub,.stkhead .tlnote{color:rgba(21,19,32,.75)}.stkhead .tlnote{font-size:15px}
+.stkhead .linky{color:var(--onAccent)}
+.stkhead .tl-fan .co{box-shadow:4px 6px 14px -4px rgba(21,19,32,.45)}
+.stkhead .tllike{background:rgba(255,255,255,.4);border-color:transparent;color:var(--onAccent)}
+.stkhead .tllike.on{background:var(--onAccent);color:#FFF7EC}
+.stkhead .tlseen small{color:rgba(21,19,32,.72)}.stkhead .tlseen b{color:var(--onAccent)}
+.stkhead .pbar{background:rgba(21,19,32,.14)}.stkhead .pbar i{background:var(--onAccent)}
 .chip.addown{border:1.5px dashed color-mix(in srgb,var(--mute) 60%,transparent);background:none;color:var(--mute)}
 .stk-bar{display:flex;gap:8px;align-items:center;margin:12px 0 14px}
 .stk-bar input{flex:1;min-width:0;margin:0}
@@ -12959,10 +12969,10 @@ async function openThemeList(id, after = null) {
   const liked = l.likes.includes(me.id);
   const myScore = id2 => { const e = myEntries.filter(e => e.work_id === id2).sort(newestFirst)[0]; return e ? e.score : 0; };
   const draw = () => {
-    openSheet(`<div class="tlhead">${listFan(l, true)}<div><h3>${esc(l.title)}</h3><p class="sub">${owner ? "Your stack" : `By <button class="linky" data-prof="${esc(l.owner)}">${esc(handleOf(l.owner))}</button>`} · ${ws.length} ${ws.length === 1 ? "thing" : "things"}${l.ranked ? " · in order" : ""}${l.open ? " · the room can add" : ""}${l.due ? ` · ${stackDue(l)}` : ""}</p></div></div>
+    openSheet(`<div class="card promptcard stkhead" style="--room:var(--${["lilac", "pink", "sky", "mint", "butter", "apricot"][avHash(l.id) % 6]})"><div class="tlhead">${listFan(l, true)}<div><h3>${esc(l.title)}</h3><p class="sub">${owner ? "Your stack" : `By <button class="linky" data-prof="${esc(l.owner)}">${esc(handleOf(l.owner))}</button>`} · ${ws.length} ${ws.length === 1 ? "thing" : "things"}${l.ranked ? " · in order" : ""}${l.open ? " · the room can add" : ""}${l.due ? ` · ${stackDue(l)}` : ""}</p></div></div>
       ${l.note ? `<p class="tlnote">${esc(l.note)}</p>` : ""}
       <div class="tlbar"><button class="lk tllike ${liked ? "on" : ""}" id="tlLike" aria-pressed="${liked}" ${owner ? "disabled" : ""}>♥ <b>${l.likes.length}</b></button>
-        ${ws.length ? `<div class="tlseen"><small>You've got to <b>${seen}</b> of ${ws.length}</small><span class="pbar"><i style="width:${Math.max(2, pct)}%"></i></span></div>` : ""}</div>
+        ${ws.length ? `<div class="tlseen"><small>You've got to <b>${seen}</b> of ${ws.length}</small><span class="pbar"><i style="width:${Math.max(2, pct)}%"></i></span></div>` : ""}</div></div>
       <div class="tlitems">${ws.length ? ws.map(({ i, w }, n) => `<div class="tlitem" data-tw="${esc(w.id)}">
           ${l.ranked ? `<span class="tlrk">${n + 1}</span>` : ""}${tileCover(w)}
           <div class="t"><b>${esc(w.title)}</b><small>${tag(w.kind)} ${esc(w.year || "")}${i.added_by && i.added_by !== l.owner ? ` · added by ${esc(handleOf(i.added_by))}` : ""}</small></div>
