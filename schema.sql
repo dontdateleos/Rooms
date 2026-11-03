@@ -2161,3 +2161,256 @@ begin
       union all select w.email, w.created_at from public.newsletter_web w) x
     order by lower(x.email), x.joined;
 end $$;
+
+-- ---------- heads-ups on a title ----------
+-- Anybody signed in can flag something in a title from a fixed list (animal harm, gore,
+-- and so on), once each, and take it back. Everybody signed in can read the flags, but
+-- only as counts, through work_warning_counts: nobody can read who flagged what.
+create table if not exists work_warnings (
+  work_id text not null references works on delete cascade,
+  user_id uuid not null references profiles on delete cascade,
+  warning text not null check (warning in ('Animal harm','Death of a child','Sexual violence','Abuse','Suicide','Self-harm','Gore',
+    'Drug use','Racism','Jump scares','Flashing lights','Car crash')),
+  created_at timestamptz not null default now(),
+  primary key (work_id, user_id, warning)
+);
+create index if not exists work_warnings_work_idx on work_warnings (work_id);
+alter table work_warnings enable row level security;
+drop policy if exists work_warnings_read on work_warnings;
+create policy work_warnings_read on work_warnings for select to authenticated using (user_id = auth.uid());
+drop policy if exists work_warnings_mine on work_warnings;
+create policy work_warnings_mine on work_warnings for all to authenticated
+  using (user_id = auth.uid()) with check (user_id = auth.uid());
+grant select, insert, update, delete on work_warnings to authenticated;
+create or replace function work_warning_counts(p_work text)
+returns table (warning text, n int, mine boolean)
+language sql security definer stable set search_path = public as $$
+  select w.warning, count(*)::int, bool_or(w.user_id = auth.uid())
+  from work_warnings w where w.work_id = p_work group by w.warning order by count(*) desc
+$$;
+revoke all on function work_warning_counts(text) from public, anon;
+grant execute on function work_warning_counts(text) to authenticated;
+
+-- ---------- new episodes ----------
+-- When the app sees a new episode coming for a show you're watching, has queued or logged
+-- lately, it writes the date here (yours only). The worker asks once a day, in the
+-- evening, who has one out that day and tells them. Only your own rows are visible.
+create table if not exists episode_alerts (
+  user_id uuid not null references profiles on delete cascade,
+  work_id text not null references works on delete cascade,
+  air_date date not null,
+  label text check (char_length(label) <= 20),
+  title text check (char_length(title) <= 80),
+  sent_on date,
+  primary key (user_id, work_id)
+);
+create index if not exists episode_alerts_day_idx on episode_alerts (air_date);
+alter table episode_alerts enable row level security;
+drop policy if exists episode_alerts_mine on episode_alerts;
+create policy episode_alerts_mine on episode_alerts for all to authenticated
+  using (user_id = auth.uid()) with check (user_id = auth.uid());
+grant select, insert, update, delete on episode_alerts to authenticated;
+-- who to tell today, one row per phone per show; marks them sent so nobody hears twice
+create or replace function push_targets_episodes(p_day date)
+returns table (endpoint text, p256dh text, auth text, work_id text, title text, label text)
+language plpgsql security definer set search_path = public as $$
+begin
+  return query with due as (
+      update episode_alerts a set sent_on = p_day
+      where a.air_date = p_day and (a.sent_on is distinct from p_day)
+      returning a.user_id, a.work_id, a.title, a.label)
+    select s.endpoint, s.p256dh, s.auth, d.work_id, d.title, d.label
+    from due d join push_subs s on s.user_id = d.user_id;
+end $$;
+revoke all on function push_targets_episodes(date) from public, anon, authenticated;
+grant execute on function push_targets_episodes(date) to service_role;
+
+-- ---------- your poster, your backdrop ----------
+-- The cosmetic extras: a poster you picked for a title (shown only to you) and a still
+-- behind your page. Images only from the three cover hosts. "supporter" is for the paid
+-- tier when there is one; like founder, only the dashboard can set it.
+alter table profiles add column if not exists covers jsonb;
+alter table profiles add column if not exists backdrop text;
+alter table profiles add column if not exists supporter boolean not null default false;
+do $$ begin
+  if not exists (select 1 from pg_constraint where conname = 'profiles_backdrop_source') then
+    alter table profiles add constraint profiles_backdrop_source check (backdrop is null or backdrop ~ '^https://image\.tmdb\.org/') not valid;
+  end if;
+  if not exists (select 1 from pg_constraint where conname = 'profiles_covers_size') then
+    alter table profiles add constraint profiles_covers_size check (covers is null or (jsonb_typeof(covers) = 'object' and pg_column_size(covers) < 20000)) not valid;
+  end if;
+end $$;
+create or replace function guard_supporter() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if current_user in ('authenticated', 'anon') then
+    if tg_op = 'INSERT' then new.supporter := false;
+    else new.supporter := old.supporter; end if;
+  end if;
+  return new;
+end $$;
+drop trigger if exists profiles_guard_supporter on profiles;
+create trigger profiles_guard_supporter before insert or update on profiles
+  for each row execute function guard_supporter();
+-- ---------- a public profile page ----------
+-- A page on the web anybody can open, at the worker's /u/<handle>, for a link in a bio.
+-- Off until its owner turns it on in settings. It shows their favourites, their top five,
+-- what they've logged lately and this year's counts: never an entry set to just them or
+-- room only, and nothing about their rooms. Spoilers are cut out here, so that text never
+-- leaves the database. Safe to re-run.
+alter table profiles add column if not exists public_page boolean not null default false;
+create or replace function public_profile(p_handle text)
+returns json
+language sql stable security definer set search_path = public as $$
+  with p as (
+    select id, handle, bio, avatar, created_at from profiles
+     where handle = lower(trim(p_handle)) and public_page
+  ), pub as (
+    -- only what anybody signed in could already see
+    select e.* from entries e join p on p.id = e.user_id
+     where not e.private and not e.room_only
+  ), shown as (
+    -- a work can be shown if it, or a season of it, has one of those entries
+    select pub.work_id as id from pub
+    union select w.parent_id from pub join works w on w.id = pub.work_id where w.parent_id is not null
+  ), favs as (
+    select distinct on (w.kind) w.kind, w.title, w.year, w.cover
+      from p join top_lists t on t.owner = p.id and t.name in ('rank:film', 'rank:tv', 'rank:book', 'rank:game')
+      join top_list_items i on i.top_list_id = t.id
+      join works w on w.id = i.work_id and w.kind = substr(t.name, 6)
+     where w.id in (select id from shown)
+     order by w.kind, i.rank
+  ), top as (
+    select w.kind, w.title, w.year, w.cover, i.rank
+      from p join top_lists t on t.owner = p.id and t.name = 'all time'
+      join top_list_items i on i.top_list_id = t.id
+      join works w on w.id = i.work_id
+     where w.id in (select id from shown)
+     order by i.rank limit 5
+  ), recent as (
+    select w.kind, w.title, w.year, w.cover, pub.score, pub.rated_on, pub.created_at,
+           nullif(left(btrim(regexp_replace(coalesce(pub.note, ''), '\|\|.+?\|\|', '[spoiler]', 'g')), 400), '') as note
+      from pub join works w on w.id = pub.work_id
+     where not pub.part
+     order by pub.rated_on desc, pub.created_at desc limit 12
+  ), counts as (
+    select w.kind, count(distinct coalesce(w.parent_id, w.id))::int as n
+      from pub join works w on w.id = pub.work_id
+     where pub.rated_on >= date_trunc('year', current_date)::date
+     group by w.kind
+  )
+  select json_build_object(
+    'handle', p.handle,
+    'bio', p.bio,
+    'colour', case when p.avatar->>'col' ~ '^[0-9]$' then (p.avatar->>'col')::int end,
+    'since', p.created_at::date,
+    'year', extract(year from current_date)::int,
+    'logged', (select count(*) from pub where not pub.part)::int,
+    'counts', (select coalesce(json_object_agg(kind, n), '{}'::json) from counts),
+    'favourites', (select coalesce(json_agg(json_build_object('kind', kind, 'title', title, 'year', year, 'cover', cover)
+        order by array_position(array['film', 'tv', 'book', 'game'], kind)), '[]'::json) from favs),
+    'top', (select coalesce(json_agg(json_build_object('kind', kind, 'title', title, 'year', year, 'cover', cover)
+        order by rank), '[]'::json) from top),
+    'recent', (select coalesce(json_agg(json_build_object('kind', kind, 'title', title, 'year', year, 'cover', cover,
+        'score', score, 'on', rated_on, 'note', note) order by rated_on desc, created_at desc), '[]'::json) from recent))
+  from p
+$$;
+revoke all on function public_profile(text) from public;
+grant execute on function public_profile(text) to anon, authenticated;
+-- ---------- read-alongs ----------
+-- Somebody in a room starts a book, a show or a game for everyone to go through together,
+-- each at their own pace. Everyone moves their own marker: chapters for a book, episodes
+-- for a show, parts or hours for a game. A note is tagged with the point its writer was
+-- at, and stays shut for anyone who hasn't got that far: nobody can read another person's
+-- notes directly, and along_notes_for() hands the words back only once you've caught up,
+-- so they never reach a phone that's behind. One running along per room; ending one sets
+-- ended_at. Safe to re-run.
+create table if not exists room_alongs (
+  id uuid primary key default gen_random_uuid(),
+  room_id uuid not null references rooms(id) on delete cascade,
+  work_id text not null references works(id) on delete cascade,
+  unit text not null check (unit in ('chapter','episode','part','hour')),
+  total int not null check (total between 1 and 999),
+  ends_on date,
+  ended_at timestamptz,
+  created_by uuid references profiles(id) on delete set null,
+  created_at timestamptz not null default now()
+);
+create unique index if not exists room_alongs_one_on on room_alongs (room_id) where ended_at is null;
+create index if not exists room_alongs_room_idx on room_alongs (room_id, created_at desc);
+create table if not exists along_progress (
+  along_id uuid not null references room_alongs(id) on delete cascade,
+  user_id uuid not null references profiles(id) on delete cascade,
+  at int not null default 0 check (at between 0 and 999),
+  updated_at timestamptz not null default now(),
+  primary key (along_id, user_id)
+);
+create table if not exists along_notes (
+  id uuid primary key default gen_random_uuid(),
+  along_id uuid not null references room_alongs(id) on delete cascade,
+  user_id uuid not null references profiles(id) on delete cascade,
+  at int not null check (at between 0 and 999),
+  body text not null check (char_length(body) between 1 and 500),
+  created_at timestamptz not null default now()
+);
+create index if not exists along_notes_along_idx on along_notes (along_id, created_at);
+do $$ begin
+  if not exists (select 1 from pg_constraint where conname = 'along_notes_clean') then
+    alter table along_notes add constraint along_notes_clean check (not bad_word(body)) not valid; end if;
+end $$;
+alter table room_alongs enable row level security;
+alter table along_progress enable row level security;
+alter table along_notes enable row level security;
+
+-- anyone in the room can see it, start one, or end it; only whoever started it can delete it
+drop policy if exists room_alongs_read on room_alongs;
+create policy room_alongs_read on room_alongs for select to authenticated
+  using (room_id in (select my_room_ids()));
+drop policy if exists room_alongs_start on room_alongs;
+create policy room_alongs_start on room_alongs for insert to authenticated
+  with check (created_by = auth.uid() and room_id in (select my_room_ids()) and ended_at is null);
+drop policy if exists room_alongs_change on room_alongs;
+create policy room_alongs_change on room_alongs for update to authenticated
+  using (room_id in (select my_room_ids())) with check (room_id in (select my_room_ids()));
+drop policy if exists room_alongs_drop on room_alongs;
+create policy room_alongs_drop on room_alongs for delete to authenticated
+  using (created_by = auth.uid());
+-- what changes after the start: how many there are, the end date, and ending it
+revoke update on room_alongs from anon, authenticated;
+grant update (total, ends_on, ended_at) on room_alongs to authenticated;
+
+-- everyone's marker is visible to the room; you only move your own
+drop policy if exists along_progress_read on along_progress;
+create policy along_progress_read on along_progress for select to authenticated
+  using (exists (select 1 from room_alongs a where a.id = along_id and a.room_id in (select my_room_ids())));
+drop policy if exists along_progress_mine on along_progress;
+create policy along_progress_mine on along_progress for all to authenticated
+  using (user_id = auth.uid())
+  with check (user_id = auth.uid() and exists (select 1 from room_alongs a where a.id = along_id and a.room_id in (select my_room_ids())));
+
+-- your own notes only; everyone else's come through along_notes_for()
+drop policy if exists along_notes_read on along_notes;
+create policy along_notes_read on along_notes for select to authenticated using (user_id = auth.uid());
+drop policy if exists along_notes_write on along_notes;
+create policy along_notes_write on along_notes for insert to authenticated
+  with check (user_id = auth.uid() and exists (select 1 from room_alongs a where a.id = along_id and a.room_id in (select my_room_ids())));
+drop policy if exists along_notes_drop on along_notes;
+create policy along_notes_drop on along_notes for delete to authenticated using (user_id = auth.uid());
+
+-- An along's notes, oldest first. The words come back only when you've reached the point
+-- they were written at (or they're yours); otherwise body is null and open is false.
+create or replace function along_notes_for(p_along uuid)
+returns table (id uuid, user_id uuid, at int, body text, created_at timestamptz, open boolean)
+language sql stable security definer set search_path = public as $$
+  with mine as (select coalesce((select p.at from along_progress p where p.along_id = p_along and p.user_id = auth.uid()), 0) as at)
+  select n.id, n.user_id, n.at,
+    case when n.at <= mine.at or n.user_id = auth.uid() then n.body end,
+    n.created_at, (n.at <= mine.at or n.user_id = auth.uid())
+  from along_notes n, mine
+  where n.along_id = p_along
+    and exists (select 1 from room_alongs a where a.id = p_along and a.room_id in (select my_room_ids()))
+    and not apart_from(n.user_id)
+  order by n.created_at;
+$$;
+revoke all on function along_notes_for(uuid) from public, anon;
+grant execute on function along_notes_for(uuid) to authenticated;

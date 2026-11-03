@@ -14,6 +14,7 @@
  *   /push/send      → sends a notification to a room or a person, as the signed-in sender
  *   /i/<code>/<app path> → an invite page with the room's name for chat previews,
  *                     which then sends people on to the app
+ *   /u/<handle>     → somebody's public profile page, only if they switched it on
  *
  * and once an hour, on its own (the [triggers] cron in wrangler.toml), the room's
  * reminders: this week's question is up, voting's open, watch night tonight
@@ -40,6 +41,7 @@ export default {
        check. It only ever sends people on to the app's own address. */
     if (url.pathname.startsWith("/i/")) return await invitePage(request, url, env);
     if (url.pathname.startsWith("/c/") || url.pathname.startsWith("/s/")) return await sharePage(request, url, env);
+    if (url.pathname.startsWith("/u/")) return await profilePage(request, url, env);
 
     /* fail closed. an unrestricted worker is an open proxy: anyone who finds the
        url spends this worker's TMDB key and IGDB credentials. so a missing ORIGIN
@@ -278,6 +280,208 @@ async function sharePage(request, url, env) {
   return new Response(request.method === "HEAD" ? null : html, { headers:{ "Content-Type":"text/html; charset=utf-8", "Cache-Control":"public, max-age=300", "Access-Control-Allow-Origin":"*" } });
 }
 
+/* ---------- a public profile page ----------
+   A real page this time, not a stop on the way to the app: somebody's favourites, top
+   five and what they've logged lately, for a link in a bio. public_profile only answers
+   if they switched it on, and never with anything set to just them or room only. */
+const APP_HOME = "https://dontdateleos.github.io/Rooms/";
+const COVER_OK = /^https:\/\/(image\.tmdb\.org|images\.igdb\.com|covers\.openlibrary\.org)\//;
+const okCover = c => typeof c === "string" && COVER_OK.test(c) ? c : null;
+/* the app's avatar colours, in the app's order (profiles.avatar.col indexes these) */
+const AV_COLS = ["#FFB36B", "#FF8E6E", "#F5A3C7", "#FFE86A", "#9EF0C9", "#8FD3FF", "#B9A6FF", "#7A7590", "#151320"];
+const KIND = { film:{ one:"film", many:"films", label:"Film", c:"#FFB36B" }, tv:{ one:"show", many:"shows", label:"TV", c:"#F5A3C7" },
+  book:{ one:"book", many:"books", label:"Book", c:"#FFE066" }, game:{ one:"game", many:"games", label:"Game", c:"#9EF0C9" } };
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const MONTHS_LONG = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+async function profilePage(request, url, env) {
+  let handle = ""; try { handle = decodeURIComponent(url.pathname.split("/")[2] || ""); } catch {}
+  handle = handle.toLowerCase().replace(/[^a-z0-9_]/g, "").slice(0, 24);
+  let d = null, failed = false;
+  if (handle.length >= 2) try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/public_profile`, { method:"POST",
+      headers:{ "Content-Type":"application/json", apikey:env.SUPABASE_ANON || SUPABASE_ANON, Authorization:`Bearer ${env.SUPABASE_ANON || SUPABASE_ANON}` },
+      body:JSON.stringify({ p_handle:handle }) });
+    if (r.ok) d = await r.json(); else failed = true; } catch { failed = true; }
+  const found = !!(d && d.handle);
+  const html = found ? profileHTML(d, `${url.origin}/u/${d.handle}`) : notPublicHTML(failed);
+  /* short-lived, so switching the page off takes effect within a couple of minutes */
+  return new Response(request.method === "HEAD" ? null : html, { status:found ? 200 : failed ? 503 : 404,
+    headers:{ "Content-Type":"text/html; charset=utf-8", "Cache-Control":found ? "public, max-age=120" : "no-store" } });
+}
+
+const ROOMS_LOGO = `<svg viewBox="0 0 80 80" aria-hidden="true"><rect x="12" y="12" width="26" height="26" rx="10" fill="#52758e"/><rect x="42" y="12" width="26" height="26" rx="10" fill="#8c6442"/><rect x="12" y="42" width="26" height="26" rx="10" fill="#685d8e"/><rect x="38" y="38" width="34" height="34" rx="13" fill="#F7B3CF"/><rect x="47" y="49" width="5" height="12" rx="2.5" fill="#151320"/><rect x="57" y="49" width="5" height="12" rx="2.5" fill="#151320"/></svg>`;
+const PROFILE_CSS = `:root{--ground:#16131C;--card:#221E2D;--ink:#F4EDE2;--soft:#D9D2C6;--mute:#A099B4;--on:#151320;--paper:#FFF7EC;
+--butter:#FFE066;--pink:#F5A3C7;--mint:#9EF0C9;--sky:#8FD3FF;--lilac:#B99CFF;--apricot:#FFB36B;
+--head:Outfit,"Avenir Next",system-ui,sans-serif;--body:Inter,system-ui,-apple-system,sans-serif;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);font:400 16px/1.5 var(--body);-webkit-font-smoothing:antialiased;overflow-x:clip}
+a{color:inherit}
+.wrap{max-width:640px;margin:0 auto;padding:0 max(18px,env(safe-area-inset-right)) 0 max(18px,env(safe-area-inset-left))}
+h1,h2,h3{font-family:var(--head);font-weight:900;letter-spacing:-.035em;line-height:1;margin:0}
+p{margin:0}
+.top{display:flex;align-items:center;justify-content:space-between;height:62px;padding-top:env(safe-area-inset-top)}
+.logo{display:flex;align-items:center;gap:9px;font:900 21px var(--head);letter-spacing:-.03em;text-decoration:none}
+.logo svg{width:30px;height:30px}
+.btn{display:inline-flex;align-items:center;justify-content:center;font:800 16px var(--head);padding:14px 22px;border-radius:999px;background:var(--on);color:var(--paper);text-decoration:none;transition:transform .15s}
+.btn:hover{transform:translateY(-2px)}
+.btn.sm{padding:9px 16px;font-size:14px;background:var(--butter);color:var(--on)}
+.btn.line{background:transparent;color:var(--on);box-shadow:inset 0 0 0 2px rgba(21,19,32,.4)}
+a:focus-visible{outline:3px solid var(--butter);outline-offset:3px}
+.hero{text-align:center;padding:18px 0 4px}
+.av{width:104px;height:104px;border-radius:50%;background:var(--a);margin:0 auto 16px;display:flex;align-items:center;justify-content:center;gap:13px;
+  box-shadow:inset 0 -10px 0 rgba(0,0,0,.12),inset 0 8px 0 rgba(255,255,255,.18),0 14px 34px rgba(0,0,0,.4)}
+.av.dark{box-shadow:0 0 0 2px #3A3650,0 14px 34px rgba(0,0,0,.4)}
+.av i{width:10px;height:28px;border-radius:6px;background:var(--e)}
+.av i+i{height:31px;margin-top:-5px}
+.hero h1{font-size:clamp(40px,13vw,64px);overflow-wrap:anywhere}
+.bio{margin:12px auto 0;max-width:30ch;color:var(--soft);font-size:17px;overflow-wrap:anywhere}
+.since{margin-top:10px;color:var(--mute);font-size:14px}
+section{margin-top:32px}
+.lbl{font:800 12.5px var(--head);letter-spacing:.09em;text-transform:uppercase;color:var(--mute);margin:0 0 12px}
+.tally{display:grid;grid-template-columns:repeat(auto-fit,minmax(68px,1fr));gap:8px}
+.tally div{background:var(--c);color:var(--on);border-radius:18px;padding:13px 12px 11px}
+.tally div:nth-child(odd){rotate:-1.2deg}.tally div:nth-child(even){rotate:1deg}
+.tally b{display:block;font:900 32px/1 var(--head);letter-spacing:-.03em}
+.tally span{font:800 13px var(--head)}
+.po{display:block;position:relative;aspect-ratio:2/3;border-radius:12px;overflow:hidden;background:var(--c,#2C2738);box-shadow:0 10px 24px rgba(0,0,0,.35)}
+.po img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+.po span{position:absolute;left:0;right:0;bottom:0;padding:7px;color:var(--on);font:900 12px/1.1 var(--head);overflow-wrap:break-word;hyphens:auto}
+.favs{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.favs figure{margin:0;min-width:0}
+.favs figcaption{display:inline-block;margin-top:8px;font:800 11.5px var(--head);background:var(--c);color:var(--on);padding:3px 9px;border-radius:99px}
+.five{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.five li{position:relative;min-width:0}
+.five b{position:absolute;left:-5px;top:-8px;z-index:1;width:26px;height:26px;border-radius:50%;background:var(--butter);color:var(--on);display:grid;place-items:center;font:900 14px var(--head);box-shadow:0 4px 10px rgba(0,0,0,.35)}
+.five .po{border-radius:10px}
+.five small{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-top:7px;font:700 12px/1.2 var(--head);color:var(--soft)}
+.log{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.log li{display:grid;grid-template-columns:56px 1fr auto;gap:13px;align-items:start;background:var(--card);border-radius:18px;padding:10px 12px 10px 10px}
+.log .po{border-radius:8px;box-shadow:none}
+.log h3{font:800 16.5px/1.2 var(--head);letter-spacing:-.015em;margin-top:2px;overflow-wrap:anywhere}
+.log .yr{color:var(--mute);font-weight:600;font-size:14px;letter-spacing:0}
+.st{display:flex;align-items:center;gap:7px;margin-top:4px;color:var(--butter);font-size:15px;letter-spacing:1px;line-height:1}
+.st i{width:8px;height:8px;border-radius:50%;background:var(--c);flex:none}
+.log p{margin-top:6px;font-size:14px;line-height:1.45;color:var(--soft);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.sp{display:inline-block;background:rgba(244,237,226,.13);color:var(--mute);border-radius:6px;padding:0 7px;font:700 12px/1.6 var(--head);vertical-align:1px}
+.log time{font:700 12px var(--head);color:var(--mute);white-space:nowrap;margin-top:3px}
+.empty{color:var(--mute);text-align:center;margin-top:28px}
+.cta{background:var(--butter);color:var(--on);border-radius:28px;padding:26px 22px 24px;margin-top:38px;rotate:-.6deg}
+.cta h2{font-size:clamp(30px,8.5vw,42px)}
+.mk{display:inline-block;background:var(--pink);border-radius:.16em;padding:.03em .1em .06em;rotate:-2deg;line-height:.95}
+.cta p{margin:12px 0 18px;font-size:16px;max-width:40ch}
+.btns{display:flex;flex-wrap:wrap;gap:10px}
+footer{padding:30px 0 calc(34px + env(safe-area-inset-bottom));color:var(--mute);font-size:12.5px;text-align:center;line-height:1.6}
+footer a{text-decoration:none;font-weight:600}
+.gone{min-height:72vh;display:grid;place-content:center;text-align:center;gap:14px;padding:20px 0}
+.gone h1{font-size:clamp(36px,11vw,56px)}
+.gone p{color:var(--soft);max-width:32ch;margin:0 auto}
+.gone .btns{justify-content:center;margin-top:8px}
+.gone .btn{background:var(--butter);color:var(--on)}
+@media (prefers-reduced-motion:reduce){.btn{transition:none}}`;
+
+function profileShell({ title, desc, img, canonical, body, noindex, ld }) {
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>${escHTML(title)}</title><meta name="description" content="${escHTML(desc)}">${noindex ? `<meta name="robots" content="noindex">` : ""}
+${canonical ? `<link rel="canonical" href="${escHTML(canonical)}"><meta property="og:url" content="${escHTML(canonical)}">` : ""}
+<meta property="og:type" content="profile"><meta property="og:site_name" content="Rooms">
+<meta property="og:title" content="${escHTML(title)}"><meta property="og:description" content="${escHTML(desc)}">
+<meta property="og:image" content="${escHTML(img)}"><meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#16131C"><link rel="icon" href="${APP_HOME}icons/rooms-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@700;800;900&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+${ld ? `<script type="application/ld+json">${JSON.stringify(ld).replace(/</g, "\\u003c")}</script>` : ""}
+<style>${PROFILE_CSS}</style></head><body><div class="wrap">
+<header class="top"><a class="logo" href="${APP_HOME}" aria-label="Rooms">${ROOMS_LOGO}Rooms</a><a class="btn sm" href="${APP_HOME}">Get Rooms</a></header>
+${body}
+<footer>Rooms · <a href="${APP_HOME}privacy.html">Privacy</a><br>Film and TV covers from TMDB · game covers from IGDB · book covers from Open Library</footer>
+</div></body></html>`;
+}
+
+/* a poster: the cover when there's a safe one, a coloured card with the title when not */
+function posterHTML(w, lazy = true) {
+  const c = okCover(w.cover), k = KIND[w.kind];
+  /* the title card sits underneath, so a cover that fails to load just leaves it showing */
+  return `<span class="po" style="--c:${k ? k.c : "#2C2738"}"><span${c ? ` aria-hidden="true"` : ""}>${escHTML(w.title)}</span>${c ? `<img src="${escHTML(c)}" alt="${escHTML(w.title)}"${lazy ? ` loading="lazy"` : ""} decoding="async" onerror="this.remove()">` : ""}</span>`;
+}
+const starsText = s => { const n = Math.max(0, Math.min(10, Math.round(+s || 0))); return "★".repeat(n >> 1) + (n & 1 ? "½" : ""); };
+/* spoilers are cut out in the database already; this catches anything that slipped by */
+function noteLine(t) {
+  let s = String(t || "").replace(/\|\|[\s\S]+?\|\|/g, "[spoiler]").replace(/\s+/g, " ").trim();
+  if (s.length > 170) s = s.slice(0, 165).replace(/\s+\S*$/, "") + "…";
+  return escHTML(s).replace(/\[spoiler\]/g, `<span class="sp">spoiler</span>`);
+}
+function dayText(s, year) {
+  const [y, m, d] = String(s || "").split("-").map(Number);
+  if (!y || !m || !d) return "";
+  return `${d} ${MONTHS[m - 1]}${y !== year ? ` ${y}` : ""}`;
+}
+const listWords = xs => xs.length < 2 ? xs.join("") : `${xs.slice(0, -1).join(", ")} and ${xs[xs.length - 1]}`;
+
+function profileHTML(d, canonical) {
+  const handle = String(d.handle), year = +d.year || new Date().getUTCFullYear();
+  const favs = (d.favourites || []).filter(w => w && w.title).slice(0, 4);
+  const top = (d.top || []).filter(w => w && w.title).slice(0, 5);
+  const recent = (d.recent || []).filter(w => w && w.title).slice(0, 12);
+  const counts = d.counts || {};
+  /* their own colour if they picked one, else the one the app makes from their handle */
+  const colour = AV_COLS[Number.isInteger(d.colour) && AV_COLS[d.colour] ? d.colour : (avHash(handle) >> 3) % AV_COLS.length];
+  const dark = colour === "#151320";
+  const tally = Object.keys(KIND).filter(k => +counts[k] > 0)
+    .map(k => `<div style="--c:${KIND[k].c}"><b>${+counts[k]}</b><span>${+counts[k] === 1 ? KIND[k].one : KIND[k].many}</span></div>`);
+  const yearWords = Object.keys(KIND).filter(k => +counts[k] > 0).map(k => `${+counts[k]} ${+counts[k] === 1 ? KIND[k].one : KIND[k].many}`);
+  const [sy, sm] = String(d.since || "").split("-").map(Number);
+  const since = sy && sm ? `On Rooms since ${MONTHS_LONG[sm - 1]} ${sy}` : "On Rooms";
+  const logged = +d.logged || 0;
+
+  const lead = favs[0] || top[0] || recent[0];
+  const cover = lead && okCover(lead.cover);
+  const img = cover ? cover.replace("/t/p/w342/", "/t/p/w780/") : `${APP_HOME}icons/og.png`;
+  const title = `${handle} on Rooms`;
+  const desc = (d.bio ? `${String(d.bio).trim()} · ` : "")
+    + (favs.length ? `Favourites: ${listWords(favs.map(w => w.title))}. ` : "")
+    + (yearWords.length ? `${listWords(yearWords)} logged in ${year}. ` : "")
+    + `See what ${handle} watches, reads and plays on Rooms.`;
+
+  const body = `<main>
+<section class="hero" style="margin-top:0">
+  <div class="av${dark ? " dark" : ""}" style="--a:${colour};--e:${dark ? "#FFF7EC" : "#151320"}" aria-hidden="true"><i></i><i></i></div>
+  <h1>${escHTML(handle)}</h1>
+  ${d.bio ? `<p class="bio">${escHTML(d.bio)}</p>` : ""}
+  <p class="since">${since}${logged ? ` · ${logged} logged` : ""}</p>
+</section>
+${tally.length ? `<section><h2 class="lbl">${year} so far</h2><div class="tally">${tally.join("")}</div></section>` : ""}
+${favs.length ? `<section><h2 class="lbl">Favourites</h2><div class="favs">${favs.map(w =>
+  `<figure>${posterHTML(w, false)}<figcaption style="--c:${KIND[w.kind]?.c || "#A099B4"}">${escHTML(KIND[w.kind]?.label || "")}</figcaption></figure>`).join("")}</div></section>` : ""}
+${top.length ? `<section><h2 class="lbl">Top ${top.length === 5 ? "five" : top.length}</h2><ol class="five">${top.map((w, i) =>
+  `<li><b>${i + 1}</b>${posterHTML(w)}<small>${escHTML(w.title)}</small></li>`).join("")}</ol></section>` : ""}
+${recent.length ? `<section><h2 class="lbl">Recently</h2><ul class="log">${recent.map(w => `<li>${posterHTML(w)}<div>
+  <h3>${escHTML(w.title)}${w.year ? ` <span class="yr">${escHTML(String(w.year).slice(0, 4))}</span>` : ""}</h3>
+  <div class="st" style="--c:${KIND[w.kind]?.c || "#A099B4"}"><i title="${escHTML(KIND[w.kind]?.label || "")}"></i><span aria-label="${(Math.round(+w.score || 0) / 2)} stars">${starsText(w.score)}</span></div>
+  ${w.note ? `<p>${noteLine(w.note)}</p>` : ""}</div><time datetime="${escHTML(w.on)}">${dayText(w.on, year)}</time></li>`).join("")}</ul></section>`
+  : `<p class="empty">Nothing logged here yet.</p>`}
+<section class="cta">
+  <h2>Keep a log with <span class="mk">your people</span></h2>
+  <p>${escHTML(handle)} logs what they watch, read and play on Rooms. Start yours with the few friends whose taste you trust. Free on iPhone and the web.</p>
+  <div class="btns"><a class="btn" href="${APP_HOME}">Get Rooms</a><a class="btn line" href="${APP_HOME}#u=${escHTML(handle)}">Open in Rooms</a></div>
+</section>
+</main>`;
+  const ld = { "@context":"https://schema.org", "@type":"ProfilePage", url:canonical,
+    mainEntity:{ "@type":"Person", name:handle, alternateName:"@" + handle, ...(d.bio ? { description:String(d.bio) } : {}) } };
+  return profileShell({ title, desc, img, canonical, body, ld });
+}
+
+function notPublicHTML(failed) {
+  const title = failed ? "Couldn't load this page" : "This page isn't public";
+  const line = failed ? "Rooms didn't answer just then. Try again in a minute."
+    : "Whoever's page this is hasn't made it public, or there's nobody by that name.";
+  const body = `<main class="gone"><h1>${title}</h1><p>${line}</p>
+<p>Rooms is where small groups of friends log the films, shows, books and games they finish.</p>
+<div class="btns"><a class="btn" href="${APP_HOME}">Get Rooms</a></div></main>`;
+  return profileShell({ title:`${title} · Rooms`, desc:"Rooms: log films, shows, books and games with the few people whose taste you trust.",
+    img:`${APP_HOME}icons/og.png`, body, noindex:true });
+}
+
 /* ---------- notifications ----------
    Web push, done by hand with the platform's own crypto (RFC 8291 for the message,
    RFC 8292 for who's sending). The sender's own sign-in asks the database who may be
@@ -442,6 +646,12 @@ async function runSchedule(env, at = localNow(env.TZ || "Australia/Sydney")) {
   { const r = await svcRpc(env, "push_targets_clues", { p_hour:new Date().getUTCHours() }).catch(() => null);
     if (r?.ok) { const subs = await r.json(); if (subs.length) sent.push(await deliver(env, subs, { title:"Today's Five Clues is up",
       body:"A new one to guess. How few clues will it take you?", url:"./#clues", tag:"clues" })); } }
+  /* new episodes out today of shows people are on, told at six in the evening */
+  if (hour === 18) { const r = await svcRpc(env, "push_targets_episodes", { p_day:ymd }).catch(() => null);
+    if (r?.ok) { const rows = await r.json(), by = {};
+      for (const x of rows) (by[x.work_id + "|" + x.label] ||= { x, subs:[] }).subs.push(x);
+      for (const { x, subs } of Object.values(by)) sent.push(await deliver(env, subs, { title:`New ${x.title} out today`,
+        body:`${x.label || "A new episode"} is out. Tap to see it and say where you're up to.`, url:`./#work=${encodeURIComponent(x.work_id)}`, tag:`ep-${x.work_id}`.slice(0, 60) })); } }
   /* Monday morning: last week's totals are in, for the founder's video and newsletter */
   if (wd === 0 && hour === 8) { const r = await svcRpc(env, "push_targets_founders", {}).catch(() => null);
     if (r?.ok) { const subs = await r.json(); if (subs.length) sent.push(await deliver(env, subs, { title:"Last week on Rooms is ready",

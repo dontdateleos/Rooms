@@ -95,6 +95,20 @@ and never asks for one.</li>
 <li><b>Entries</b>: the title, your score, the date, anything you wrote about it, the parts you
 singled out, and the tickboxes for that kind of thing — first watch or rewatch, at the cinema
 or at home, paper or audio, finished or dropped.</li>
+<li><b>How it felt, and for games what you played it on</b>: up to three words like "tense" or
+"cosy", the platform, and whether you got all of it. They ride along with the entry and are seen
+by whoever can see the entry. Rooms adds up how many people picked each word for a title, to
+help "Pick one for me" find something by mood.</li>
+<li><b>Read-alongs and watch-alongs in a room</b>: what the room is going through together,
+where you're up to, and any notes you leave. Only the room sees them, and a note stays shut for
+anyone who hasn't reached the chapter or episode it was written at.</li>
+<li><b>Heads-ups you flag on a title</b> — "gore", "animal harm" and the like. Other people only
+ever see how many flagged each one, never who. You can take yours back any time.</li>
+<li><b>New-episode dates</b>, if "New episodes" is on in settings: the shows you're watching or
+have queued, and when their next episode comes out, so the worker can tell you that evening.
+Only you can read these. Switching it off deletes them.</li>
+<li><b>A poster you chose for a title, and a backdrop behind your page.</b> The poster only
+changes what you see; the backdrop is shown on your page to people who can see it.</li>
 <li><b>Your Up next and any other lists</b>, including the date each thing went on, and the order
 if you arranged them.</li>
 <li><b>Your ten</b> — the titles in it and their positions.</li>
@@ -224,6 +238,20 @@ person's week of television is not everybody else's week.</li>
 <p>A like is visible to the person whose entry it was and to anyone else who can see that entry.
 Names are shown — "mo and two others liked this" — so nothing about a like is anonymous.</p>
 
+<h2>A public profile page</h2>
+<p>You can have a page on the web, at an address with your handle in it, to put in a bio or send
+to someone who isn't on Rooms. <b>It is off unless you switch it on</b>, in your settings under
+"Public profile page".</p>
+<p>While it is on, anybody with the link — and search engines — can see your handle, your line,
+your avatar's colour, the month you joined, your favourites and your top five, how many films,
+shows, books and games you have logged this year, and the last twelve things you logged with
+their stars and what you wrote. Anything you hid as a spoiler stays hidden. Entries marked "just
+me" or room-only never appear on it, and neither does anything about your rooms or the people in
+them.</p>
+<p>Switch it off in the same place and within a couple of minutes the page only says it isn't
+public. A link preview or a search engine that already fetched it may keep its copy for a while
+longer. Changing your handle changes the address, and the old one stops working.</p>
+
 <h2>The newsletter</h2>
 <p>Rooms sends a newsletter once a month, only to people who switch it on in their settings.
 Switching it on keeps a note that you said yes; the email it goes to is the one on your account.
@@ -247,7 +275,8 @@ use it for anything of their own.</p>
 <h3>Cloudflare <span class="tag">looks things up</span></h3>
 <p>A small proxy that asks the film, book and game sources about titles, so that the sources
 never see you. It caches answers about <em>titles</em> — never anything about a person — and
-receives ordinary web request logs in the course of serving the request.</p>
+receives ordinary web request logs in the course of serving the request. It also draws the
+public profile pages of people who switched one on, from what the database says is public.</p>
 
 <h3>GitHub <span class="tag">serves the page</span></h3>
 <p>Rooms is a single file served by GitHub Pages. GitHub sees the request for that file,

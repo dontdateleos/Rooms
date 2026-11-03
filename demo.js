@@ -162,12 +162,17 @@ const REAL_COVERS = {"film:1":"https://image.tmdb.org/t/p/w342/umSVjVdbVwtx5ryCA
   "film:20":"https://image.tmdb.org/t/p/w342/lV8YHwGkYZsm6EfIqnhaSz2avKt.jpg",
   "game:20":"https://images.igdb.com/igdb/image/upload/t_cover_big/co9coo.jpg"};
 /* /REAL_COVERS */
+/* REAL_BACKDROPS: filled in by tools/demo-covers.mjs */
+const REAL_BACKDROPS = {};
+/* /REAL_BACKDROPS */
 const works = {};
 for (const [id,kind,title,year,creator,length,a,b,release] of [...WORKS, ...COMING]) {
   works[id] = { id, kind, title, year, creator, length, cover:REAL_COVERS[id] || poster(title, a, b),
-    meta:{ genres:GENRES[id] || [], ...(ABOUT[id] ? { overview:ABOUT[id] } : {}) },
+    meta:{ genres:GENRES[id] || [], ...(ABOUT[id] ? { overview:ABOUT[id] } : {}), ...(REAL_BACKDROPS[id] ? { backdrop:REAL_BACKDROPS[id] } : {}) },
     credits:{ director:creator, ...(CAST[id] ? { cast:CAST[id] } : {}) }, ...(release ? { release } : {}) };
 }
+/* a show that's still going, so "This week on TV" has something in it */
+works["tv:3"].meta.next_ep = { last:{ s:5, e:3, air:day(1), name:"Hello Goodbye" }, next:{ s:5, e:4, air:day(-6), name:"" } };
 works["book:1"].meta.series = DUNE; works["book:5"].meta.series = DUNE;
 
 const PEOPLE = [
@@ -258,10 +263,16 @@ const CONTEXT = {
   "u-ali|film:9":{ line:"I'm not the guy you kill. I'm the guy you buy." },
 };
 
+/* how things felt, so the picker's "how do you want to feel" has people behind it */
+const MOODED = { "film:1":["Tense","Exciting"], "film:2":["Tense","Thoughtful"], "film:3":["Tense","Exciting"], "film:4":["Thoughtful","Tense"],
+  "film:5":["Funny","Tense"], "film:6":["Thoughtful","Strange","Sad"], "film:7":["Romantic","Sad","Hopeful"], "film:8":["Sad","Thoughtful"], "film:9":["Tense"],
+  "tv:1":["Tense","Thoughtful"], "tv:2":["Strange","Sad"], "tv:3":["Funny","Tense"], "book:1":["Exciting","Strange"], "book:2":["Sad","Hopeful"], "book:3":["Thoughtful"],
+  "game:1":["Strange","Hopeful"], "game:2":["Funny","Strange"], "film:30":["Scary","Tense"], "film:31":["Scary"], "film:32":["Scary","Strange"], "tv:30":["Scary","Sad"] };
+const withMoods = (u, w, c) => MOODED[w] && (u.length + w.length) % 3 !== 0 ? { ...(c || {}), moods:MOODED[w] } : (c || null);
 const entries = LOG.map(([u,w,score,d,note,loved], i) => ({
   id:"e" + i, user_id:u, work_id:w, score, rated_on:day(d),
   note:note || null, loved:loved.length ? loved : null,
-  breakdown:null, context:CONTEXT[u + "|" + w] || null, room_only:false, created_at:ago(d),
+  breakdown:null, context:withMoods(u, w, CONTEXT[u + "|" + w]), room_only:false, created_at:ago(d),
 }));
 
 /* The Wire, season one, so a show's page has episodes to open — and two of them have
@@ -322,6 +333,10 @@ export function demoSeed() {
     profile:{ id:"me", handle:"jord", bio:"Four mediums, one shelf.", avatar:null, goals:{ "2026":{ total:20, film:10, book:4 } },
       created_at:ago(1180) },
     signedOut:false,
+    /* heads-ups people have flagged on the scary ones */
+    work_warnings:[["film:31","Death of a child",["u-ali","u-mo","u-cass"]],["film:31","Gore",["u-ali","u-rue"]],["film:31","Jump scares",["u-mo"]],
+      ["film:32","Animal harm",["u-cass","u-rue"]],["film:30","Gore",["u-mo","u-ali","u-rue"]],["film:30","Animal harm",["u-mo","u-cass"]],["film:6","Death of a child",["u-rue"]]]
+      .flatMap(([work_id, warning, who]) => who.map(user_id => ({ work_id, warning, user_id, created_at:ago(20) }))),
     profiles:PEOPLE.map(p => ({ ...p, avatar:null, created_at:ago(900) })),
     works,
     entries,
@@ -331,6 +346,8 @@ export function demoSeed() {
       { user_id:"u-ali", work_id:"book:2", started_on:day(12), at:"p. 310 of 496", updated_at:ago(.012) },
       { user_id:"u-mo", work_id:"tv:2", started_on:day(5), at:"S2 E4", updated_at:ago(.5) },
       { user_id:"u-cass", work_id:"game:2", started_on:day(9), at:"40%", updated_at:ago(1) },
+      /* yours, gone quiet: Up next asks whether you finished it */
+      { user_id:"me", work_id:"tv:2", started_on:day(40), at:"S1 E6", updated_at:ago(26) },
     ],
 
     lists:[{ id:"L1", owner:"me", name:"the shelf", created_at:ago(400) }],
@@ -381,6 +398,18 @@ export function demoSeed() {
     room_asks:[{ id:"a1", room_id:"r1", user_id:"u-cass", body:"Something short and tense for Friday? Under two hours.", closed:false, created_at:ago(1) }],
     room_ask_answers:[{ ask_id:"a1", user_id:"u-mo", work_id:"film:5", note:"89 minutes and Ben Kingsley never blinks.", created_at:ago(0.8) }],
     room_nights:[{ id:"n1", room_id:"r1", at:soon(2), options:["film:2","film:4","film:9"], created_by:"u-mo", created_at:ago(1) }],
+    /* ali started a read-along of Pachinko: everyone's somewhere different, rue hasn't
+       begun, and two of the notes are further on than you are */
+    room_alongs:[{ id:"al1", room_id:"r1", work_id:"book:2", unit:"chapter", total:40, ends_on:soon(26), ended_at:null, created_by:"u-ali", created_at:ago(12) }],
+    along_progress:[["u-ali",25,.01],["u-mo",14,.4],["me",11,1],["u-cass",9,2]]
+      .map(([user_id, at, d]) => ({ along_id:"al1", user_id, at, updated_at:ago(d) })),
+    along_notes:[
+      { id:"aln1", along_id:"al1", user_id:"u-cass", at:4, body:"Sunja at the boarding house. Four chapters in and I'd already die for her.", created_at:ago(9) },
+      { id:"aln2", along_id:"al1", user_id:"me", at:8, body:"Took me a few chapters to settle, but I'm in now.", created_at:ago(4) },
+      { id:"aln3", along_id:"al1", user_id:"u-mo", at:10, body:"Can't decide if Hansu is the villain or the only one who sees clearly. ||Both?||", created_at:ago(2) },
+      { id:"aln4", along_id:"al1", user_id:"u-mo", at:14, body:"I had to put it down and go for a walk after this one.", created_at:ago(.4) },
+      { id:"aln5", along_id:"al1", user_id:"u-ali", at:22, body:"Nobody warned me about chapter 22. Come and find me when you get here.", created_at:ago(.05) },
+    ],
     room_brackets:[{ room_id:"r1", month:MONTH, kind:"film", seeds:SEEDS, created_by:"u-mo", created_at:ago(20) }],
 
     /* lists people made: one open to the room, one ranked, one of yours */

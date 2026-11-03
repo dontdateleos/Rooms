@@ -108,7 +108,11 @@ const BASE = (process.env.BASE || "http://127.0.0.1:8934").replace(/\/$/, "");
       await tap(".whead [data-creator]"); await wait(1200); await expect(".crgrid .crw", "the director's films"); await closeSheet(); });
     await step("your page", async () => { await tap("#meBtn"); await wait(1200); await expect("#tasteCog", "settings");
       await tap("#tasteCog"); await wait(900); await expect("#nlSw", "the newsletter switch"); await tap("#nlSw"); await wait(700);
-      await expect("#nlSw.on", "the newsletter switch on"); await tap("#nlSw"); await wait(700); await closeSheet(); });
+      await expect("#nlSw.on", "the newsletter switch on"); await tap("#nlSw"); await wait(700);
+      await expect("#ppSw", "the public page switch"); await tap("#ppSw"); await wait(700);
+      await expect("#ppSw.on", "the public page switch on"); await expect("#ppCopy", "the public page link"); await tap("#ppSw"); await wait(700);
+      if (await page.$("#ppCopy")) throw new Error("the public page link stayed after switching off");
+      await closeSheet(); });
     await step("log something", async () => { await tap("#add"); await wait(700);
       if (!(await page.$("#sheet.on"))) throw new Error("the + button didn't open anything"); await closeSheet(); });
 
