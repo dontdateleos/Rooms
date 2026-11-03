@@ -2008,6 +2008,37 @@ nav button .dot{top:0;right:calc(50% - 24px)}
 .stk-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:3px}
 .stk-tags i{font-style:normal;font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:99px;background:color-mix(in srgb,var(--lilac) 22%,transparent);color:var(--ink)}
 #lovedWrap .custom[hidden]{display:none}
+/* the party games and Five Clues wear the weekly prompt's look */
+.promptcard.pg{border-top:0}
+.promptcard .pg-by{color:var(--onAccent);opacity:.65}
+.promptcard .pg-w{background:var(--card);color:var(--ink);border-radius:14px;padding:8px 10px;box-shadow:0 8px 18px rgba(21,19,32,.16);rotate:-.6deg}
+.promptcard .pg-w small{color:var(--mute)}
+.promptcard .pg-mash .pg-w:last-child{rotate:.7deg}
+.promptcard .pg-mash .x{color:var(--onAccent)}
+.promptcard .pg-quote{background:var(--card);color:var(--ink);box-shadow:0 8px 18px rgba(21,19,32,.16);rotate:.5deg;font-size:15.5px}
+.pg-qw{display:flex;align-items:center;gap:8px}.pg-qw small{color:var(--mute);font-size:12px}
+.promptcard .pg-opt{background:var(--card);color:var(--ink);box-shadow:0 8px 18px rgba(21,19,32,.16)}
+.promptcard .pg-opts .pg-opt:nth-child(odd){rotate:-.6deg}.promptcard .pg-opts .pg-opt:nth-child(even){rotate:.5deg}
+.promptcard .pg-opt.on,.promptcard .pg-opt.win{box-shadow:0 8px 18px rgba(21,19,32,.16),inset 0 0 0 2.5px var(--onAccent)}
+.promptcard .pg-opt.real{box-shadow:0 8px 18px rgba(21,19,32,.16),inset 0 0 0 2.5px var(--good)}
+.promptcard .pg-wait,.promptcard .pg-foot,.promptcard .pg-row small,.promptcard .pg-def small{color:var(--onAccent);opacity:.75}
+.promptcard .pg-def{color:var(--onAccent)}
+.promptcard .pg-in{background:rgba(255,255,255,.55);color:var(--onAccent);border-color:rgba(21,19,32,.15)}
+.promptcard .pg-in::placeholder{color:rgba(21,19,32,.5)}
+.promptcard .pg-mine{background:var(--card);color:var(--ink);border-radius:14px;padding:10px 12px;font-size:14.5px;line-height:1.4;display:grid;gap:3px;box-shadow:0 8px 18px rgba(21,19,32,.16)}
+.promptcard .pg-mine small{color:var(--mute);font-size:11.5px;font-weight:700}
+.promptcard .pg-face{background:rgba(21,19,32,.08);color:var(--onAccent)}
+.promptcard .pg-face.on{box-shadow:inset 0 0 0 2.5px var(--onAccent)}
+.promptcard .pg-verdict .chip,.promptcard .clu-kinds .chip{background:rgba(21,19,32,.08);color:var(--onAccent);border-color:transparent}
+.promptcard .pg-verdict .chip.on,.promptcard .clu-kinds .chip.on{background:var(--onAccent);color:#FFF7EC}
+.promptcard .pg-result.good,.promptcard .pg-result.bad{color:var(--onAccent)}
+.promptcard .pg-kind{background:rgba(21,19,32,.12);color:var(--onAccent)}
+.promptcard .linky{color:var(--onAccent)}
+.clu-card.promptcard{display:block}
+.clu-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px}
+.clu-row .btn{width:auto;padding:10px 22px;font-size:15px}
+.promptcard .clu-dots i{background:rgba(21,19,32,.14)}
+#pplDaily{margin-top:6px}
 .chip.addown{border:1.5px dashed color-mix(in srgb,var(--mute) 60%,transparent);background:none;color:var(--mute)}
 .stk-bar{display:flex;gap:8px;align-items:center;margin:12px 0 14px}
 .stk-bar input{flex:1;min-width:0;margin:0}
@@ -8167,13 +8198,14 @@ async function renderPeople() {
   const shown = fol.slice(0, 40);
   body.innerHTML = `<h2 class="pagetitle" data-pagetitle="Feed">Feed</h2>
     <div class="storyrow" id="storyRow" role="list" aria-label="Who's logged something lately"></div>
+    <div id="pplDaily"></div>
     <div id="pplFol">${!ids.length
       ? blank("var(--lilac)", "✦", "Follow people for their logs", "Find someone whose taste interests you — a taste twin, or anyone under Everyone — and what they log comes first here.", [])
       : `<div id="folTop"></div>${shown.map(e => slipHTML(e)).join("")}
         ${shown.length ? `<div class="caught"><span class="ctick" aria-hidden="true">✓</span><b>You're all caught up</b><small>That's everyone you follow. Here's what the rest of Rooms is finishing.</small></div>`
           : `<p class="sub" style="text-align:center;margin:18px 0">Nobody you follow has logged anything yet.</p>`}`}</div>
     <div id="pplTwins"></div><div id="pplAll"></div>`;
-  paintStoryRow();
+  paintStoryRow(); paintDaily(null, $("#pplDaily"), { everyone:true });
   const fb = $("#pplFol"); wireSlips(fb, shown); revealIn(fb);
   paintEveryone($("#pplAll"), all);
   /* the twins take a while to work out, so they arrive after everything else is up */
@@ -10324,12 +10356,12 @@ function promptHTML(R, g) {
     <div class="gprompt">${esc(p)}</div>${body}${lastLine}</div>`; }
 /* "3 of 5 in" said how many and not who. The faces still out sit in a row, and a tap on
    one sends them a single nudge — once per person per game, so it stays a poke */
-function waitHTML(R, ids, what, key) {
+function waitHTML(R, ids, what, key, about = "") {
   const left = R.members.filter(m => ids.includes(m.id)); if (!left.length) return "";
   const others = left.filter(m => m.id !== me.id);
   return `<div class="waiton"><small>Waiting on</small><span class="wfaces">${left.map(m => m.id === me.id
       ? `<span class="wf you" title="you">${avatar(me)}</span>`
-      : `<button class="wf" data-nudge="${esc(m.id)}" data-nk="${esc(key)}" data-nw="${what}" aria-label="Nudge ${esc(m.handle)}" title="${esc(m.handle)}">${avatar(m)}</button>`).join("")}</span>
+      : `<button class="wf" data-nudge="${esc(m.id)}" data-nk="${esc(key)}" data-nw="${what}"${about ? ` data-nb="${esc(about)}"` : ""} aria-label="Nudge ${esc(m.handle)}" title="${esc(m.handle)}">${avatar(m)}</button>`).join("")}</span>
     ${others.length ? `<small class="wtip">tap a face to nudge</small>` : ""}</div>`; }
 function wireNudges(R, el) {
   $$("[data-nudge]", el).forEach(b => { const k = `${b.dataset.nk}:${b.dataset.nudge}`;
@@ -10339,7 +10371,7 @@ function wireNudges(R, el) {
       P.nudged = [...(P.nudged || []), k].slice(-60); saveP(); b.classList.add("done"); buzz(10);
       if (!REDUCED) b.animate([{ transform:"none" }, { transform:"rotate(-14deg) scale(1.15)" }, { transform:"rotate(10deg)" }, { transform:"none" }], { duration:440, easing:"ease-out" });
       const p = promptOf(R.id, gameWeek());
-      notify({ to:m.id, title:`${me.handle} is waiting on you`, body:b.dataset.nw === "vote" ? `Votes are open in ${R.name}: “${p}”` : `${R.name}'s prompt this week: “${p}”`, tag:`nudge-${b.dataset.nk}` });
+      notify({ to:m.id, title:`${me.handle} is waiting on you`, body:b.dataset.nb ? b.dataset.nb : b.dataset.nw === "vote" ? `Votes are open in ${R.name}: “${p}”` : `${R.name}'s prompt this week: “${p}”`, tag:`nudge-${b.dataset.nk}` });
       say(`Nudged ${m.handle}`, "good"); }; }); }
 function revealHTML(R, s) {
   const n = a => s.tally[akey(a)];
@@ -11071,7 +11103,7 @@ async function openClues(after, k = "any") {
   try { pz = await cluesToday(today(), k); } catch { openSheet(`<h3>Five Clues</h3><p class="sub">Today's couldn't load. Try again in a bit.</p>`); return; }
   let s = cluesState(k), t = null;
   const save = () => { P.cluesBy = { ...(P.cluesBy || {}), [k]:s }; saveP(); };
-  const finish = async () => { s.done = true; save(); buzz(s.solved ? [10, 40, 16] : 20);
+  const finish = async () => { s.done = true; save(); cluesAll = null; buzz(s.solved ? [10, 40, 16] : 20);
     if (!DEMO) try { await q(sb.from("daily_scores").insert({ user_id:me.id, game:cluesGame(k), day:s.day, clues:s.shown, solved:s.solved })); } catch {}
     else try { await q(sb.from("daily_scores").upsert({ user_id:me.id, game:cluesGame(k), day:s.day, clues:s.shown, solved:s.solved })); } catch {}
     draw(); if (s.solved && !REDUCED) setTimeout(() => { const c = $(".clu-ans .co"); if (c) burstAt(c, 24); }, 200); after?.(); };
@@ -11104,16 +11136,32 @@ async function openClues(after, k = "any") {
           if (right) { s.solved = true; finish(); } else wrong(h.title); }); }, 300); }; };
   draw(); }
 /* the card at the top of the room's Play tab, and the room's week of it */
-async function paintDaily(R, box) {
+/* how everyone did today, per puzzle: counts only, never who */
+let cluesAll = null;
+async function cluesEveryone() {
+  if (cluesAll?.day === today()) return cluesAll.rows;
+  let rows = [];
+  try { if (sb.__local) { const rs = await q(sb.from("daily_scores").select("*").eq("day", today()));
+      const by = {}; rs.forEach(r => { const g = (by[r.game] ||= { game:r.game, played:0, solved:0, sum:0 }); g.played++; if (r.solved) { g.solved++; g.sum += r.clues; } });
+      rows = Object.values(by).map(g => ({ ...g, avg_clues:g.solved ? g.sum / g.solved : null })); }
+    else rows = await q(sb.rpc("clues_today", { p_day:today() })); } catch {}
+  cluesAll = { day:today(), rows:rows || [] }; return cluesAll.rows; }
+async function paintDaily(R, box, o = {}) {
   if (!box) return; const k = MEDIA_PICK.some(([x]) => x === P.cluesKind) ? P.cluesKind : "any", s = cluesState(k);
-  box.innerHTML = `<div class="card game clu-card"><button class="clu-main" id="cluOpen" type="button"><span class="clu-dots">${[1, 2, 3, 4, 5].map(i => `<i class="${s.done ? (s.solved && i === s.shown ? "ok" : i < s.shown || (!s.solved && i <= 5) ? "x" : "") : ""}"></i>`).join("")}</span>
-      <span class="clu-ct"><b>Five Clues · #${cluesNo()}${k !== "any" ? ` · ${mediaWord(k)}` : ""}</b><small>${s.done ? (s.solved ? `You got it on clue ${s.shown} · ${cluePoints(s)} points` : "Not today. A new one tomorrow.") : s.guesses.length ? `${s.guesses.length} down, keep going` : k === "any" ? "Today's film, show, book or game. Guess it in as few clues as you can." : `Today's ${K(k).label.toLowerCase()}. Guess it in as few clues as you can.`}</small></span>
-      <span class="chev" aria-hidden="true">›</span></button>
+  const what = k === "any" ? "film, show, book or game" : K(k).label.toLowerCase();
+  const head = s.done ? (s.solved ? `You got it on clue ${s.shown}.` : "Not today. A new one tomorrow.") : `Can you guess today's ${what} in five clues?`;
+  box.innerHTML = `<div class="card game promptcard clu-card" style="--room:var(--sky)"><div class="h"><span>Five Clues · #${cluesNo()}</span><span class="tag dim">${s.done ? (s.solved ? `${cluePoints(s)} points` : "missed") : "daily"}</span></div>
+    <div class="gprompt">${esc(head)}</div>
     <div class="clu-kinds" role="tablist" aria-label="Which one">${MEDIA_PICK.map(([x, l]) => { const st = cluesState(x);
-      return `<button class="chip ${x === k ? "on" : ""}" data-ck="${x}" role="tab" aria-selected="${x === k}">${l}${st.done ? `<em class="${st.solved ? "ok" : "x"}">${st.solved ? cluePoints(st) : "×"}</em>` : ""}</button>`; }).join("")}</div></div><div id="cluTable"></div>`;
-  $("#cluOpen", box).onclick = () => openClues(() => paintDaily(R, box), k);
-  $$("[data-ck]", box).forEach(b => b.onclick = () => { P.cluesKind = b.dataset.ck; saveP(); buzz(4); paintDaily(R, box); });
-  paintDailyTable(R, $("#cluTable", box)); }
+      return `<button class="chip ${x === k ? "on" : ""}" data-ck="${x}" role="tab" aria-selected="${x === k}">${l}${st.done ? `<em class="${st.solved ? "ok" : "x"}">${st.solved ? cluePoints(st) : "×"}</em>` : ""}</button>`; }).join("")}</div>
+    <div class="clu-row"><span class="clu-dots">${[1, 2, 3, 4, 5].map(i => `<i class="${s.done ? (s.solved && i === s.shown ? "ok" : i < s.shown || (!s.solved && i <= 5) ? "x" : "") : i <= s.guesses.length ? "x" : ""}"></i>`).join("")}</span>
+      <button class="btn ${s.done ? "ghost" : ""}" id="cluOpen" type="button">${s.done ? "See the answer" : s.guesses.length ? "Keep going" : "Play"}</button></div>
+    <p class="sub gline" id="cluAll"></p></div>${o.everyone ? "" : `<div id="cluTable"></div>`}`;
+  $("#cluOpen", box).onclick = () => openClues(() => paintDaily(R, box, o), k);
+  $$("[data-ck]", box).forEach(b => b.onclick = () => { P.cluesKind = b.dataset.ck; saveP(); buzz(4); paintDaily(R, box, o); });
+  cluesEveryone().then(rows => { const el = $("#cluAll", box); if (!el) return; const g = rows.find(x => x.game === cluesGame(k));
+    el.textContent = g?.played ? `Everyone today: ${g.played} played · ${Math.round(g.solved / g.played * 100)}% got it${g.solved ? ` · most by clue ${Math.round(+g.avg_clues)}` : ""}` : "Nobody's played this one yet today. Be the first."; });
+  if (!o.everyone) paintDailyTable(R, $("#cluTable", box)); }
 async function paintDailyTable(R, el) {
   if (!el || !R || R.members.length < 2) return;
   const wk = gameWeek(), last = gameWeek(1), ids = R.members.map(m => m.id);
@@ -11226,21 +11274,26 @@ const whoName = (R, id) => id === me.id ? "you" : R.members.find(m => m.id === i
 function roundHTML(R, r, votes) {
   const P2 = PARTY[r.game], st = roundState(R, r, votes), p = r.payload || {}, mine = r.answers.find(a => a.mine);
   const wcard = w => w ? `<div class="pg-w"${w.id ? ` data-gw="${esc(w.id)}"` : ""}>${w.id && works[w.id] ? cover(works[w.id]) : w.cover ? `<img class="co" src="${esc(w.cover)}" alt="" loading="lazy">` : ""}<div><b>${esc(w.title || "")}</b><small>${w.kind ? tag(w.kind) : ""} ${esc(w.year || "")}</small></div></div>` : "";
-  let top = "";
-  if (r.game === "blurb") top = `${wcard(p.work)}<p class="pg-q">What's it really about?</p>`;
-  if (r.game === "pitch") top = `${wcard(p.work)}<p class="pg-q">Pitch it so it sounds terrible.</p>`;
-  if (r.game === "mash") top = `<div class="pg-mash">${wcard(p.a)}<span class="x">×</span>${wcard(p.b)}</div><p class="pg-q">Write the tagline for the mash-up.</p>`;
-  if (r.game === "who") { const w = works[p.work] || {}; top = `${wcard({ ...w, id:p.work })}<blockquote class="pg-quote">“${esc(noteText(p.note || ""))}”<span>${stars(p.score || 0, "sm")}</span></blockquote>`; }
-  if (r.game === "court") { const w = works[p.work] || {}; top = `${wcard({ ...w, id:p.work })}<p class="pg-q"><b>${esc(whoName(R, p.user))}</b> gave it <b>${(p.score / 2).toFixed(1)}★</b> when the rest of the room gave it ${(p.avg / 2).toFixed(1)}★.</p>`; }
+  /* each round reads like the weekly prompt: the question big, what it's about as a tile */
+  const t1 = p.work?.title || works[p.work]?.title || "";
+  const head = r.game === "blurb" ? `What's ${t1} really about?` : r.game === "pitch" ? `Pitch ${t1} so it sounds terrible.`
+    : r.game === "mash" ? `${p.a?.title || ""} meets ${p.b?.title || ""}. What's the tagline?` : r.game === "who" ? "Who wrote this?"
+    : `${whoName(R, p.user).replace(/^you$/, "You")} gave ${t1} ${((p.score || 0) / 2).toFixed(1)}★. The room gave it ${((p.avg || 0) / 2).toFixed(1)}★.`;
+  let top = `<div class="gprompt">${esc(head)}</div>`;
+  if (r.game === "blurb" || r.game === "pitch") top += wcard(p.work);
+  if (r.game === "mash") top += `<div class="pg-mash">${wcard(p.a)}<span class="x">×</span>${wcard(p.b)}</div>`;
+  if (r.game === "who") { const w = works[p.work] || {}; top += `<blockquote class="pg-quote">“${esc(noteText(p.note || ""))}”<span class="pg-qw">${stars(p.score || 0, "sm")}<small>on ${esc(w.title || "something")}</small></span></blockquote>`; }
+  if (r.game === "court") { const w = works[p.work] || {}; top += wcard({ ...w, id:p.work }); }
   let body = "";
   const opts = () => { let o = r.answers.map(a => ({ key:a.id, text:a.body, mine:a.mine, user:a.user_id }));
     if (r.game === "blurb") o.push({ key:"real", text:p.real, real:true });
     return o.sort((a, b) => avHash(r.id + a.key) - avHash(r.id + b.key)); };
   if (st.phase === "answer") {
     if (r.game === "court" && p.user !== me.id) body = `<p class="pg-wait">Waiting for ${esc(whoName(R, p.user))}'s defence.</p>`;
-    else if (mine) body = `<p class="pg-wait">You're in: “${esc(mine.body)}”<br>${st.answered.length} of ${R.members.length} in.${r.created_by === me.id && r.answers.length >= 2 ? ` <button class="linky" data-pgo="${esc(r.id)}">Start the vote now</button>` : ""}</p>`;
+    else if (mine) body = `<div class="pg-mine"><small>your answer · nobody sees whose until the end</small>“${esc(mine.body)}”</div><p class="pg-wait">${st.answered.length} of ${R.members.length} in.${r.created_by === me.id && r.answers.length >= 2 ? ` <button class="linky" data-pgo="${esc(r.id)}">Start the vote now</button>` : ""}</p>`;
     else body = `<textarea class="pg-in" data-pin="${esc(r.id)}" maxlength="200" rows="2" placeholder="${esc(r.game === "court" ? "Your defence, in a line" : P2.ask)}"></textarea>
-      <div class="pg-row"><small>${st.answered.length} of ${R.members.length} in</small><button class="btn pg-send" data-psend="${esc(r.id)}">${r.game === "court" ? "Plead" : "Send it"}</button></div>`; }
+      <div class="pg-row"><small>${st.answered.length} of ${R.members.length} in · answers stay anonymous</small><button class="btn pg-send" data-psend="${esc(r.id)}">${r.game === "court" ? "Plead" : "Send it"}</button></div>`; }
+  if (st.phase === "answer" && ANSWER_GAMES.has(r.game) && st.answered.length) body += waitHTML(R, R.members.map(m => m.id).filter(id => !st.answered.includes(id)), "answer", `round:${r.id}:a`, `${P2.name} in ${R.name}: ${head}`);
   else if (st.phase === "vote") {
     if (r.game === "court") { const def = r.answers[0];
       body = `${def ? `<p class="pg-def">“${esc(def.body)}” <small>— the defence</small></p>` : `<p class="pg-wait">No defence offered.</p>`}
@@ -11248,7 +11301,8 @@ function roundHTML(R, r, votes) {
         : `<div class="pg-verdict">${[["guilty", "Guilty"], ["free", "Not guilty"]].map(([k, l]) => `<button class="chip ${st.mineV?.choice === k ? "on" : ""}" data-pv="${esc(r.id)}" data-pc="${k}">${l}</button>`).join("")}</div>`}`; }
     else if (r.game === "who") body = `<div class="pg-faces">${R.members.map(m => `<button class="pg-face ${st.mineV?.choice === m.id ? "on" : ""}" data-pv="${esc(r.id)}" data-pc="${esc(m.id)}">${avatar(m)}<small>${esc(m.id === me.id ? "me" : m.handle)}</small></button>`).join("")}</div>`;
     else body = `<p class="pg-wait">${r.game === "blurb" ? "Which one's real?" : "Vote for the best one. Not your own."}</p><div class="pg-opts">${opts().map(o => `<button class="pg-opt ${st.mineV?.choice === o.key ? "on" : ""}" ${o.mine ? "disabled" : ""} data-pv="${esc(r.id)}" data-pc="${esc(o.key)}">${esc(o.text)}${o.mine ? " <small>yours</small>" : ""}</button>`).join("")}</div>`;
-    body += `<small class="pg-foot">${st.vs.length} of ${R.members.length} voted · names come out when everyone has${st.mineV ? " · you can change your vote till then" : ""}</small>`; }
+    body += `<small class="pg-foot">${st.vs.length} of ${R.members.length} voted · names come out when everyone has${st.mineV ? " · you can change your vote till then" : ""}</small>`;
+    if (st.vs.length) body += waitHTML(R, R.members.map(m => m.id).filter(id => !st.vs.some(v => v.voter === id) && !(r.game === "court" && id === p.user)), "vote", `round:${r.id}:v`, `Votes are open in ${R.name}: ${head}`); }
   else if (st.phase === "fizzled") body = `<p class="pg-wait">Not enough answers came in for this one.</p>`;
   else { /* the reveal */
     const count = k => st.vs.filter(v => v.choice === k).length;
@@ -11260,7 +11314,7 @@ function roundHTML(R, r, votes) {
       const top = Math.max(0, ...os.filter(o => !o.real).map(o => o.n));
       body = `<div class="pg-opts done">${os.map(o => `<div class="pg-opt ${o.real ? "real" : o.n && o.n === top ? "win" : ""}"><span>${esc(o.text)}</span>
         <small>${o.real ? `the real one · ${o.n ? `${o.n} found it` : "nobody found it"}` : `${esc(whoName(R, o.user))} · ${o.n} ${r.game === "blurb" ? (o.n === 1 ? "fooled" : "fooled") : o.n === 1 ? "vote" : "votes"}`}</small></div>`).join("")}</div>`; } }
-  return `<div class="card game pg" style="--pg:${P2.col}" data-round="${esc(r.id)}"><div class="h"><span>${esc(P2.name)}${p.kind && p.kind !== "any" ? ` <em class="pg-kind">${mediaWord(p.kind)}</em>` : ""}</span><span class="tag dim">${st.phase === "done" ? "the reveal" : st.phase === "vote" ? "voting" : st.phase === "answer" ? "answering" : "over"}</span></div>
+  return `<div class="card game promptcard pg" style="--pg:${P2.col};--room:${P2.col}" data-round="${esc(r.id)}"><div class="h"><span>${esc(P2.name)}${p.kind && p.kind !== "any" ? ` <em class="pg-kind">${mediaWord(p.kind)}</em>` : ""}</span><span class="tag dim">${st.phase === "done" ? "the reveal" : st.phase === "vote" ? "voting" : st.phase === "answer" ? "answering" : "over"}</span></div>
     <small class="pg-by">${esc(whoName(R, r.created_by))} started it · ${esc(noteAgo(r.created_at))}</small>${top}${body}</div>`; }
 async function paintParty(R, es, box) {
   if (!box || !R || R.members.length < 2) { if (box) box.innerHTML = ""; return; }
@@ -11291,7 +11345,7 @@ async function paintParty(R, es, box) {
   $$("[data-pv]", box).forEach(b => b.onclick = async () => { b.disabled = true;
     try { await q(sb.from("room_votes").upsert({ room_id:R.id, game:"round:" + b.dataset.pv, voter:me.id, choice:b.dataset.pc })); buzz(5); again(); }
     catch (e) { b.disabled = false; oops(e, "Couldn't vote"); } });
-  $$("[data-gw]", box).forEach(x => x.onclick = () => openWork(x.dataset.gw)); }
+  $$("[data-gw]", box).forEach(x => x.onclick = () => openWork(x.dataset.gw)); wireNudges(R, box); }
 
 const fourHTML = items => `<div class="four">${[0,1,2,3].map(i => { const w = works[items[i]]; return w ? `<div class="po" data-work="${esc(w.id)}">${cover(w,"")}<b>${esc(w.title)}</b></div>` : `<div class="po" style="opacity:.4"></div>`; }).join("")}</div>`;
 /* ---------- what to try next ----------

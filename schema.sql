@@ -1979,3 +1979,15 @@ do $$ declare r record; begin
     end;
   end loop;
 end $$;
+
+-- ---------- how everyone did at Five Clues today ----------
+-- The Feed shows each day's puzzle with a line on how everyone got on: how many played, how
+-- many got it, and by which clue. Counts only, never who. Safe to re-run.
+create or replace function clues_today(p_day date)
+returns table (game text, played int, solved int, avg_clues numeric)
+language sql stable security definer set search_path = public as $$
+  select d.game, count(*)::int, (count(*) filter (where d.solved))::int, round(avg(d.clues) filter (where d.solved), 1)
+  from daily_scores d where d.day = p_day and d.game like 'clues%' group by d.game
+$$;
+revoke all on function clues_today(date) from public, anon;
+grant execute on function clues_today(date) to authenticated;
