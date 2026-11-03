@@ -8644,11 +8644,11 @@ function heroHTML(o) {
   /* the middle size: the same pieces, smaller, with the button beside the line under it */
   if (o.mid) return `<div class="card game promptcard hero mid${o.cls ? " " + o.cls : ""}"${o.id ? ` id="${o.id}"` : ""} style="--room:${o.col.startsWith("#") ? o.col : `var(--${o.col})`}">
     <div class="h"><span>${esc(o.label)}</span><span class="tag dim hs-tag"${o.tag ? "" : " hidden"}>${esc(o.tag || "")}</span></div>
-    <div class="hero-body"><div class="gprompt">${o.head}</div>${fan.length ? `<div class="hero-fan${fan.length > 3 ? " four" : ""}">${fan.map(w => `<button class="hero-po" data-herow="${esc(w.id)}" type="button" aria-label="${esc(w.title || "")}">${cover(w, "")}</button>`).join("")}</div>` : ""}</div>
+    <div class="hero-body"><div class="gprompt">${o.head}</div>${fan.length ? `<div class="hero-fan${fan.length > 3 ? " four" : ""}">${fan.map(w => `<button class="hero-po" data-herow="${esc(w.id)}" type="button" aria-label="${esc(w.title || "")}">${cover(w)}</button>`).join("")}</div>` : ""}</div>
     <div class="hm-foot"><p class="sub gline">${o.meta || ""}</p>${o.btn ? `<button class="btn hero-go" id="${o.btn.id}" type="button"${o.btn.aria ? ` aria-label="${esc(o.btn.aria)}"` : ""}>${o.btn.icon || ""}${esc(o.btn.label)}</button>` : ""}</div></div>`;
   return `<div class="card game promptcard hero${o.cls ? " " + o.cls : ""}"${o.id ? ` id="${o.id}"` : ""} style="--room:${o.col.startsWith("#") ? o.col : `var(--${o.col})`}">
     <div class="h"><span>${esc(o.label)}</span>${o.tag ? `<span class="tag dim">${esc(o.tag)}</span>` : ""}</div>
-    <div class="hero-body"><div class="gprompt">${o.head}</div>${fan.length ? `<div class="hero-fan${fan.length > 3 ? " four" : ""}">${fan.map(w => `<button class="hero-po" data-herow="${esc(w.id)}" type="button" aria-label="${esc(w.title || "")}">${cover(w, "")}</button>`).join("")}</div>` : ""}</div>
+    <div class="hero-body"><div class="gprompt">${o.head}</div>${fan.length ? `<div class="hero-fan${fan.length > 3 ? " four" : ""}">${fan.map(w => `<button class="hero-po" data-herow="${esc(w.id)}" type="button" aria-label="${esc(w.title || "")}">${cover(w)}</button>`).join("")}</div>` : ""}</div>
     ${o.meta ? `<p class="sub gline">${o.meta}</p>` : ""}
     ${o.btn ? `<button class="btn hero-go" id="${o.btn.id}" type="button"${o.btn.aria ? ` aria-label="${esc(o.btn.aria)}"` : ""}>${o.btn.icon || ""}${esc(o.btn.label)}</button>` : ""}</div>`; }
 const wireHero = root => $$("[data-herow]", root || document).forEach(b => b.onclick = ev => { ev.stopPropagation(); openWork(b.dataset.herow); });
@@ -13522,7 +13522,7 @@ async function renderStacks() {
   /* the top block gets its count and a few covers once the stacks are in */
   { const hb = $("#stkHero"); if (hb) { const tg = $(".hs-tag", hb); if (tg) { tg.textContent = `${ls.length} ${ls.length === 1 ? "stack" : "stacks"}`; tg.hidden = false; }
       const fan = ls.slice(0, 3).map(l => works[l.items[0]?.work_id]).filter(Boolean);
-      if (fan.length && !$(".hero-fan", hb)) { $(".hero-body", hb)?.insertAdjacentHTML("beforeend", `<div class="hero-fan">${fan.map(w => `<button class="hero-po" data-herow="${esc(w.id)}" type="button" aria-label="${esc(w.title || "")}">${cover(w, "")}</button>`).join("")}</div>`); wireHero(hb); } } }
+      if (fan.length && !$(".hero-fan", hb)) { $(".hero-body", hb)?.insertAdjacentHTML("beforeend", `<div class="hero-fan">${fan.map(w => `<button class="hero-po" data-herow="${esc(w.id)}" type="button" aria-label="${esc(w.title || "")}">${cover(w)}</button>`).join("")}</div>`); wireHero(hb); } } }
   /* only the media and genres something here is actually of */
   const kindsHere = Object.keys(KINDS).filter(k => ls.some(l => shapes.get(l.id).kinds.has(k)));
   const tagCount = {}; ls.forEach(l => shapes.get(l.id).tags.forEach(t => tagCount[t] = (tagCount[t] || 0) + 1));
