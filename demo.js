@@ -127,7 +127,40 @@ const CAST = {
 const DUNE = { name:"Dune", parts:[["Dune","1965","book:1"],["Dune Messiah","1969","book:5"],["Children of Dune","1976"],
   ["God Emperor of Dune","1981"],["Heretics of Dune","1984"],["Chapterhouse: Dune","1985"]].map(([title, year, id], i) => ({ title, year, n:i + 1, ...(id ? { id } : {}) })) };
 /* REAL_COVERS: filled in by tools/demo-covers.mjs */
-const REAL_COVERS = {};
+const REAL_COVERS = {"film:1":"https://image.tmdb.org/t/p/w342/umSVjVdbVwtx5ryCA2QXL44Durm.jpg",
+  "film:2":"https://image.tmdb.org/t/p/w342/bpjRGwfYJ71bU0hNhLIz7g3t6Oy.jpg",
+  "film:3":"https://image.tmdb.org/t/p/w342/nV5316WUsVij8sVXLCF1g7TFitg.jpg",
+  "film:4":"https://image.tmdb.org/t/p/w342/3BYhikNhkWALAbpAdoL0rcBrl5A.jpg",
+  "film:5":"https://image.tmdb.org/t/p/w342/xTfCZTzhgHNAR1pf5D49WH4buI5.jpg",
+  "film:6":"https://image.tmdb.org/t/p/w342/hUu9zyZmDd8VZegKi1iK1Vk0RYS.jpg",
+  "film:7":"https://image.tmdb.org/t/p/w342/k3waqVXSnvCZWfJYNtdamTgTtTA.jpg",
+  "film:8":"https://image.tmdb.org/t/p/w342/evKz85EKouVbIr51zy5fOtpNRPg.jpg",
+  "film:9":"https://image.tmdb.org/t/p/w342/hhkW4yVIGo8Bee3UITKvqOvhNMG.jpg",
+  "tv:1":"https://image.tmdb.org/t/p/w342/4lbclFySvugI51fwsyxBTOm4DqK.jpg",
+  "tv:2":"https://image.tmdb.org/t/p/w342/NKJdryIFHr245Umq6gXsf7oULW.jpg",
+  "tv:3":"https://image.tmdb.org/t/p/w342/AdYr4DjOgXvDUMwu6vEhZy1Rnxk.jpg",
+  "book:1":"https://covers.openlibrary.org/b/id/11481354-L.jpg",
+  "book:2":"https://covers.openlibrary.org/b/id/8044605-L.jpg",
+  "book:3":"https://covers.openlibrary.org/b/id/12742248-L.jpg",
+  "game:1":"https://images.igdb.com/igdb/image/upload/t_cover_big/co65ac.jpg",
+  "game:2":"https://images.igdb.com/igdb/image/upload/t_cover_big/co9j3v.jpg",
+  "film:30":"https://image.tmdb.org/t/p/w342/tzGY49kseSE9QAKk47uuDGwnSCu.jpg",
+  "film:31":"https://image.tmdb.org/t/p/w342/4GFPuL14eXi66V96xBWY73Y9PfR.jpg",
+  "film:32":"https://image.tmdb.org/t/p/w342/zap5hpFCWSvdWSuPGAQyjUv2wAC.jpg",
+  "tv:30":"https://image.tmdb.org/t/p/w342/nWPZb800NCGiDPNGsKCfY0w44Z2.jpg",
+  "book:30":"https://covers.openlibrary.org/b/id/10239163-L.jpg",
+  "film:40":"https://image.tmdb.org/t/p/w342/6rb24x39vV8n5301IelC8rCPJTH.jpg",
+  "film:41":"https://image.tmdb.org/t/p/w342/qzJMPWRtZveBkxXOv3ucWhoJuyj.jpg",
+  "film:42":"https://image.tmdb.org/t/p/w342/32l3FaCzs8cXWps6hkgNJAcOsP.jpg",
+  "film:43":"https://image.tmdb.org/t/p/w342/iJPSls4taB09EUKtLj6FjFSprb3.jpg",
+  "film:44":"https://image.tmdb.org/t/p/w342/3KgtekisQBrHRsm2cD5UOB6Ce3k.jpg",
+  "film:45":"https://image.tmdb.org/t/p/w342/LyCOcGqOTyTmaXu2TK8LfGveIb.jpg",
+  "film:46":"https://image.tmdb.org/t/p/w342/z70iQ61WqhxETAz8ar2oD8pkIM.jpg",
+  "film:47":"https://image.tmdb.org/t/p/w342/55wmcXJIDYITr7JDijJTdvwSaAv.jpg",
+  "book:4":"https://covers.openlibrary.org/b/id/8758252-L.jpg",
+  "book:5":"https://covers.openlibrary.org/b/id/980253-L.jpg",
+  "film:20":"https://image.tmdb.org/t/p/w342/lV8YHwGkYZsm6EfIqnhaSz2avKt.jpg",
+  "game:20":"https://images.igdb.com/igdb/image/upload/t_cover_big/co9coo.jpg"};
 /* /REAL_COVERS */
 const works = {};
 for (const [id,kind,title,year,creator,length,a,b,release] of [...WORKS, ...COMING]) {
