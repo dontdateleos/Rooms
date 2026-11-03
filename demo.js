@@ -163,7 +163,31 @@ const REAL_COVERS = {"film:1":"https://image.tmdb.org/t/p/w342/umSVjVdbVwtx5ryCA
   "game:20":"https://images.igdb.com/igdb/image/upload/t_cover_big/co9coo.jpg"};
 /* /REAL_COVERS */
 /* REAL_BACKDROPS: filled in by tools/demo-covers.mjs */
-const REAL_BACKDROPS = {};
+const REAL_BACKDROPS = {"film:1":"https://image.tmdb.org/t/p/w780/uI22JkEMediWyiRqhllNqeeGtW0.jpg",
+  "film:2":"https://image.tmdb.org/t/p/w780/3pYudqkEC8rkjqpBw8pqoLUtGHe.jpg",
+  "film:3":"https://image.tmdb.org/t/p/w780/qVzmXKKOTtd3szkiCheCNrfa394.jpg",
+  "film:4":"https://image.tmdb.org/t/p/w780/2GIr0LArTvO33HQVPEdp49FLdNV.jpg",
+  "film:5":"https://image.tmdb.org/t/p/w780/yYUGy4MDM6jbJoamlfo3HT6Guhy.jpg",
+  "film:6":"https://image.tmdb.org/t/p/w780/pnTSOKcYnvdpQNQElAtJM1rWOxH.jpg",
+  "film:7":"https://image.tmdb.org/t/p/w780/7HR38hMBl23lf38MAN63y4pKsHz.jpg",
+  "film:8":"https://image.tmdb.org/t/p/w780/4jdduww9j5RyzO4ITRcuBFhqNN1.jpg",
+  "film:9":"https://image.tmdb.org/t/p/w780/8j6GP3wOkUDIC7DZDsAyaDsr1el.jpg",
+  "tv:1":"https://image.tmdb.org/t/p/w780/aQTtua5pG490fMfeKgtYg5B853e.jpg",
+  "tv:2":"https://image.tmdb.org/t/p/w780/rK9D7R4nzG3YGBktQY7VD5tGdtb.jpg",
+  "tv:3":"https://image.tmdb.org/t/p/w780/gPQppUnLx9vqPDLz3WwZ2HJsNbt.jpg",
+  "film:30":"https://image.tmdb.org/t/p/w780/r9leYNa8nTRCceZrZhP1DXkgKVb.jpg",
+  "film:31":"https://image.tmdb.org/t/p/w780/pS9Aub8MPyQbENblGD8mHeaqMuv.jpg",
+  "film:32":"https://image.tmdb.org/t/p/w780/zi2oYYNSSv7t44iSt5YrxHX9PYs.jpg",
+  "tv:30":"https://image.tmdb.org/t/p/w780/dQF17lG4OZ3pC4QD9iNjaMS96gO.jpg",
+  "film:40":"https://image.tmdb.org/t/p/w780/zOO8GRa02x9o1iGOIIAJD50YcMW.jpg",
+  "film:41":"https://image.tmdb.org/t/p/w780/mhpDSuNyHPMsccI7zISEaskTgOQ.jpg",
+  "film:42":"https://image.tmdb.org/t/p/w780/sdWxVWhnJBiMq9N2ikfOmxeozKh.jpg",
+  "film:43":"https://image.tmdb.org/t/p/w780/jYhMlpOJMIiDTGcwZsKikZ7FShq.jpg",
+  "film:44":"https://image.tmdb.org/t/p/w780/rlKB2moKVOPasy4Dr19QluzbJgA.jpg",
+  "film:45":"https://image.tmdb.org/t/p/w780/du11oPPbEoDnUpiREO5tUg47rJd.jpg",
+  "film:46":"https://image.tmdb.org/t/p/w780/ueXO7FqIECtcPbpPSw87hiFlrSA.jpg",
+  "film:47":"https://image.tmdb.org/t/p/w780/eS5OdKN3kRZXQbWRSSCJ4Gh0z26.jpg",
+  "film:20":"https://image.tmdb.org/t/p/w780/uXgWbwxmCW6XZ3ylRThk9Sqhwwq.jpg"};
 /* /REAL_BACKDROPS */
 const works = {};
 for (const [id,kind,title,year,creator,length,a,b,release] of [...WORKS, ...COMING]) {
