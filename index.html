@@ -11385,9 +11385,14 @@ const CLUE_KIND_WORD = { film:"A film", tv:"A TV show", book:"A book", game:"A g
 const CLUE_MADE = { film:"directed by", tv:"made by", book:"written by", game:"made by" };
 /* take the names out of the plot: the title's own words, and anything capitalised
    that isn't starting a sentence */
+/* plots can be grim. A clue or a party game isn't the place for sexual violence, abuse,
+   suicide or self-harm, so a sentence that mentions any of them is skipped, and a plot
+   with nothing else in it isn't used at all */
+const PLOT_DARK = /\b(rap(e|ed|es|ing|ist|ists)|sexual(ly)?[\s-]+(assault|abus|violen|exploit|predat)\w*|molest\w*|incest\w*|pa?edophil\w*|child[\s-]+(abuse|porn)\w*|grooming|groomed|sex[\s-]+traffick\w*|abus(e|ed|er|ers|es|ing|ive)|suicid\w*|self[\s-]+harm\w*)\b/i;
+const plotSentences = t => String(t || "").replace(/\s+/g, " ").trim().split(/(?<=[.!?])\s+/).filter(x => x && !PLOT_DARK.test(x));
 function blankPlot(text, title) {
   const tw = new Set(normT(title).split(" ").filter(w => w.length > 3));
-  const s = String(text || "").replace(/\s+/g, " ").split(/(?<=[.!?])\s+/).slice(0, 2).join(" ").slice(0, 260);
+  const s = plotSentences(text).slice(0, 2).join(" ").slice(0, 260);
   return s.replace(/(^|[.!?]\s+|\s)([\w'’À-ÿ-]+)/g, (m, pre, w) => {
     const start = pre === "" || /[.!?]/.test(pre);
     if (tw.has(normT(w)) || (!start && /^[A-ZÀ-Ý]/.test(w) && w.length > 1)) return pre + "▇".repeat(Math.min(6, Math.max(3, Math.round(w.length / 2))));
@@ -11414,7 +11419,7 @@ async function cluesToday(d = today(), k = "any") {
     genres.length ? genres.join(" · ") : "No genre to go on — guess away",
     words.length ? words.join(" · ") : (w.length ? `${w.length}${K(w.kind).unit}` : "Nothing more to go on here"),
     `${y}${w.creator ? ` · ${CLUE_MADE[w.kind]} ${String(w.creator).split(",")[0]}` : ""}`,
-    w.meta.overview ? `“${blankPlot(w.meta.overview, w.title)}”` : `It starts with “${String(w.title).slice(0, 1)}”` ];
+    plotSentences(w.meta.overview).length ? `“${blankPlot(w.meta.overview, w.title)}”` : `It starts with “${String(w.title).slice(0, 1)}”` ];
   return cluesCache[d + k] = { no:cluesNo(d), day:d, k, w, clues }; }
 const cluesState = (k = "any") => { const s = k === "any" && !P.cluesBy?.any ? P.clues : P.cluesBy?.[k];
   return s?.day === today() ? s : { day:today(), shown:1, guesses:[], done:false, solved:false }; };
@@ -11549,26 +11554,27 @@ async function partyWork([kind, title, year]) {
   return { id:null, kind, title, year:String(year), cover:"" }; }
 /* something real and not very well known, with a plot to hide among the fakes: a film or
    show from TMDB, a game from IGDB, a book from Open Library */
+const plotOk = t => !!t && !PLOT_DARK.test(t);
 const firstLines = (t, max = 200) => { const s2 = String(t || "").replace(/\s+/g, " ").trim().split(/(?<=[.!?])\s+/);
   return (s2[0].length > 70 ? s2[0] : s2.slice(0, 2).join(" ")).slice(0, max); };
 async function blurbPick(k = "any") {
   if (k === "any") k = ["film", "film", "tv", "book", "game"][Math.floor(Math.random() * 5)];
-  if (DEMO) { const ws = Object.values(works).filter(w => w?.meta?.overview && w.meta.overview.length > 60 && (w.kind === k || !Object.values(works).some(x => x?.kind === k && x.meta?.overview)));
+  if (DEMO) { const ws = Object.values(works).filter(w => w?.meta?.overview && w.meta.overview.length > 60 && plotOk(w.meta.overview) && (w.kind === k || !Object.values(works).some(x => x?.kind === k && x.meta?.overview)));
     const w = ws[Math.floor(Math.random() * ws.length)];
     return { work:{ id:w.id, kind:w.kind, title:w.title, year:w.year, cover:w.cover || "" }, real:firstLines(w.meta.overview) }; }
   for (let n = 0; n < 4; n++) {
     if (k === "film" || k === "tv") { const gm = await tmdbGenreNames().catch(() => ({}));
       const d = await tmdb(`discover/${k === "film" ? "movie" : "tv"}`, { sort_by:"popularity.desc", "vote_count.gte":k === "film" ? "40" : "20", "vote_count.lte":k === "film" ? "400" : "250",
         "vote_average.gte":"6", without_genres:k === "film" ? "99,16" : "99,10763,10764,10767", include_adult:"false", page:String(1 + Math.floor(Math.random() * 15)) });
-      const r = (d.results || []).filter(x => x.overview && x.overview.length > 70 && x.overview.length < 500 && x.poster_path)[Math.floor(Math.random() * 6)];
+      const r = (d.results || []).filter(x => x.overview && x.overview.length > 70 && x.overview.length < 500 && x.poster_path && plotOk(x.overview))[Math.floor(Math.random() * 6)];
       if (r) return { work:tmdbHit(r, k, gm), real:firstLines(r.overview) }; }
     if (k === "game") { const g = await igdb("games", `fields name,summary,first_release_date,cover.image_id,genres.name,themes.name; where summary != null & cover != null & total_rating_count > 12 & total_rating_count < 90; limit 50; offset ${Math.floor(Math.random() * 400)};`).catch(() => []);
-      const x = (g || []).filter(y => y.summary && y.summary.length > 70)[Math.floor(Math.random() * 8)];
+      const x = (g || []).filter(y => y.summary && y.summary.length > 70 && plotOk(y.summary))[Math.floor(Math.random() * 8)];
       if (x) return { work:igdbHit(x), real:firstLines(x.summary) }; }
     if (k === "book") { const d = await ol("/search.json", { q:"subject:fiction language:eng", sort:"random", limit:"20", fields:"key,title,author_name,first_publish_year,cover_i,edition_count" }).catch(() => ({}));
       for (const b of (d.docs || []).filter(x => x.cover_i && (x.edition_count || 0) < 40).slice(0, 5)) {
         const w = await ol(`${b.key}.json`).catch(() => ({})), about = typeof w.description === "string" ? w.description : w.description?.value || "";
-        if (about.length > 70 && !/^\s*\(|copyright|isbn/i.test(about)) return { work:olHit(b), real:firstLines(about.replace(/\[.*?\]\(.*?\)|-{3,}[\s\S]*$/g, "")) }; } } }
+        if (about.length > 70 && plotOk(about) && !/^\s*\(|copyright|isbn/i.test(about)) return { work:olHit(b), real:firstLines(about.replace(/\[.*?\]\(.*?\)|-{3,}[\s\S]*$/g, "")) }; } } }
   throw new Error("Couldn't find one just now"); }
 /* the room's hottest take: the score furthest from everyone else in the room on the same title */
 function courtPick(R, es, k = "any") {
