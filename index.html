@@ -2070,6 +2070,17 @@ nav button .dot{top:0;right:calc(50% - 24px)}
 .alonecard .alone b{font-size:24px;font-weight:900;letter-spacing:-.02em;color:var(--onAccent)}
 .alonecard .alone span{color:var(--onAccent);opacity:.8}
 .alonecard .alone .btn{background:var(--onAccent);color:#FFF7EC}
+/* stacks in the prompt's look: each in its own colour, the name big, the posters raised */
+.stk.promptcard{background:var(--room);color:var(--onAccent);position:relative;overflow:hidden;box-shadow:none}
+.stk.promptcard::before{right:10px;top:-34px;font-size:150px}
+.stk.promptcard .stk-t b{font-size:21px;font-weight:900;letter-spacing:-.02em;line-height:1.15;text-wrap:balance}
+.stk.promptcard .stk-t small{color:rgba(21,19,32,.72)}
+.stk.promptcard .stk-strip .co{box-shadow:4px 6px 14px -4px rgba(21,19,32,.45)}
+.stk.promptcard .stk-tags i{background:rgba(21,19,32,.1);color:var(--onAccent)}
+.stk.promptcard .stk-seen .pbar{background:rgba(21,19,32,.14)}
+.stk.promptcard .stk-seen .pbar i{background:var(--onAccent)}
+.stk.promptcard .stk-seen em{color:rgba(21,19,32,.72)}
+.stk.promptcard .stk-none{color:rgba(21,19,32,.6)}
 .chip.addown{border:1.5px dashed color-mix(in srgb,var(--mute) 60%,transparent);background:none;color:var(--mute)}
 .stk-bar{display:flex;gap:8px;align-items:center;margin:12px 0 14px}
 .stk-bar input{flex:1;min-width:0;margin:0}
@@ -13038,7 +13049,8 @@ function stackShape(l) {
 function stackCardHTML(l) {
   const { ws, tags } = stackShape(l), seen = ws.filter(w => logged(w.id)).length;
   const pct = ws.length ? Math.round(seen / ws.length * 100) : 0;
-  return `<button class="stk" data-tlist="${esc(l.id)}" type="button">
+  const col = ["lilac", "pink", "sky", "mint", "butter", "apricot"][avHash(l.id) % 6];
+  return `<button class="stk promptcard" style="--room:var(--${col})" data-tlist="${esc(l.id)}" type="button">
     <span class="stk-strip">${ws.slice(0, 5).map((w, i) => `<span style="--i:${i}">${tileCover(w)}</span>`).join("") || `<span class="stk-none">Nothing on it yet</span>`}</span>
     <span class="stk-t"><b>${esc(l.title)}</b>
       <small>${l.owner === me.id ? "yours" : `by ${esc(handleOf(l.owner))}`} · ${l.items.length} ${l.items.length === 1 ? "thing" : "things"}${l.likes.length ? ` · ♥ ${l.likes.length}` : ""}${l.open ? " · your rooms add to it" : ""}${l.due ? ` · ${stackDue(l)}` : ""}</small>
