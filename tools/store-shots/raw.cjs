@@ -5,12 +5,20 @@
 const { chromium } = require('playwright'); const D = __dirname;
 (async () => { const b = await chromium.launch(); const errs = [];
   const ctx = await b.newContext({ viewport: { width: 393, height: 852 }, deviceScaleFactor: 3, colorScheme: 'dark', hasTouch: false });
+  /* on a machine that can reach the worker (the Screenshots workflow), its answers come back
+     as if from the app's own address, so the starter stacks get their real covers too */
+  const ORIGIN = (process.env.SHOTS_ORIGIN || '').split(',')[0].trim();
+  if (ORIGIN) await ctx.route('**/rooms.jordandf1.workers.dev/**', async r => {
+    const res = await r.fetch({ headers:{ ...r.request().headers(), origin:ORIGIN } }).catch(() => null);
+    if (!res) return r.abort();
+    await r.fulfill({ response:res, headers:{ ...res.headers(), 'access-control-allow-origin':'*' } }); });
   const p = await ctx.newPage(); p.on('pageerror', e => errs.push(e.message));
   await p.addInitScript(() => { if (!sessionStorage.x) { sessionStorage.x = 1; localStorage.setItem('rooms.prefs', JSON.stringify({ theme: 'dark', holdTip: 1, toured: 1, pushAsked: 1 })); } });
   await p.goto('http://127.0.0.1:8934/index.html?demo', { waitUntil: 'networkidle' }); await p.waitForTimeout(3500);
   await p.addStyleTag({ content: '#demobar{display:none!important} .toast{display:none!important} #newPill{display:none!important}' });
   const only = process.argv[2] ? process.argv[2].split(',').map(Number) : null;
-  const shot = async n => { if (only && !only.includes(n)) return; await p.waitForTimeout(900); await p.screenshot({ path: `${D}/raw-${n}.png` }); console.log('shot', n); };
+  const shot = async n => { if (only && !only.includes(n)) return; await p.waitForTimeout(900);
+    await p.waitForFunction(() => [...document.images].every(i => i.complete), null, { timeout:8000 }).catch(() => {}); await p.screenshot({ path: `${D}/raw-${n}.png` }); console.log('shot', n); };
   const top = async () => { await p.evaluate(() => scrollTo(0, 0)); await p.waitForTimeout(400); };
   const tab = async t => { await p.locator('nav button', { hasText: t }).first().click(); await p.waitForTimeout(1600); await top(); };
   const back = async () => { await p.evaluate(() => history.back()); await p.waitForTimeout(900); };

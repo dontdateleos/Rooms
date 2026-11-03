@@ -126,9 +126,12 @@ const CAST = {
    the rest are only names */
 const DUNE = { name:"Dune", parts:[["Dune","1965","book:1"],["Dune Messiah","1969","book:5"],["Children of Dune","1976"],
   ["God Emperor of Dune","1981"],["Heretics of Dune","1984"],["Chapterhouse: Dune","1985"]].map(([title, year, id], i) => ({ title, year, n:i + 1, ...(id ? { id } : {}) })) };
+/* REAL_COVERS: filled in by tools/demo-covers.mjs */
+const REAL_COVERS = {};
+/* /REAL_COVERS */
 const works = {};
 for (const [id,kind,title,year,creator,length,a,b,release] of [...WORKS, ...COMING]) {
-  works[id] = { id, kind, title, year, creator, length, cover:poster(title, a, b),
+  works[id] = { id, kind, title, year, creator, length, cover:REAL_COVERS[id] || poster(title, a, b),
     meta:{ genres:GENRES[id] || [], ...(ABOUT[id] ? { overview:ABOUT[id] } : {}) },
     credits:{ director:creator, ...(CAST[id] ? { cast:CAST[id] } : {}) }, ...(release ? { release } : {}) };
 }

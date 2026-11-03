@@ -1,0 +1,40 @@
+# The screenshots, with real covers. This sandbox-free runner can reach the worker and the
+# cover hosts, so it looks up the demo's real covers (tools/demo-covers.mjs), takes the App
+# Store screenshots and the website's screens from the demo, and commits them back.
+# Run by hand from the Actions tab.
+name: Screenshots
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency: shots
+jobs:
+  shots:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-save playwright@1.48.2 && npx playwright install --with-deps chromium
+      - name: Real covers for the demo
+        env:
+          ORIGIN: ${{ secrets.ORIGIN }}
+        run: node tools/demo-covers.mjs
+      - name: The screens
+        env:
+          SHOTS_ORIGIN: ${{ secrets.ORIGIN }}
+        run: |
+          python3 -m http.server 8934 >/dev/null 2>&1 &
+          sleep 2
+          node tools/store-shots/raw.cjs
+          node tools/store-shots/compose.cjs
+          node tools/store-shots/site.cjs
+      - name: Commit them
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add demo.js store/screenshots site tools/store-shots/raw-*.png
+          if git diff --cached --quiet; then echo "nothing changed"; else
+            git commit -m "Screenshots and the demo with real covers" && git push; fi
