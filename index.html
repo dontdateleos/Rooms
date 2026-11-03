@@ -2169,6 +2169,13 @@ nav button .dot{top:0;right:calc(50% - 24px)}
 .roomhero .feedpick::before{right:30px;background:#FFF7EC;opacity:.75}
 #tab-people .pagetitle{--mk:var(--butter)}
 #tab-clubs .pagetitle{--mk:var(--pink)}
+/* the slim top block: same colour, one short row */
+.hero.slim{display:flex;align-items:center;gap:12px;padding:12px 12px 12px 16px;border-radius:20px}
+.hero.slim::before{content:none}
+.hero.slim .hs-t{flex:1;min-width:0;display:grid;gap:2px}
+.hero.slim .hs-t small{font:700 11px var(--body);letter-spacing:.07em;text-transform:uppercase;opacity:.7}
+.hero.slim .hs-t b{font:900 17px/1.2 var(--head);letter-spacing:-.02em;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.hero.slim .hero-go{width:auto;flex:none;padding:10px 16px;font-size:14px;min-height:0}
 .chip.addown{border:1.5px dashed color-mix(in srgb,var(--mute) 60%,transparent);background:none;color:var(--mute)}
 .stk-bar{display:flex;gap:8px;align-items:center;margin:12px 0 14px}
 .stk-bar input{flex:1;min-width:0;margin:0}
@@ -8614,6 +8621,10 @@ const LENS = `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11
    a headline that says something true about what's in here, a line under it, up to four
    posters fanned on the right (each opens), and the one thing you'd do next. */
 function heroHTML(o) {
+  /* the slim one: the same colour in one short row, for pages that only need a nudge */
+  if (o.slim) return `<div class="card game promptcard hero slim${o.cls ? " " + o.cls : ""}"${o.id ? ` id="${o.id}"` : ""} style="--room:${o.col.startsWith("#") ? o.col : `var(--${o.col})`}">
+    <div class="hs-t"><small>${esc(o.label)}<span class="hs-tag">${o.tag ? " · " + esc(o.tag) : ""}</span></small><b>${o.head}</b></div>
+    ${o.btn ? `<button class="btn hero-go" id="${o.btn.id}" type="button"${o.btn.aria ? ` aria-label="${esc(o.btn.aria)}"` : ""}>${o.btn.icon || ""}${esc(o.btn.label)}</button>` : ""}</div>`;
   const fan = (o.fan || []).filter(Boolean).slice(0, 4);
   return `<div class="card game promptcard hero${o.cls ? " " + o.cls : ""}"${o.id ? ` id="${o.id}"` : ""} style="--room:${o.col.startsWith("#") ? o.col : `var(--${o.col})`}">
     <div class="h"><span>${esc(o.label)}</span>${o.tag ? `<span class="tag dim">${esc(o.tag)}</span>` : ""}</div>
@@ -8638,19 +8649,20 @@ function paintCabHero() { const el = $("#cabHero"); if (!el) return;
     const avg = es.length ? es.reduce((t, e) => t + e.score, 0) / es.length / 2 : 0;
     const recent = es.slice().sort((a, b) => String(b.rated_on).localeCompare(String(a.rated_on)) || String(b.created_at || "").localeCompare(String(a.created_at || ""))).slice(0, 3).map(e => works[e.work_id]);
     const bits = [best && best[0] !== ym && best[1] > m ? `Busiest month: <b>${MONTH_FULL[+best[0].slice(5) - 1]}, ${best[1]}</b>` : "", es.length ? `<b>${avg.toFixed(1)}★</b> on average` : ""].filter(Boolean);
-    el.innerHTML = heroHTML({ col, label:"Diary", tag:`${es.length} logged`,
+    el.innerHTML = heroHTML({ slim:true, col, label:"Diary", tag:`${es.length} logged`,
       head:m ? `${numWord(m)} ${m === 1 ? one : what} so far in ${MONTH_FULL[now.getMonth()]}.` : `Nothing yet in ${MONTH_FULL[now.getMonth()]}.`,
-      meta:bits.join(" · "), fan:recent, btn:{ id:"cabHeroGo", label:k ? `Log ${k === "tv" ? "a show" : k === "game" ? "a game" : k === "book" ? "a book" : "a film"}` : "Log something" } });
+      meta:bits.join(" · "), fan:recent, btn:{ id:"cabHeroGo", label:"+ Log", aria:k ? `Log ${k === "tv" ? "a show" : k === "game" ? "a game" : k === "book" ? "a book" : "a film"}` : "Log something" } });
     $("#cabHeroGo", el).onclick = () => openAdd(); }
   else {
     const kinds = (k ? [k] : CAB_ORDER).filter(x => (rankCache[x] || []).some(id => works[id]));
     const tops = kinds.map(x => works[(rankCache[x] || []).find(id => works[id])]).filter(Boolean);
     const counts = kinds.map(x => [x, (rankCache[x] || []).filter(id => works[id]).length]);
     const big = counts.slice().sort((a, b) => b[1] - a[1])[0];
-    const head = !tops.length ? "Rate a few and your order builds itself." : k ? `${esc(tops[0].title)} is your number one ${one}.` : tops.length === 1 ? `${esc(tops[0].title)} is your number one.` : "Your number ones.";
-    el.innerHTML = heroHTML({ col, label:"Ranked", tag:`${counts.reduce((t, c) => t + c[1], 0)} in order`, head,
+    const head = !tops.length ? "Rate a few and your order builds itself." : k || tops.length === 1 ? `${esc(tops[0].title)} is your number one${k ? " " + one : ""}.`
+      : `Your number ones: ${tops.map(w => esc(w.title)).join(", ")}.`;
+    el.innerHTML = heroHTML({ slim:true, col, label:"Ranked", tag:`${counts.reduce((t, c) => t + c[1], 0)} in order`, head,
       meta:counts.map(([x, n]) => `${n} ${n === 1 ? (x === "tv" ? "show" : K(x).label.toLowerCase()) : x === "tv" ? "shows" : K(x).plural.toLowerCase()}`).join(" · "),
-      fan:tops, btn:big && big[1] >= 2 ? { id:"cabHeroGo", label:`Sharpen your ${big[0] === "tv" ? "shows" : K(big[0]).plural.toLowerCase()}` } : null });
+      fan:tops, btn:big && big[1] >= 2 ? { id:"cabHeroGo", label:"Sharpen", aria:`Sharpen your ${big[0] === "tv" ? "shows" : K(big[0]).plural.toLowerCase()}` } : null });
     const go = $("#cabHeroGo", el); if (go) go.onclick = () => $(`[data-sharpen="${big[0]}"]`)?.click(); }
   wireHero(el); }
 function renderCabinet() {
@@ -13465,10 +13477,10 @@ async function renderStacks() {
   const tab = STACK_TABS.some(([k]) => k === P.stackTab) ? P.stackTab : "popular";
   const places = STACK_TABS.map(([k, n]) => place(k, n, "lilac", "clubs"));
   body.innerHTML = `${pagerHTML(places, tab, { id:"stackPager", mode:"tabs", title:"Stacks" })}
-    ${heroHTML({ id:"stkHero", col:"pink", label:(STACK_TABS.find(([k]) => k === tab) || [, "Stacks"])[1], tag:"",
+    ${heroHTML({ slim:true, id:"stkHero", col:"pink", label:(STACK_TABS.find(([k]) => k === tab) || [, "Stacks"])[1], tag:"",
       head:tab === "yours" ? "Your stacks, and the ones you saved." : tab === "friends" ? "What your people have stacked." : "What would you stack?",
       meta:tab === "yours" ? "Make one for anything: a mood, a director, a long weekend." : tab === "friends" ? "Stacks from the people you follow and your rooms." : "Films, shows, books and games, stacked by anyone. Save the ones you like.",
-      btn:{ id:"stkNew", label:"+ New stack" } })}
+      btn:{ id:"stkNew", label:"+ New", aria:"Make a new stack" } })}
     <div class="stk-bar solo"><input id="stkSearch" type="search" placeholder="Search stacks or titles" aria-label="Search stacks" value="${esc(stackQ)}" autocomplete="off"></div>
     <div class="chips scroll stk-filters" id="stkFilters"></div>
     <div id="stkList"><div class="card">${skeleton(3)}</div></div>`;
@@ -13483,9 +13495,7 @@ async function renderStacks() {
   if (!$("#stkList")) return;
   const shapes = new Map(ls.map(l => [l.id, stackShape(l)]));
   /* the top block gets its count and a few covers once the stacks are in */
-  { const hb = $("#stkHero"); if (hb) { const t = $(".h", hb); if (t && !$(".tag", t)) t.insertAdjacentHTML("beforeend", `<span class="tag dim">${ls.length} ${ls.length === 1 ? "stack" : "stacks"}</span>`);
-      const fan = ls.slice(0, 3).map(l => works[l.items[0]?.work_id]).filter(Boolean);
-      if (fan.length && !$(".hero-fan", hb)) { $(".hero-body", hb).insertAdjacentHTML("beforeend", `<div class="hero-fan">${fan.map(w => `<button class="hero-po" data-herow="${esc(w.id)}" type="button" aria-label="${esc(w.title || "")}">${cover(w, "")}</button>`).join("")}</div>`); wireHero(hb); } } }
+  { const tg = $("#stkHero .hs-tag"); if (tg) tg.textContent = ` · ${ls.length} ${ls.length === 1 ? "stack" : "stacks"}`; }
   /* only the media and genres something here is actually of */
   const kindsHere = Object.keys(KINDS).filter(k => ls.some(l => shapes.get(l.id).kinds.has(k)));
   const tagCount = {}; ls.forEach(l => shapes.get(l.id).tags.forEach(t => tagCount[t] = (tagCount[t] || 0) + 1));
