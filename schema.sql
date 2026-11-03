@@ -2233,9 +2233,9 @@ alter table profiles add column if not exists covers jsonb;
 alter table profiles add column if not exists backdrop text;
 alter table profiles add column if not exists supporter boolean not null default false;
 do $$ begin
-  if not exists (select 1 from pg_constraint where conname = 'profiles_backdrop_source') then
-    alter table profiles add constraint profiles_backdrop_source check (backdrop is null or backdrop ~ '^https://image\.tmdb\.org/') not valid;
-  end if;
+  -- films and shows from TMDB, games from IGDB
+  alter table profiles drop constraint if exists profiles_backdrop_source;
+  alter table profiles add constraint profiles_backdrop_source check (backdrop is null or backdrop ~ '^https://(image\.tmdb\.org|images\.igdb\.com)/') not valid;
   if not exists (select 1 from pg_constraint where conname = 'profiles_covers_size') then
     alter table profiles add constraint profiles_covers_size check (covers is null or (jsonb_typeof(covers) = 'object' and pg_column_size(covers) < 20000)) not valid;
   end if;

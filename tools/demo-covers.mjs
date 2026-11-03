@@ -35,8 +35,10 @@ async function find(w) {
     const hit = (d.docs || []).find(x => x.cover_i);
     return hit ? `https://covers.openlibrary.org/b/id/${hit.cover_i}-L.jpg` : null; }
   if (w.kind === "game") {
-    const d = await call("/igdb/games", { method:"POST", headers:{ "Content-Type":"text/plain" }, body:`search "${w.title.replace(/"/g, "")}"; fields name,cover.image_id; limit 10;` });
+    const d = await call("/igdb/games", { method:"POST", headers:{ "Content-Type":"text/plain" }, body:`search "${w.title.replace(/"/g, "")}"; fields name,cover.image_id,artworks.image_id,screenshots.image_id; limit 10;` });
     const hit = (d || []).find(x => x.cover?.image_id && norm(x.name) === norm(w.title)) || (d || []).find(x => x.cover?.image_id);
+    const art = hit && ((hit.artworks || [])[0]?.image_id || (hit.screenshots || [])[0]?.image_id);
+    if (art) backdrops[w.id] = `https://images.igdb.com/igdb/image/upload/t_screenshot_big/${art}.jpg`;
     return hit ? `https://images.igdb.com/igdb/image/upload/t_cover_big/${hit.cover.image_id}.jpg` : null; }
   return null; }
 

@@ -3953,15 +3953,22 @@ const TMDB_IMG = p => p ? "https://image.tmdb.org/t/p/w342" + p : "";
 const TMDB_LOGO = p => p ? "https://image.tmdb.org/t/p/w92" + p : "";
 /* a film or show's wide still, for the top of its page. Kept as TMDB's path; a full
    address is allowed too (the demo's come that way) but only from TMDB. */
+const BACKDROP_OK = /^https:\/\/(image\.tmdb\.org|images\.igdb\.com)\//;
 const backdropOf = w => { const b = w?.meta?.backdrop; if (!b) return "";
   if (/^\/[\w.-]+$/.test(b)) return "https://image.tmdb.org/t/p/w780" + b;
-  return /^https:\/\/image\.tmdb\.org\//.test(b) ? b : ""; };
+  return BACKDROP_OK.test(b) ? b : ""; };
 const backdropAsked = {};
 async function findBackdrop(w) {
-  if (!w || !["film", "tv"].includes(w.kind) || isPart(w.id) || w.meta?.backdrop !== undefined || backdropAsked[w.id] || DEMO) return backdropOf(w);
+  if (!w || !["film", "tv", "game"].includes(w.kind) || isPart(w.id) || w.meta?.backdrop !== undefined || backdropAsked[w.id] || DEMO) return backdropOf(w);
   backdropAsked[w.id] = 1;
-  try { const d = await tmdb((w.kind === "film" ? "movie/" : "tv/") + w.id.split(":")[1]);
-    w.meta = { ...(w.meta || {}), backdrop:d.backdrop_path || "" }; } catch {}
+  try { if (w.kind === "game") {
+      /* a game's own artwork if it has some, else its first screenshot */
+      const raw = w.id.split(":")[1]; if (!/^\d+$/.test(raw)) return "";
+      const [g] = await igdb("games", `fields artworks.image_id,screenshots.image_id; where id = ${raw};`);
+      const pick = (g?.artworks || [])[0]?.image_id || (g?.screenshots || [])[0]?.image_id;
+      w.meta = { ...(w.meta || {}), backdrop:pick ? `https://images.igdb.com/igdb/image/upload/t_screenshot_big/${pick}.jpg` : "" }; }
+    else { const d = await tmdb((w.kind === "film" ? "movie/" : "tv/") + w.id.split(":")[1]);
+      w.meta = { ...(w.meta || {}), backdrop:d.backdrop_path || "" }; } } catch {}
   return backdropOf(w); }
 
 /* ---------- where you can actually watch it ----------
@@ -9509,12 +9516,12 @@ async function openPosterPick(w) { if (!isSupporter()) return say("That's one fo
   const rs = $("#ppReset"); if (rs) rs.onclick = () => put(null); $("#ppClose").onclick = closeSheet; }
 /* a backdrop behind your page: a still from one of your favourite films or shows */
 async function openBackdropPick() { if (!isSupporter()) return say("That's one for supporters");
-  const mine = [...new Set(myEntries.filter(e => e.score >= 8).map(e => e.work_id))].map(id => works[id]).filter(w => w && ["film", "tv"].includes(w.kind) && !isPart(w.id)).slice(0, 18);
-  openSheet(`<h3>A backdrop for your page</h3><p class="sub">A still from something you loved, behind your name.</p><div id="bdGrid">${skeleton(2)}</div>`);
+  const mine = [...new Set(myEntries.filter(e => e.score >= 8).map(e => e.work_id))].map(id => works[id]).filter(w => w && ["film", "tv", "game"].includes(w.kind) && !isPart(w.id)).slice(0, 18);
+  openSheet(`<h3>A backdrop for your page</h3><p class="sub">A still from a film, show or game you loved, behind your name.</p><div id="bdGrid">${skeleton(2)}</div>`);
   const outs = (await Promise.all(mine.map(async w => ({ w, u:await findBackdrop(w) })))).filter(x => x.u);
   const el = $("#bdGrid"); if (!el) return;
   el.innerHTML = outs.length ? `<div class="bdgrid">${outs.map(({ w, u }) => `<button class="bdp ${me.backdrop === u ? "on" : ""}" type="button" data-bdp="${esc(u)}"><img src="${esc(u)}" alt=""><small>${esc(w.title)}</small></button>`).join("")}</div>`
-    : `<p class="sub">Rate a film or show four stars or more and its still can go here.</p>`;
+    : `<p class="sub">Rate a film, show or game four stars or more and its still can go here.</p>`;
   el.insertAdjacentHTML("beforeend", `<div class="stack">${me.backdrop ? `<button class="btn quiet" id="bdOff">No backdrop</button>` : ""}<button class="btn quiet" id="bdClose">Close</button></div>`);
   const put = async u => { if (await saveMine({ backdrop:u || null })) { buzz(6); closeSheet(); renderTaste(); } };
   $$("[data-bdp]", el).forEach(b => b.onclick = () => put(b.dataset.bdp));
@@ -12760,7 +12767,7 @@ function playNumbers() { const el = $("#yNum"); if (!el || REDUCED) return;
   el.classList.add("grow"); }
 async function renderTaste() { const body = $("#tasteBody"); const t = tasteOf(myEntries);
   const myCol = (() => { const c = AV_COLS[avFor(me)?.col]; return c && !["#7A7590", "#151320"].includes(String(c).toUpperCase()) ? c : "lilac"; })();
-  const ybd = /^https:\/\/image\.tmdb\.org\//.test(me.backdrop || "") ? me.backdrop : "";
+  const ybd = BACKDROP_OK.test(me.backdrop || "") ? me.backdrop : "";
   body.innerHTML = `<div class="card game promptcard hero youhero short mo${ybd ? " hasbd" : ""}" style="--room:${String(myCol).startsWith("#") ? myCol : `var(--${myCol})`}${ybd ? `;--ybd:url('${esc(ybd)}')` : ""}">
     <div class="yh-top"><button class="tasteme" id="tasteMe" aria-label="Open your profile">${avatar(me)}<div><h2 style="margin:0">${esc(me.handle)}</h2>${me.bio?`<p class="sub" style="margin-top:2px">${esc(me.bio)}</p>`:""}</div></button>
     <button class="iconbtn cog" id="tasteCog" aria-label="Settings">${COG}</button></div>
