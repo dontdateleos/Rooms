@@ -86,12 +86,80 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:12px 22px;align-items:center}
 footer a{text-decoration:none}footer a:hover{color:var(--ink)}
 footer .who{flex-basis:100%}
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.btn{transition:none}}
+
+/* ---------- life ---------- */
+/* posters: a real cover when we have one, a coloured card with the title while we don't */
+.po{flex:none;width:96px;aspect-ratio:2/3;border-radius:12px;background:var(--c,#2C2738) center/cover no-repeat;color:var(--on);
+  display:flex;align-items:flex-end;padding:8px;font:900 12px/1.1 var(--head);letter-spacing:-.01em;overflow:hidden;box-shadow:0 10px 24px rgba(0,0,0,.35)}
+.po.img{color:transparent}
+.po.img span{display:none}
+/* two rows of what people are watching, reading and playing, sliding opposite ways */
+.reel{margin:30px 0 0;overflow:hidden;display:grid;gap:12px;rotate:-4deg;padding:14px 0;
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent);mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent)}
+.reel .row{display:flex;gap:12px;width:max-content;animation:marq 70s linear infinite}
+.reel .row.r2{animation-duration:84s;animation-direction:reverse}
+.reel .row .po:nth-child(3n){translate:0 -6px}.reel .row .po:nth-child(3n+1){translate:0 5px}
+@keyframes marq{to{transform:translateX(-50%)}}
+.reel-note{text-align:center;color:var(--mute);font-size:13px;margin:6px 0 0}
+/* the headline's block lands with a bounce */
+.hero h1 .mk{animation:pop .9s cubic-bezier(.3,1.6,.5,1) .25s both}
+@keyframes pop{from{transform:scale(.4) rotate(-12deg);opacity:0}to{transform:none;opacity:1}}
+/* the logo's little guy blinks */
+.logo svg .eye{transform-box:fill-box;transform-origin:center;animation:blink 5s infinite}
+@keyframes blink{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.15)}}
+/* things rise into place as you reach them (only once the page knows it can do this) */
+.js .rv{transition:opacity .7s ease,transform .8s cubic-bezier(.2,.9,.25,1)}
+.js .rv.pre{opacity:0;transform:translateY(34px) rotate(var(--rr,0deg))}
+.blocks .block:nth-child(odd){--rr:-1.5deg}.blocks .block:nth-child(even){--rr:1.5deg}
+/* Five Clues: the clues turn over one by one, and the dots keep count */
+.ticker{background:var(--paper);color:var(--on);border-radius:16px;padding:13px 16px;font:800 18px/1.3 var(--head);letter-spacing:-.01em;
+  min-height:3.4em;display:flex;align-items:center;gap:12px;box-shadow:0 8px 18px rgba(21,19,32,.14);rotate:-.8deg}
+.ticker b{flex:none;width:28px;height:28px;border-radius:50%;background:var(--sky);display:grid;place-items:center;font-size:14px}
+.ticker span{transition:opacity .35s,transform .35s}
+.ticker span.out{opacity:0;transform:translateY(8px)}
+.dots i{transition:background .3s}
+.dots i.on{background:var(--on)}
+/* Rooms: a little room talking */
+.chat{display:grid;gap:8px;margin-top:2px}
+.say{display:flex;align-items:flex-end;gap:8px;opacity:0;transform:translateY(10px) scale(.96);transition:opacity .4s,transform .45s cubic-bezier(.3,1.4,.5,1)}
+.say.on{opacity:1;transform:none}
+.say:nth-child(even){flex-direction:row-reverse}
+.face{flex:none;width:34px;height:34px;border-radius:12px;background:var(--f);position:relative;box-shadow:inset 0 -5px 0 rgba(21,19,32,.12)}
+.face::before,.face::after{content:"";position:absolute;top:10px;width:5px;height:12px;border-radius:3px;background:var(--on)}
+.face::before{left:10px}.face::after{left:19px}
+.bub{background:var(--paper);color:var(--on);border-radius:16px 16px 16px 4px;padding:9px 13px;font-weight:600;font-size:15px;max-width:80%}
+.say:nth-child(even) .bub{border-radius:16px 16px 4px 16px}
+/* party games bob about */
+.tiles span{animation:bob 3.2s ease-in-out infinite}
+.tiles span:nth-child(2){animation-delay:-.6s}.tiles span:nth-child(3){animation-delay:-1.3s}.tiles span:nth-child(4){animation-delay:-2s}.tiles span:nth-child(5){animation-delay:-2.6s}
+@keyframes bob{50%{translate:0 -5px}}
+/* Stacks: a stack that fans out when you reach it */
+.fan{display:flex;height:150px;align-items:flex-end;padding-left:8px;margin-top:4px}
+.fan .po{width:84px;margin-right:-44px;transition:transform .9s cubic-bezier(.2,1.3,.4,1),margin .9s cubic-bezier(.2,1.3,.4,1)}
+.fan.open .po{margin-right:-22px}
+.fan.open .po:nth-child(1){transform:rotate(-9deg) translateY(6px)}.fan.open .po:nth-child(2){transform:rotate(-3deg) translateY(-6px)}
+.fan.open .po:nth-child(3){transform:rotate(3deg) translateY(-8px)}.fan.open .po:nth-child(4){transform:rotate(9deg) translateY(4px)}.fan.open .po:nth-child(5){transform:rotate(14deg) translateY(12px)}
+/* Queue: the picker deals one out */
+.picker{display:flex;align-items:center;gap:16px;margin-top:2px}
+.picker .po{width:92px;transition:transform .5s cubic-bezier(.3,1.4,.5,1),opacity .25s}
+.picker .po.flip{transform:rotateY(90deg) scale(.9);opacity:.2}
+.picker .lbl{font:900 20px/1.1 var(--head);letter-spacing:-.02em}
+.picker .lbl small{display:block;font:600 13px var(--body);opacity:.7;margin-top:4px}
+.dice{display:inline-grid;place-items:center;width:44px;height:44px;border-radius:14px;background:var(--on);color:var(--paper);animation:shake 2.4s ease-in-out infinite}
+.dice svg{width:22px;height:22px}
+@keyframes shake{0%,70%,100%{rotate:0deg}75%{rotate:-14deg}82%{rotate:12deg}89%{rotate:-6deg}}
+.shots .shot img{transition:transform .5s}
+.shots .shot:hover img{transform:translateY(-6px)}
+footer .tmdb{flex-basis:100%;font-size:12px}
+@media (prefers-reduced-motion:reduce){
+  .reel .row,.tiles span,.dice,.logo svg .eye,.hero h1 .mk{animation:none}
+  .js .rv.pre{opacity:1;transform:none}.say{opacity:1;transform:none}.picker .po{transition:none}}
 </style>
 </head>
 <body>
 <header class="top"><div class="wrap">
   <a class="logo" href="#" aria-label="Rooms">
-    <svg viewBox="0 0 80 80" aria-hidden="true"><rect x="12" y="12" width="26" height="26" rx="10" fill="#52758e"/><rect x="42" y="12" width="26" height="26" rx="10" fill="#8c6442"/><rect x="12" y="42" width="26" height="26" rx="10" fill="#685d8e"/><rect x="38" y="38" width="34" height="34" rx="13" fill="#F7B3CF"/><rect x="47" y="49" width="5" height="12" rx="2.5" fill="#151320"/><rect x="57" y="49" width="5" height="12" rx="2.5" fill="#151320"/></svg>
+    <svg viewBox="0 0 80 80" aria-hidden="true"><rect x="12" y="12" width="26" height="26" rx="10" fill="#52758e"/><rect x="42" y="12" width="26" height="26" rx="10" fill="#8c6442"/><rect x="12" y="42" width="26" height="26" rx="10" fill="#685d8e"/><rect x="38" y="38" width="34" height="34" rx="13" fill="#F7B3CF"/><rect class="eye" x="47" y="49" width="5" height="12" rx="2.5" fill="#151320"/><rect class="eye" x="57" y="49" width="5" height="12" rx="2.5" fill="#151320"/></svg>
     Rooms</a>
   <a class="btn" href="index.html">Open Rooms</a>
 </div></header>
@@ -108,7 +176,10 @@ footer .who{flex-basis:100%}
     </div>
   </div></section>
 
-  <div class="shots" aria-label="Screens from the app">
+  <div class="reel" aria-hidden="true"><div class="row r1" id="r1"></div><div class="row r2" id="r2"></div></div>
+  <p class="reel-note" id="reelNote">What people are watching, reading and playing this week</p>
+
+  <div class="shots rv" aria-label="Screens from the app">
     <figure class="shot" style="margin:0"><img src="site/room.jpg" alt="A room: who's in, what they're on, and last week's logs" loading="eager" width="330" height="715"><span>Your room</span></figure>
     <figure class="shot" style="margin:0"><img src="site/play.jpg" alt="The room's Play card: Five Clues, the weekly prompt, party games and the bracket" loading="lazy" width="330" height="715"><span>Games for the room</span></figure>
     <figure class="shot" style="margin:0"><img src="site/stacks.jpg" alt="Stacks: themed lists of films, shows, books and games" loading="lazy" width="330" height="715"><span>Stacks</span></figure>
@@ -118,40 +189,49 @@ footer .who{flex-basis:100%}
 
   <div class="wrap">
     <div class="blocks">
-      <section class="block wide" style="--c:var(--sky)" id="clues">
+      <section class="block wide rv" style="--c:var(--sky)" id="clues">
         <span class="label">Five Clues · a new one every day</span>
         <h2>Guess today's in <span class="mk" style="--r:3deg;--rad:.14em">five</span> clues.</h2>
-        <div class="dots" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+        <div class="ticker" aria-live="off"><b id="tkN">1</b><span id="tk">A film from the 1990s</span></div>
+        <div class="dots" id="tkDots" aria-hidden="true"><i class="on"></i><i></i><i></i><i></i><i></i></div>
         <p>A film, a show, a book or a game. Each clue gives away a little more. Get it on the first and you're unbearable for the rest of the day.</p>
         <a class="btn dark" href="index.html#clues">Play today's · no sign-up</a>
       </section>
 
-      <section class="block" style="--c:var(--pink)">
+      <section class="block rv" style="--c:var(--pink)">
         <span class="label">Rooms</span>
         <h2>Small rooms. <span class="mk" style="--r:-2deg;--rad:.22em">Real</span> arguments.</h2>
+        <div class="chat" id="chat">
+          <div class="say"><span class="face" style="--f:var(--butter)"></span><span class="bub">Five stars. No notes.</span></div>
+          <div class="say"><span class="face" style="--f:var(--sky)"></span><span class="bub">Walked out at the hour mark 🙃</span></div>
+          <div class="say"><span class="face" style="--f:var(--mint)"></span><span class="bub">Better than the book. Fight me.</span></div>
+        </div>
         <p>A room is a handful of friends. See what everyone's on, who loved it and who walked out, and where you all agree, or very much don't.</p>
       </section>
 
-      <section class="block" style="--c:var(--mint)">
+      <section class="block rv" style="--c:var(--mint)">
         <span class="label">Play</span>
         <h2>Party games for your <span class="mk" style="--r:2deg;--rad:.16em">room</span>.</h2>
         <div class="tiles"><span>Fake Blurb</span><span>Bad Pitch</span><span>Title Mash</span><span>Who Rated It?</span><span>Hot Take Court</span></div>
         <p>Everyone plays on their own phone, in their own time, then the room votes. Plus a weekly prompt, a monthly bracket and watch nights.</p>
       </section>
 
-      <section class="block" style="--c:var(--lilac)">
+      <section class="block rv" style="--c:var(--lilac)">
         <span class="label">Stacks</span>
         <h2>Stacks of what you <span class="mk" style="--r:-3deg;--rad:.2em">love</span>.</h2>
+        <div class="fan" id="fan" aria-hidden="true"></div>
         <p>Themed lists anyone can make: films, shows, books and games together. Save the ones you like, or watch one with your room.</p>
       </section>
 
-      <section class="block" style="--c:var(--apricot)">
+      <section class="block rv" style="--c:var(--apricot)">
         <span class="label">Queue</span>
         <h2>Can't decide? We'll <span class="mk" style="--r:2.5deg;--rad:.14em">pick</span>.</h2>
+        <div class="picker" aria-hidden="true"><span class="dice"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="4"/><circle cx="9" cy="9" r="1.3" fill="currentColor"/><circle cx="15" cy="15" r="1.3" fill="currentColor"/><circle cx="15" cy="9" r="1.3" fill="currentColor"/><circle cx="9" cy="15" r="1.3" fill="currentColor"/></svg></span>
+          <span class="po" id="pickPo"><span></span></span><span class="lbl" id="pickLbl">Tonight's pick<small>from your Up next</small></span></div>
         <p>Everything you mean to get to, what's out now and what's on your services. Then your diary, and your favourites in your own order.</p>
       </section>
 
-      <section class="block wide news" style="--c:var(--butter)" id="newsletter">
+      <section class="block wide news rv" style="--c:var(--butter)" id="newsletter">
         <span class="label">Room Service · once a month</span>
         <h2>What everyone <span class="mk" style="--r:-2deg;--rad:.18em">logged</span> this month.</h2>
         <p>The most logged, the one nobody agreed on, the stacks people saved and the Five Clues hardly anyone got. One email a month, and you can leave any time.</p>
@@ -172,6 +252,7 @@ footer .who{flex-basis:100%}
   <a href="terms.html">Terms</a>
   <span>joinroomsapp@gmail.com</span>
   <span class="who">Rooms · watch, read and play together</span>
+  <span class="tmdb">Film and TV posters from TMDB. This product uses the TMDB API but is not endorsed or certified by TMDB. Book covers from Open Library, game covers from IGDB.</span>
 </div></footer>
 
 <script>
@@ -190,6 +271,66 @@ form.addEventListener("submit", async ev => { ev.preventDefault();
     else msg.textContent = "Couldn't sign you up just now. Try again in a minute."; }
   catch { msg.textContent = "Couldn't reach Rooms. Check your connection and try again."; }
   btn.disabled = false; });
+
+/* ---------- life ---------- */
+document.documentElement.classList.add("js");
+const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const WORKER = "https://rooms.jordandf1.workers.dev";
+const COLS = ["var(--apricot)", "var(--pink)", "var(--butter)", "var(--mint)", "var(--sky)", "var(--lilac)"];
+/* what shows while the real covers load, or if they can't */
+const FALLBACK = ["Heat", "The Bear", "Pachinko", "Outer Wilds", "Past Lives", "Severance", "James", "Hades II", "Aftersun", "The Pitt",
+  "Intermezzo", "Disco Elysium", "Thief", "Slow Horses", "Tomorrow, and Tomorrow", "Celeste"].map(t => ({ t }));
+const esc = x => String(x).replace(/[&<>"]/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" })[c]);
+const poHTML = (w, i) => w.img ? `<span class="po img" style="background-image:url('${esc(w.img)}')"><span>${esc(w.t)}</span></span>`
+  : `<span class="po" style="--c:${COLS[i % COLS.length]}"><span>${esc(w.t)}</span></span>`;
+let pool = FALLBACK;
+function paintReel() {
+  const a = pool.filter((_, i) => i % 2 === 0), b = pool.filter((_, i) => i % 2 === 1);
+  /* each row twice over, so the slide loops without a seam */
+  document.getElementById("r1").innerHTML = [...a, ...a].map(poHTML).join("");
+  document.getElementById("r2").innerHTML = [...b, ...b].map((w, i) => poHTML(w, i + 3)).join("");
+  const fan = document.getElementById("fan"); fan.innerHTML = pool.slice(2, 7).map((w, i) => poHTML(w, i + 1)).join(""); }
+paintReel();
+/* this week's real covers: trending films and shows, books and games, through Rooms' own server */
+const get = async (path, opt) => { const r = await fetch(WORKER + path, opt); if (!r.ok) throw new Error(r.status); return r.json(); };
+Promise.allSettled([
+  get("/3/trending/all/week").then(d => (d.results || []).filter(x => x.poster_path && (x.title || x.name)).slice(0, 18)
+    .map(x => ({ t:x.title || x.name, img:"https://image.tmdb.org/t/p/w185" + x.poster_path }))),
+  get("/ol/trending/weekly.json?limit=24").then(d => (d.works || []).filter(x => x.cover_i).slice(0, 8)
+    .map(x => ({ t:x.title, img:`https://covers.openlibrary.org/b/id/${x.cover_i}-M.jpg` }))),
+  get("/igdb/games", { method:"POST", headers:{ "Content-Type":"text/plain" },
+    body:"fields name,cover.image_id; where cover != null & total_rating_count > 60 & first_release_date > 1640995200; sort total_rating_count desc; limit 12;" })
+    .then(d => (d || []).filter(x => x.cover?.image_id).slice(0, 8).map(x => ({ t:x.name, img:`https://images.igdb.com/igdb/image/upload/t_cover_big/${x.cover.image_id}.jpg` })))
+]).then(([f, bk, gm]) => { const F = f.value || [], B = bk.value || [], G = gm.value || [];
+  if (!F.length && !B.length && !G.length) return;
+  /* two screen things, then a book, then a game, round and round */
+  const mix = []; for (let i = 0; mix.length < 28 && (i < F.length || i < B.length * 2 || i < G.length * 2); i++) {
+    if (F[2 * i]) mix.push(F[2 * i]); if (F[2 * i + 1]) mix.push(F[2 * i + 1]); if (B[i]) mix.push(B[i]); if (G[i]) mix.push(G[i]); }
+  if (mix.length >= 8) { pool = mix; paintReel(); } });
+
+/* rising in as you scroll down to it */
+const rv = [...document.querySelectorAll(".rv")];
+if (!REDUCED && "IntersectionObserver" in window) {
+  const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.remove("pre"); io.unobserve(e.target); onShow(e.target); } }), { threshold:.18 });
+  rv.forEach(el => { if (el.getBoundingClientRect().top > innerHeight * .9) { el.classList.add("pre"); io.observe(el); } else onShow(el); });
+} else rv.forEach(onShow);
+function onShow(el) {
+  if (el.querySelector("#fan")) setTimeout(() => document.getElementById("fan").classList.add("open"), 250);
+  if (el.querySelector("#chat")) [...el.querySelectorAll(".say")].forEach((x, i) => setTimeout(() => x.classList.add("on"), REDUCED ? 0 : 300 + i * 700)); }
+
+/* Five Clues, turning over */
+const CLUES = ["A film from the 1990s", "Crime · Thriller · Drama", "Heist · Los Angeles · rivalry", "1995 · directed by Michael Mann", "“A detective and a thief who can't stop circling each other.”"];
+let ci = 0; const tk = document.getElementById("tk"), tkN = document.getElementById("tkN"), dots = [...document.querySelectorAll("#tkDots i")];
+if (!REDUCED) setInterval(() => { tk.classList.add("out"); setTimeout(() => { ci = (ci + 1) % CLUES.length; tk.textContent = CLUES[ci]; tkN.textContent = ci + 1;
+  dots.forEach((d, i) => d.classList.toggle("on", i <= ci)); tk.classList.remove("out"); }, 350); }, 2600);
+
+/* the picker deals out one of the posters every couple of seconds */
+const pickPo = document.getElementById("pickPo"), pickLbl = document.getElementById("pickLbl"); let pi = 4;
+const deal = () => { const w = pool[pi % pool.length]; pi += 3;
+  pickPo.className = "po" + (w.img ? " img" : ""); pickPo.style.cssText = w.img ? `background-image:url('${w.img}')` : `--c:${COLS[pi % COLS.length]}`;
+  pickPo.innerHTML = `<span>${esc(w.t)}</span>`; pickLbl.innerHTML = `${esc(w.t)}<small>tonight's pick</small>`; };
+deal();
+if (!REDUCED) setInterval(() => { pickPo.classList.add("flip"); setTimeout(() => { deal(); pickPo.classList.remove("flip"); }, 260); }, 2400);
 </script>
 </body>
 </html>
