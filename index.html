@@ -2095,6 +2095,45 @@ nav button .dot{top:0;right:calc(50% - 24px)}
 .clu-streak{margin-top:4px}.clu-streak b{color:var(--onAccent)}
 .clu-st{margin:4px 0 0;font-size:13px;color:var(--good);font-weight:700}
 .youstreak{margin:8px 2px 0;font-size:13px}.youstreak b{color:var(--ink)}
+/* the top of a room: one card in the room's colour */
+.pager.ptitle.roomhero{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;column-gap:8px;row-gap:0;
+  background:var(--room);color:var(--onAccent);border-radius:24px;padding:16px 16px 14px;margin-top:10px;position:relative;overflow:hidden}
+.roomhero h2{grid-column:1;position:relative}.roomhero .rl-r{grid-column:2;position:relative}
+.roomhero .roomline,.roomhero .nowline{grid-column:1/-1;position:relative}
+.roomhero .feedpick,.roomhero .hl{color:var(--onAccent)!important}
+.roomhero .tdot{display:none}
+.pager.ptitle.roomhero::before{top:auto;bottom:-96px;right:16px}
+.roomhero .herechip{background:rgba(21,19,32,.1)!important;color:var(--onAccent)!important}
+.roomhero #roomMenu{background:rgba(21,19,32,.1);color:var(--onAccent)}
+.roomhero .room-streak{color:rgba(21,19,32,.72)!important}
+.roomhero .room-streak b,.roomhero .wstreak{color:var(--onAccent)!important}
+.roomhero .herenote{color:var(--onAccent)!important}
+.roomhero .nowline{color:rgba(21,19,32,.72)}.roomhero .nowline .nowbit b,.roomhero .nowline .nowbit em{color:var(--onAccent)}
+.roomhero .nowline .nowbit.fresh b::before{background:var(--onAccent)}
+/* the Play hub: a row per game, dealt like answer cards */
+.playhub .ph-list{display:grid;gap:8px;position:relative}
+.ph-row{display:flex;align-items:center;gap:11px;width:100%;border:0;font:inherit;text-align:left;cursor:pointer;background:var(--card);color:var(--ink);border-radius:16px;padding:11px 12px;box-shadow:0 8px 18px rgba(21,19,32,.14)}
+.ph-row:nth-child(odd){rotate:-.5deg}.ph-row:nth-child(even){rotate:.45deg}
+.ph-row i{flex:none;width:12px;height:12px;border-radius:50%;background:var(--c);box-shadow:0 0 0 3px color-mix(in srgb,var(--c) 30%,transparent)}
+.ph-t{flex:1;min-width:0;display:grid;gap:1px}.ph-t b{font:800 15px var(--head);letter-spacing:-.01em}
+.ph-t small{color:var(--mute);font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ph-row em{flex:none;font:800 12.5px var(--head);font-style:normal;padding:6px 11px;border-radius:99px;background:color-mix(in srgb,var(--ink) 8%,transparent);color:var(--ink)}
+.ph-row.todo em{background:var(--onAccent);color:#FFF7EC}
+.ph-row.todo .ph-t small{color:var(--ink);font-weight:650}
+.playhub .clu-streak{margin:10px 0 0;position:relative}
+.ph-flash{animation:phFlash 1.1s ease}
+@keyframes phFlash{0%,100%{box-shadow:none}30%{box-shadow:0 0 0 4px var(--room,var(--butter))}}
+/* the top of Up next */
+.uqtop{margin-top:12px}
+.uqtop .uq-body{display:flex;align-items:center;gap:12px;position:relative}
+.uqtop .gprompt{flex:1;min-width:0;font-size:23px;margin:10px 0 8px}
+.uq-fan{flex:none;display:flex;padding:14px 6px 0 0}
+.uq-po{border:0;padding:0;background:none;cursor:pointer;width:50px;margin-right:-14px;rotate:var(--r,0deg);filter:drop-shadow(0 8px 12px rgba(21,19,32,.25))}
+.uq-po:nth-child(1){--r:-7deg}.uq-po:nth-child(2){--r:2deg;translate:0 -4px}.uq-po:nth-child(3){--r:8deg}
+.uq-po .co{width:50px;height:74px;border-radius:9px;display:block}
+.uqtop .gline{margin:0 0 12px;position:relative}
+.uqtop #spinOpen{width:100%;position:relative;display:flex;align-items:center;justify-content:center;gap:8px}
+.uqtop #spinOpen svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2}.uqtop #spinOpen svg circle{fill:currentColor;stroke:none}
 .chip.addown{border:1.5px dashed color-mix(in srgb,var(--mute) 60%,transparent);background:none;color:var(--mute)}
 .stk-bar{display:flex;gap:8px;align-items:center;margin:12px 0 14px}
 .stk-bar input{flex:1;min-width:0;margin:0}
@@ -8055,7 +8094,11 @@ async function renderRoomFeed(fb, R) {
     P.awardCoach = `${R.id}:${awardYear()}`; saveP(); setTimeout(() => coach(`${awardsName(R)} are open. Vote in the Year tab`), 2600); }
   if (!P.holdTip && myEntries.length >= 3 && currentTab() === "doors") { P.holdTip = 1; saveP(); setTimeout(() => coach("Hold any poster to rate it, shelve it or pass it on"), 1600); }
   /* the chip and the menu sit on the title row, beside the room's name */
-  { const rr = $(".rl-r", fb), pg = $("#pager"); if (rr && pg) { $$(".rl-r", pg).forEach(x => x.remove()); pg.appendChild(rr); pg.classList.add("withtools"); } }
+  /* and the whole top — name, who's in, the week, what people are on — is one card in the
+     room's own colour, the way the weekly prompt is */
+  { const rr = $(".rl-r", fb), pg = $("#pager"), rl = $(".roomline", fb), rn = $("#roomNow", fb);
+    if (rr && pg) { $$(".rl-r, .roomline, #roomNow", pg).forEach(x => x.remove()); pg.appendChild(rr); if (rl) pg.appendChild(rl); if (rn) pg.appendChild(rn);
+      pg.classList.add("withtools", "roomhero", "promptcard"); pg.style.setProperty("--room", `var(--${roomColour(R)})`); } }
   $("#roomMenu").onclick = () => openRoomMenu(R); wireTonight(); if (R.members.length > 1) paintAsks(R);
   const segEl = $(".roomsecs", fb); glideSeg(segEl, true);
   { const wk = $("#weekCard"); if (wk) wk.hidden = (P.roomSec || "talk") !== "talk"; }
@@ -8845,9 +8888,23 @@ function renderShelf() {
   const kindsHere = Object.keys(KINDS).filter(k => counts[k]);
   const places = [place("", "Up next", "mint", "shelf"), ...(kindsHere.length > 1 ? kindsHere.map(k => place(k, K(k).plural, KIND_TONE[k], k)) : [])];
   const scope = P.kinds.length === 4 ? "everything" : P.kinds.map(k => K(k).plural.toLowerCase()).join(", ");
-  $("#shelfBody").innerHTML = `${pagerHTML(places, P.shelfFilter || "", { id:"shelfPager", mode:"chips", allLabel:"All" })}${all.length ? "" : `<p class="sub shelfsub">Everything you meant to get to.</p>`}
+  /* the top of Up next: a coloured card that says how much is waiting and picks one for you */
+  const upTop = (() => { if (!all.length || shelfEdit) return "";
+    const on = all.filter(w => nowOf(w.id) && !logged(w.id)), ready = left.filter(w => !nowOf(w.id)), first = (on[0] || ready[0]);
+    const what = P.shelfFilter ? K(P.shelfFilter).plural.toLowerCase() : "things";
+    const head = on.length && !ready.length ? `You're in the middle of ${on.length === 1 ? esc(on[0].title) : on.length + " " + what}. Finish one?`
+      : left.length >= 2 ? `${left.length} ${what} ready to go. What's next?`
+      : first ? `Next up: ${esc(first.title)}.` : `All caught up. ${soonCount} still to come out.`;
+    const bits = [on.length ? `${on.length} on the go` : "", soonCount ? `${soonCount} coming` : "", mineCount ? `${mineCount} on your services` : "", done ? `${done} done` : ""].filter(Boolean);
+    const fan = left.slice(0, 3);
+    return `<div class="card game promptcard uqtop" style="--room:var(--${P.shelfFilter ? KIND_TONE[P.shelfFilter] : "mint"})">
+      <div class="h"><span>Up next</span><span class="tag dim">${all.length} in here</span></div>
+      <div class="uq-body"><div class="gprompt">${head}</div>${fan.length ? `<div class="uq-fan">${fan.map(w => `<button class="uq-po" data-uqw="${esc(w.id)}" aria-label="${esc(w.title)}">${cover(w, "")}</button>`).join("")}</div>` : ""}</div>
+      ${bits.length ? `<p class="sub gline">${bits.join(" · ")}</p>` : ""}
+      <button class="btn" id="spinOpen" type="button" aria-label="${left.length >= 2 ? `Can't decide? Pick from ${left.length}` : "Spin the best of something"}">${ICON_DICE}${left.length >= 2 ? "Pick one for me" : "Find me something"}</button></div>`; })();
+  $("#shelfBody").innerHTML = `${pagerHTML(places, P.shelfFilter || "", { id:"shelfPager", mode:"chips", allLabel:"All" })}${all.length ? upTop : `<p class="sub shelfsub">Everything you meant to get to.</p>`}
     <div class="shelfsearch"><input id="search" type="search" placeholder="Search ${esc(scope)}" aria-label="Search ${esc(scope)}" autocomplete="off">${all.length ? `<button class="cabfind ${P.when ? "on" : ""}" id="shelfFilterBtn" aria-label="Filter Up next">${SLIDERS}</button>` : ""}${
-        shelfEdit ? "" : `<button class="chip filt pickchip" id="spinOpen" aria-label="${left.length >= 2 ? `Can't decide? Pick from ${left.length}` : "Spin the best of something"}">${ICON_DICE}Pick</button>`}</div>
+        shelfEdit || all.length ? "" : `<button class="chip filt pickchip" id="spinOpen" aria-label="${left.length >= 2 ? `Can't decide? Pick from ${left.length}` : "Spin the best of something"}">${ICON_DICE}Pick</button>`}</div>
     ${P.when ? `<div class="cabfacets"><button class="cfchip on" id="whenOff" aria-label="Show everything">${({ out:"Out now", now:"In the middle of", soon:"Coming", mine:"On your services" })[P.when] || ""}<i aria-hidden="true">×</i></button></div>` : ""}
     <div class="msg" id="msg"></div><div id="results"></div>${arrivedHTML()}
     ${all.length ? `${pickBar}
@@ -8879,6 +8936,7 @@ function renderShelf() {
     $$("[data-kf]").forEach(b => b.onclick = () => { P.shelfFilter = b.dataset.kf; saveP(); closeSheet(); renderShelf(); });
     $$("[data-wf]").forEach(b => b.onclick = () => { P.when = b.dataset.wf; saveP(); closeSheet(); renderShelf(); });
   };
+  $$("[data-uqw]").forEach(b => b.onclick = () => openWork(b.dataset.uqw));
   const so = $("#spinOpen"); if (so) so.onclick = async () => {
     if (left.length < 2 && pickFrom() !== "best") { P.pickFrom = "best"; saveP(); bestHand = []; }
     await openWheel(); };
@@ -11051,7 +11109,7 @@ async function paintGames(R, es) {
   if (past) await fillWorks(past.options).catch(() => {});
   const swNow = swipeState(R, g);
   if (swNow.deck.length) await fillWorks(swNow.matches).catch(() => {});
-  el.innerHTML = `<div id="dailyBox"></div><div id="partyBox"></div>` + pickFlowHTML(R, g, night) + `<div id="roomPicks"></div>` + promptHTML(R, g) + bracketHTML(R, br, g) + (!night && past ? nightAfterHTML(R, past, g) : "");
+  el.innerHTML = `<div id="playHub"></div><div id="partyBox"></div>` + pickFlowHTML(R, g, night) + `<div id="roomPicks"></div>` + promptHTML(R, g) + bracketHTML(R, br, g) + (!night && past ? nightAfterHTML(R, past, g) : "") + `<div id="cluTable"></div>`;
   /* the Play tab gets a dot while there's something waiting on you */
   const s = promptState(R, g, gameWeek()), bst = br ? bracketState(R, br, g.votes) : null;
   const todo = (!s.voting && !s.mine) || (s.voting && !s.revealed && !s.myVote) || !!bst?.current?.matches.some(mt => !mt.mine)
@@ -11086,11 +11144,64 @@ async function paintGames(R, es) {
   $$("[data-gw]", el).forEach(x => x.onclick = () => openWork(x.dataset.gw));
   wireNights(R, el, night, past, again, g); wireSwipe(R, el, g, again);
   paintRoomPicks(R, $("#roomPicks", el), !night, again);
-  paintDaily(R, $("#dailyBox", el)); paintParty(R, es, $("#partyBox", el));
+  paintPlayHub(R, $("#playHub", el), { g, br, bst, night, sw:swNow, again }); paintParty(R, es, $("#partyBox", el)); paintDailyTable(R, $("#cluTable", el));
   if (gameFocus) { const want = gameFocus; gameFocus = null;
     const card = $$(".card.game", el).find(c => ($(".h span", c)?.textContent || "").toLowerCase().includes(want.toLowerCase()));
     if (card) setTimeout(() => card.scrollIntoView({ block:"center", behavior:REDUCED ? "auto" : "smooth" }), 250); }
 }
+/* ---------- the Play hub ----------
+   The top of a room's Play tab: everything there is to play, in one coloured card, each
+   saying whether it's waiting on you. A row takes you to its game further down, or opens
+   it straight away. Five Clues has its full card on the Feed; here it's a row. */
+const NUMW = ["Nothing", "One thing", "Two things", "Three things", "Four things", "Five things"];
+async function paintPlayHub(R, box, o) {
+  if (!box) return; const { g, br, bst, night, sw } = o, rows = [], many = R.members.length > 1;
+  /* Five Clues: the medium you last picked, or the next one you haven't done today */
+  const kinds = MEDIA_PICK.map(([k]) => k), done = kinds.filter(k => cluesState(k).done);
+  const pick = !cluesState(P.cluesKind || "any").done ? (P.cluesKind || "any") : kinds.find(k => !cluesState(k).done) || P.cluesKind || "any";
+  const pts = done.reduce((t, k) => t + cluePoints(cluesState(k)), 0), cs = cluesState(pick);
+  rows.push({ key:"clues", col:"var(--sky)", name:`Five Clues · #${cluesNo()}`, todo:!done.length,
+    line:!done.length ? (cs.guesses.length ? "You're partway through today's" : "Guess today's film, show, book or game") : `${done.length} of ${kinds.length} done today · ${pts} ${pts === 1 ? "point" : "points"}`,
+    go:done.length === kinds.length ? "See" : cs.guesses.length ? "Keep going" : done.length ? "Another" : "Play" });
+  if (many) { const s = promptState(R, g, gameWeek());
+    rows.push({ key:"prompt", col:"var(--butter)", name:"This week's prompt", todo:(!s.voting && !s.mine) || (s.voting && !s.revealed && !s.myVote),
+      line:s.revealed ? "The results are in" : s.voting ? (s.myVote ? "You've voted · the reveal's coming" : "Voting's open") : s.mine ? "You're in · waiting on the others" : "Your answer's still to go in",
+      go:s.revealed ? "See" : s.voting ? (s.myVote ? "Look" : "Vote") : s.mine ? "Look" : "Answer" }); }
+  if (many) { const { rounds, votes } = await loadRounds(R).catch(() => ({ rounds:[], votes:[] }));
+    if (!box.isConnected) return;
+    const live = rounds.filter(r => !["done", "fizzled"].includes(roundState(R, r, votes).phase));
+    const mine = live.find(r => { const st = roundState(R, r, votes); return st.phase === "answer" ? !st.answered.includes(me.id) && !r.answers.some(a => a.mine) : st.phase === "vote" && !st.mineV; });
+    rows.push({ key:"party", col:"var(--pink)", name:"Party games", todo:!!mine,
+      line:mine ? `${PARTY[mine.game].name} is waiting on you` : live.length ? `${live.length} on · waiting on the others` : "Fake Blurb, Bad Pitch, Title Mash and more",
+      go:mine ? "Play" : live.length ? "Look" : "Start one" }); }
+  if (night) { const voted = g.votes.some(v => v.game === "night:" + night.id && v.voter === me.id);
+    rows.push({ key:"night", col:"var(--apricot)", name:"Watch night", todo:!voted, line:`${nightLabel(night.at)} · ${voted ? "you've voted" : "pick what to watch"}`, go:voted ? "Look" : "Vote" }); }
+  else if (many && sw.deck.length) rows.push({ key:"swipe", col:"var(--apricot)", name:"Tonight's pick", todo:sw.left.length > 0,
+    line:sw.left.length ? `${sw.left.length} left to swipe${sw.matches.length ? ` · ${sw.matches.length} ${sw.matches.length === 1 ? "match" : "matches"}` : ""}` : sw.matches.length ? `${sw.matches.length} ${sw.matches.length === 1 ? "match" : "matches"} so far` : "You've swiped them all",
+    go:sw.left.length ? "Swipe" : "Look" });
+  if (many && bst && (bst.current || bst.champion)) { const open = !!bst.current?.matches.some(mt => !mt.mine);
+    rows.push({ key:"bracket", col:"var(--lilac)", name:"The bracket", todo:open,
+      line:bst.champion ? "This month's winner is in" : open ? `Round ${bst.current.r} needs your votes` : `Round ${bst.current.r} · you've voted`, go:open ? "Vote" : "Look" }); }
+  const n = rows.filter(r => r.todo).length;
+  const head = n ? `${NUMW[Math.min(n, 5)]} waiting on you.` : many ? "You're all square. Start something?" : "Today's Five Clues is ready.";
+  box.innerHTML = `<div class="card game promptcard playhub" style="--room:var(--mint)"><div class="h"><span>Play</span><span class="tag dim">${n ? `${n} for you` : "all caught up"}</span></div>
+    <div class="gprompt">${esc(head)}</div>
+    <div class="ph-list">${rows.map(r => `<button class="ph-row ${r.todo ? "todo" : ""}" data-ph="${r.key}" type="button" style="--c:${r.col}">
+      <i aria-hidden="true"></i><span class="ph-t"><b>${esc(r.name)}</b><small>${esc(r.line)}</small></span><em>${esc(r.go)}</em></button>`).join("")}</div>
+    <p class="sub gline clu-streak" id="cluStreak" hidden></p></div>`;
+  const el = box.closest("#roomGames") || document;
+  const to = c => { if (!c) return; c.scrollIntoView({ block:"start", behavior:REDUCED ? "auto" : "smooth" });
+    c.classList.remove("ph-flash"); void c.offsetWidth; c.classList.add("ph-flash"); };
+  const byHead = t => $$(".card.game", el).find(c => ($(".h span", c)?.textContent || "").toLowerCase().includes(t));
+  $$("[data-ph]", box).forEach(b => b.onclick = () => { buzz(4); const k = b.dataset.ph;
+    if (k === "clues") openClues(() => paintPlayHub(R, box, o), pick);
+    else if (k === "prompt") to(byHead("this week's prompt"));
+    else if (k === "party") { const first = $("#partyBox .pg", el); if (first) to($("#partyBox", el)); else $("#pgStart", el)?.click(); }
+    else if (k === "night") to($(".nightcard", el));
+    else if (k === "swipe") to($(".swipecard", el));
+    else if (k === "bracket") to(byHead("bracket")); });
+  cluesStreak().then(st => { const x = $("#cluStreak", box); if (!x || !st?.cur) return;
+    x.hidden = false; x.innerHTML = `Five Clues: <b>${st.cur} ${st.cur === 1 ? "day" : "days"} in a row</b>${st.best > st.cur ? ` · best ${st.best}` : st.cur > 1 ? " · your best yet" : ""}`; }); }
 /* ============ FIVE CLUES ============
    One title a day, the same for everyone: a film, a show, a book or a game. The clues go
    from vague to plain (when it's from, what kind, a few words about it, who made it and

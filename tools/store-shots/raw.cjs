@@ -31,7 +31,7 @@ const { chromium } = require('playwright'); const D = __dirname;
   await tab('Stacks'); await p.waitForTimeout(2500); await top(); await shot(5);
   // 6 play: Five Clues, the week's table and the party games
   await tab('Rooms'); await p.locator('[data-rsecbtn="play"]').first().evaluate(e => e.click()); await p.waitForTimeout(3500);
-  await p.evaluate(() => { const r = document.querySelector('#dailyBox'); scrollTo(0, r.getBoundingClientRect().top + scrollY - 150); }); await shot(6);
+  await p.evaluate(() => { const r = document.querySelector('#playHub'); scrollTo(0, r.getBoundingClientRect().top + scrollY - 150); }); await shot(6);
   // 7 the Feed page: rings across the top, your people's logs below
   await tab('Feed'); await p.waitForTimeout(1500); await top(); await shot(7);
   // 8 diary and rankings
