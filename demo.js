@@ -187,7 +187,10 @@ const REAL_BACKDROPS = {"film:1":"https://image.tmdb.org/t/p/w780/uI22JkEMediWyi
   "film:45":"https://image.tmdb.org/t/p/w780/du11oPPbEoDnUpiREO5tUg47rJd.jpg",
   "film:46":"https://image.tmdb.org/t/p/w780/ueXO7FqIECtcPbpPSw87hiFlrSA.jpg",
   "film:47":"https://image.tmdb.org/t/p/w780/eS5OdKN3kRZXQbWRSSCJ4Gh0z26.jpg",
-  "film:20":"https://image.tmdb.org/t/p/w780/uXgWbwxmCW6XZ3ylRThk9Sqhwwq.jpg"};
+  "film:20":"https://image.tmdb.org/t/p/w780/uXgWbwxmCW6XZ3ylRThk9Sqhwwq.jpg",
+  "game:1":"https://images.igdb.com/igdb/image/upload/t_screenshot_big/ar3nua.jpg",
+  "game:2":"https://images.igdb.com/igdb/image/upload/t_screenshot_big/ar3ct1.jpg",
+  "game:20":"https://images.igdb.com/igdb/image/upload/t_screenshot_big/ar4u71.jpg"};
 /* /REAL_BACKDROPS */
 const works = {};
 for (const [id,kind,title,year,creator,length,a,b,release] of [...WORKS, ...COMING]) {
