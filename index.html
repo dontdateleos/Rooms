@@ -2073,6 +2073,8 @@ nav button .dot{top:0;right:calc(50% - 24px)}
 /* stacks in the prompt's look: each in its own colour, the name big, the posters raised */
 .stk.promptcard{background:var(--room);color:var(--onAccent);position:relative;overflow:hidden;box-shadow:none}
 .stk.promptcard::before{right:10px;top:-34px;font-size:150px}
+/* a card with a label row along its top keeps the quote mark down in the corner, out of the label's way */
+.promptcard:has(> .h)::before{top:auto;bottom:-100px;right:14px}
 .stk.promptcard .stk-t b{font-size:21px;font-weight:900;letter-spacing:-.02em;line-height:1.15;text-wrap:balance}
 .stk.promptcard .stk-t small{color:rgba(21,19,32,.72)}
 .stk.promptcard .stk-strip .co{box-shadow:4px 6px 14px -4px rgba(21,19,32,.45)}
@@ -2123,17 +2125,33 @@ nav button .dot{top:0;right:calc(50% - 24px)}
 .playhub .clu-streak{margin:10px 0 0;position:relative}
 .ph-flash{animation:phFlash 1.1s ease}
 @keyframes phFlash{0%,100%{box-shadow:none}30%{box-shadow:0 0 0 4px var(--room,var(--butter))}}
-/* the top of Up next */
-.uqtop{margin-top:12px}
-.uqtop .uq-body{display:flex;align-items:center;gap:12px;position:relative}
-.uqtop .gprompt{flex:1;min-width:0;font-size:23px;margin:10px 0 8px}
-.uq-fan{flex:none;display:flex;padding:14px 6px 0 0}
-.uq-po{border:0;padding:0;background:none;cursor:pointer;width:50px;margin-right:-14px;rotate:var(--r,0deg);filter:drop-shadow(0 8px 12px rgba(21,19,32,.25))}
-.uq-po:nth-child(1){--r:-7deg}.uq-po:nth-child(2){--r:2deg;translate:0 -4px}.uq-po:nth-child(3){--r:8deg}
-.uq-po .co{width:50px;height:74px;border-radius:9px;display:block}
-.uqtop .gline{margin:0 0 12px;position:relative}
-.uqtop #spinOpen{width:100%;position:relative;display:flex;align-items:center;justify-content:center;gap:8px}
-.uqtop #spinOpen svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2}.uqtop #spinOpen svg circle{fill:currentColor;stroke:none}
+/* the top of a page: one coloured block, the same pieces on every page that has one */
+.hero{margin-top:12px}
+.hero .hero-body{display:flex;align-items:center;gap:12px;position:relative}
+.hero .gprompt{flex:1;min-width:0;font-size:23px;margin:10px 0 8px}
+.hero-fan{flex:none;display:flex;padding:14px 6px 0 0}
+.hero-po{border:0;padding:0;background:none;cursor:pointer;width:50px;margin-right:-14px;rotate:var(--r,0deg);filter:drop-shadow(0 8px 12px rgba(21,19,32,.25))}
+.hero-po:nth-child(1){--r:-7deg}.hero-po:nth-child(2){--r:2deg;translate:0 -4px}.hero-po:nth-child(3){--r:8deg}.hero-po:nth-child(4){--r:-3deg;translate:0 3px}
+.hero-fan.four .hero-po{width:42px;margin-right:-12px}.hero-fan.four .hero-po .co{width:42px;height:62px}
+.hero-po .co{width:50px;height:74px;border-radius:9px;display:block}
+.hero .gline{margin:0 0 12px;position:relative}.hero .gline:last-child{margin-bottom:0}
+.hero .gline b{font-weight:750;opacity:1}
+.hero-go{width:100%;position:relative;display:flex;align-items:center;justify-content:center;gap:8px}
+.hero-go svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2}.hero-go svg circle{fill:currentColor;stroke:none}
+/* your page: who you are, in your colour, the way a room's top is */
+.youhero .yh-top{display:flex;align-items:center;gap:12px;position:relative}
+.youhero .tasteme{flex:1;min-width:0;color:var(--onAccent);margin-top:0}
+.youhero .tasteme h2{font-size:30px;letter-spacing:-.03em}
+.youhero .tasteme .sub{color:var(--onAccent);opacity:.75}
+.youhero .av{box-shadow:0 0 0 3px rgba(21,19,32,.85);border-radius:50%}
+.youhero #tasteCog{background:rgba(21,19,32,.1);color:var(--onAccent);flex:none}
+.youhero .gline{margin:10px 0 0}
+.youhero::before{top:auto;bottom:-100px;right:14px}
+.stk-bar.solo{grid-template-columns:1fr}
+/* the stacks filters read like the Queue's: plain words with a dot, the one you're on filled */
+.stk-filters .chip{border:0;background:none;color:var(--mute);padding:7px 12px;font:800 13.5px var(--head);box-shadow:none}
+.stk-filters .chip.on{background:var(--ink);color:var(--cream)}
+.stk-filters .kdot{width:7px;height:7px}
 /* last week on Rooms */
 .tr-head{display:flex;align-items:center;gap:10px;padding-right:50px}.tr-head>div{flex:1;min-width:0}.tr-head h3{margin:0}.tr-head small{color:var(--mute);font-weight:700}
 .tr-top{margin-top:12px}.tr-nums{display:grid;grid-template-columns:1fr 1fr;gap:10px;position:relative}
@@ -3129,6 +3147,8 @@ blockquote.kept.big{margin-top:14px;font-size:18px;padding:6px 0 6px 14px}
    counts in the corner are plain words rather than another pill */
 .card .h{border-bottom:0;padding-bottom:4px;margin-bottom:2px}
 .card .h .tag.dim{background:none;padding:0;color:var(--mute);font-size:11px;letter-spacing:.03em;box-shadow:none}
+/* on a coloured card the label on the right is a small dark pill, the same on every one */
+.promptcard .h .tag.dim{background:rgba(21,19,32,.12);color:var(--onAccent);padding:3px 9px;border-radius:99px;position:relative;z-index:1}
 /* what the room is on now: one row you can slide, not a stack */
 .nowrow{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin-inline:-18px;padding:2px 18px 4px;scroll-snap-type:x proximity}
 .nowrow::-webkit-scrollbar{display:none}
@@ -8580,6 +8600,50 @@ function cabinetKinds() { const n = cabinetCounts(); return CAB_ORDER.filter(k =
    first card sits right under the heading instead of below a stack of toggles */
 const CHEV = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>`;
 const LENS = `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>`;
+/* ---------- the top of a page ----------
+   One coloured block, built the same way wherever a page has one: a label and a count,
+   a headline that says something true about what's in here, a line under it, up to four
+   posters fanned on the right (each opens), and the one thing you'd do next. */
+function heroHTML(o) {
+  const fan = (o.fan || []).filter(Boolean).slice(0, 4);
+  return `<div class="card game promptcard hero${o.cls ? " " + o.cls : ""}"${o.id ? ` id="${o.id}"` : ""} style="--room:${o.col.startsWith("#") ? o.col : `var(--${o.col})`}">
+    <div class="h"><span>${esc(o.label)}</span>${o.tag ? `<span class="tag dim">${esc(o.tag)}</span>` : ""}</div>
+    <div class="hero-body"><div class="gprompt">${o.head}</div>${fan.length ? `<div class="hero-fan${fan.length > 3 ? " four" : ""}">${fan.map(w => `<button class="hero-po" data-herow="${esc(w.id)}" type="button" aria-label="${esc(w.title || "")}">${cover(w, "")}</button>`).join("")}</div>` : ""}</div>
+    ${o.meta ? `<p class="sub gline">${o.meta}</p>` : ""}
+    ${o.btn ? `<button class="btn hero-go" id="${o.btn.id}" type="button"${o.btn.aria ? ` aria-label="${esc(o.btn.aria)}"` : ""}>${o.btn.icon || ""}${esc(o.btn.label)}</button>` : ""}</div>`; }
+const wireHero = root => $$("[data-herow]", root || document).forEach(b => b.onclick = ev => { ev.stopPropagation(); openWork(b.dataset.herow); });
+const NUMWORD = ["No", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve"];
+const numWord = n => n < NUMWORD.length ? NUMWORD[n] : String(n);
+const MONTH_FULL = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+/* Diary and Ranked: the top says something about what you've finished */
+function paintCabHero() { const el = $("#cabHero"); if (!el) return;
+  if (!logCount()) { el.innerHTML = ""; return; }
+  const k = P.cabKind || "", col = k ? KIND_TONE[k] : P.cabView === "diary" ? "sky" : "lilac";
+  const kindOfE = e => works[e.work_id]?.kind || kindOf(e.work_id);
+  const es = myEntries.filter(e => !k || kindOfE(e) === k);
+  const what = k ? K(k).plural.toLowerCase() : "things", one = k ? (k === "tv" ? "show" : K(k).label.toLowerCase()) : "thing";
+  if (P.cabView === "diary") {
+    const now = new Date(), ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const by = {}; es.forEach(e => { const m = String(e.rated_on || "").slice(0, 7); if (m.startsWith(String(now.getFullYear()))) by[m] = (by[m] || 0) + 1; });
+    const m = by[ym] || 0, best = Object.entries(by).sort((a, b) => b[1] - a[1])[0];
+    const avg = es.length ? es.reduce((t, e) => t + e.score, 0) / es.length / 2 : 0;
+    const recent = es.slice().sort((a, b) => String(b.rated_on).localeCompare(String(a.rated_on)) || String(b.created_at || "").localeCompare(String(a.created_at || ""))).slice(0, 3).map(e => works[e.work_id]);
+    const bits = [best && best[0] !== ym && best[1] > m ? `Busiest month: <b>${MONTH_FULL[+best[0].slice(5) - 1]}, ${best[1]}</b>` : "", es.length ? `<b>${avg.toFixed(1)}★</b> on average` : ""].filter(Boolean);
+    el.innerHTML = heroHTML({ col, label:"Diary", tag:`${es.length} logged`,
+      head:m ? `${numWord(m)} ${m === 1 ? one : what} so far in ${MONTH_FULL[now.getMonth()]}.` : `Nothing yet in ${MONTH_FULL[now.getMonth()]}.`,
+      meta:bits.join(" · "), fan:recent, btn:{ id:"cabHeroGo", label:k ? `Log ${k === "tv" ? "a show" : k === "game" ? "a game" : k === "book" ? "a book" : "a film"}` : "Log something" } });
+    $("#cabHeroGo", el).onclick = () => openAdd(); }
+  else {
+    const kinds = (k ? [k] : CAB_ORDER).filter(x => (rankCache[x] || []).some(id => works[id]));
+    const tops = kinds.map(x => works[(rankCache[x] || []).find(id => works[id])]).filter(Boolean);
+    const counts = kinds.map(x => [x, (rankCache[x] || []).filter(id => works[id]).length]);
+    const big = counts.slice().sort((a, b) => b[1] - a[1])[0];
+    const head = !tops.length ? "Rate a few and your order builds itself." : k ? `${esc(tops[0].title)} is your number one ${one}.` : tops.length === 1 ? `${esc(tops[0].title)} is your number one.` : "Your number ones.";
+    el.innerHTML = heroHTML({ col, label:"Ranked", tag:`${counts.reduce((t, c) => t + c[1], 0)} in order`, head,
+      meta:counts.map(([x, n]) => `${n} ${n === 1 ? (x === "tv" ? "show" : K(x).label.toLowerCase()) : x === "tv" ? "shows" : K(x).plural.toLowerCase()}`).join(" · "),
+      fan:tops, btn:big && big[1] >= 2 ? { id:"cabHeroGo", label:`Sharpen your ${big[0] === "tv" ? "shows" : K(big[0]).plural.toLowerCase()}` } : null });
+    const go = $("#cabHeroGo", el); if (go) go.onclick = () => $(`[data-sharpen="${big[0]}"]`)?.click(); }
+  wireHero(el); }
 function renderCabinet() {
   const body = $("#archiveBody"); if (!body) return;
   if (!cabRanked() && P.cabView !== "diary") P.cabView = "diary";
@@ -8589,9 +8653,9 @@ function renderCabinet() {
      medium you haven't finished anything in yet is still there to find, with a word on
      how it fills up, rather than missing as if the app didn't do TV */
   const places = [place("", "Finished", "sky", "archive"), ...(logCount() ? CAB_ORDER.map(k => place(k, K(k).plural, KIND_TONE[k], k)) : [])];
-  body.innerHTML = `${pagerHTML(places, P.cabKind || "", { id:"cabPager", mode:"chips", allLabel:"All" })}
+  body.innerHTML = `${pagerHTML(places, P.cabKind || "", { id:"cabPager", mode:"chips", allLabel:"All" })}<div id="cabHero"></div>
     ${logCount() ? `<div class="cabbar">
-        <p class="cabcount" id="cabCount">${cabRanked() ? "Your order, best first" : `${logCount()} logged`}</p>
+        <p class="cabcount" id="cabCount">${cabRanked() ? "Your order, best first" : "Newest first"}</p>
         <button class="cabfind ${cabQ ? "on" : ""}" id="cabFindBtn" aria-label="Search what you've finished" aria-expanded="${cabQ ? "true" : "false"}">${LENS}</button>
         <button class="cabfind ${cabFiltered() ? "on" : ""}" id="cabSortBtn" aria-label="Sort and filter">${SLIDERS}</button>
         <p class="sub" id="cabSub" hidden></p>
@@ -8710,6 +8774,7 @@ function kindBlank(k) {
   return blank(`var(--${KIND_TONE[k]})`, "+", k === "tv" ? "No shows yet" : `No ${noun} yet`, body, [["cabLogKind", k === "tv" ? "Log a show" : `Log ${k === "book" ? "a book" : k === "game" ? "a game" : "a film"}`, "soft"]]); }
 function paintTrays() {
   const el = $("#cabTrays"); if (!el) return;
+  paintCabHero();
   if (P.cabView === "diary") return paintDiary(el);
   const rows = cabinetRows();
   const by = {}; rows.forEach(r => (by[r.w.kind] ||= []).push(r));
@@ -8930,11 +8995,8 @@ function renderShelf() {
       : first ? `Next up: ${esc(first.title)}.` : `All caught up. ${soonCount} still to come out.`;
     const bits = [on.length ? `${on.length} on the go` : "", soonCount ? `${soonCount} coming` : "", mineCount ? `${mineCount} on your services` : "", done ? `${done} done` : ""].filter(Boolean);
     const fan = left.slice(0, 3);
-    return `<div class="card game promptcard uqtop" style="--room:var(--${P.shelfFilter ? KIND_TONE[P.shelfFilter] : "mint"})">
-      <div class="h"><span>Up next</span><span class="tag dim">${all.length} in here</span></div>
-      <div class="uq-body"><div class="gprompt">${head}</div>${fan.length ? `<div class="uq-fan">${fan.map(w => `<button class="uq-po" data-uqw="${esc(w.id)}" aria-label="${esc(w.title)}">${cover(w, "")}</button>`).join("")}</div>` : ""}</div>
-      ${bits.length ? `<p class="sub gline">${bits.join(" · ")}</p>` : ""}
-      <button class="btn" id="spinOpen" type="button" aria-label="${left.length >= 2 ? `Can't decide? Pick from ${left.length}` : "Spin the best of something"}">${ICON_DICE}${left.length >= 2 ? "Pick one for me" : "Find me something"}</button></div>`; })();
+    return heroHTML({ col:P.shelfFilter ? KIND_TONE[P.shelfFilter] : "mint", label:"Up next", tag:`${all.length} in here`, head, meta:bits.join(" · "), fan,
+      btn:{ id:"spinOpen", icon:ICON_DICE, label:left.length >= 2 ? "Pick one for me" : "Find me something", aria:left.length >= 2 ? `Can't decide? Pick from ${left.length}` : "Spin the best of something" } }); })();
   $("#shelfBody").innerHTML = `${pagerHTML(places, P.shelfFilter || "", { id:"shelfPager", mode:"chips", allLabel:"All" })}${all.length ? upTop : `<p class="sub shelfsub">Everything you meant to get to.</p>`}
     <div class="shelfsearch"><input id="search" type="search" placeholder="Search ${esc(scope)}" aria-label="Search ${esc(scope)}" autocomplete="off">${all.length ? `<button class="cabfind ${P.when ? "on" : ""}" id="shelfFilterBtn" aria-label="Filter Up next">${SLIDERS}</button>` : ""}${
         shelfEdit || all.length ? "" : `<button class="chip filt pickchip" id="spinOpen" aria-label="${left.length >= 2 ? `Can't decide? Pick from ${left.length}` : "Spin the best of something"}">${ICON_DICE}Pick</button>`}</div>
@@ -8969,7 +9031,7 @@ function renderShelf() {
     $$("[data-kf]").forEach(b => b.onclick = () => { P.shelfFilter = b.dataset.kf; saveP(); closeSheet(); renderShelf(); });
     $$("[data-wf]").forEach(b => b.onclick = () => { P.when = b.dataset.wf; saveP(); closeSheet(); renderShelf(); });
   };
-  $$("[data-uqw]").forEach(b => b.onclick = () => openWork(b.dataset.uqw));
+  wireHero($("#shelfBody"));
   const so = $("#spinOpen"); if (so) so.onclick = async () => {
     if (left.length < 2 && pickFrom() !== "best") { P.pickFrom = "best"; saveP(); bestHand = []; }
     await openWheel(); };
@@ -12127,13 +12189,15 @@ function playNumbers() { const el = $("#yNum"); if (!el || REDUCED) return;
   $$(".ynk b", el).forEach(b => { const to = +b.dataset.to; b.textContent = "0"; setTimeout(() => tickTo(b, to), 120); });
   el.classList.add("grow"); }
 async function renderTaste() { const body = $("#tasteBody"); const t = tasteOf(myEntries);
-  body.innerHTML = `<div class="pagehead"><button class="tasteme" id="tasteMe" aria-label="Open your profile">${avatar(me)}<div><h2 style="margin:0">${esc(me.handle)}</h2>${me.bio?`<p class="sub" style="margin-top:2px">${esc(me.bio)}</p>`:""}</div></button>
+  const myCol = (() => { const c = AV_COLS[avFor(me)?.col]; return c && !["#7A7590", "#151320"].includes(String(c).toUpperCase()) ? c : "lilac"; })();
+  body.innerHTML = `<div class="card game promptcard hero youhero" style="--room:${String(myCol).startsWith("#") ? myCol : `var(--${myCol})`}">
+    <div class="yh-top"><button class="tasteme" id="tasteMe" aria-label="Open your profile">${avatar(me)}<div><h2 style="margin:0">${esc(me.handle)}</h2>${me.bio?`<p class="sub" style="margin-top:2px">${esc(me.bio)}</p>`:""}</div></button>
     <button class="iconbtn cog" id="tasteCog" aria-label="Settings">${COG}</button></div>
+    <p class="sub gline">${[logCount() ? `<b>${logCount()}</b> logged` : "", rooms.length ? `in <b>${rooms.length}</b> ${rooms.length === 1 ? "room" : "rooms"}` : ""].filter(Boolean).join(" · ") || "Log the last thing you finished to start."}<span id="youStreak"></span></p></div>
     ${myEntries.length ? `<div id="podium"></div>
     <button class="card tastemini" id="tasteMore" aria-label="See your whole taste">${tasteMiniHTML(t)}</button>
     ${yourNumbersHTML()}
     <div class="chgoal">${goalHTML()}</div>
-    <p class="sub youstreak" id="youStreak" hidden></p>
     <div id="myLists"></div>
     <div id="hotTakes"></div>
     <div class="card" id="recCard"><div class="h"><span>You might like</span><span class="tag dim">picked for you</span></div><div id="recBody">${skeleton(1)}</div></div>
@@ -12146,8 +12210,8 @@ async function renderTaste() { const body = $("#tasteBody"); const t = tasteOf(m
   $("#tasteMe").onclick = () => openProfile(me.id);
   $("#tasteCog").onclick = () => openYou();
   { const gs = $("#goalSet"); if (gs) gs.onclick = setGoal; }
-  cluesStreak().then(st => { const el = $("#youStreak"); if (!el || !st?.best) return; el.hidden = false;
-    el.innerHTML = `<b>Five Clues</b> · ${st.cur ? `${st.cur} ${st.cur === 1 ? "day" : "days"} in a row` : "no streak going"} · best ${st.best}`; });
+  cluesStreak().then(st => { const el = $("#youStreak"); if (!el || !st?.cur) return;
+    el.innerHTML = ` · Five Clues <b>${st.cur} ${st.cur === 1 ? "day" : "days"}</b> in a row`; });
   const ts = $("#tasteStory"); if (ts) ts.onclick = () => openYearStory();
   paintPodium(); playNumbers(); paintHotTakes();
   paintListsCard($("#myLists"), { build:x => x.eq("owner", me.id), title:"Your stacks", empty:"Make one: heist films, books for a long flight, the ones that made you cry.", mine:true });
@@ -13392,8 +13456,11 @@ async function renderStacks() {
   const tab = STACK_TABS.some(([k]) => k === P.stackTab) ? P.stackTab : "popular";
   const places = STACK_TABS.map(([k, n]) => place(k, n, "lilac", "clubs"));
   body.innerHTML = `${pagerHTML(places, tab, { id:"stackPager", mode:"tabs", title:"Stacks" })}
-    <p class="sub seasonsub">Films, shows, books and games, stacked by anyone. Make one of your own.</p>
-    <div class="stk-bar"><input id="stkSearch" type="search" placeholder="Search stacks or titles" aria-label="Search stacks" value="${esc(stackQ)}" autocomplete="off"><button class="btn" id="stkNew" type="button">+ New stack</button></div>
+    ${heroHTML({ id:"stkHero", col:"pink", label:(STACK_TABS.find(([k]) => k === tab) || [, "Stacks"])[1], tag:"",
+      head:tab === "yours" ? "Your stacks, and the ones you saved." : tab === "friends" ? "What your people have stacked." : "What would you stack?",
+      meta:tab === "yours" ? "Make one for anything: a mood, a director, a long weekend." : tab === "friends" ? "Stacks from the people you follow and your rooms." : "Films, shows, books and games, stacked by anyone. Save the ones you like.",
+      btn:{ id:"stkNew", label:"+ New stack" } })}
+    <div class="stk-bar solo"><input id="stkSearch" type="search" placeholder="Search stacks or titles" aria-label="Search stacks" value="${esc(stackQ)}" autocomplete="off"></div>
     <div class="chips scroll stk-filters" id="stkFilters"></div>
     <div id="stkList"><div class="card">${skeleton(3)}</div></div>`;
   body.classList.add("washed"); body.style.setProperty("--rc", "var(--lilac)");
@@ -13406,6 +13473,10 @@ async function renderStacks() {
   await fillWorks(ls.flatMap(l => l.items.map(i => i.work_id)));
   if (!$("#stkList")) return;
   const shapes = new Map(ls.map(l => [l.id, stackShape(l)]));
+  /* the top block gets its count and a few covers once the stacks are in */
+  { const hb = $("#stkHero"); if (hb) { const t = $(".h", hb); if (t && !$(".tag", t)) t.insertAdjacentHTML("beforeend", `<span class="tag dim">${ls.length} ${ls.length === 1 ? "stack" : "stacks"}</span>`);
+      const fan = ls.slice(0, 3).map(l => works[l.items[0]?.work_id]).filter(Boolean);
+      if (fan.length && !$(".hero-fan", hb)) { $(".hero-body", hb).insertAdjacentHTML("beforeend", `<div class="hero-fan">${fan.map(w => `<button class="hero-po" data-herow="${esc(w.id)}" type="button" aria-label="${esc(w.title || "")}">${cover(w, "")}</button>`).join("")}</div>`); wireHero(hb); } } }
   /* only the media and genres something here is actually of */
   const kindsHere = Object.keys(KINDS).filter(k => ls.some(l => shapes.get(l.id).kinds.has(k)));
   const tagCount = {}; ls.forEach(l => shapes.get(l.id).tags.forEach(t => tagCount[t] = (tagCount[t] || 0) + 1));
