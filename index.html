@@ -642,7 +642,7 @@ header:has(#meBtn:not([hidden])) .logoword{display:none}
 .av svg{width:100%;height:100%;display:block}
 .av.big{width:84px;height:84px}
 .picker{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:8px}
-#avShapes{grid-template-columns:repeat(5,1fr);gap:8px}   /* nine shapes since the ghost: five and four, not four, four and one */
+#avShapes,#avEyes{grid-template-columns:repeat(5,1fr);gap:8px}   /* fourteen shapes and ten eyes: rows of five */
 .picker button{background:var(--card);border:2px solid var(--line);border-radius:16px;padding:6px;cursor:pointer;transition:transform .15s}
 .picker button svg{width:100%;height:auto;display:block}
 .picker button.on{border-color:var(--ink);background:var(--cream2)}
@@ -3708,12 +3708,32 @@ const AV_SHAPES = {
     <path d="M82 46v30q-8 10-16 0V46a14 14 0 0 0-8-13 32 32 0 0 1 24 13z" fill="${c.dark}"/>`,
   step: c => `<path d="M14 88V56h30V30h42v58z" fill="${c.base}"/>
     <path d="M44 30h42v10H44zM14 56h30v10H14z" fill="${c.light}"/>
-    <path d="M86 30v58H62V30z" fill="${c.dark}"/>`
+    <path d="M86 30v58H62V30z" fill="${c.dark}"/>`,
+  /* the second set: softer and flatter, a drop, a rounded triangle, a cloud, a bun and
+     a four-leaf clover */
+  drop: c => `<path d="M60 12c5 0 9 4 13 10l12 17a33 33 0 1 1-55 1c3-5 7-9 11-12l11-10c3-4 6-6 8-6z" fill="${c.base}"/>
+    <path d="M60 12c5 0 9 4 13 10l9 13c-9-6-21-8-34-4l7-13c2-4 4-6 5-6z" fill="${c.light}" opacity=".9"/>
+    <path d="M85 39a33 33 0 0 1-27 50c14-6 22-20 20-38z" fill="${c.dark}"/>`,
+  tri: c => `<path d="M50 14c7 0 12 7 16 14l20 35c7 13 2 23-14 23H28c-16 0-21-10-14-23l20-35c4-7 9-14 16-14z" fill="${c.base}"/>
+    <path d="M50 14c7 0 12 7 16 14l7 12c-14-6-32-6-46 0l7-12c4-7 9-14 16-14z" fill="${c.light}"/>
+    <path d="M86 63c7 13 2 23-14 23H58c12-2 18-10 14-22l-6-14z" fill="${c.dark}"/>`,
+  cloud: c => `<g fill="${c.base}"><circle cx="46" cy="40" r="20"/><circle cx="68" cy="46" r="16"/><circle cx="28" cy="60" r="18"/>
+      <circle cx="72" cy="66" r="18"/><circle cx="50" cy="70" r="18"/><rect x="28" y="44" width="46" height="30"/></g>
+    <path d="M28 40a20 20 0 0 1 36-10c-10-3-24 0-36 10z" fill="${c.light}"/>
+    <path d="M90 66a18 18 0 0 1-30 14c12 0 22-6 24-20z" fill="${c.dark}"/>`,
+  bun: c => `<rect x="10" y="30" width="80" height="54" rx="27" fill="${c.base}"/>
+    <path d="M37 30h26a27 27 0 0 1 25 16H12a27 27 0 0 1 25-16z" fill="${c.light}"/>
+    <path d="M90 57a27 27 0 0 1-27 27H48c18 0 34-10 38-27z" fill="${c.dark}"/>`,
+  /* the tilt sits one group in: the build-up animation sets transform on the outer one */
+  clover: c => `<g><g transform="rotate(28 50 54)"><g fill="${c.base}"><circle cx="50" cy="33" r="17"/><circle cx="71" cy="54" r="17"/><circle cx="50" cy="75" r="17"/>
+      <circle cx="29" cy="54" r="17"/><circle cx="50" cy="54" r="22"/></g>
+    <path d="M36 25a17 17 0 0 1 28 0c-8-3-20-3-28 0z" fill="${c.light}"/>
+    <path d="M66 81a17 17 0 0 1-32 0c5 5 10 6 16 6s11-1 16-6z" fill="${c.dark}"/></g></g>`
 };
 const AV_NAMES = Object.keys(AV_SHAPES);
-/* the shapes a face gets before anyone chooses one; the ghost came later, and adding it
-   here would quietly change everybody's default face */
-const AV_DEFAULT = AV_NAMES.filter(n => n !== "ghost");
+/* the shapes a face gets before anyone chooses one. Anything added after the first set
+   stays out of it, or everybody's default mascot would quietly change */
+const AV_DEFAULT = ["cube", "box", "ball", "can", "cone", "pill", "arch", "step"];
 function avShade(hex, amt) { const n = parseInt(hex.slice(1), 16); let r = n >> 16, g = (n >> 8) & 255, b = n & 255;
   if (amt > 0) { r += (255-r)*amt; g += (255-g)*amt; b += (255-b)*amt; } else { r *= (1+amt); g *= (1+amt); b *= (1+amt); }
   return "#" + [r,g,b].map(v => Math.round(v).toString(16).padStart(2,"0")).join(""); }
@@ -3733,15 +3753,24 @@ function avFor(p) {
     return { shape:a.shape, col:a.col, eyes:AV_EYES[a.eyes] ? a.eyes : "pair", tilt:a.tilt ?? 0, founder, ring };
   const h = avHash(p?.handle);
   return { shape:AV_DEFAULT[h % AV_DEFAULT.length], col:(h >> 3) % AV_COLS.length,
-    eyes:AV_EYE_NAMES[(h >> 11) % AV_EYE_NAMES.length], tilt:((h >> 7) % 9) - 4, founder, ring }; }
+    eyes:AV_EYE_DEFAULT[(h >> 11) % AV_EYE_DEFAULT.length], tilt:((h >> 7) % 9) - 4, founder, ring }; }
 /* the same capsule, arranged four ways — nothing changes but the spacing and the height */
 const AV_EYES = {
   pair:  `<rect x="40" y="46" width="7" height="20" rx="3.5"/><rect x="55" y="44" width="7" height="22" rx="3.5"/>`,
   short: `<rect x="41" y="48" width="7" height="13" rx="3.5"/><rect x="54" y="47" width="7" height="14" rx="3.5"/>`,
   wide:  `<rect x="34" y="46" width="7" height="19" rx="3.5"/><rect x="61" y="45" width="7" height="21" rx="3.5"/>`,
-  tall:  `<rect x="41" y="41" width="6.5" height="27" rx="3.2"/><rect x="54" y="40" width="6.5" height="28" rx="3.2"/>`
+  tall:  `<rect x="41" y="41" width="6.5" height="27" rx="3.2"/><rect x="54" y="40" width="6.5" height="28" rx="3.2"/>`,
+  /* the second set: leaning, sleepy, a shine, big and bold, and tilted */
+  lean:  `<rect x="39" y="45" width="8" height="21" rx="4" transform="rotate(10 43 55)"/><rect x="55" y="44" width="8" height="21" rx="4" transform="rotate(10 59 54)"/>`,
+  sleepy:`<rect x="33" y="50" width="16" height="6.5" rx="3.2" transform="rotate(16 41 53)"/><rect x="53" y="50" width="16" height="6.5" rx="3.2" transform="rotate(22 61 53)"/>`,
+  shine: `<path d="M41 46c2-4 5-5 6-3s-1 4-2 7-2 6-4 7-3-1-2-4z"/><rect x="53" y="44" width="6.5" height="17" rx="3.2" transform="rotate(24 56 52)"/>`,
+  bold:  `<rect x="37" y="44" width="11" height="17" rx="5.5"/><rect x="54" y="44" width="11" height="17" rx="5.5"/>`,
+  tilt:  `<rect x="40" y="48" width="5.5" height="15" rx="2.7" transform="rotate(-26 43 55)"/><rect x="55" y="45" width="5.5" height="15" rx="2.7" transform="rotate(-26 58 52)"/>`,
+  dots:  `<circle cx="43" cy="55" r="5"/><circle cx="59" cy="54" r="5"/>`
 };
 const AV_EYE_NAMES = Object.keys(AV_EYES);
+/* same rule as the shapes: the first four only, so nobody's default eyes change */
+const AV_EYE_DEFAULT = ["pair", "short", "wide", "tall"];
 /* ---------- the founder's ring ----------
    One person has this. It is drawn inside the 100x100 viewBox rather than as a CSS ring,
    so it scales with the avatar wherever it appears — 24px in a chip, 84 on a profile —
