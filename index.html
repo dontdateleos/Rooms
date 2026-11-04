@@ -7195,7 +7195,7 @@ async function openYearStory(year = storyYear() || String(new Date().getFullYear
 const TOUR = [
   { at:'#hereRow .couch, #hereRow', title:"Your room", body:"Everyone in the room is in this chip. Tap it to see who's here and what they're watching, reading or playing.", col:"#F5A3C7", need:"doors" },
   { at:'#add', title:"Log something", body:"Finished a film, show, book or game? Tap + and drag across the stars. Then pick the one thing you loved most.", col:"#FFB36B" },
-  { at:'nav button[data-tab="doors"]', title:"Rooms", body:"What your friends log lands here. Hold a heart to answer with your face, or tap the bubble to reply.", col:"#F5A3C7" },
+  { at:'nav button[data-tab="doors"]', title:"Rooms", body:"What your friends log lands here. Hold a heart to answer with your mascot, or tap the bubble to reply.", col:"#F5A3C7" },
   { at:'nav button[data-tab="people"]', title:"Feed", body:"The people you follow, then everyone else. A ring means they've logged something in the last two days — tap it to see.", col:"#9EF0C9" },
   { at:'nav button[data-tab="library"]', title:"Queue", body:"Up next is everything you mean to get to. Diary is everything you've finished, by date, and Ranked is your order of them.", col:"#B9A6FF" },
   { at:'nav button[data-tab="clubs"]', title:"Stacks", body:"Lists of films, shows, books and games that anyone can make and find. Start one of your own.", col:"#B9A6FF" },
@@ -8215,7 +8215,7 @@ function wireSlips(el, es) { const by = Object.fromEntries(es.map(e => [e.id, e]
         if (e.user_id && e.user_id !== me.id) notify({ to:e.user_id, title:`${me.handle} liked what you said`, body:`About ${works[e.work_id]?.title || "something you logged"}.`, tag:"like-" + e.id }); }
       e.reactions = has ? (e.reactions||[]).filter(r => r.user_id !== me.id) : [...(e.reactions||[]), { user_id:me.id }];
       b.classList.toggle("on", !has); b.innerHTML = myReactHTML(e);
-      if (!has && !P.reactTip) { P.reactTip = 1; saveP(); setTimeout(() => say("Hold the heart to answer with your face instead"), 900); }
+      if (!has && !P.reactTip) { P.reactTip = 1; saveP(); setTimeout(() => say("Hold the heart to answer with your mascot instead"), 900); }
       b.setAttribute("aria-pressed", String(!has));
       b.setAttribute("aria-label", has ? "Like this" : "Liked — tap to take it back");
       /* the line under it is the other half of the same fact, and it is the only other
@@ -11007,7 +11007,7 @@ function waitHTML(R, ids, what, key, about = "") {
   return `<div class="waiton"><small>Waiting on</small><span class="wfaces">${left.map(m => m.id === me.id
       ? `<span class="wf you" title="you">${avatar(me)}</span>`
       : `<button class="wf" data-nudge="${esc(m.id)}" data-nk="${esc(key)}" data-nw="${what}"${about ? ` data-nb="${esc(about)}"` : ""} aria-label="Nudge ${esc(m.handle)}" title="${esc(m.handle)}">${avatar(m)}</button>`).join("")}</span>
-    ${others.length ? `<small class="wtip">tap a face to nudge</small>` : ""}</div>`; }
+    ${others.length ? `<small class="wtip">tap a mascot to nudge</small>` : ""}</div>`; }
 function wireNudges(R, el) {
   $$("[data-nudge]", el).forEach(b => { const k = `${b.dataset.nk}:${b.dataset.nudge}`;
     if ((P.nudged || []).includes(k)) b.classList.add("done");
@@ -15598,7 +15598,7 @@ async function paintPublicPage(el) { if (!el || !me) return;
 /* ============ YOU (behind your name) ============ */
 async function openYou() { let top = { items:[] }; try { top = await ensureMyTop(); } catch {}
   openSheet(`<div style="display:flex;align-items:center;gap:12px">${avatar(me)}<h3 style="flex:1">${esc(me.handle)}</h3></div>
-    <div class="lbl">Your shape</div>
+    <div class="lbl">Your mascot</div>
     <div style="display:flex;align-items:center;gap:14px;margin-top:6px">
       <span class="av big" id="avPreview"></span>
       <div><p class="sub" id="avNote"></p>
@@ -15607,7 +15607,7 @@ async function openYou() { let top = { items:[] }; try { top = await ensureMyTop
     <div class="picker" id="avShapes"></div>
     <div class="lbl">Eyes</div><div class="picker" id="avEyes"></div>
     <div class="lbl">Colour</div><div class="swatches" id="avCols"></div>
-    <div class="stack"><button class="btn ghost" id="avReset">Back to the one my handle made</button></div>
+    <div class="stack"><button class="btn ghost" id="avReset">Back to the mascot my handle made</button></div>
     <div class="lbl">Your page's backdrop</div><button class="linkrow" id="yBackdrop"><span>${me.backdrop ? "Change the still behind your name" : "Put a still from a favourite behind your name"}</span><b>›</b></button>
     <div class="lbl">Handle</div><input id="yHandle" maxlength="24" autocapitalize="none" value="${esc(me.handle)}"><div class="lbl">A line under your name</div><input id="yBio" maxlength="80" placeholder="watches too much, sleeps too little" value="${esc(me.bio||"")}">
     ${top.items.length ? `<div class="lbl">Your four · from your ten</div>${fourHTML(top.items)}` : ""}
@@ -15624,8 +15624,8 @@ async function openYou() { let top = { items:[] }; try { top = await ensureMyTop
     ${isFounder() ? `<div class="lbl" style="margin-top:10px">Founder</div><div class="stack"><button class="btn quiet" id="fTrends">Last week on Rooms</button><button class="btn quiet" id="fList">Copy the newsletter list</button></div>` : ""}
     <div class="lbl" style="margin-top:10px">How the app looks</div><div class="chips">${[["","Auto"],["light","Light"],["dark","Dark"]].map(([k,l]) => `<button class="chip ${(P.theme||"")===k?"on":""}" data-th="${k}">${l}</button>`).join("")}</div>
     <p class="sub" style="margin-top:4px">Auto follows your phone. The ground still warms and dims across the day either way.</p>
-    <div class="lbl">The little guys</div><div class="chips"><button class="chip ${P.tilt ? "on" : ""}" id="tiltSw">Eyes follow your tilt</button></div>
-    <p class="sub" style="margin-top:4px">Tilt your phone and every face looks the way it leans.</p>
+    <div class="lbl">The mascots</div><div class="chips"><button class="chip ${P.tilt ? "on" : ""}" id="tiltSw">Eyes follow your tilt</button></div>
+    <p class="sub" style="margin-top:4px">Tilt your phone and every mascot looks the way it leans.</p>
     <div class="lbl">Cards</div><div class="chips">${[["","Auto"],["day","Day"],["night","Night"]].map(([k,l]) => `<button class="chip ${(P.cardTheme||"")===k?"on":""}" data-ct="${k}">${l}</button>`).join("")}</div>
     <p class="sub" style="margin-top:4px">Auto goes dark in the evening. The medium tints the light either way.</p>
     <div class="lbl">Where you are · decides what's streaming</div>
@@ -15708,7 +15708,7 @@ async function openYou() { let top = { items:[] }; try { top = await ensureMyTop
   $("#yBackdrop").onclick = () => openBackdropPick();
   $("#avReset").onclick = async () => { me.avatar = null; av = Object.assign({}, avFor(me));
     try { if (sb.__local) { sb.__db.profile.avatar = null; sb.__save(); } else await q(sb.from("profiles").update({ avatar:null }).eq("id", me.id)); }
-    catch (err) { oops(err, "Couldn't reset your shape"); }
+    catch (err) { oops(err, "Couldn't reset your mascot"); }
     paintAv(); paintMeAv(); refresh(); };
 
   const ta = $("#tourAgain"); if (ta) ta.onclick = () => { P.tourDue = true; saveP(); closeSheet(); if (currentTab() !== "doors") switchTab("doors"); };
