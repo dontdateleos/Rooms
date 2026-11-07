@@ -397,8 +397,9 @@ alter table public.entries replica identity full;
 */
 alter table profiles add column if not exists founder boolean not null default false;
 
+-- security invoker: under definer, current_user is the owner and the check never fires
 create or replace function guard_founder() returns trigger
-language plpgsql security definer set search_path = public as $$
+language plpgsql security invoker set search_path = public as $$
 begin
   if current_user in ('authenticated', 'anon') then
     if tg_op = 'INSERT' then new.founder := false;
@@ -2240,8 +2241,9 @@ do $$ begin
     alter table profiles add constraint profiles_covers_size check (covers is null or (jsonb_typeof(covers) = 'object' and pg_column_size(covers) < 20000)) not valid;
   end if;
 end $$;
+-- security invoker: under definer, current_user is the owner and the check never fires
 create or replace function guard_supporter() returns trigger
-language plpgsql security definer set search_path = public as $$
+language plpgsql security invoker set search_path = public as $$
 begin
   if current_user in ('authenticated', 'anon') then
     if tg_op = 'INSERT' then new.supporter := false;
