@@ -295,11 +295,16 @@ const MOODED = { "film:1":["Tense","Exciting"], "film:2":["Tense","Thoughtful"],
   "film:5":["Funny","Tense"], "film:6":["Thoughtful","Strange","Sad"], "film:7":["Romantic","Sad","Hopeful"], "film:8":["Sad","Thoughtful"], "film:9":["Tense"],
   "tv:1":["Tense","Thoughtful"], "tv:2":["Strange","Sad"], "tv:3":["Funny","Tense"], "book:1":["Exciting","Strange"], "book:2":["Sad","Hopeful"], "book:3":["Thoughtful"],
   "game:1":["Strange","Hopeful"], "game:2":["Funny","Strange"], "film:30":["Scary","Tense"], "film:31":["Scary"], "film:32":["Scary","Strange"], "tv:30":["Scary","Sad"] };
+/* where people saw it or got it, so "the best places" has something to rank */
+const PLACES = { "u-ali|film:1":["cinema","The Lantern",5], "u-mo|film:1":["cinema","The Lantern",4], "u-cass|film:3":["cinema","Picturehouse on King St",4],
+  "u-mo|film:7":["cinema","Picturehouse on King St",5], "u-mo|film:6":["cinema","The Lantern",5], "u-rue|film:8":["cinema","Odeon Central",3], "u-cass|film:8":["cinema","Odeon Central",2],
+  "u-ali|book:2":["bookshop","Night Owl Books",5], "u-mo|book:30":["bookshop","Night Owl Books",4], "u-mo|book:3":["library","Central Library",4], "u-ali|book:5":["library","Central Library",5] };
+const withPlace = (u, w, c) => { const x = PLACES[u + "|" + w]; return x ? { ...(c || {}), venueKind:x[0], venue:x[1], venueRate:x[2], ...(x[0] === "cinema" ? { where:"At the cinema" } : {}) } : c; };
 const withMoods = (u, w, c) => MOODED[w] && (u.length + w.length) % 3 !== 0 ? { ...(c || {}), moods:MOODED[w] } : (c || null);
 const entries = LOG.map(([u,w,score,d,note,loved], i) => ({
   id:"e" + i, user_id:u, work_id:w, score, rated_on:day(d),
   note:note || null, loved:loved.length ? loved : null,
-  breakdown:null, context:withMoods(u, w, CONTEXT[u + "|" + w]), room_only:false, created_at:ago(d),
+  breakdown:null, context:withPlace(u, w, withMoods(u, w, CONTEXT[u + "|" + w])), room_only:false, created_at:ago(d),
 }));
 
 /* The Wire, season one, so a show's page has episodes to open — and two of them have

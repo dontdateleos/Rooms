@@ -2414,3 +2414,25 @@ language sql stable security definer set search_path = public as $$
 $$;
 revoke all on function along_notes_for(uuid) from public, anon;
 grant execute on function along_notes_for(uuid) to authenticated;
+
+-- ---------- the best places ----------
+-- Where people saw a film or got a book rides in an entry's context (venue, venueKind,
+-- venueRate). This adds them up across everyone's public entries, matched ignoring case
+-- and spacing, for the Feed's "best places": a place needs two different people, and
+-- "just me" and room-only entries never count. Nobody's name comes back.
+create or replace function top_venues(p_kind text)
+returns table (name text, people int, avg numeric)
+language sql security definer stable set search_path = public as $$
+  with v as (
+    select e.user_id, trim(e.context->>'venue') as venue,
+      lower(regexp_replace(trim(e.context->>'venue'), '[^a-zA-Z0-9]+', ' ', 'g')) as k,
+      case when (e.context->>'venueRate') ~ '^[1-5]$' then (e.context->>'venueRate')::int end as rate
+    from entries e
+    where not e.private and not e.room_only and e.context->>'venueKind' = p_kind
+      and coalesce(trim(e.context->>'venue'), '') <> '' and char_length(e.context->>'venue') <= 60)
+  select mode() within group (order by venue), count(distinct user_id)::int, round(avg(rate), 2)
+  from v group by k having count(distinct user_id) >= 2
+  order by avg(rate) desc nulls last, count(distinct user_id) desc limit 20
+$$;
+revoke all on function top_venues(text) from public, anon;
+grant execute on function top_venues(text) to authenticated;
