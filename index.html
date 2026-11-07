@@ -2685,6 +2685,13 @@ header,nav{-webkit-backdrop-filter:blur(20px) saturate(1.4);backdrop-filter:blur
 .moodwrap{margin-top:14px}.moodwrap .lbl small{font-weight:600;opacity:.6;margin-left:4px;text-transform:none;letter-spacing:0}
 .chip.mood{border-style:dashed}.chip.mood.on{border-style:solid}
 .moodline{margin-top:10px}
+/* how Rooms is doing */
+.health .hl-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.health .hl-row b{display:block;font:900 26px/1 var(--head)}.health .hl-row small{display:block;color:var(--mute);font-size:12.5px;margin-top:4px}
+.hl-err{padding:10px 12px;border-radius:12px;background:color-mix(in srgb,var(--mint) 18%,var(--card))}
+.hl-err.bad{background:color-mix(in srgb,#E46A6A 16%,var(--card))}
+.hl-err ol{margin:8px 0 0;padding-left:18px}.hl-err li{margin:4px 0;font-size:12.5px}.hl-err code{font-size:11.5px;word-break:break-word}
+
 /* every tab's top card at the Up next size: room, Feed, Diary, Ranked, Stacks, You */
 .hero.upbig .hero-go{position:relative;z-index:1}
 .roomcard.upbig .room-body{min-height:190px;align-items:flex-end;margin-top:4px}
@@ -15680,6 +15687,7 @@ async function openTrends(off = 1) {
     <div class="card game promptcard tr-top mo" style="--room:var(--mint)"><div class="tr-nums"><div><b>${trNum(d.logs)}</b><small>things logged${chg != null ? ` · ${chg >= 0 ? "+" : ""}${chg}% on the week before` : ""}</small></div>
       <div><b>${trNum(d.people)}</b><small>people logging</small></div></div>${kinds ? `<p class="sub gline">${esc(kinds)}</p>` : ""}</div>
     ${d.top?.length ? "" : `<p class="sub">Nothing reached ${d.min} different people last week, so there's no chart yet — only the totals.</p>`}
+    <div id="trHealth"></div>
     <div class="lbl">Cards for the video</div><div class="tr-cards" id="trCards">${cards.map(([n], i) => `<button class="wk-card" data-trc="${i}"><span class="tr-thumb"></span><small>${esc(n)}</small></button>`).join("")}</div>
     <div class="stack"><button class="btn" id="trAll">Save all ${cards.length} cards</button><button class="btn quiet" id="trCopy">Copy the numbers</button></div>
     ${sec("Most logged", d.top?.slice(0, 5), w => `${trNum(w.n)} people · ${trStars(w.avg)}`)}
@@ -15696,6 +15704,7 @@ async function openTrends(off = 1) {
   $$("[data-trw]").forEach(r => r.onclick = () => { closeSheet(); openWork(r.dataset.trw); });
   $$("[data-trs]").forEach(r => r.onclick = () => { closeSheet(); openThemeList(r.dataset.trs); });
   $("#trCopy").onclick = async () => { try { await navigator.clipboard.writeText(trText(d, hard)); say("Copied the numbers"); } catch { say("Couldn't copy"); } };
+  paintHealth(from);
   /* the lines people liked most that week, ready for the newsletter and the video */
   (async () => { const to = new Date(new Date(from + "T00:00:00").getTime() + 7 * 864e5).toISOString().slice(0, 10);
     let es = []; try { es = feedRows(await q(sb.from("entries").select(ENTRY_SEL).eq("part", false).gte("created_at", from).lt("created_at", to).not("note", "is", null).order("created_at", { ascending:false }).limit(400))); } catch {}
@@ -15712,6 +15721,30 @@ async function openTrends(off = 1) {
   $$("[data-trc]").forEach(b => b.onclick = () => { const cv = made[+b.dataset.trc]; if (cv) cardOut(cv, `${base}-${+b.dataset.trc + 1}.png`); });
   $("#trAll").onclick = () => cardsOut(made.filter(Boolean), base); }
 
+/* ---------- how Rooms is doing ----------
+   The founder's own numbers for the week: how many people used it, whether the people
+   who joined a month ago are still here, how many new people came through an invite,
+   and what broke on people's phones. Counts only. */
+async function healthOf(from) {
+  if (!sb.__local) return await q(sb.rpc("founder_health", { p_from:from }));
+  /* the demo has no history to speak of: work out what it can from what's there */
+  const a = from, b = new Date(new Date(from + "T00:00:00").getTime() + 7 * 864e5).toISOString().slice(0, 10);
+  const inWk = t => String(t || "").slice(0, 10) >= a && String(t || "").slice(0, 10) < b;
+  const act = new Set((sb.__db.entries || []).filter(e => inWk(e.created_at)).map(e => e.user_id));
+  return { active:act.size, active_before:Math.max(0, act.size - 1), people:(sb.__db.profiles || []).length + 1, new:1, invited:1, cohort:3, cohort_back:2, errors:0, error_people:0, top_errors:[] }; }
+async function paintHealth(from) { const el = $("#trHealth"); if (!el) return;
+  let h; try { h = await healthOf(from); } catch { return; } if (!h || !el.isConnected) return;
+  const pct = (x, y) => y ? Math.round(x / y * 100) : null;
+  const chg = h.active_before ? Math.round((h.active - h.active_before) / h.active_before * 100) : null;
+  const kept = pct(h.cohort_back, h.cohort);
+  el.innerHTML = `<div class="lbl">How Rooms is doing</div><div class="card health" style="margin-top:0">
+    <div class="hl-row"><div><b>${trNum(h.active)}</b><small>used it this week${chg != null ? ` · ${chg >= 0 ? "+" : ""}${chg}% on the week before` : ""}</small></div>
+      <div><b>${trNum(h.new)}</b><small>new this week${h.new ? ` · ${trNum(h.invited)} through an invite` : ""}</small></div></div>
+    <div class="hl-row"><div><b>${kept != null ? kept + "%" : "—"}</b><small>${h.cohort ? `of the ${trNum(h.cohort)} who joined a month ago still use it` : "nobody joined a month before this week"}</small></div>
+      <div><b>${trNum(h.people)}</b><small>people on Rooms</small></div></div>
+    <div class="hl-err ${h.errors ? "bad" : ""}"><b>${h.errors ? `${trNum(h.errors)} errors on ${trNum(h.error_people)} ${h.error_people === 1 ? "phone" : "phones"}` : "No errors reported this week"}</b>
+      ${(h.top_errors || []).length ? `<ol>${h.top_errors.map(x => `<li><code>${esc(x.msg)}</code> <small>${x.n}× · ${x.people} ${x.people === 1 ? "person" : "people"}</small></li>`).join("")}</ol>` : ""}</div>
+    <p class="sub" style="margin:10px 0 0">A month ago means the people who joined four weeks before this week. Through an invite means they joined somebody else's room in their first week.</p></div>`; }
 /* ---------- the newsletter, from your settings ---------- */
 async function paintNewsletter(el) { if (!el || !me) return;
   let on = false; try { on = (await q(sb.from("newsletter").select("user_id").eq("user_id", me.id))).length > 0; } catch {}

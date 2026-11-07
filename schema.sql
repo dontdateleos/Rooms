@@ -2436,3 +2436,44 @@ language sql security definer stable set search_path = public as $$
 $$;
 revoke all on function top_venues(text) from public, anon;
 grant execute on function top_venues(text) to authenticated;
+
+-- ---------- how Rooms is doing: growth and errors, for the founder's Monday report ----------
+-- Counts only, never names. Active means did something that week: logged, said where
+-- they're up to, replied, or played Five Clues. "Still here" follows the people who
+-- joined four weeks before the week, and asks how many of them were active in it.
+-- "Came through an invite" is somebody new who joined a room they didn't make within a
+-- week of signing up. Errors are the app's own reports from phones, grouped by message.
+create or replace function founder_health(p_from date)
+returns jsonb language plpgsql security definer stable set search_path = public as $$
+declare a timestamptz := p_from::timestamptz; b timestamptz := (p_from + 7)::timestamptz; out jsonb;
+begin
+  if not exists (select 1 from profiles where id = auth.uid() and founder) then raise exception 'not allowed'; end if;
+  with act as (
+      select user_id, created_at as t from entries where created_at >= a - interval '35 days' and created_at < b
+      union all select user_id, updated_at from nows where updated_at >= a - interval '35 days' and updated_at < b
+      union all select user_id, created_at from replies where created_at >= a - interval '35 days' and created_at < b
+      union all select user_id, created_at from daily_scores where created_at >= a - interval '35 days' and created_at < b),
+    wk as (select distinct user_id from act where t >= a and t < b),
+    prev as (select distinct user_id from act where t >= a - interval '7 days' and t < a),
+    cohort as (select id from profiles where created_at >= a - interval '28 days' and created_at < a - interval '21 days'),
+    fresh as (select id, created_at from profiles where created_at >= a and created_at < b),
+    invited as (select distinct f.id from fresh f join room_members m on m.user_id = f.id join rooms r on r.id = m.room_id
+      where m.joined_at < f.created_at + interval '7 days' and r.created_by is distinct from f.id),
+    errs as (select msg, count(*)::int as n, count(distinct user_id)::int as people from client_errors
+      where at >= a and at < b group by msg order by count(*) desc limit 5)
+  select jsonb_build_object(
+    'active', (select count(*) from wk),
+    'active_before', (select count(*) from prev),
+    'people', (select count(*) from profiles where created_at < b),
+    'new', (select count(*) from fresh),
+    'invited', (select count(*) from invited),
+    'cohort', (select count(*) from cohort),
+    'cohort_back', (select count(*) from cohort c join wk w on w.user_id = c.id),
+    'errors', (select count(*) from client_errors where at >= a and at < b),
+    'error_people', (select count(distinct user_id) from client_errors where at >= a and at < b),
+    'top_errors', coalesce((select jsonb_agg(jsonb_build_object('msg', left(msg, 160), 'n', n, 'people', people)) from errs), '[]'::jsonb))
+  into out;
+  return out;
+end $$;
+revoke all on function founder_health(date) from public, anon;
+grant execute on function founder_health(date) to authenticated;
