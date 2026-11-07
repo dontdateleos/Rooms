@@ -25,7 +25,8 @@ const BASE = (process.env.BASE || "http://127.0.0.1:8934").replace(/\/$/, "");
        button, and a script click doesn't — that difference once hid a demo nobody could tap */
     const tap = async (sel, text) => {
       const at = text ? page.locator(sel, { hasText:new RegExp(`^\\s*${text}\\s*(\\d+\\+?)?\\s*$`) }) : page.locator(sel);
-      await at.first().click({ timeout:4000 }); };
+      try { await at.first().click({ timeout:4000 }); }
+      catch (e) { throw new Error(`couldn't tap ${sel}${text ? ` "${text}"` : ""}: ${(String(e.message).split("\n").find(l => /intercepts|not visible|not stable|outside of the viewport/.test(l)) || e.message.split("\n")[0]).replace(/\x1b\[\d+m/g, "").trim()}`); } };
     const expect = async (sel, what) => { if (!(await page.$(sel))) throw new Error(`missing ${what || sel}`); };
     const wait = ms => page.waitForTimeout(ms);
     /* the back gesture is how a sheet closes on a phone, so it's how the walk closes them */
