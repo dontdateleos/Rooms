@@ -207,10 +207,17 @@ const PEOPLE = [
   { id:"u-ali",  handle:"ali",  bio:"Books mostly. Films under duress.", goals:{ "2026":8 } },
   { id:"u-cass", handle:"cass", bio:"", goals:{ "2026":9 } },
   { id:"u-rue",  handle:"rue",  bio:"Here for the arguments." },
+  /* not in the room and not followed: what "everyone" on the Feed looks like */
+  { id:"u-juno", handle:"juno", bio:"Cinema twice a week." },
+  { id:"u-pip",  handle:"pip",  bio:"Reading my way through the shortlist." },
 ];
 
 /* user, work, score (half-stars 1..10), days ago, note, tags */
 const LOG = [
+  ["u-juno","film:7",10,1,"Cried at the bar scene. Cried again on the tram home.",["the writing"]],
+  ["u-juno","film:3",8,2,"Tom Cruise as a grey suit with a gun. Somehow it works.",["the look"]],
+  ["u-pip","book:2",10,2,"Four generations and not a wasted page.",["the writing"]],
+  ["u-pip","film:6",7,3,"The sound design did more than the pictures.",["the score"]],
   ["me","film:1",9,3,"Still the best shootout ever put on film. The diner scene is the whole thing in six minutes.",["the writing","the look"]],
   ["u-mo","film:1",9,4,"Two men explaining themselves to each other over coffee. Perfect.",["the writing"]],
   ["u-ali","film:1",6,9,"Long.",["the look"]],
@@ -406,6 +413,8 @@ export function demoSeed() {
       { entry_id:eid("me","film:6"),  user_id:"u-rue" },
       { entry_id:eid("u-rue","film:1"), user_id:"me" },
       { entry_id:eid("u-ali","book:2"), user_id:"me" },
+      { entry_id:eid("u-juno","film:7"), user_id:"u-mo" }, { entry_id:eid("u-juno","film:7"), user_id:"u-rue" },
+      { entry_id:eid("u-pip","book:2"), user_id:"u-ali" },
     ].filter(r => r.entry_id),
     replies:[
       { id:"r-1", entry_id:eid("me","film:6"), user_id:"u-cass",
