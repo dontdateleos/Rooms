@@ -305,6 +305,7 @@ const MOODED = { "film:1":["Tense","Exciting"], "film:2":["Tense","Thoughtful"],
 /* where people saw it or got it, so "the best places" has something to rank */
 const PLACES = { "u-ali|film:1":["cinema","The Lantern",5], "u-mo|film:1":["cinema","The Lantern",4], "u-cass|film:3":["cinema","Picturehouse on King St",4],
   "u-mo|film:7":["cinema","Picturehouse on King St",5], "u-mo|film:6":["cinema","The Lantern",5], "u-rue|film:8":["cinema","Odeon Central",3], "u-cass|film:8":["cinema","Odeon Central",2],
+  "me|film:1":["cinema","The Lantern",5], "me|book:2":["bookshop","Night Owl Books",5],
   "u-ali|book:2":["bookshop","Night Owl Books",5], "u-mo|book:30":["bookshop","Night Owl Books",4], "u-mo|book:3":["library","Central Library",4], "u-ali|book:5":["library","Central Library",5] };
 const withPlace = (u, w, c) => { const x = PLACES[u + "|" + w]; return x ? { ...(c || {}), venueKind:x[0], venue:x[1], venueRate:x[2], ...(x[0] === "cinema" ? { where:"At the cinema" } : {}) } : c; };
 const withMoods = (u, w, c) => MOODED[w] && (u.length + w.length) % 3 !== 0 ? { ...(c || {}), moods:MOODED[w] } : (c || null);

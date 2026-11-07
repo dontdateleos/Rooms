@@ -5514,14 +5514,15 @@ function takeRoomLink() { const m = /[#&]room=([\w-]{8,40})(?:&sec=(\w+))?/.exec
 const DEEP_KEY = "rooms.deep";
 function takeDeep() {
   const h = location.hash, c = /^#clues(?:-(film|tv|book|game|any))?$/.exec(h), st = /^#stack=([\w:-]{2,60})$/.exec(h), tr = h === "#trends", u = /^#u=([a-z0-9_]{2,24})$/.exec(h);
-  const wk = /^#work=((?:film|tv|book|game)(?:%3A|:)[\w-]{1,40})$/.exec(h);
-  if (c || st || tr || u || wk) { try { localStorage.setItem(DEEP_KEY, JSON.stringify(c ? { clues:c[1] || "any" } : st ? { stack:st[1] } : u ? { u:u[1] } : wk ? { work:decodeURIComponent(wk[1]) } : { trends:1 })); } catch {}
+  const wk = /^#work=((?:film|tv|book|game)(?:%3A|:)[\w-]{1,40})$/.exec(h), wrp = h === "#wrapped";
+  if (c || st || tr || u || wk || wrp) { try { localStorage.setItem(DEEP_KEY, JSON.stringify(c ? { clues:c[1] || "any" } : st ? { stack:st[1] } : u ? { u:u[1] } : wk ? { work:decodeURIComponent(wk[1]) } : wrp ? { wrapped:1 } : { trends:1 })); } catch {}
     history.replaceState(null, "", location.pathname + location.search); }
   try { return JSON.parse(localStorage.getItem(DEEP_KEY) || "null"); } catch { return null; } }
 const dropDeep = () => { try { localStorage.removeItem(DEEP_KEY); } catch {} };
 function useDeep() { const d = takeDeep(); if (!d) return; dropDeep();
   if (d.trends) { if (isFounder()) setTimeout(() => openTrends(1), 700); return; }
   if (d.work) { setTimeout(() => openWork(d.work), 700); return; }
+  if (d.wrapped) { setTimeout(() => { const y = storyYear(); if (y) openYearStory(y); else switchTab("taste"); }, 900); return; }
   if (d.clues) { P.cluesKind = d.clues; saveP(); setTimeout(() => openClues(null, d.clues), 700); }
   /* "Open in Rooms" on somebody's public page */
   if (d.u) setTimeout(async () => { try { const [p] = await q(sb.from("profiles").select("id").eq("handle", d.u).limit(1));
@@ -5532,7 +5533,7 @@ function useDeep() { const d = takeDeep(); if (!d) return; dropDeep();
 function guestDeep() { const d = takeDeep(); if (!d?.clues) return; dropDeep(); hideSplash(); setTimeout(() => openClues(null, d.clues), 500); }
 const cluesLink = k => inviteViaWorker ? `${proxy()}/c/${k}${homePath()}` : `${homeUrl()}#clues${k !== "any" ? "-" + k : ""}`;
 const stackLink = id => inviteViaWorker ? `${proxy()}/s/${encodeURIComponent(id)}${homePath()}` : `${homeUrl()}#stack=${id}`;
-addEventListener("hashchange", () => { if (/^#(clues|stack=|trends$|u=|work=)/.test(location.hash)) { if (me?.id) useDeep(); else guestDeep(); return; }
+addEventListener("hashchange", () => { if (/^#(clues|stack=|trends$|u=|work=|wrapped$)/.test(location.hash)) { if (me?.id) useDeep(); else guestDeep(); return; }
   if (!me?.id) return;
   if (/[#&]room=/.test(location.hash)) { takeRoomLink(); switchTab("doors"); }
   else if (/^#(seasons|stacks)\b/.test(location.hash)) { history.replaceState(null, "", location.pathname + location.search); switchTab("clubs"); } });
@@ -7206,13 +7207,13 @@ function storyYear(d = today()) {
   return y && yearOf(myEntries, y).length >= 5 ? y : null; }
 async function openYearStory(year = storyYear() || String(new Date().getFullYear())) {
   const es = yearOf(myEntries, year), d = reviewData(es); if (!d.n) return;
-  const R = activeRoom();
+  const R = activeRoom(), wr = wrappedData(year);
   const months = Array.from({ length:12 }, (_, i) => es.filter(e => +String(e.rated_on).slice(5, 7) === i + 1).length);
   const peak = months.indexOf(Math.max(...months)), MON = ["January","February","March","April","May","June","July","August","September","October","November","December"];
   const top = d.t.craft.slice(0, 3).map(c => c[0]), best = d.best && (works[d.best.work_id] || {});
   const kindsBy = Object.keys(KINDS).filter(k => d.kinds[k]).sort((a, b) => d.kinds[b] - d.kinds[a]);
   const slides = [
-    { bg:"var(--blue)", ink:"#fff", html:`<small>Rooms · ${year}</small><div class="st-mark">${avSVG(avFor(me))}</div>
+    { bg:"var(--blue)", ink:"#fff", html:`<small>Rooms Wrapped · ${year}</small><div class="st-mark">${avSVG(avFor(me))}</div>
         <h2>Your ${year}</h2><p>${d.n} things finished.<br>About ${d.hours.toLocaleString()} hours, give or take.</p>` },
     { bg:"#16131C", ink:"#F4EDE2", html:`<small>What it was</small><h2>Mostly ${esc(K(kindsBy[0]).plural.toLowerCase())}.</h2>
         <div class="st-kinds">${Object.keys(KINDS).map(k => `<div><span>${placeMark({ mk:k, tone:KIND_TONE[k] })}</span><b>${d.kinds[k] || 0}</b><em>${esc(K(k).plural)}</em></div>`).join("")}</div>` },
@@ -7224,12 +7225,16 @@ async function openYearStory(year = storyYear() || String(new Date().getFullYear
     { bg:"var(--lilac)", ink:"#151320", html:`<small>Your busiest month</small><h2>${MON[peak]}</h2>
         <div class="st-bars">${months.map((n, i) => `<i style="--h:${Math.max(4, n / Math.max(1, months[peak]) * 100)}%;animation-delay:${i * .05}s" class="${i === peak ? "on" : ""}"></i>`).join("")}</div>
         <p>${months[peak]} in ${MON[peak]} alone.</p>` },
+    wr.moods.length ? { bg:"var(--sky)", ink:"#151320", html:`<small>How it felt</small><h2>${esc(wr.moods[0][0])}.</h2>
+        <p>${wr.moods.slice(1, 4).map(([m]) => esc(m.toLowerCase())).join(", ")}${wr.moods.length > 1 ? " too." : ""}</p>` } : null,
+    wr.cinema || wr.shop ? { bg:"var(--apricot)", ink:"#151320", html:`<small>Where it happened</small>
+        ${[wr.cinema, wr.shop].filter(Boolean).map(p => `<p class="st-line"><b>${p.kind === "cinema" ? "Your cinema" : p.kind === "library" ? "Your library" : "Your bookshop"}</b></p><h2>${esc(p.name)}</h2><p>${p.n} ${p.n === 1 ? "time" : "times"}</p>`).join("")}` } : null,
     d.rewatch && d.rewatch[1] > 1 ? { bg:"var(--pink)", ink:"#151320", html:`<small>Kept going back to</small>
         <div class="st-poster">${cover(works[d.rewatch[0]] || {}, "")}</div><h2>${esc(works[d.rewatch[0]]?.title || "")}</h2><p>${d.rewatch[1]} times.</p>` } : null,
     R && R.members.length > 1 ? { id:"room", bg:`var(--${roomColour(R)})`, ink:"#151320", html:`<small>${esc(R.name)}'s ${year}</small>
         <div class="st-room" id="stRoom"><p>Adding up the room…</p></div>` } : null,
     { id:"share", bg:"#16131C", ink:"#F4EDE2", html:`<small>That was ${year}</small><h2>Keep it.</h2>
-        <div class="st-share"><button class="btn" id="stMine">Save your card</button>${R && R.members.length > 1 ? `<button class="btn ghost" id="stRoomCard">Save the room's card</button>` : ""}</div>` }
+        <div class="st-share"><button class="btn" id="stWrapped">Get your Wrapped cards</button><button class="btn ghost" id="stMine">Save your card</button>${R && R.members.length > 1 ? `<button class="btn ghost" id="stRoomCard">Save the room's card</button>` : ""}</div>` }
   ].filter(Boolean);
   const el = document.createElement("div"); el.className = "story"; el.setAttribute("role", "dialog"); el.setAttribute("aria-label", `Your ${year}`);
   el.innerHTML = `<div class="st-bars-top">${slides.map(() => `<i><b></b></i>`).join("")}</div>
@@ -7247,6 +7252,7 @@ async function openYearStory(year = storyYear() || String(new Date().getFullYear
   el.addEventListener("click", e => { if (e.target.closest("button")) return;
     if (e.clientX < innerWidth / 3) show(at - 1); else if (at === slides.length - 1) close(); else show(at + 1); });
   $("#stMine", el).onclick = () => { close(); openCuts("year", Object.assign(reviewData(es), { year }), `Share your ${year}`); };
+  $("#stWrapped", el).onclick = () => { close(); openWrappedCards(year, () => pal && R ? { pal, R } : null); };
   show(0);
   /* the room's slide fills in once the room's year has loaded */
   if (R && R.members.length > 1) { try {
@@ -12912,7 +12918,7 @@ async function renderTaste() { const body = $("#tasteBody"); const t = tasteOf(m
     <div id="myLists"></div>
     <div id="hotTakes"></div>
     <div class="card" id="recCard"><div class="h"><span>You might like</span><span class="tag dim">picked for you</span></div><div id="recBody">${skeleton(1)}</div></div>
-    ${storyYear() ? `<button class="linkrow yearrow" id="tasteStory"><span>Your ${storyYear()} is ready</span><b>›</b></button>` : ""}
+    ${storyYear() || (isFounder() && yearOf(myEntries, String(new Date().getFullYear())).length) ? `<button class="linkrow yearrow" id="tasteStory"><span>${storyYear() ? `Your Rooms Wrapped ${storyYear()} is ready` : `Preview Rooms Wrapped ${new Date().getFullYear()} (only you see this before December)`}</span><b>›</b></button>` : ""}
     <button class="linkrow" id="tasteAll"><span>Your ten, the charts, your year and more</span><b>›</b></button>`
     : blank("var(--butter)","1","Nothing logged yet","Start with the last thing you finished. Thirty seconds, and your taste starts building.",[["tasteAdd","Log something"]])}`;
   const ta = $("#tasteAdd"); if (ta) ta.onclick = openAdd;
@@ -15646,6 +15652,95 @@ function trCards(d, hard) {
     cardWrap(x, "Log what you finish, rate it, and see what your friends think. Five Clues every day. Free on the App Store.", TR.M, 860, TR.W - TR.M * 2 - 60, 56, "700 40px Inter, sans-serif", TR.pale);
     cardMark(x, TR.M, 1180, 150); trFoot(x, col, "See you next week"); return c; }]);
   return out; }
+/* ---------- Rooms Wrapped ----------
+   Your year as a set of tall cards (1080×1920) to post as stories, made the way the
+   Monday cards are: your year in numbers with your mascot, your top five, your number
+   ones, how it felt, your places, your room's year, and a last card that says where to
+   find Rooms. Only the cards it has something to say on. */
+function wrappedData(year) {
+  const es = yearOf(myEntries, year).filter(e => !isPart(e.work_id)), d = reviewData(es);
+  const seen = new Set(), top5 = es.slice().sort((a, b) => b.score - a.score || String(b.rated_on).localeCompare(String(a.rated_on)))
+    .filter(e => works[e.work_id] && !seen.has(e.work_id) && seen.add(e.work_id)).slice(0, 5);
+  const ones = ["film", "tv", "book", "game"].map(k => { const e = es.filter(x => kindOf(x.work_id) === k).sort((a, b) => b.score - a.score)[0]; return e && works[e.work_id] ? [k, works[e.work_id]] : null; }).filter(Boolean);
+  const moods = {}; es.forEach(e => entryMoods(e).forEach(m => moods[m] = (moods[m] || 0) + 1));
+  const places = {}; es.forEach(e => { const v = venueOf(e); if (!v) return; const k = v.kind + "|" + venueKey(v.name);
+    const p = places[k] ||= { name:v.name, kind:v.kind, n:0, sum:0, rated:0 }; p.n++; if (v.rate) { p.sum += v.rate; p.rated++; } });
+  const best = kind => Object.values(places).filter(p => p.kind === kind).sort((a, b) => b.n - a.n || (b.sum / (b.rated || 1)) - (a.sum / (a.rated || 1)))[0] || null;
+  return { year, es, d, top5, ones, moods:Object.entries(moods).sort((a, b) => b[1] - a[1]), cinema:best("cinema"), shop:best("bookshop") || best("library") }; }
+async function avImg(a, size = 600) {
+  const svg = avSVG(a).replace("<svg ", `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" `);
+  return imgLoad("data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg), false); }
+function wrappedCards(w, roomYear) {
+  const L = "WRAPPED " + w.year, out = [], d = w.d;
+  const kindWords = ["film", "tv", "book", "game"].filter(k => d.kinds[k]).map(k => `${d.kinds[k]} ${d.kinds[k] === 1 ? (k === "tv" ? "show" : K(k).label.toLowerCase()) : k === "tv" ? "shows" : K(k).plural.toLowerCase()}`);
+  out.push(["Your year", async () => { const { c, x, col } = trBase(L, "#8FD3FF");
+    const y = trTitle(x, "Rooms Wrapped", `Your ${w.year}`, col);
+    const im = await avImg(avFor(me)); if (im) x.drawImage(im, TR.W - TR.M - 340, 250, 340, 340);
+    x.fillStyle = col; x.font = "900 230px Outfit, sans-serif"; x.fillText(trNum(d.n), TR.M, y + 200);
+    x.fillStyle = TR.ink; x.font = "800 52px Outfit, sans-serif"; x.fillText(d.n === 1 ? "thing finished" : "things finished", TR.M, y + 280);
+    x.fillStyle = TR.pale; x.font = "700 40px Inter, sans-serif"; x.fillText(`About ${trNum(Math.round(d.hours))} hours of it`, TR.M, y + 350);
+    cardWrap(x, kindWords.join(" · "), TR.M, y + 430, TR.W - TR.M * 2, 52, "700 40px Inter, sans-serif", TR.ink);
+    trFoot(x, col, `@${me.handle} on Rooms`); return c; }]);
+  if (w.top5.length >= 3) out.push(["Top five", async () => { const { c, x, col } = trBase(L, "#FFE86A");
+    const y = trTitle(x, `Your ${w.year}`, "The top five", col);
+    const byId = Object.fromEntries(w.top5.map(e => [e.work_id, e]));
+    await trRows(x, col, w.top5.map(e => works[e.work_id]), x2 => `${trStars(byId[x2.id].score / 2)} · ${x2.year || ""}`, y - 40);
+    trFoot(x, col, `@${me.handle} on Rooms`); return c; }]);
+  if (w.ones.length >= 2) out.push(["Number ones", async () => { const { c, x, col } = trBase(L, "#F5A3C7");
+    const y = trTitle(x, "The best of each", "Your number ones", col), pw = 420, ph = 300;
+    for (let i = 0; i < w.ones.length; i++) { const [k, wk] = w.ones[i], px = TR.M + (i % 2) * (pw + 40), py = y + (i >> 1) * (ph + 130) - 50;
+      await trPoster(x, wk, px, py, ph / 1.5, ph, 16);
+      x.fillStyle = CARD.cols[k]; x.font = "900 30px Outfit, sans-serif"; x.fillText(trKindWord[k].toUpperCase(), px, py + ph + 44);
+      x.fillStyle = TR.ink; x.font = "900 36px Outfit, sans-serif"; x.fillText(fitText(x, wk.title, pw - 10), px, py + ph + 88); }
+    trFoot(x, col, `@${me.handle} on Rooms`); return c; }]);
+  if (w.moods.length) out.push(["How it felt", async () => { const { c, x, col } = trBase(L, "#9EF0C9");
+    const y = trTitle(x, `Your ${w.year} felt`, w.moods[0][0] + ".", col), max = w.moods[0][1];
+    let yy = y + 60;
+    for (const [m, n] of w.moods.slice(0, 6)) { x.fillStyle = TR.ink; x.font = "900 50px Outfit, sans-serif"; x.fillText(m, TR.M, yy + 50);
+      x.fillStyle = "rgba(255,255,255,.12)"; x.beginPath(); x.roundRect(TR.M + 330, yy + 14, 520, 40, 20); x.fill();
+      x.fillStyle = col; x.beginPath(); x.roundRect(TR.M + 330, yy + 14, Math.max(40, 520 * n / max), 40, 20); x.fill();
+      x.fillStyle = TR.pale; x.font = "700 30px Inter, sans-serif"; x.fillText(String(n), TR.M + 870, yy + 46); yy += 110; }
+    trFoot(x, col, "How did yours feel?"); return c; }]);
+  if (w.cinema || w.shop) out.push(["Your places", async () => { const { c, x, col } = trBase(L, "#FFB36B");
+    let y = trTitle(x, `Your ${w.year}'s places`, "Where it happened", col) + 40;
+    for (const p of [w.cinema, w.shop].filter(Boolean)) {
+      x.fillStyle = col; x.font = "800 36px Outfit, sans-serif"; x.fillText((p.kind === "cinema" ? "Your cinema" : p.kind === "library" ? "Your library" : "Your bookshop").toUpperCase(), TR.M, y);
+      y = cardWrap(x, p.name, TR.M, y + 90, TR.W - TR.M * 2, 92, "900 84px Outfit, sans-serif", TR.ink);
+      x.fillStyle = TR.pale; x.font = "700 38px Inter, sans-serif";
+      x.fillText(`${p.n} ${p.n === 1 ? "time" : "times"}${p.rated ? ` · ${"★".repeat(Math.round(p.sum / p.rated))}` : ""}`, TR.M, y + 20); y += 150; }
+    trFoot(x, col, "Where do you go?"); return c; }]);
+  const ry = roomYear && roomYear();
+  if (ry?.pal?.best) out.push(["Your room", async () => { const { c, x, col } = trBase(L, "#B99CFF");
+    const y = trTitle(x, `${ry.R.name}'s ${w.year}`, "The room's best", col), bw = works[ry.pal.best.id] || {};
+    await trPoster(x, bw, TR.M, y, 300, 450, 20);
+    cardWrap(x, bw.title || "", TR.M + 340, y + 70, TR.W - TR.M * 2 - 340, 70, "900 64px Outfit, sans-serif", TR.ink);
+    x.fillStyle = TR.pale; x.font = "700 36px Inter, sans-serif"; x.fillText(`${trStars(ry.pal.best.avg / 2)} from ${ry.pal.best.n} of you`, TR.M + 340, y + 330);
+    let yy = y + 560;
+    if (ry.pal.split) { x.fillStyle = col; x.font = "800 34px Outfit, sans-serif"; x.fillText("ARGUED ABOUT MOST", TR.M, yy);
+      x.fillStyle = TR.ink; x.font = "900 50px Outfit, sans-serif"; x.fillText(fitText(x, works[ry.pal.split.id]?.title || "", TR.W - TR.M * 2), TR.M, yy + 64); yy += 150; }
+    const bz = ry.pal.busiest && ry.R.members.find(m => m.id === ry.pal.busiest[0]);
+    if (bz) { x.fillStyle = col; x.font = "800 34px Outfit, sans-serif"; x.fillText("LOGGED THE MOST", TR.M, yy);
+      x.fillStyle = TR.ink; x.font = "900 50px Outfit, sans-serif"; x.fillText(`${bz.id === me.id ? "You" : bz.handle} · ${ry.pal.busiest[1]}`, TR.M, yy + 64); }
+    trFoot(x, col, "Start a room with your people"); return c; }]);
+  out.push(["See you next year", async () => { const { c, x, col } = trBase(L, "#F5A3C7");
+    trTitle(x, "That was " + w.year, `See you in ${+w.year + 1}`, col);
+    cardWrap(x, "Log what you watch, read and play. Rate it, argue about it, and see your year come back to you every December. Free on the App Store.", TR.M, 860, TR.W - TR.M * 2 - 60, 56, "700 40px Inter, sans-serif", TR.pale);
+    cardMark(x, TR.M, 1180, 150); trFoot(x, col, "Rooms"); return c; }]);
+  return out; }
+async function openWrappedCards(year, roomYear) {
+  const w = wrappedData(year); if (!w.d.n) return say("Nothing logged in " + year + " yet");
+  const cards = wrappedCards(w, roomYear);
+  openSheet(`<div class="tr-head"><div><h3>Rooms Wrapped ${esc(year)}</h3><small>Cards for your stories, one for each part of your year</small></div></div>
+    <div class="tr-cards" id="wrCards">${cards.map(([n], i) => `<button class="wk-card" data-wrc="${i}"><span class="tr-thumb"></span><small>${esc(n)}</small></button>`).join("")}</div>
+    <div class="stack"><button class="btn" id="wrAll">Save all ${cards.length}</button><button class="btn quiet" id="wrClose">Close</button></div>`);
+  $("#wrClose").onclick = closeSheet;
+  await ready(); const made = [];
+  for (let i = 0; i < cards.length; i++) { let cv = null; try { cv = await cards[i][1](); } catch (e) { console.warn("wrapped", i, e); } made[i] = cv;
+    const t = $(`[data-wrc="${i}"] .tr-thumb`); if (!t) return;
+    if (cv) { const im = new Image(); im.alt = ""; im.src = cv.toDataURL("image/jpeg", .7); t.appendChild(im); } }
+  const base = `rooms-wrapped-${year}`;
+  $$("[data-wrc]").forEach(b => b.onclick = () => { const cv = made[+b.dataset.wrc]; if (cv) cardOut(cv, `${base}-${+b.dataset.wrc + 1}.png`); });
+  $("#wrAll").onclick = () => cardsOut(made.filter(Boolean), base); }
 /* the hardest Five Clues of the week: fewest got it, with enough people playing */
 async function trHardest(d) {
   const g = (d.clues || []).filter(r => r.played).sort((a, b) => a.solved / a.played - b.solved / b.played)[0]; if (!g) return null;

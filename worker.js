@@ -652,6 +652,10 @@ async function runSchedule(env, at = localNow(env.TZ || "Australia/Sydney")) {
       for (const x of rows) (by[x.work_id + "|" + x.label] ||= { x, subs:[] }).subs.push(x);
       for (const { x, subs } of Object.values(by)) sent.push(await deliver(env, subs, { title:`New ${x.title} out today`,
         body:`${x.label || "A new episode"} is out. Tap to see it and say where you're up to.`, url:`./#work=${encodeURIComponent(x.work_id)}`, tag:`ep-${x.work_id}`.slice(0, 60) })); } }
+  /* 1 December: everybody who logged this year hears their Rooms Wrapped is ready */
+  if (ymd.slice(5) === "12-01" && hour === 10) { const r = await svcRpc(env, "push_targets_season", { p_since:ymd.slice(0, 4) + "-01-01" }).catch(() => null);
+    if (r?.ok) { const subs = await r.json(); if (subs.length) sent.push(await deliver(env, subs, { title:`Your Rooms Wrapped ${ymd.slice(0, 4)} is ready`,
+      body:"Your year in films, shows, books and games, with cards for your stories.", url:"./#wrapped", tag:"wrapped" })); } }
   /* Monday morning: last week's totals are in, for the founder's video and newsletter */
   if (wd === 0 && hour === 8) { const r = await svcRpc(env, "push_targets_founders", {}).catch(() => null);
     if (r?.ok) { const subs = await r.json(); if (subs.length) sent.push(await deliver(env, subs, { title:"Last week on Rooms is ready",
