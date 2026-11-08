@@ -2478,16 +2478,16 @@ html[data-theme="dark"] .slip,html[data-theme="dark"] .club,html[data-theme="dar
 @media (prefers-reduced-motion:no-preference){
   section[data-sfx] :is(.lite,.reveal:not(.in)){opacity:0;transform:none}
   section[data-sfx] :is(.lite.lite-in,.reveal.in){opacity:1}
-  section[data-sfx="1"] :is(.lite,.reveal:not(.in)){translate:0 34px}
-  section[data-sfx="1"] :is(.lite.lite-in,.reveal.in){translate:0 0;transition:opacity .38s ease-out,translate .6s cubic-bezier(.2,1.15,.4,1)}
-  section[data-sfx="2"] :is(.lite,.reveal:not(.in)){transform:perspective(800px) translateY(26px) rotateX(24deg);transform-origin:50% 0}
-  section[data-sfx="2"] :is(.lite.lite-in,.reveal.in){transform:perspective(800px) rotateX(0deg);transition:opacity .4s ease-out,transform .65s cubic-bezier(.2,1,.3,1)}
-  section[data-sfx="3"] :is(.lite,.reveal:not(.in)){scale:.86}
-  section[data-sfx="3"] :is(.lite.lite-in,.reveal.in){scale:1;transition:opacity .3s ease-out,scale .55s cubic-bezier(.3,1.45,.5,1)}
-  section[data-sfx="4"] :is(.lite,.reveal:not(.in)){filter:blur(10px);translate:0 12px}
-  section[data-sfx="4"] :is(.lite.lite-in,.reveal.in){filter:blur(0);translate:0 0;transition:opacity .45s ease-out,filter .5s ease-out,translate .5s cubic-bezier(.2,.9,.3,1)}
-  section[data-sfx="5"] :is(.lite,.reveal:not(.in)){translate:0 54px;rotate:-3deg}
-  section[data-sfx="5"] :is(.lite.lite-in,.reveal.in){translate:0 0;rotate:0deg;transition:opacity .3s ease-out,translate .7s cubic-bezier(.2,1.35,.4,1),rotate .7s cubic-bezier(.2,1.35,.4,1)}
+  section[data-sfx="1"] :is(.lite,.reveal:not(.in)){translate:0 90px}
+  section[data-sfx="1"] :is(.lite.lite-in,.reveal.in){translate:0 0;transition:opacity .5s ease-out,translate .85s cubic-bezier(.16,1.2,.3,1)}
+  section[data-sfx="2"] :is(.lite,.reveal:not(.in)){transform:perspective(700px) translateY(70px) rotateX(58deg);transform-origin:50% 0}
+  section[data-sfx="2"] :is(.lite.lite-in,.reveal.in){transform:perspective(700px) rotateX(0deg);transition:opacity .5s ease-out,transform .95s cubic-bezier(.16,1.05,.3,1)}
+  section[data-sfx="3"] :is(.lite,.reveal:not(.in)){scale:.62}
+  section[data-sfx="3"] :is(.lite.lite-in,.reveal.in){scale:1;transition:opacity .4s ease-out,scale .8s cubic-bezier(.3,1.5,.5,1)}
+  section[data-sfx="4"] :is(.lite,.reveal:not(.in)){filter:blur(18px);translate:0 40px;scale:.94}
+  section[data-sfx="4"] :is(.lite.lite-in,.reveal.in){filter:blur(0);translate:0 0;scale:1;transition:opacity .6s ease-out,filter .75s ease-out,translate .8s cubic-bezier(.2,.9,.3,1),scale .8s cubic-bezier(.2,.9,.3,1)}
+  section[data-sfx="5"] :is(.lite,.reveal:not(.in)){translate:-30px 130px;rotate:-8deg}
+  section[data-sfx="5"] :is(.lite.lite-in,.reveal.in){translate:0 0;rotate:0deg;transition:opacity .4s ease-out,translate .95s cubic-bezier(.2,1.4,.4,1),rotate .95s cubic-bezier(.2,1.4,.4,1)}
 }
 #sfxBar{position:fixed;left:12px;right:12px;bottom:calc(env(safe-area-inset-bottom) + 78px);z-index:7;display:flex;align-items:center;gap:6px;
   padding:6px;border-radius:16px;background:#151320;color:#F4EDE2;box-shadow:0 10px 30px rgba(21,19,32,.35),0 0 0 1px rgba(244,237,226,.14)}
@@ -5390,12 +5390,19 @@ const liteObs = !REDUCED && "IntersectionObserver" in window ? new IntersectionO
     if (!el.classList.contains("lite")) {
       if (en.isIntersecting || en.boundingClientRect.bottom < 0) { liteObs.unobserve(el); return; }
       if (!en.boundingClientRect.height) { liteObs.unobserve(el); delete el.dataset.lite; return; }
-      el.classList.add("lite"); return; }
-    if (!en.isIntersecting) return; liteObs.unobserve(el);
-    /* with a scroll style picked, things that come into view together arrive one after another */
-    const fx = +(el.closest("section")?.dataset.sfx || 0), gap = fx === 5 ? 70 : fx ? 40 : 0, wait = Math.min(k++, 4) * gap;
-    if (wait) el.style.transitionDelay = wait + "ms";
-    el.classList.add("lite-in"); setTimeout(() => { el.classList.remove("lite", "lite-in"); el.style.transitionDelay = ""; }, fx ? 900 + wait : 420); }); }) : null;
+      el.classList.add("lite");
+      /* with a scroll style picked, it waits until it's a fifth of the way up the screen,
+         clear of the bar at the bottom, so you actually see it arrive */
+      if (sfxObs && el.closest("section[data-sfx]")) { liteObs.unobserve(el); sfxObs.observe(el); }
+      return; }
+    if (!en.isIntersecting) return; liteObs.unobserve(el); liteArrive(el, 0); }); }) : null;
+/* things that come into view together arrive one after another */
+function liteArrive(el, k) {
+  const fx = +(el.closest("section")?.dataset.sfx || 0), gap = fx === 5 ? 120 : fx ? 70 : 0, wait = Math.min(k, 4) * gap;
+  if (wait) el.style.transitionDelay = wait + "ms";
+  el.classList.add("lite-in"); setTimeout(() => { el.classList.remove("lite", "lite-in"); el.style.transitionDelay = ""; }, fx ? 1300 + wait : 420); }
+const sfxObs = !REDUCED && "IntersectionObserver" in window ? new IntersectionObserver(es => { let k = 0;
+  es.forEach(en => { if (!en.isIntersecting) return; sfxObs.unobserve(en.target); liteArrive(en.target, k++); }); }, { rootMargin:"0px 0px -20% 0px" }) : null;
 function liteWatch(root) { if (!liteObs || !root?.querySelectorAll) return;
   const els = [...(root.matches?.(LITE_SEL) ? [root] : []), ...root.querySelectorAll(LITE_SEL)];
   for (const el of els) { if (el.dataset.lite || el.classList.contains("reveal")) continue; el.dataset.lite = "1";
@@ -6604,7 +6611,7 @@ const SFX_PAGES = { doors:"Rooms", people:"Feed", shelf:"Up next", archive:"Fini
 function applySfx() { for (const k of Object.keys(SFX_PAGES)) { const sec = $("#tab-" + k); if (!sec) continue;
   const v = +(P.sfx?.[k] || 0); if (v) sec.dataset.sfx = v; else delete sec.dataset.sfx; } }
 function sfxRearm(n) { const sec = $("#tab-" + n); if (!sec || !liteObs) return; scrollTo(0, 0);
-  $$("[data-lite]", sec).forEach(el => { liteObs.unobserve(el); delete el.dataset.lite; el.classList.remove("lite", "lite-in"); el.style.transitionDelay = ""; });
+  $$("[data-lite]", sec).forEach(el => { liteObs.unobserve(el); sfxObs?.unobserve(el); delete el.dataset.lite; el.classList.remove("lite", "lite-in"); el.style.transitionDelay = ""; });
   $$(".reveal", sec).forEach(el => { el.classList.remove("reveal", "in"); delete el.dataset.revealed; });
   requestAnimationFrame(() => requestAnimationFrame(() => liteWatch(sec))); }
 function paintSfxBar() { let bar = $("#sfxBar");
@@ -6615,6 +6622,8 @@ function paintSfxBar() { let bar = $("#sfxBar");
   bar.innerHTML = `<button type="button" data-sx="-1" aria-label="Previous style">‹</button><div class="sx-t" aria-live="polite"><b>${esc(page)} · ${v ? v + " of 5" : "now"}</b>${esc(SFX_NAMES[v])}</div><button type="button" data-sx="1" aria-label="Next style">›</button><button type="button" id="sfxDone">Done</button>`;
   $$("[data-sx]", bar).forEach(b => b.onclick = () => { P.sfx = { ...(P.sfx || {}), [n]:(v + +b.dataset.sx + 6) % 6 }; saveP(); applySfx(); paintSfxBar(); sfxRearm(n); buzz(6); });
   $("#sfxDone", bar).onclick = () => { P.sfxTry = false; saveP(); paintSfxBar(); }; }
+/* ?demo&scroll opens the demo with the try-out bar already showing */
+if (/[?&]scroll\b/.test(location.search)) P.sfxTry = true;
 applySfx();
 /* the pages either side of this one, drawn while nothing's happening, so a swipe always
    has something beside it (and the page you land on is already there) */
