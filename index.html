@@ -2279,6 +2279,14 @@ nav button .dot{top:0;right:calc(50% - 24px)}
 .tr-top{margin-top:12px}.tr-nums{display:grid;grid-template-columns:1fr 1fr;gap:10px;position:relative}
 .tr-nums b{display:block;font:900 40px var(--head);letter-spacing:-.03em;line-height:1}.tr-nums small{display:block;font-weight:700;opacity:.75;margin-top:4px}
 .tr-top .gline{margin:10px 0 0;position:relative}
+.cz-set{margin-top:12px}
+.cz-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+.cz-h b{display:block;font:800 16px var(--head)}.cz-h small{color:var(--mute);font-size:12.5px}
+.cz-set .tr-thumb{height:120px}
+.rs-parts{display:grid;gap:6px}
+.rs-part b{display:block;font:700 14px var(--body);color:var(--mute)}.rs-part.in b{color:var(--ink)}
+.rs-part small{display:block;color:var(--mute);font-size:12px;margin-left:16px}
+.rs-preview{border-radius:16px;overflow:hidden;border:1px solid var(--line);max-height:640px;overflow-y:auto}
 .tr-cards{display:flex;gap:10px;overflow-x:auto;padding:2px 2px 8px;scrollbar-width:none}.tr-cards::-webkit-scrollbar{display:none}
 .wk-card{flex:none;width:96px;border:0;background:none;padding:0;font:inherit;cursor:pointer;text-align:left;color:var(--ink)}
 .tr-thumb{display:block;width:96px;height:171px;border-radius:12px;overflow:hidden;background:var(--cream2)}.tr-thumb img{width:100%;height:100%;display:block}
@@ -4424,10 +4432,10 @@ function makeLocalSb(seed) {
         if (had && had !== want) { const old2 = db.handles.find(h => h.handle === had);
           if (old2) old2.owner = db.profile?.id; else db.handles.push({ handle:had, owner:db.profile?.id, taken_at:now() }); }
         save(); return Promise.resolve({ data:null, error:null }); }
-      if (name === "weekly_trends") { const a = Date.parse(args.p_from + "T00:00:00Z"), b = a + 7 * 864e5, k = 2;
+      if (name === "weekly_trends") { const span = (args.p_days || 7) * 864e5, a = Date.parse(args.p_from + "T00:00:00Z"), b = a + span, k = 2;
         const at = e => Date.parse(e.created_at || String(e.rated_on).slice(0, 10) + "T12:00:00Z");
         const ok = e => !e.private && !e.part && !e.room_only && !e.context?.before && !e.context?.imported;
-        const cur = db.entries.filter(e => ok(e) && at(e) >= a && at(e) < b), prev = db.entries.filter(e => ok(e) && at(e) >= a - 7 * 864e5 && at(e) < a);
+        const cur = db.entries.filter(e => ok(e) && at(e) >= a && at(e) < b), prev = db.entries.filter(e => ok(e) && at(e) >= a - span && at(e) < a);
         const by = {}; cur.forEach(e => (by[e.work_id] ||= []).push(e));
         const w = Object.entries(by).map(([id, es]) => { const ss = es.map(e => e.score), n = new Set(es.map(e => e.user_id)).size, m = ss.reduce((t, x) => t + x, 0) / ss.length;
           const sd = Math.sqrt(ss.reduce((t, x) => t + (x - m) ** 2, 0) / ss.length), W = db.works[id] || {};
@@ -15914,8 +15922,10 @@ async function openTrends(off = 1) {
       <div><b>${trNum(d.people)}</b><small>people logging</small></div></div>${kinds ? `<p class="sub gline">${esc(kinds)}</p>` : ""}</div>
     ${d.top?.length ? "" : `<p class="sub">Nothing reached ${d.min} different people last week, so there's no chart yet — only the totals.</p>`}
     <div id="trHealth"></div>
-    <div class="lbl">Cards for the video</div><div class="tr-cards" id="trCards">${cards.map(([n], i) => `<button class="wk-card" data-trc="${i}"><span class="tr-thumb"></span><small>${esc(n)}</small></button>`).join("")}</div>
-    <div class="stack"><button class="btn" id="trAll">Save all ${cards.length} cards</button><button class="btn quiet" id="trCopy">Copy the numbers</button></div>
+    <div class="lbl">Posts to swipe through</div>${fmtChips("trFmt", P.czFmt === "tall" ? "tall" : "post")}<div id="trSets"></div>
+    <div class="stack"><button class="btn quiet" id="trRS">Room Service for last month</button><button class="btn quiet" id="trCopy">Copy the numbers</button></div>
+    <details class="fold"><summary>Video cards (tall, one per idea)</summary><div class="tr-cards" id="trCards">${cards.map(([n], i) => `<button class="wk-card" data-trc="${i}"><span class="tr-thumb"></span><small>${esc(n)}</small></button>`).join("")}</div>
+    <div class="stack"><button class="btn quiet" id="trAll">Save all ${cards.length} cards</button></div></details>
     ${sec("Most logged", d.top?.slice(0, 5), w => `${trNum(w.n)} people · ${trStars(w.avg)}`)}
     ${sec("On the rise", d.rising, w => w.before ? `up from ${w.before} to ${w.n} people` : `new this week · ${w.n} people`)}
     ${sec("Best rated", d.best?.slice(0, 3), w => `${trStars(w.avg)} from ${w.n} people`)}
@@ -15930,6 +15940,10 @@ async function openTrends(off = 1) {
   $$("[data-trw]").forEach(r => r.onclick = () => { closeSheet(); openWork(r.dataset.trw); });
   $$("[data-trs]").forEach(r => r.onclick = () => { closeSheet(); openThemeList(r.dataset.trs); });
   $("#trCopy").onclick = async () => { try { await navigator.clipboard.writeText(trText(d, hard)); say("Copied the numbers"); } catch { say("Couldn't copy"); } };
+  $("#trRS").onclick = () => openRoomService(1);
+  { let fmt = P.czFmt === "tall" ? "tall" : "post"; const sets = () => paintSets($("#trSets"), trSets(d, hard, fmt), `rooms-week-${from}`); sets();
+    $$("#trFmt [data-fmt]").forEach(b => b.onclick = () => { fmt = P.czFmt = b.dataset.fmt; saveP();
+      $$("#trFmt [data-fmt]").forEach(x => { x.classList.toggle("on", x === b); x.setAttribute("aria-checked", x === b); }); sets(); }); }
   paintHealth(from);
   /* the lines people liked most that week, ready for the newsletter and the video */
   (async () => { const to = new Date(new Date(from + "T00:00:00").getTime() + 7 * 864e5).toISOString().slice(0, 10);
@@ -15946,6 +15960,324 @@ async function openTrends(off = 1) {
   const base = `rooms-week-${from}`;
   $$("[data-trc]").forEach(b => b.onclick = () => { const cv = made[+b.dataset.trc]; if (cv) cardOut(cv, `${base}-${+b.dataset.trc + 1}.png`); });
   $("#trAll").onclick = () => cardsOut(made.filter(Boolean), base); }
+
+/* ---------- posts to swipe through ----------
+   Still images for Instagram and TikTok photo posts, one set per post: a cover, then a
+   slide each, counting down so number one is the last swipe, then a closing slide. Two
+   shapes: 4:5 for Instagram's feed (1080×1350), and 9:16 for TikTok (1080×1920), where
+   the words stay clear of the buttons it puts down the right and along the bottom.
+   A set is only offered when it has enough to say (see trSets). */
+const CZ = { W:1080, M:80, ink:"#F4EDE2", pale:"#A099B4", ground:"#16131C", card:"#221E2D", on:"#151320" };
+const czLay = fmt => fmt === "tall"
+  ? { H:1920, head:172, top:330, foot:1540, wide:CZ.W - CZ.M * 2 - 70, tall:true }
+  : { H:1350, head:84, top:210, foot:1170, wide:CZ.W - CZ.M * 2, tall:false };
+const KCOL = k => CARD.cols[k] || "#9EF0C9";
+const kWord = (k, n = 2) => k === "tv" ? (n === 1 ? "show" : "shows") : (n === 1 ? K(k).label : K(k).plural).toLowerCase();
+const CZ_NUM = ["", "one", "two", "three", "four", "five"];
+function czBase(fmt, label, col) {
+  const L = czLay(fmt), c = document.createElement("canvas"); c.width = CZ.W; c.height = L.H; const x = c.getContext("2d");
+  x.fillStyle = CZ.ground; x.fillRect(0, 0, CZ.W, L.H);
+  const glow = (cx, cy, r, a) => { const g = x.createRadialGradient(cx, cy, 20, cx, cy, r); g.addColorStop(0, col + a); g.addColorStop(1, col + "00"); x.fillStyle = g; x.fillRect(0, 0, CZ.W, L.H); };
+  glow(CZ.W * .88, 20, L.H * .6, "55"); glow(-120, L.H * .86, L.H * .45, "22");
+  cardMark(x, CZ.M, L.head, 44); x.fillStyle = CZ.ink; x.font = "900 46px Outfit, sans-serif"; x.fillText("ROOMS", CZ.M + 82, L.head + 40);
+  x.fillStyle = CZ.pale; x.font = "700 28px Inter, sans-serif"; x.textAlign = "right"; x.fillText(String(label).toUpperCase(), CZ.W - CZ.M, L.head + 36); x.textAlign = "left";
+  return { c, x, L }; }
+function czFoot(x, L, col, line, sub = "Log it on Rooms") {
+  x.fillStyle = "rgba(255,255,255,.18)"; x.fillRect(CZ.M, L.foot, CZ.W - CZ.M * 2, 2);
+  x.fillStyle = CZ.ink; x.font = "700 34px Inter, sans-serif"; x.fillText(fitText(x, line, L.wide), CZ.M, L.foot + 64);
+  x.fillStyle = col; x.font = "900 34px Outfit, sans-serif"; x.fillText(sub, CZ.M, L.foot + 114); }
+function czEye(x, y, text, col) { x.fillStyle = col; x.font = "800 38px Outfit, sans-serif"; x.fillText(String(text).toUpperCase(), CZ.M, y); }
+/* a headline with one whole word in a coloured block, the way the app's titles are */
+function czHead(x, L, y, words, col, size) {
+  size ||= L.tall ? 110 : 100; const lh = Math.round(size * 1.14); x.font = `900 ${size}px Outfit, sans-serif`;
+  const sp = x.measureText(" ").width; let cx = CZ.M, cy = y;
+  for (const [t, mk] of words) for (const w of String(t).split(/\s+/).filter(Boolean)) {
+    const pad = mk ? size * .16 : 0, ww = x.measureText(w).width + pad * 2;
+    if (cx > CZ.M && cx + ww > CZ.M + L.wide) { cx = CZ.M; cy += lh; }
+    if (mk) { x.save(); x.translate(cx + ww / 2, cy - size * .33); x.rotate(-.035); x.fillStyle = col;
+      x.beginPath(); x.roundRect(-ww / 2, -size * .55, ww, size * 1.08, size * .18); x.fill(); x.restore();
+      x.fillStyle = CZ.on; x.fillText(w, cx + pad, cy); }
+    else { x.fillStyle = CZ.ink; x.fillText(w, cx, cy); }
+    cx += ww + sp; }
+  return cy; }
+/* one line, as big as fits */
+function czFitLine(x, text, maxW, big, small, weight = 900, fam = "Outfit") {
+  for (let s = big; s >= small; s -= 2) { x.font = `${weight} ${s}px ${fam}, sans-serif`; if (x.measureText(text).width <= maxW) return text; }
+  return fitText(x, text, maxW); }
+async function czPosterLift(x, w, px, py, pw, ph, r = 26) {
+  x.save(); x.shadowColor = "rgba(0,0,0,.5)"; x.shadowBlur = 60; x.shadowOffsetY = 28; x.fillStyle = "#000";
+  x.beginPath(); x.roundRect(px, py, pw, ph, r); x.fill(); x.restore();
+  await trPoster(x, w, px, py, pw, ph, r); }
+/* the cards face down, for a cover that keeps number one a secret */
+function czMystery(x, L, col, n, cy) {
+  const cw = L.tall ? 250 : 210, ch = cw * 1.5, rot = n === 5 ? [-16, -8, 0, 8, 16] : [-10, 0, 10], step = L.tall ? 170 : 150;
+  rot.forEach((deg, i) => { const cx = CZ.W / 2 + (i - (rot.length - 1) / 2) * step;
+    x.save(); x.translate(cx, cy + Math.abs(i - (rot.length - 1) / 2) * 26); x.rotate(deg * Math.PI / 180);
+    x.shadowColor = "rgba(0,0,0,.45)"; x.shadowBlur = 40; x.shadowOffsetY = 18;
+    const shade = [col, col + "E6", col + "CC", col + "E6", col][i] || col;
+    x.fillStyle = shade; x.beginPath(); x.roundRect(-cw / 2, -ch / 2, cw, ch, 20); x.fill(); x.shadowColor = "transparent";
+    x.strokeStyle = "rgba(255,255,255,.4)"; x.lineWidth = 5; x.stroke();
+    x.fillStyle = CZ.on; x.font = `900 ${Math.round(cw * .5)}px Outfit, sans-serif`; x.textAlign = "center"; x.fillText("?", 0, cw * .2); x.textAlign = "left";
+    x.restore(); }); }
+async function czCover(fmt, label, col, eye, words, sub, o = {}) {
+  const { c, x, L } = czBase(fmt, label, col);
+  czEye(x, L.top + 20, eye, col);
+  let y = czHead(x, L, L.top + (L.tall ? 150 : 130), words, col);
+  y = cardWrap(x, sub, CZ.M, y + 80, L.wide, 50, "700 38px Inter, sans-serif", CZ.pale);
+  const mid = (y + L.foot) / 2 + (L.tall ? 30 : 10);
+  if (o.posters?.length) { const ws = o.posters.slice(0, 3), pw = L.tall ? 250 : 200, ph = pw * 1.5, rot = { 1:[0], 2:[-6, 6], 3:[-9, 0, 9] }[ws.length];
+    for (let i = ws.length - 1; i >= 0; i--) { const cx = CZ.W / 2 + (i - (ws.length - 1) / 2) * (L.tall ? 190 : 165);
+      x.save(); x.translate(cx, mid); x.rotate(rot[i] * Math.PI / 180); await czPosterLift(x, ws[i], -pw / 2, -ph / 2, pw, ph, 20); x.restore(); } }
+  else czMystery(x, L, col, o.n || 3, mid);
+  czFoot(x, L, col, o.foot || "Swipe to see them", "Swipe →"); return c; }
+/* one title: its place in the countdown big on the left, the poster, then the numbers */
+async function czRank(fmt, label, col, w, rank, stat, extra, next, o = {}) {
+  const { c, x, L } = czBase(fmt, label, col);
+  const pw = L.tall ? 560 : o.tag ? 400 : 430, ph = Math.round(pw * 1.5), px = o.noNum ? (CZ.W - pw) / 2 : (CZ.W - pw) / 2 + (L.tall ? 40 : 60);
+  let py = L.top + (L.tall ? 10 : -10);
+  /* a label above the poster ("film of the week", "it was"), clear of everything else */
+  if (o.tag) { x.save(); x.font = "800 30px Outfit, sans-serif"; const tw = x.measureText(o.tag.toUpperCase()).width + 36;
+    x.fillStyle = col; x.beginPath(); x.roundRect(o.noNum ? (CZ.W - tw) / 2 : CZ.M, py, tw, 52, 26); x.fill();
+    x.fillStyle = CZ.on; x.fillText(o.tag.toUpperCase(), (o.noNum ? (CZ.W - tw) / 2 : CZ.M) + 18, py + 36); x.restore(); py += 76; }
+  if (rank === 1) { const g = x.createRadialGradient(px + pw / 2, py + ph / 2, 40, px + pw / 2, py + ph / 2, pw * 1.05);
+    g.addColorStop(0, col + "88"); g.addColorStop(1, col + "00"); x.fillStyle = g; x.fillRect(0, py - 200, CZ.W, ph + 400); }
+  if (!o.noNum) { x.fillStyle = col; x.font = `900 ${L.tall ? 280 : 230}px Outfit, sans-serif`; x.fillText(String(rank), CZ.M - 14, py + (L.tall ? 230 : 190)); }
+  await czPosterLift(x, w, px, py, pw, ph);
+  const gap = L.tall ? 1 : .86; let y = py + ph + Math.round((L.tall ? 120 : 84));
+  x.fillStyle = CZ.ink; x.fillText(czFitLine(x, w.title || "", L.wide, L.tall ? 76 : 62, 40), CZ.M, y);
+  const by = [w.year, w.creator].filter(Boolean).join(" · ");
+  if (by) { x.fillStyle = CZ.pale; x.font = "600 30px Inter, sans-serif"; x.fillText(fitText(x, by, L.wide), CZ.M, y + Math.round(46 * gap)); y += Math.round(46 * gap); }
+  x.fillStyle = CZ.ink; x.font = "700 34px Inter, sans-serif"; x.fillText(fitText(x, stat, L.wide), CZ.M, y + Math.round(56 * gap));
+  if (extra) { x.fillStyle = col; x.font = "800 30px Outfit, sans-serif"; x.fillText(fitText(x, extra, L.wide), CZ.M, y + Math.round(100 * gap)); }
+  czFoot(x, L, col, o.foot?.[0] || next || "What was yours?", o.foot?.[1] || (next ? "Swipe →" : "Log it on Rooms")); return c; }
+async function czEnd(fmt, label, col, words, sub, foot = "Free on the App Store") {
+  const { c, x, L } = czBase(fmt, label, col);
+  let y = czHead(x, L, L.top + (L.tall ? 180 : 140), words, col);
+  y = cardWrap(x, sub, CZ.M, y + 90, L.wide, 52, "700 38px Inter, sans-serif", CZ.pale);
+  const s = L.tall ? 220 : 170; cardMark(x, (CZ.W - s) / 2, Math.min(L.foot - s - 90, y + 120), s);
+  czFoot(x, L, col, foot, "Rooms · watch, read, play"); return c; }
+async function czClue(fmt, label, col, i, clue, n, last) {
+  const { c, x, L } = czBase(fmt, label, col);
+  czEye(x, L.top + 20, `Clue ${i + 1} of ${n}`, col);
+  const dy = L.top + 70, dw = 120, gap = 16;
+  for (let k = 0; k < n; k++) { x.fillStyle = k <= i ? col : "rgba(255,255,255,.14)"; x.beginPath(); x.roundRect(CZ.M + k * (dw + gap), dy, dw, 14, 7); x.fill(); }
+  x.fillStyle = col; x.font = `900 ${L.tall ? 320 : 250}px Outfit, sans-serif`; x.fillText(String(i + 1), CZ.M - 12, dy + (L.tall ? 320 : 250));
+  cardWrap(x, clue, CZ.M, dy + (L.tall ? 470 : 360), L.wide, L.tall ? 86 : 74, `900 ${L.tall ? 74 : 62}px Outfit, sans-serif`, CZ.ink);
+  czFoot(x, L, col, last ? "Still stuck? The answer's up tomorrow" : "Got it? Say so in the comments", last ? "Guess in the comments" : "Next clue →"); return c; }
+async function czSplit(fmt, label, col, w, next) {
+  const { c, x, L } = czBase(fmt, label, col);
+  const pw = L.tall ? 470 : 360, ph = Math.round(pw * 1.5), px = (CZ.W - pw) / 2, py = L.top;
+  await czPosterLift(x, w, px, py, pw, ph);
+  let y = py + ph + (L.tall ? 120 : 90);
+  x.fillStyle = CZ.ink; x.fillText(czFitLine(x, w.title || "", L.wide, L.tall ? 72 : 62, 40), CZ.M, y);
+  x.fillStyle = CZ.pale; x.font = "700 32px Inter, sans-serif"; x.fillText(fitText(x, `${trStars(w.avg)} on average from ${trNum(w.n)} people`, L.wide), CZ.M, y + 54);
+  /* the spread: one star to five, the band where the ratings fell */
+  const bx = CZ.M, bw = CZ.W - CZ.M * 2, by = y + (L.tall ? 120 : 100), at = v => bx + (Math.max(.5, Math.min(5, v)) - .5) / 4.5 * bw;
+  x.fillStyle = "rgba(255,255,255,.12)"; x.beginPath(); x.roundRect(bx, by, bw, 18, 9); x.fill();
+  const lo = at(w.avg - (w.spread || 1)), hi = at(w.avg + (w.spread || 1)); x.fillStyle = col; x.beginPath(); x.roundRect(lo, by, Math.max(18, hi - lo), 18, 9); x.fill();
+  x.fillStyle = CZ.pale; x.font = "700 26px Inter, sans-serif"; x.fillText("½★", bx, by + 56); x.textAlign = "right"; x.fillText("5★", bx + bw, by + 56); x.textAlign = "left";
+  czFoot(x, L, col, next || "Ratings all over the place. Who's right?", next ? "Swipe →" : "Rate it on Rooms"); return c; }
+
+/* the week's posts: only the ones it has enough for */
+function trSets(d, hard, fmt) {
+  const R = trRange(d.from), sets = [], tk = d.top_kind || {}, bar = n => Math.max(1, Math.ceil(n * (d.min || 5) / 5));
+  const rise = w => w.before ? (w.n > w.before ? `Up from ${trNum(w.before)} ${w.before === 1 ? "person" : "people"} the week before` : null) : "New this week";
+  for (const k of ["film", "tv", "book", "game"]) {
+    const ws = (tk[k] || []).slice(0, 3); if (ws.length < 3) continue; const col = KCOL(k), word = kWord(k);
+    sets.push({ key:"top-" + k, name:`Top 3 ${word}`, when:{ film:"Monday", tv:"Tuesday", book:"Thursday", game:"Saturday" }[k], slides:[
+      ["Cover", () => czCover(fmt, R, col, "This week on Rooms", [["The top 3"], [word, true]], `The ${word} most people finished this week. Number one is the last swipe.`, { foot:"Number three first" })],
+      ...[2, 1, 0].map(i => [`No. ${i + 1}`, () => czRank(fmt, R, col, ws[i], i + 1, `Logged by ${trNum(ws[i].n)} people · ${trStars(ws[i].avg)}`, rise(ws[i]),
+        i ? `Number ${CZ_NUM[i]} is next` : null, { tag:i ? null : `${kWord(k, 1)} of the week` })]),
+      ["The end", () => czEnd(fmt, R, col, [["What was"], ["yours?", true]], "Log what you finish, rate it, and see what your friends thought. Free on the App Store.")] ] }); }
+  if (hard) { const col = "#8FD3FF", kw = hard.k === "any" ? "film, show, book or game" : kWord(hard.k, 1), pct = Math.round(hard.solved / hard.played * 100), n = hard.clues.length;
+    sets.push({ key:"clues", name:"Five Clues: can you?", when:"Wednesday", slides:[
+      ["Cover", () => czCover(fmt, `Five Clues · #${hard.no}`, col, `Five Clues · #${hard.no}`, [["Can you"], ["get it?", true]], `Guess the ${kw}, one clue per swipe. ${pct < 50 ? "Only " : ""}${pct}% of people did.`, { n:5, foot:"Count how many clues you need" })],
+      ...hard.clues.map((t, i) => [`Clue ${i + 1}`, () => czClue(fmt, `Five Clues · #${hard.no}`, col, i, t, n, i === n - 1)]) ] });
+    sets.push({ key:"clues-answer", name:"Five Clues: the answer", when:"Thursday", slides:[
+      ["Answer", () => czRank(fmt, `Five Clues · #${hard.no}`, col, hard.w, 1, `${pct < 50 ? "Only " : ""}${pct}% got it${hard.avg ? `, most in ${Math.round(hard.avg)} clues` : ""}`, null, null, { tag:"It was", noNum:true, foot:["A new Five Clues every day", "Play today's in Rooms"] })] ] }); }
+  const split = (d.divisive || []).filter(w => w.n >= bar(20)).slice(0, 3);
+  if (split.length) { const col = "#B99CFF";
+    sets.push({ key:"split", name:"Couldn't agree", when:"Friday", slides:[
+      ["Cover", () => czCover(fmt, R, col, "This week on Rooms", [["Nobody could"], ["agree", true]], split.length > 1 ? `The ${split.length} titles people were most split on this week.` : "The title people were most split on this week.", { posters:split, foot:"Loved it or hated it" })],
+      ...split.map((w, i) => [w.title, () => czSplit(fmt, R, col, w, i < split.length - 1 ? "And another" : null)]),
+      ["The end", () => czEnd(fmt, R, col, [["Where do"], ["you", true], ["land?"]], "Rate it on Rooms and see what your friends thought.")] ] }); }
+  if (d.logs >= bar(500)) { const col = "#9EF0C9";
+    sets.push({ key:"week", name:"The week in numbers", when:"Sunday", slides:[
+      ["The week", async () => { const { c, x, L } = czBase(fmt, R, col);
+        czEye(x, L.top + 20, "This week on Rooms", col);
+        x.fillStyle = col; x.font = `900 ${L.tall ? 220 : 190}px Outfit, sans-serif`; x.fillText(trNum(d.logs), CZ.M - 6, L.top + (L.tall ? 260 : 220));
+        x.fillStyle = CZ.ink; x.font = "800 44px Outfit, sans-serif"; x.fillText(`things finished by ${trNum(d.people)} people`, CZ.M, L.top + (L.tall ? 340 : 290));
+        let y = L.top + (L.tall ? 470 : 400);
+        for (const k of ["film", "tv", "book", "game"]) { const n = d.by_kind?.[k] || 0; if (!n) continue;
+          x.fillStyle = KCOL(k); x.beginPath(); x.roundRect(CZ.M, y - 34, 18, 44, 9); x.fill();
+          x.fillStyle = CZ.ink; x.font = "800 46px Outfit, sans-serif"; x.fillText(`${trNum(n)} ${kWord(k, n)}`, CZ.M + 40, y); y += L.tall ? 92 : 78; }
+        czFoot(x, L, col, "What did you finish this week?"); return c; }] ] }); }
+  return sets; }
+
+/* thumbnails for each set, and a button to save the whole set */
+function paintSets(box, sets, base) {
+  if (!box) return;
+  if (!sets.length) { box.innerHTML = `<p class="sub">Nothing cleared the bar this time: a top three needs three titles each logged by at least five people.</p>`; return; }
+  box.innerHTML = sets.map((s, i) => `<div class="cz-set"><div class="cz-h"><div><b>${esc(s.name)}</b><small>${s.slides.length} ${s.slides.length === 1 ? "slide" : "slides"}${s.when ? ` · post on ${s.when}` : ""}</small></div>
+      <button class="btn quiet sm" data-czs="${i}">Save ${s.slides.length === 1 ? "it" : "all " + s.slides.length}</button></div>
+    <div class="tr-cards">${s.slides.map(([n], j) => `<button class="wk-card" data-czt="${i}:${j}"><span class="tr-thumb"></span><small>${esc(n)}</small></button>`).join("")}</div></div>`).join("");
+  const draw = async (i, j) => { try { return await sets[i].slides[j][1](); } catch { return null; } };
+  $$("[data-czs]", box).forEach(b => b.onclick = async () => { const i = +b.dataset.czs; b.disabled = true;
+    const cs = []; for (let j = 0; j < sets[i].slides.length; j++) { const cv = await draw(i, j); if (cv) cs.push(cv); }
+    b.disabled = false; if (cs.length) cardsOut(cs, `${base}-${sets[i].key}`); });
+  $$("[data-czt]", box).forEach(b => b.onclick = async () => { const [i, j] = b.dataset.czt.split(":").map(Number); const cv = await draw(i, j); if (cv) cardOut(cv, `${base}-${sets[i].key}-${j + 1}.png`); });
+  /* small pictures, one at a time, so a phone never holds thirty full-size slides at once */
+  (async () => { await ready(); const gen = box.dataset.gen = String(+(box.dataset.gen || 0) + 1);
+    for (let i = 0; i < sets.length; i++) for (let j = 0; j < sets[i].slides.length; j++) {
+      if (box.dataset.gen !== gen || !box.isConnected) return;
+      const cv = await draw(i, j), t = $(`[data-czt="${i}:${j}"] .tr-thumb`, box); if (!cv || !t) continue;
+      const s = document.createElement("canvas"); s.width = 216; s.height = Math.round(216 * cv.height / cv.width); s.getContext("2d").drawImage(cv, 0, 0, s.width, s.height);
+      const im = new Image(); im.alt = ""; im.src = s.toDataURL("image/jpeg", .75); t.style.height = Math.round(96 * cv.height / cv.width) + "px"; t.replaceChildren(im); } })(); }
+function fmtChips(id, cur) { return `<div class="chips" id="${id}" role="radiogroup" aria-label="Shape">${[["post", "Instagram · 4:5"], ["tall", "TikTok · 9:16"]].map(([k, l]) =>
+  `<button class="chip ${cur === k ? "on" : ""}" data-fmt="${k}" role="radio" aria-checked="${cur === k}">${l}</button>`).join("")}</div>`; }
+
+/* ============ ROOM SERVICE: the monthly newsletter (the founder's) ============
+   The month added up the way the week is, laid out as an email ready to paste into the
+   newsletter service. Every part checks itself against its bar and is left out if it
+   doesn't clear it, and the sheet says which made it and why the others didn't. Number
+   one of each medium also comes as a post to swipe through, pointing at the newsletter
+   for the full top fives. */
+const rsFrom = off => { const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - off); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`; };
+const rsDays = from => { const d = new Date(from + "T12:00:00"); return new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate(); };
+const rsMonth = from => MONTH_FULL[+from.slice(5, 7) - 1];
+const rsLink = w => `${SITE}#work=${encodeURIComponent(w.id)}`;
+function rsParts(m) { const d = m.d, tk = d.top_kind || {}, bar = n => Math.max(1, Math.ceil(n * (d.min || 5) / 5)), P_ = [];
+  const add = (key, name, ok, why, data) => P_.push({ key, name, ok:!!ok, why, data });
+  add("note", "Your note", m.note.trim(), "Write a line or two at the top of the sheet", m.note.trim());
+  add("number", `${m.month} in one number`, d.logs >= bar(500), `Needs ${trNum(bar(500))} things logged; ${m.month} had ${trNum(d.logs)}`, null);
+  for (const k of ["film", "tv", "book", "game"]) { const ws = tk[k] || [], n = ws.length >= 5 ? 5 : ws.length >= 3 ? 3 : 0;
+    add("top-" + k, n ? `Top ${n} ${kWord(k)}` : `Top ${kWord(k)}`, n, `${ws.length ? `Only ${ws.length}` : "No"} ${kWord(k, ws.length)} ${ws.length === 1 ? "was" : "were"} logged by ${d.min}+ people; shows as a count instead (${trNum(d.by_kind?.[k] || 0)} ${kWord(k, d.by_kind?.[k] || 0)})`, ws.slice(0, n)); }
+  const best = (d.best || []).find(w => w.n >= bar(10)), worst = (d.worst || []).find(w => w.n >= bar(10) && w.avg <= 3);
+  add("loved", "Loved, and not", best, `Needs a title rated by ${bar(10)}+ people`, { best, worst });
+  const split = (d.divisive || []).find(w => w.n >= bar(20));
+  add("split", "Couldn't agree", split, `Needs a split title with ${bar(20)}+ ratings`, split);
+  add("stacks", "Stacks people saved", (d.stacks || []).length, `Needs a stack saved by ${d.min}+ people`, (d.stacks || []).slice(0, 3));
+  add("clues", "The Five Clues nobody got", m.hard, `Needs a Five Clues played by ${d.min}+ people`, m.hard);
+  add("line", "Line of the month", m.line && (m.line.reactions || []).length >= bar(5), `Needs a public line liked by ${bar(5)}+ people`, m.line);
+  add("places", "Where people went", m.cinema || m.shop, "Needs a cinema or bookshop rated by 2+ people", { cinema:m.cinema, shop:m.shop });
+  add("new", "New in Rooms", m.news.trim(), "Write what's new at the top of the sheet", m.news.trim());
+  return P_; }
+/* the email: tables and inline styles, because that's all mail apps reliably read */
+function rsHTML(m) {
+  const parts = rsParts(m), on = k => parts.find(p => p.key === k && p.ok), d = m.d;
+  const C = { ink:"#151320", mute:"#776F86", paper:"#FFF7EC", tile:"#F3E9DA", line:"#E4D8C6", head:"'Outfit','Avenir Next',Helvetica,Arial,sans-serif", body:"Inter,-apple-system,Helvetica,Arial,sans-serif" };
+  const eye = t => `<p style="margin:0 0 10px;font:800 11px/1.2 ${C.head};letter-spacing:.14em;text-transform:uppercase;color:${C.mute}">${esc(t)}</p>`;
+  const sec = html => `<tr><td style="padding:0 0 30px">${html}</td></tr>`;
+  const img = (w, wd) => { const ht = Math.round(wd * 1.5), bg = KCOL(w.kind);
+    return w.cover ? `<a href="${esc(rsLink(w))}"><img src="${esc(w.cover)}" width="${wd}" height="${ht}" alt="${esc(w.title)}" style="display:block;width:${wd}px;height:${ht}px;border:0;border-radius:8px;object-fit:cover;background:${bg}"></a>`
+      : `<div style="width:${wd}px;height:${ht}px;border-radius:8px;background:${bg}"></div>`; };
+  const tile = (top, title, sub, href) => `<td valign="top" width="50%" style="padding:12px;background:${C.tile};border-radius:12px"><p style="margin:0;font:12px ${C.body};color:${C.mute}">${esc(top)}</p>
+    <p style="margin:2px 0;font:800 16px/1.25 ${C.head};color:${C.ink}">${href ? `<a href="${esc(href)}" style="color:${C.ink};text-decoration:none">${esc(title)}</a>` : esc(title)}</p><p style="margin:0;font:12px ${C.body};color:${C.mute}">${esc(sub)}</p></td>`;
+  let rows = "";
+  rows += sec(`${eye(`${m.month} on Rooms`)}<h1 style="margin:0 0 14px;font:900 34px/1 ${C.head};letter-spacing:-.03em;color:${C.ink}">Room <span style="background:#FFE86A;border-radius:6px;padding:0 6px">Service</span></h1>
+    ${on("note") ? m.note.trim().split(/\n+/).map(p => `<p style="margin:0 0 10px;font:16px/1.55 ${C.body};color:#3B3548">${esc(p)}</p>`).join("") : ""}`);
+  if (on("number")) rows += sec(`${eye(`${m.month} in one number`)}<p style="margin:0;font:900 52px/1 ${C.head};letter-spacing:-.04em;color:${C.ink}">${trNum(d.logs)}</p>
+    <p style="margin:6px 0 0;font:14px ${C.body};color:${C.mute}">things logged by ${trNum(d.people)} people${d.logs_before ? `, ${d.logs >= d.logs_before ? "up" : "down"} ${Math.abs(Math.round((d.logs - d.logs_before) / d.logs_before * 100))}% on ${rsMonth(m.prevFrom)}` : ""}.</p>`);
+  const counts = [];
+  for (const k of ["film", "tv", "book", "game"]) { const p = parts.find(x => x.key === "top-" + k), col = KCOL(k);
+    if (!p.ok) { const n = d.by_kind?.[k] || 0; if (n) counts.push(`${trNum(n)} ${kWord(k, n)}`); continue; }
+    const [one, ...rest] = p.data;
+    rows += sec(`<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-top:4px solid ${col};background:${C.tile};border-radius:14px"><tr><td style="padding:14px">
+      ${eye(`${m.month}'s top ${p.data.length} ${kWord(k)}`)}
+      <table role="presentation" cellpadding="0" cellspacing="0"><tr><td valign="top" style="padding-right:14px">${img(one, 96)}</td><td valign="middle">
+        <p style="margin:0;font:900 13px ${C.head};color:${C.mute}">No. 1</p>
+        <p style="margin:2px 0 4px;font:900 22px/1.15 ${C.head};color:${C.ink}"><a href="${esc(rsLink(one))}" style="color:${C.ink};text-decoration:none">${esc(one.title)}</a></p>
+        <p style="margin:0;font:13px ${C.body};color:${C.mute}">Logged by ${trNum(one.n)} people · ${trStars(one.avg)}</p></td></tr></table>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:12px"><tr>${rest.map((w, i) => `<td valign="top" width="25%" style="padding-right:8px">${img(w, 64)}
+        <p style="margin:5px 0 0;font:800 12px/1.2 ${C.head};color:${C.ink}"><span style="color:${C.mute}">${i + 2}</span> ${esc(w.title)}</p></td>`).join("")}${rest.length < 4 ? `<td width="${(4 - rest.length) * 25}%"></td>` : ""}</tr></table>
+    </td></tr></table>`); }
+  if (counts.length) rows += sec(`<p style="margin:0;font:14px/1.5 ${C.body};color:${C.mute}">Also finished in ${m.month}: ${esc(counts.join(", "))}.</p>`);
+  const lv = on("loved");
+  if (lv) rows += sec(`${eye("Loved, and not")}<table role="presentation" width="100%" cellpadding="0" cellspacing="6"><tr>${tile("Best rated", lv.data.best.title, `${trStars(lv.data.best.avg)} from ${trNum(lv.data.best.n)} people`, rsLink(lv.data.best))}
+    ${lv.data.worst ? tile("Not so much", lv.data.worst.title, `${trStars(lv.data.worst.avg)} from ${trNum(lv.data.worst.n)} people`, rsLink(lv.data.worst)) : ""}</tr></table>`);
+  const sp = on("split");
+  if (sp) rows += sec(`${eye("Couldn't agree")}<p style="margin:0;font:16px/1.5 ${C.body};color:#3B3548"><a href="${esc(rsLink(sp.data))}" style="color:${C.ink};font-weight:700">${esc(sp.data.title)}</a> split everyone: ${trStars(sp.data.avg)} on average from ${trNum(sp.data.n)} people, with ratings all over the place. Where do you land?</p>`);
+  const st = on("stacks");
+  if (st) rows += sec(`${eye("Stacks people saved")}${st.data.map(s => `<p style="margin:0 0 8px;padding:10px 12px;background:${C.tile};border-radius:12px;font:800 15px ${C.head};color:${C.ink}">${esc(s.title)} <span style="font:12px ${C.body};color:${C.mute}">· saved by ${trNum(s.n)} people</span></p>`).join("")}`);
+  const cl = on("clues");
+  if (cl) { const h = cl.data, pct = Math.round(h.solved / h.played * 100);
+    rows += sec(`<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${C.ink};border-radius:14px"><tr><td style="padding:16px">
+      <p style="margin:0 0 10px;font:800 11px ${C.head};letter-spacing:.14em;text-transform:uppercase;color:#8FD3FF">The Five Clues nobody got</p>
+      <ol style="margin:0 0 10px;padding-left:20px;font:14px/1.5 ${C.body};color:${C.paper}">${h.clues.slice(0, 3).map(t => `<li>${esc(t)}</li>`).join("")}</ol>
+      <p style="margin:0;font:13px ${C.body};color:#A099B4">${pct < 50 ? "Only " : ""}${pct}% of players got it. The answer's at the bottom of this email.</p></td></tr></table>`); }
+  const ln = on("line");
+  if (ln) { const w = works[ln.data.work_id] || ln.data.works || {};
+    rows += sec(`${eye("Line of the month")}<p style="margin:0;padding-left:12px;border-left:3px solid #F5A3C7;font:italic 600 18px/1.4 ${C.body};color:${C.ink}">“${esc(plainNote(ln.data.note).slice(0, 200))}”</p>
+      <p style="margin:6px 0 0 15px;font:12.5px ${C.body};color:${C.mute}">The most liked thing anyone said${w.title ? `, about ${esc(w.title)}` : ""}</p>`); }
+  const pl = on("places");
+  if (pl) rows += sec(`${eye("Where people went")}<table role="presentation" width="100%" cellpadding="0" cellspacing="6"><tr>${pl.data.cinema ? tile("Best cinema", pl.data.cinema.name, `${pl.data.cinema.avg ? (+pl.data.cinema.avg).toFixed(1) + "★ from " : ""}${trNum(pl.data.cinema.people)} people`) : ""}
+    ${pl.data.shop ? tile("Best bookshop", pl.data.shop.name, `${pl.data.shop.avg ? (+pl.data.shop.avg).toFixed(1) + "★ from " : ""}${trNum(pl.data.shop.people)} people`) : ""}</tr></table>`);
+  if (on("new")) rows += sec(`<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#9EF0C9;border-radius:14px"><tr><td style="padding:14px">
+    <p style="margin:0 0 4px;font:800 11px ${C.head};letter-spacing:.12em;text-transform:uppercase;color:${C.ink}">New in Rooms</p>${m.news.trim().split(/\n+/).map(p => `<p style="margin:0 0 4px;font:15px/1.45 ${C.body};color:${C.ink}">${esc(p)}</p>`).join("")}</td></tr></table>`);
+  rows += sec(`<a href="${SITE}" style="display:inline-block;background:${C.ink};color:${C.paper};border-radius:99px;padding:12px 20px;font:800 14px ${C.head};text-decoration:none">Bring a friend into your room</a>
+    ${cl ? `<p style="margin:22px 0 0;font:14px ${C.body};color:${C.mute}">The Five Clues answer: <b style="color:${C.ink}">${esc(cl.data.w.title)}</b>${cl.data.w.year ? ` (${esc(String(cl.data.w.year))})` : ""}.</p>` : ""}`);
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${C.paper}"><tr><td align="center" style="padding:24px 14px">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;text-align:left">${rows}</table></td></tr></table>`; }
+/* the same issue as plain text, for the text-only copy every email should carry */
+function rsText(m) { const parts = rsParts(m), on = k => parts.find(p => p.key === k && p.ok), d = m.d, l = [`ROOM SERVICE · ${m.month} on Rooms`, ""];
+  if (on("note")) l.push(m.note.trim(), "");
+  if (on("number")) l.push(`${trNum(d.logs)} things logged by ${trNum(d.people)} people.`, "");
+  for (const k of ["film", "tv", "book", "game"]) { const p = parts.find(x => x.key === "top-" + k); if (!p.ok) continue;
+    l.push(`${m.month}'s top ${p.data.length} ${kWord(k)}`, ...p.data.map((w, i) => `${i + 1}. ${w.title}${w.year ? ` (${w.year})` : ""} · ${trNum(w.n)} people · ${trStars(w.avg)}`), ""); }
+  const lv = on("loved"); if (lv) l.push(`Best rated: ${lv.data.best.title}, ${trStars(lv.data.best.avg)}${lv.data.worst ? `. Not so much: ${lv.data.worst.title}, ${trStars(lv.data.worst.avg)}` : ""}`, "");
+  const sp = on("split"); if (sp) l.push(`Couldn't agree: ${sp.data.title}, ${trStars(sp.data.avg)} on average from ${trNum(sp.data.n)} people.`, "");
+  const st = on("stacks"); if (st) l.push("Stacks people saved: " + st.data.map(s => `${s.title} (${s.n})`).join(", "), "");
+  const cl = on("clues"); if (cl) l.push("The Five Clues nobody got:", ...cl.data.clues.slice(0, 3).map((t, i) => `${i + 1}. ${t}`), "(The answer's at the bottom.)", "");
+  const ln = on("line"); if (ln) l.push(`Line of the month: “${plainNote(ln.data.note).slice(0, 200)}”`, "");
+  const pl = on("places"); if (pl) l.push([pl.data.cinema && `Best cinema: ${pl.data.cinema.name}`, pl.data.shop && `Best bookshop: ${pl.data.shop.name}`].filter(Boolean).join(". "), "");
+  if (on("new")) l.push("New in Rooms: " + m.news.trim(), "");
+  l.push(`Bring a friend into your room: ${SITE}`);
+  if (cl) l.push("", `The Five Clues answer: ${cl.data.w.title}.`);
+  return l.join("\n"); }
+/* number one of each medium, to swipe through, the day the newsletter goes out */
+function rsSets(m, fmt) { const tk = m.d.top_kind || {}, ks = ["film", "tv", "book", "game"].filter(k => (tk[k] || []).length >= 3); if (!ks.length) return [];
+  const lab = `${m.month} on Rooms`;
+  return [{ key:"number-ones", name:`${m.month}'s number ones`, when:"the day Room Service goes out", slides:[
+    ["Cover", () => czCover(fmt, lab, "#FFE86A", "Room Service", [[`${m.month}'s`], ["number", true], ["ones"]], `The ${ks.map(k => kWord(k, 1)).join(", ").replace(/, ([^,]*)$/, " and $1")} most people finished in ${m.month}.`, { n:3, foot:"One for each" })],
+    ...ks.map(k => [K(k).label, () => czRank(fmt, lab, KCOL(k), tk[k][0], 1, `Logged by ${trNum(tk[k][0].n)} people · ${trStars(tk[k][0].avg)}`, null, k === ks[ks.length - 1] ? null : "Swipe for the next", { tag:`${kWord(k, 1)} of the month` })]),
+    ["The end", () => czEnd(fmt, lab, "#FFE86A", [["The top fives are in"], ["Room Service", true]], "Our monthly newsletter. Switch it on in Rooms under Settings, or sign up on the website.", "Sign up in Rooms")] ] }]; }
+async function openRoomService(off = 1) {
+  const from = rsFrom(off), days = rsDays(from), month = rsMonth(from), prevFrom = rsFrom(off + 1);
+  openSheet(`<div class="tr-head"><div><h3>Room Service</h3><small>${esc(month)}</small></div></div>${skeleton(3)}`);
+  let d; try { d = await q(sb.rpc("weekly_trends", { p_from:from, p_days:days })); }
+  catch (e) { openSheet(`<h3>Room Service</h3><p class="sub">${/not allowed/.test(e?.message || "") ? "This one's only for the founder." : "Couldn't add the month up. Try again in a bit."}</p>`); return; }
+  Object.values(d.top_kind || {}).flat().concat(d.best || [], d.worst || [], d.divisive || []).forEach(w => { if (w?.id && !works[w.id]) remember({ id:w.id, kind:w.kind, title:w.title, year:w.year, cover:w.cover, creator:w.creator }); });
+  const to = new Date(new Date(from + "T00:00:00").getTime() + days * 864e5).toISOString().slice(0, 10);
+  const [hard, cinemas, shops, line] = await Promise.all([trHardest(d), loadVenues("cinema"), loadVenues("bookshop"),
+    (async () => { let es = []; try { es = feedRows(await q(sb.from("entries").select(ENTRY_SEL).eq("part", false).gte("created_at", from).lt("created_at", to).not("note", "is", null).order("created_at", { ascending:false }).limit(600))); } catch {}
+      return es.filter(e => e.note && plainNote(e.note).length >= 12 && !e.private && !e.room_only).sort((a, b) => (b.reactions || []).length - (a.reactions || []).length)[0] || null; })()]);
+  const notes = P.rsNotes ||= {}, m = { d, from, prevFrom, month, hard, line, cinema:cinemas[0] || null, shop:shops[0] || null, note:notes[from] || "", news:P.rsNews || "" };
+  let fmt = P.czFmt === "tall" ? "tall" : "post";
+  openSheet(`<div class="tr-head"><button class="iconbtn sm" id="rsPrev" aria-label="The month before">‹</button><div><h3>Room Service</h3><small>${esc(month)} · goes out the first Sunday after</small></div>
+      <button class="iconbtn sm" id="rsNext" aria-label="The month after" ${off <= 1 ? "disabled" : ""}>›</button></div>
+    <div class="lbl">Your note at the top</div><textarea id="rsNote" rows="3" placeholder="A line or two in your own words: what the month felt like, what you loved.">${esc(m.note)}</textarea>
+    <div class="lbl">New in Rooms</div><textarea id="rsNew" rows="2" placeholder="The one new thing worth knowing about.">${esc(m.news)}</textarea>
+    <div class="lbl">What's going in</div><div class="card rs-parts" id="rsParts" style="margin-top:0"></div>
+    <div class="stack"><button class="btn" id="rsCopy">Copy the email</button><button class="btn quiet" id="rsText">Copy as plain text</button></div>
+    <p class="sub" style="margin-top:6px">Paste it into the newsletter service as HTML. The unsubscribe link is added by the service.</p>
+    <div class="lbl">How it looks</div><div class="rs-preview" id="rsPreview"></div>
+    <div class="lbl">The post for that day</div>${fmtChips("rsFmt", fmt)}<div id="rsSets"></div>
+    <p class="sub" style="margin-top:14px">A title only shows once at least ${d.min} different people logged it in ${esc(month)}, the same rule as the weekly posts. Parts that don't clear their bar are left out rather than padded.</p>`);
+  const paint = () => {
+    $("#rsParts").innerHTML = rsParts(m).map(p => `<div class="rs-part ${p.ok ? "in" : ""}"><b>${p.ok ? "✓" : "–"} ${esc(p.name)}</b>${p.ok ? "" : `<small>${esc(p.why)}</small>`}</div>`).join("");
+    $("#rsPreview").innerHTML = rsHTML(m); };
+  paint();
+  let t = 0; const typed = () => { clearTimeout(t); t = setTimeout(() => { m.note = $("#rsNote").value; m.news = $("#rsNew").value; notes[from] = m.note; P.rsNews = m.news; saveP(); paint(); }, 300); };
+  $("#rsNote").oninput = typed; $("#rsNew").oninput = typed;
+  $("#rsPrev").onclick = () => openRoomService(off + 1); const nx = $("#rsNext"); if (nx) nx.onclick = () => off > 1 && openRoomService(off - 1);
+  $("#rsCopy").onclick = async () => { m.note = $("#rsNote").value; m.news = $("#rsNew").value; const html = rsHTML(m);
+    try { if (window.ClipboardItem) await navigator.clipboard.write([new ClipboardItem({ "text/html":new Blob([html], { type:"text/html" }), "text/plain":new Blob([html], { type:"text/plain" }) })]);
+      else await navigator.clipboard.writeText(html); say("Copied the email"); } catch { try { await navigator.clipboard.writeText(html); say("Copied the email"); } catch { say("Couldn't copy"); } } };
+  $("#rsText").onclick = async () => { try { await navigator.clipboard.writeText(rsText(m)); say("Copied the plain text"); } catch { say("Couldn't copy"); } };
+  const sets = () => paintSets($("#rsSets"), rsSets(m, fmt), `room-service-${from.slice(0, 7)}`);
+  sets();
+  $$("#rsFmt [data-fmt]").forEach(b => b.onclick = () => { fmt = P.czFmt = b.dataset.fmt; saveP();
+    $$("#rsFmt [data-fmt]").forEach(x => { x.classList.toggle("on", x === b); x.setAttribute("aria-checked", x === b); }); sets(); }); }
 
 /* ---------- how Rooms is doing ----------
    The founder's own numbers for the week: how many people used it, whether the people
@@ -16027,7 +16359,7 @@ async function openYou() { let top = { items:[] }; try { top = await ensureMyTop
     <div class="lbl" style="margin-top:10px">Room Service, the monthly newsletter</div><div class="chips" id="nlSlot"></div>
     <p class="sub" style="margin-top:4px">Once a month: each medium's top five, the one nobody agreed on, the stacks people saved and the Five Clues hardly anyone got. It goes to the email on your account. Switch it off here any time.</p>
     <div class="lbl" style="margin-top:10px">Public profile page</div><div id="ppSlot"></div>
-    ${isFounder() ? `<div class="lbl" style="margin-top:10px">Founder</div><div class="stack"><button class="btn quiet" id="fTrends">Last week on Rooms</button><button class="btn quiet" id="fList">Copy the newsletter list</button></div>` : ""}
+    ${isFounder() ? `<div class="lbl" style="margin-top:10px">Founder</div><div class="stack"><button class="btn quiet" id="fTrends">Last week on Rooms</button><button class="btn quiet" id="fRS">Room Service</button><button class="btn quiet" id="fList">Copy the newsletter list</button></div>` : ""}
     <div class="lbl" style="margin-top:10px">How the app looks</div><div class="chips">${[["","Auto"],["light","Light"],["dark","Dark"]].map(([k,l]) => `<button class="chip ${(P.theme||"")===k?"on":""}" data-th="${k}">${l}</button>`).join("")}</div>
     <p class="sub" style="margin-top:4px">Auto follows your phone. The ground still warms and dims across the day either way.</p>
     <div class="lbl">The mascots</div><div class="chips"><button class="chip ${P.tilt ? "on" : ""}" id="tiltSw">Eyes follow your tilt</button></div>
@@ -16127,6 +16459,7 @@ async function openYou() { let top = { items:[] }; try { top = await ensureMyTop
     say(P.epAlerts ? "We'll tell you about new episodes" : "No episode nudges"); });
   paintNewsletter($("#nlSlot")); paintPublicPage($("#ppSlot"));
   const ft = $("#fTrends"); if (ft) ft.onclick = () => openTrends(1);
+  const frs = $("#fRS"); if (frs) frs.onclick = () => openRoomService(1);
   const fl = $("#fList"); if (fl) fl.onclick = async () => { try { const rows = await q(sb.rpc("newsletter_list"));
       if (!rows.length) { say("Nobody's on the list yet"); return; }
       await navigator.clipboard.writeText(rows.map(r => r.email).join("\n")); say(`Copied ${rows.length} ${rows.length === 1 ? "address" : "addresses"}`); }

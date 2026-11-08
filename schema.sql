@@ -2062,15 +2062,19 @@ grant execute on function push_targets_clues(int) to service_role;
 -- Only the founder can ask for it. It never names anyone: a title only shows once at
 -- least p_min different people logged it (never fewer than 5), and "just me" logs,
 -- episode logs, imports and things logged from before never count. Safe to re-run.
-create or replace function weekly_trends(p_from date, p_min int default 5)
+-- p_days makes it any span: 7 for the week, the month's length for Room Service. The span
+-- before it (for "up from") is the same length.
+drop function if exists weekly_trends(date, int);
+create or replace function weekly_trends(p_from date, p_min int default 5, p_days int default 7)
 returns jsonb language plpgsql security definer stable set search_path = public as $$
-declare k int := greatest(coalesce(p_min, 5), 5); a timestamptz := p_from::timestamptz; b timestamptz := (p_from + 7)::timestamptz;
+declare k int := greatest(coalesce(p_min, 5), 5); n_days int := least(greatest(coalesce(p_days, 7), 1), 31);
+  a timestamptz := p_from::timestamptz; b timestamptz := (p_from + n_days)::timestamptz;
   out jsonb;
 begin
   if not exists (select 1 from profiles where id = auth.uid() and founder) then raise exception 'not allowed'; end if;
   with e as (
     select x.user_id, x.work_id, x.score, x.loved, x.created_at >= a as now_wk from entries x
-    where x.created_at >= a - interval '7 days' and x.created_at < b and not x.private and not x.part and not x.room_only
+    where x.created_at >= a - make_interval(days => n_days) and x.created_at < b and not x.private and not x.part and not x.room_only
       and (x.context->>'before') is distinct from 'true' and (x.context->>'imported') is distinct from 'true'),
   cur as (select * from e where now_wk), prev as (select * from e where not now_wk),
   per as (select c.work_id, count(distinct c.user_id) n, round(avg(c.score)::numeric / 2, 2) avg, round(stddev_pop(c.score)::numeric / 2, 2) spread,
@@ -2102,12 +2106,12 @@ begin
                 where s.created_at >= a and s.created_at < b group by tl.id, tl.title having count(distinct s.user_id) >= k order by n desc limit 5) t),
     'clues', (select coalesce(jsonb_agg(jsonb_build_object('day', day, 'game', game, 'played', played, 'solved', solved, 'avg', avg) order by day, game), '[]') from
                (select day, game, count(*) played, count(*) filter (where solved) solved, round(avg(clues) filter (where solved)::numeric, 1) avg
-                from daily_scores where day >= p_from and day < p_from + 7 and game like 'clues%' group by day, game having count(*) >= k) t)
+                from daily_scores where day >= p_from and day < p_from + n_days and game like 'clues%' group by day, game having count(*) >= k) t)
   ) into out;
   return out;
 end $$;
-revoke all on function weekly_trends(date, int) from public, anon;
-grant execute on function weekly_trends(date, int) to authenticated;
+revoke all on function weekly_trends(date, int, int) from public, anon;
+grant execute on function weekly_trends(date, int, int) to authenticated;
 
 -- the Monday nudge that the week's report is ready: the founder's phones only
 create or replace function push_targets_founders()
