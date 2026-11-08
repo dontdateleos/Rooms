@@ -49,7 +49,7 @@ PRIVATE BY DESIGN
 No ads and no tracking. Your rooms are yours. Report and block are always one tap away, and you can download everything or close your account from Settings.
 
 ## What's new in this version
-(1.0 said: "The first version of Rooms on the App Store." This is for 1.0.1.)
+(This is for 1.0.2. 1.0.1 went to review with Stacks, Five Clues, party games, Wrapped, places, moods, the Feed for your people and the new cards; update below before submitting 1.0.2.)
 
 Stacks: make a stack of films, shows, books or games, find everyone else's, and save the ones you like. Filter by genre, search inside them, or turn one into a watch night with your room.
 
