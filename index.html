@@ -1387,6 +1387,34 @@ svg .comet{transform-box:fill-box;transform-origin:center;animation:cometTurn 4.
 .pull.going .pmk .pr{animation:pullLamp .9s linear infinite}
 .pull.going .pmk .pr:nth-of-type(2){animation-delay:.225s}.pull.going .pmk .pr:nth-of-type(4){animation-delay:.45s}.pull.going .pmk .pr:nth-of-type(3){animation-delay:.675s}
 @keyframes pullLamp{0%,40%{opacity:1}60%,100%{opacity:.3}}
+/* ---------- the scroll feel being tried out (html.feel) ---------- */
+@property --pull{syntax:"<number>";inherits:true;initial-value:0}
+html.feel:not(.pulling){transition:--pull .45s cubic-bezier(.2,1.4,.4,1)}
+@media (prefers-reduced-motion:no-preference){
+  /* the top card's posters: up, in and smaller as you scroll away; bigger as you pull down */
+  html.feel .hero.upbig .hero-fan{transform-origin:100% 100%;will-change:transform;
+    transform:translate(calc(var(--sp,0) * 30px), calc(var(--sp,0) * -80px + var(--pull,0) * 18px)) rotate(calc(var(--sp,0) * 9deg)) scale(calc(1 - var(--sp,0) * .18 + var(--pull,0) * .2))}
+  html.feel .hero.upbig .gprompt{opacity:calc(1 - var(--sp,0) * .75);transform:translateY(calc(var(--sp,0) * -22px + var(--pull,0) * 8px))}
+  html.feel .hero.upbig .h{opacity:calc(1 - var(--sp,0) * .5)}
+}
+/* what goes under the bars goes soft, the way it does in the phone's own apps */
+html.feel header::after{content:"";position:absolute;left:0;right:0;top:100%;height:34px;pointer-events:none;
+  background:linear-gradient(var(--veil),transparent);-webkit-backdrop-filter:blur(7px);backdrop-filter:blur(7px);
+  -webkit-mask-image:linear-gradient(#000 20%,transparent);mask-image:linear-gradient(#000 20%,transparent);opacity:0;transition:opacity .25s}
+html.feel header.tight::after{opacity:1}
+html.feel nav::before{content:"";position:absolute;left:0;right:0;bottom:100%;height:34px;pointer-events:none;
+  background:linear-gradient(transparent,var(--veil));-webkit-backdrop-filter:blur(7px);backdrop-filter:blur(7px);
+  -webkit-mask-image:linear-gradient(transparent,#000 80%);mask-image:linear-gradient(transparent,#000 80%)}
+/* the pull: your mascot drops in and stretches as you pull, hops when it's ready, and
+   bounces while it fetches */
+html.feel .pull:has(.pav){background:none;box-shadow:none;padding:0;flex-direction:column;gap:4px;color:var(--ink)}
+html.feel .pull .pav{display:block;width:52px;height:52px;transform-origin:50% 0;
+  transform:scaleY(calc(.8 + var(--p,0) * .4)) scaleX(calc(1.08 - var(--p,0) * .16))}
+html.feel .pull .pav svg{width:100%;height:100%;display:block}
+html.feel .pull.ready .pav{animation:pavHop .38s cubic-bezier(.3,1.6,.5,1)}
+html.feel .pull.going .pav{transform:none;animation:pavBounce .7s cubic-bezier(.3,0,.5,1) infinite alternate}
+@keyframes pavHop{40%{transform:translateY(-8px) scale(1.12,.9)}}
+@keyframes pavBounce{from{transform:translateY(0) scale(1.06,.94)}to{transform:translateY(10px) scale(.96,1.05)}}
 @media(prefers-reduced-motion:reduce){.pull{transition:none}.pull.going .pmk .pr{animation:none;opacity:1}}
 .mk{display:block;border:1.5px solid var(--line);border-radius:14px;padding:8px 12px;background:var(--cream)}
 .mk b{font-family:var(--head);font-weight:800;font-size:13px;display:block}
@@ -6579,7 +6607,7 @@ function switchTab(n, how = {}) { shelfEdit = false; $("#editDock")?.remove(); i
   requestAnimationFrame(() => { movePill(); watchTitle(); if (was !== now && !swiped) riseIn($("#tab-" + n));
     /* a row of tabs drawn while its page was hidden had no width to measure its underline by */
     if (swiped) $$(".seg.glide", $("#tab-" + n)).forEach(g => glideSeg(g, true));
-    liteWatch($("#tab-" + n)); paintSfxBar(); });
+    liteWatch($("#tab-" + n)); paintSfxBar(); feelTick(); });
   /* the old page's name leaves the header at once — fading it out over the new page's own
      big title showed the name twice */
   { const ht = $("#hdrTitle"); if (ht && was !== now) { ht.style.transition = "none"; $("header")?.classList.remove("titled");
@@ -6625,6 +6653,21 @@ function paintSfxBar() { let bar = $("#sfxBar");
 /* ?demo&scroll opens the demo with the try-out bar already showing */
 if (/[?&]scroll\b/.test(location.search)) P.sfxTry = true;
 applySfx();
+/* ---------- the scroll feel being tried out (?feel) ----------
+   What the big apps do rather than animating every row: the top card's posters move
+   with the scroll (they drift up, tuck in and shrink as you scroll away, and swell when
+   you pull down past the top), what goes under the bars is softly blurred, and the pull
+   to refresh is your own mascot, stretching as you pull. */
+const FEEL = /[?&]feel\b/.test(location.search) || !!P.feel;
+if (FEEL) document.documentElement.classList.add("feel");
+let feelRaf = 0;
+function feelTick() { feelRaf = 0; if (!FEEL || REDUCED) return;
+  const h = $("main section.on .hero.upbig"); if (!h) return;
+  const y = scrollY;
+  h.style.setProperty("--sp", Math.max(0, Math.min(1, y / 340)).toFixed(3));
+  /* the phone's own rubber band reports a negative scroll when you pull past the top */
+  if (y < 0) document.documentElement.style.setProperty("--pull", Math.min(1, -y / 140).toFixed(3)); }
+if (FEEL && !REDUCED) addEventListener("scroll", () => { feelRaf ||= requestAnimationFrame(feelTick); }, { passive:true });
 /* the pages either side of this one, drawn while nothing's happening, so a swipe always
    has something beside it (and the page you land on is already there) */
 function warmBeside() { clearTimeout(warmBeside.t);
@@ -6807,12 +6850,16 @@ async function pullRefresh() {
   const PULL_ROOMS = '<g class="pr"><rect x="12" y="12" width="34" height="34" rx="14" fill="#8FD3FF"/><path d="M12.53 22.2A14 14 0 0 1 26 12H32A14 14 0 0 1 45.47 22.2Z" fill="#b1e0ff"/></g><g class="pr"><rect x="54" y="12" width="34" height="34" rx="14" fill="#FFB36B"/><path d="M54.53 22.2A14 14 0 0 1 68 12H74A14 14 0 0 1 87.47 22.2Z" fill="#ffca97"/></g><g class="pr"><rect x="12" y="54" width="34" height="34" rx="14" fill="#B9A6FF"/><path d="M12.53 64.2A14 14 0 0 1 26 54H32A14 14 0 0 1 45.47 64.2Z" fill="#cec1ff"/></g><g class="pr"><rect x="41" y="41" width="47" height="47" rx="19" fill="#c68fa6"/><rect x="41" y="41" width="37.6" height="47" rx="19" fill="#F7B3CF"/><path d="M41.64 55.1A19 19 0 0 1 60 41H69A19 19 0 0 1 87.36 55.1Z" fill="#fbd5e5"/></g>';
   const chip = () => bar ||= (() => { const d = document.createElement("div");
     d.className = "pull"; d.id = "pullBar";
-    /* the logo's four rooms, switching on one at a time as you pull */
-    d.innerHTML = `<svg class="pmk" viewBox="10 10 80 80" aria-hidden="true">${PULL_ROOMS}</svg><span>Pull down</span>`;
+    /* the logo's four rooms, switching on one at a time as you pull — or, trying out the
+       new feel, your own mascot */
+    d.innerHTML = FEEL && me ? `<span class="pav" aria-hidden="true">${avSVG(avFor(me))}</span><span>Pull down</span>`
+      : `<svg class="pmk" viewBox="10 10 80 80" aria-hidden="true">${PULL_ROOMS}</svg><span>Pull down</span>`;
     document.body.appendChild(d); return d; })();
   const label = (b, t) => { b.querySelector("span").textContent = t; };
   const lamps = (b, p) => b.querySelectorAll(".pmk .pr").forEach((r, i) => r.classList.toggle("on", p >= (i + 1) / 4));
-  const off = () => { const b = chip(); b.classList.remove("on","ready","going"); b.style.removeProperty("--p"); lamps(b, 0); };
+  const root = document.documentElement;
+  const off = () => { const b = chip(); b.classList.remove("on","ready","going"); b.style.removeProperty("--p"); lamps(b, 0);
+    root.classList.remove("pulling"); root.style.setProperty("--pull", "0"); };
   addEventListener("touchstart", e => {
     if (e.touches.length !== 1 || pulling) return;
     if (e.target.closest?.(".pager")) return;           /* that's a swipe between places, not a pull */
@@ -6830,6 +6877,7 @@ async function pullRefresh() {
     live = true; const b = chip(), p = Math.min(1.34, give(dist) / TRIG);
     b.style.setProperty("--p", p.toFixed(3));
     b.classList.add("on"); b.classList.toggle("ready", p >= 1);
+    if (FEEL) { root.classList.add("pulling"); root.style.setProperty("--pull", Math.min(1, p).toFixed(3)); }
     lamps(b, p); label(b, p >= 1 ? "Let go" : "Pull down");
   }, { passive:true });
   addEventListener("touchend", async () => {
