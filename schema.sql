@@ -2293,12 +2293,13 @@ language sql stable security definer set search_path = public as $$
     select w.kind, w.title, w.year, w.cover, pub.score, pub.rated_on, pub.created_at,
            nullif(left(btrim(regexp_replace(coalesce(pub.note, ''), '\|\|.+?\|\|', '[spoiler]', 'g')), 400), '') as note
       from pub join works w on w.id = pub.work_id
-     where not pub.part
+     -- the favourites picked at sign-up are taste, not something just logged
+     where not pub.part and (pub.context->>'before') is distinct from 'true'
      order by pub.rated_on desc, pub.created_at desc limit 12
   ), counts as (
     select w.kind, count(distinct coalesce(w.parent_id, w.id))::int as n
       from pub join works w on w.id = pub.work_id
-     where pub.rated_on >= date_trunc('year', current_date)::date
+     where pub.rated_on >= date_trunc('year', current_date)::date and (pub.context->>'before') is distinct from 'true'
      group by w.kind
   )
   select json_build_object(
