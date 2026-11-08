@@ -4,7 +4,9 @@
 //   node tools/asc-listing.mjs apply    name, subtitle, description, keywords, links, category,
 //                                       age rating, price, availability, screenshots, the newest
 //                                       build and the review details (demo account included)
-//   node tools/asc-listing.mjs submit   sends version 1.0 to App Review (only when asked to)
+//   node tools/asc-listing.mjs submit   sends the version to App Review (only when asked to)
+// The version is the app's own, MARKETING_VERSION in the Xcode project: made in App Store Connect
+// if it isn't there yet, and only ever a build of that version is put on it.
 //   node tools/asc-listing.mjs resubmit swaps in a newer build: out of review, apply, back in (only when asked to)
 // Needs ASC_KEY_ID, ASC_ISSUER_ID, ASC_KEY_P8; REVIEW_EMAIL/REVIEW_PASSWORD for the demo account.
 // Not possible through the API, so done once in the website: App Privacy (the "nutrition
@@ -33,6 +35,7 @@ async function step(name, fn) { try { const r = await fn(); console.log(`✓ ${n
 
 /* ---------- what goes in, read from store/listing.md so there's one source ---------- */
 const MD = readFileSync(join(ROOT, "store/listing.md"), "utf8");
+const WANT = (readFileSync(join(ROOT, "ios/App/App.xcodeproj/project.pbxproj"), "utf8").match(/MARKETING_VERSION = ([\d.]+);/) || [])[1] || "1.0";
 const section = h => { const i = MD.indexOf("## " + h); if (i < 0) return ""; const s = MD.indexOf("\n", i) + 1, e = MD.indexOf("\n## ", s); return MD.slice(s, e < 0 ? undefined : e).trim(); };
 const firstLine = h => section(h).split("\n")[0].trim();
 const L = {
@@ -42,6 +45,8 @@ const L = {
   description:section("Description"),
   privacy:"https://dontdateleos.github.io/Rooms/privacy.html", support:"https://dontdateleos.github.io/Rooms/privacy.html",
   marketing:"https://dontdateleos.github.io/Rooms/site.html", copyright:"2026 Touring Group", contact:"joinroomsapp@gmail.com",
+  /* the first version can't have notes; every one after must */
+  whatsNew:section("What's new in this version").split("\n").filter(l => !l.startsWith("(")).join("\n").trim(),
   notes:(section("App Review Information").match(/(^> .*\n?)+/m) || [""])[0].replace(/^> ?/gm, "").trim(),
 };
 const SHOTS = readdirSync(join(ROOT, "store/screenshots")).filter(f => /^iphone-6\.9-\d+\.jpg$/.test(f)).sort((a, b) => parseInt(a.match(/(\d+)\.jpg/)[1]) - parseInt(b.match(/(\d+)\.jpg/)[1]));
@@ -52,7 +57,8 @@ async function find() {
   const infos = (await api("GET", `/v1/apps/${app.id}/appInfos`)).data || [];
   const info = infos.find(i => !/READY_FOR_DISTRIBUTION|REPLACED/.test(i.attributes.appStoreState || i.attributes.state || "")) || infos[0];
   const versions = (await api("GET", `/v1/apps/${app.id}/appStoreVersions?filter[platform]=IOS&limit=10`)).data || [];
-  const version = versions.find(v => /PREPARE_FOR_SUBMISSION|DEVELOPER_REJECTED|REJECTED|METADATA_REJECTED|WAITING_FOR_REVIEW|IN_REVIEW/.test(v.attributes.appStoreState || v.attributes.appVersionState || "")) || versions[0];
+  /* this version, never one that's already out */
+  const version = versions.find(v => v.attributes.versionString === WANT) || null;
   return { app, info, version, versions }; }
 
 async function status() {
@@ -66,10 +72,13 @@ async function status() {
   for (const b of builds) console.log(`Build ${b.attributes.version}: ${b.attributes.processingState}`); }
 
 async function apply() {
-  const { app, info } = await find(); let { version } = await find();
+  const { app } = await find(); let { version } = await find();
   console.log(`App ${app.attributes.name} (${app.id})`);
-  await step("Version 1.0 exists", async () => { if (version) return version.attributes.versionString;
-    version = (await api("POST", "/v1/appStoreVersions", { data:{ type:"appStoreVersions", attributes:{ platform:"IOS", versionString:"1.0" }, relationships:{ app:{ data:{ type:"apps", id:app.id } } } } })).data; return "made it"; });
+  const made = await step(`Version ${WANT} exists`, async () => { if (version) return `${version.attributes.versionString}, ${version.attributes.appStoreState}`;
+    version = (await api("POST", "/v1/appStoreVersions", { data:{ type:"appStoreVersions", attributes:{ platform:"IOS", versionString:WANT }, relationships:{ app:{ data:{ type:"apps", id:app.id } } } } })).data; return "made it"; });
+  if (!made) return;
+  /* a new version opens a new, editable copy of the app's info: find it again */
+  const { info } = await find();
   await step("Content rights: uses third-party content (posters and details from TMDB, IGDB, Open Library)", () =>
     api("PATCH", `/v1/apps/${app.id}`, { data:{ type:"apps", id:app.id, attributes:{ contentRightsDeclaration:"USES_THIRD_PARTY_CONTENT" } } }));
   await step("Category: Entertainment, then Social Networking", () =>
@@ -105,11 +114,19 @@ async function apply() {
   const locs = (await api("GET", `/v1/appStoreVersions/${version.id}/appStoreVersionLocalizations`)).data || [];
   for (const l of locs) {
     await step(`Description, keywords, promotional text and links (${l.attributes.locale})`, () => api("PATCH", `/v1/appStoreVersionLocalizations/${l.id}`, { data:{ type:"appStoreVersionLocalizations", id:l.id,
-      attributes:{ description:L.description, keywords:L.keywords, promotionalText:L.promo, supportUrl:L.support, marketingUrl:L.marketing } } }).then(() => `${L.description.length} characters`));
+      attributes:{ description:L.description, keywords:L.keywords, promotionalText:L.promo, supportUrl:L.support, marketingUrl:L.marketing,
+        ...(WANT !== "1.0" ? { whatsNew:L.whatsNew } : {}) } } }).then(() => `${L.description.length} characters${WANT !== "1.0" ? `, what's new ${L.whatsNew.length}` : ""}`));
     await step(`Screenshots (${l.attributes.locale})`, () => screenshots(l.id)); }
-  await step("Newest processed build attached", async () => {
-    const b = ((await api("GET", `/v1/builds?filter[app]=${app.id}&filter[processingState]=VALID&sort=-uploadedDate&limit=1`)).data || [])[0];
-    if (!b) throw new Error("no processed build yet");
+  await step(`Newest ${WANT} build attached`, async () => {
+    /* the newest build of this version; if Apple is still processing it, wait for it (up to half an hour) */
+    let b;
+    for (let i = 0; i < 60; i++) {
+      b = ((await api("GET", `/v1/builds?filter[app]=${app.id}&filter[preReleaseVersion.version]=${WANT}&sort=-uploadedDate&limit=1`)).data || [])[0];
+      if (!b) throw new Error(`no ${WANT} build uploaded yet`);
+      if (b.attributes.processingState === "VALID") break;
+      if (/FAILED|INVALID/.test(b.attributes.processingState)) throw new Error(`build ${b.attributes.version} is ${b.attributes.processingState}`);
+      if (i === 59) throw new Error(`build ${b.attributes.version} still ${b.attributes.processingState} after 30 minutes`);
+      console.log(`  build ${b.attributes.version} is ${b.attributes.processingState}, waiting…`); await new Promise(r => setTimeout(r, 30000)); }
     await api("PATCH", `/v1/appStoreVersions/${version.id}/relationships/build`, { data:{ type:"builds", id:b.id } }); return `build ${b.attributes.version}`; });
   await step("Free, in every country", () => price(app.id));
   await step("Available in every country", () => availability(app.id));
@@ -164,6 +181,8 @@ async function availability(appId) {
 
 async function submit() {
   const { app, version } = await find();
+  if (!version) throw new Error(`there's no version ${WANT} in App Store Connect yet: run apply first`);
+  if (/READY_FOR_SALE|READY_FOR_DISTRIBUTION|WAITING_FOR_REVIEW|IN_REVIEW/.test(version.attributes.appStoreState)) { console.log(`Version ${WANT} is already ${version.attributes.appStoreState}.`); return; }
   /* a version can be in only one open submission: if one already holds it (say after a build was
      refused), send that one again; otherwise reuse an empty unsent one, or make one */
   const subs = (await api("GET", `/v1/reviewSubmissions?filter[app]=${app.id}&filter[platform]=IOS&limit=20`)).data || [];
@@ -226,5 +245,7 @@ async function resubmit() {
   if (failed) throw new Error("something in the listing didn't save, so it wasn't sent to review");
   await submit(); console.log(`(with build ${newest.attributes.version})`); }
 
+/* fill everything in, then send it, but only if everything saved */
+async function applyAndSubmit() { await apply(); if (failed) throw new Error("something in the listing didn't save, so it wasn't sent to review"); await submit(); }
 const mode = process.argv[2] || "status";
-({ status, apply, submit, resubmit })[mode]?.().catch(e => { console.error(e.message); process.exit(1); }).then(() => { if (failed) process.exitCode = 1; });
+({ status, apply, submit, resubmit, "apply-submit":applyAndSubmit })[mode]?.().catch(e => { console.error(e.message); process.exit(1); }).then(() => { if (failed) process.exitCode = 1; });

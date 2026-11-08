@@ -57,7 +57,15 @@ Five Clues: a new puzzle every day. Guess the film, show, book or game in as few
 
 Party games for your room: Fake Blurb, Bad Pitch, Title Mash, Who Rated It? and Hot Take Court. Everyone plays on their own phone, in their own time.
 
-Also: Five Clues on your home-screen widget, a simpler way to say what you loved, quicker ranking, and new tab icons.
+Rooms Wrapped: your year in films, shows, books and games, with cards to share. Arrives on 1 December.
+
+Where you saw it: tag the cinema, bookshop or library and rate it, and see the best ones everyone's found.
+
+How it felt: tag a log with a mood or two, and say where you watched or played it.
+
+A Feed for your people: the bubbles at the top are just the people you follow and your rooms, their logs come first, then the most liked from everyone.
+
+Also: bigger cards on every page, posters that deal out and move as you scroll, new mascot shapes and eyes, read-alongs for your room, this week's new episodes, heads-ups before you watch, a public profile page if you want one, a log out button, and a lot of fixes.
 
 ## Screenshots
 `store/screenshots/iphone-6.9-1.jpg` to `-8.jpg`, 1320×2868: drop all eight into the **6.9" Display**
