@@ -2,486 +2,335 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#1F4FE0">
-<title>Rooms — every room you've ever been in</title>
-<meta name="description" content="Rooms is a log for film, TV, books and games — and the friends you argue with about them. Rate it, say what you loved, find your taste twins.">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23FFF7EC'/%3E%3Cg transform='translate%2850 50%29 scale%28.8%29 translate%28-50 -50%29'%3E%3Crect x='12' y='12' width='34' height='34' rx='14' fill='%2352758e'/%3E%3Crect x='54' y='12' width='34' height='34' rx='14' fill='%238c6442'/%3E%3Crect x='12' y='54' width='34' height='34' rx='14' fill='%23685d8e'/%3E%3Crect x='41' y='41' width='47' height='47' rx='19' fill='%23c68fa6'/%3E%3Crect x='41' y='41' width='37.6' height='47' rx='19' fill='%23F7B3CF'/%3E%3Cpath d='M41.64 55.1A19 19 0 0 1 60 41H69A19 19 0 0 1 87.36 55.1Z' fill='%23fbd5e5'/%3E%3Cg fill='%23151320'%3E%3Crect x='49.46' y='60.97' width='6.7' height='14.99' rx='3.35'/%3E%3Crect x='62.39' y='61.35' width='6.7' height='14.99' rx='3.35'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#16131C">
+<title>Rooms: watch, read and play together</title>
+<meta name="description" content="Log films, shows, books and games with the few people whose taste you trust. Five Clues every day, party games for your room, and stacks of what you love.">
+<meta property="og:title" content="Rooms: watch, read and play together">
+<meta property="og:description" content="Log films, shows, books and games with your people. Five Clues every day, party games, and stacks of what you love.">
+<meta property="og:image" content="https://dontdateleos.github.io/Rooms/icons/og.png">
+<link rel="icon" href="icons/rooms-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-:root{--blue:#1F4FE0;--ink:#151320;--cream:#FFF7EC;--cream2:#FDEFDD;--apricot:#FFB36B;--pink:#F5A3C7;--butter:#FFE86A;--mint:#9EF0C9;--sky:#8FD3FF;--lilac:#B9A6FF;--mute:#7A7590;--line:#EFE6D8}
-*{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth;overflow-x:clip}
-body{overflow-x:clip}
-.hero > .wrap{overflow-x:clip}
-body{background:var(--cream);color:var(--ink);font-family:Inter,system-ui,sans-serif;font-size:17px;line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:hidden}
-a{color:inherit;text-decoration:none}
-.wrap{max-width:1240px;margin:0 auto;padding:0 32px;position:relative}
-h1,h2,h3{font-family:Outfit,sans-serif;font-weight:900;letter-spacing:-.035em;line-height:.96}
-.btn{display:inline-flex;align-items:center;gap:8px;font-family:Outfit,sans-serif;font-weight:800;font-size:16px;padding:14px 22px;border-radius:999px;background:var(--ink);color:#fff;transition:transform .15s}
+/* the app's own palette and type: Outfit for titles, Inter for reading */
+:root{--ground:#16131C;--card:#221E2D;--ink:#F4EDE2;--mute:#A099B4;--on:#151320;--paper:#FFF7EC;
+  --apricot:#FFB36B;--pink:#F5A3C7;--butter:#FFE86A;--mint:#9EF0C9;--sky:#8FD3FF;--lilac:#B99CFF;
+  --head:Outfit,"Avenir Next",system-ui,sans-serif;--body:Inter,system-ui,sans-serif;color-scheme:dark}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--ground);color:var(--ink);font:400 17px/1.55 var(--body);-webkit-font-smoothing:antialiased;overflow-x:clip}
+a{color:inherit}
+.wrap{max-width:1080px;margin:0 auto;padding-left:max(20px,env(safe-area-inset-left));padding-right:max(20px,env(safe-area-inset-right))}
+h1,h2,h3{font-family:var(--head);font-weight:900;letter-spacing:-.035em;line-height:1;margin:0;text-wrap:balance}
+p{margin:0}
+/* the block in a title, as in the app: part of the word in its own colour, tipped a little */
+.mk{display:inline-block;background:var(--c,var(--butter));color:var(--on);border-radius:var(--rad,.16em);padding:.03em .08em .06em;margin:0 .02em;rotate:var(--r,0deg);line-height:.95}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;font:800 16px var(--head);padding:14px 22px;border-radius:999px;background:var(--paper);color:var(--on);text-decoration:none;border:0;cursor:pointer;transition:transform .15s}
 .btn:hover{transform:translateY(-2px)}
-.btn.w{background:#fff;color:var(--blue)}
-.btn.o{background:transparent;color:#fff;border:2px solid #fff}
-.btn.soft{background:var(--butter);color:var(--ink)}
-.hl{padding:0 .14em;border-radius:14px;display:inline-block;line-height:1.05}
-.tag{font-family:Outfit,sans-serif;font-weight:800;font-size:12px;letter-spacing:.06em;text-transform:uppercase;padding:6px 11px;border-radius:999px;display:inline-block}
-.mono{font-family:Inter,sans-serif;font-weight:700;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--mute)}
+.btn.dark{background:var(--on);color:var(--paper)}
+.btn.line{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 2px rgba(244,237,226,.35)}
+.btn svg{width:18px;height:18px;flex:none}
+.btn:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid var(--butter);outline-offset:3px}
 
-/* nav */
-nav{position:sticky;top:0;z-index:20;background:rgba(255,247,236,.86);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
-nav .wrap{display:flex;align-items:center;justify-content:space-between;height:70px}
-.logo{display:flex;align-items:center;gap:10px;font-family:Outfit,sans-serif;font-weight:900;font-size:24px;letter-spacing:-.03em}
-.logo .mark{width:34px;height:34px;display:block;flex:none}
-.logo .mark .off{opacity:.7}
-nav ul{display:flex;gap:26px;list-style:none;font-weight:600;font-size:14.5px;color:#4E4A60}
-nav ul a:hover{color:var(--ink)}
-.navr{display:flex;gap:10px}
-.navr .btn{padding:10px 16px;font-size:14px}
-.navr .btn.ghost{background:transparent;color:var(--ink);border:2px solid var(--ink)}
-@media(max-width:900px){nav ul,.navr .ghost{display:none}}
+/* top bar */
+.top{position:sticky;top:0;z-index:10;background:rgba(22,19,28,.82);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);padding-top:env(safe-area-inset-top)}
+.top .wrap{display:flex;align-items:center;justify-content:space-between;height:62px}
+.logo{display:flex;align-items:center;gap:10px;font:900 22px var(--head);letter-spacing:-.03em;text-decoration:none}
+.logo svg{width:32px;height:32px}
+.top .btn{padding:9px 16px;font-size:14px}
 
-/* hero: the cream field, with the solids drifting through it */
-.hero{position:relative;min-height:calc(100vh - 70px);display:flex;align-items:center;overflow:hidden;background:var(--cream)}
-#drift{position:absolute;inset:0;width:100%;height:100%;z-index:1}
-.hero > .wrap{width:100%}
-.hero .block{position:relative;z-index:3;padding:80px 0;max-width:640px}
-.hero .block:before{content:"";position:absolute;left:-40px;right:-140px;top:-40px;bottom:-40px;z-index:-1;
-  background:radial-gradient(120% 100% at 0% 50%, rgba(255,247,236,.97) 40%, rgba(255,247,236,.7) 70%, rgba(255,247,236,0) 100%)}
-@media(max-width:940px){.hero .block:before{left:-20px;right:-20px;
-  background:linear-gradient(180deg, rgba(255,247,236,.9), rgba(255,247,236,.72) 70%, rgba(255,247,236,.55))}}
-.hero .block .tag{align-self:flex-start}
-.hero h1{font-size:clamp(56px,7.2vw,112px)}
-.hero p{font-size:19px;font-weight:500;color:#4E4A60;max-width:42ch;margin-top:22px}
-.hero .cta{display:flex;gap:12px;margin-top:28px;flex-wrap:wrap}
-.hero .facts{display:flex;gap:18px;flex-wrap:wrap;margin-top:34px;font-weight:700;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--mute)}
-.hero .side{display:none}
-.tiles{display:grid;grid-template-columns:1fr 1fr;gap:16px;width:100%;max-width:520px}
-.tile{border-radius:24px;padding:22px;min-height:180px;display:flex;flex-direction:column;justify-content:space-between;color:var(--ink);transform:rotate(var(--r,0deg));transition:transform .25s;box-shadow:0 18px 40px -28px rgba(21,19,32,.5)}
-.tile:hover{transform:rotate(0) translateY(-6px)}
-.tile b{font-family:Outfit,sans-serif;font-weight:900;font-size:24px;letter-spacing:-.03em;line-height:1}
-.tile span{display:block;font-weight:700;font-size:12px;letter-spacing:.06em;text-transform:uppercase;opacity:.7;margin-bottom:6px}
-.tile .cnt{font-family:Outfit,sans-serif;font-weight:800;font-size:13px;background:rgba(255,255,255,.55);padding:5px 10px;border-radius:999px;align-self:flex-start}
-@media(max-width:940px){.hero{min-height:0}.hero .block{padding:56px 0}}
-@media(prefers-reduced-motion:reduce){#drift{opacity:.9}}
+/* hero */
+.hero{padding:34px 0 10px}
+.eyebrow{font:800 12.5px var(--head);letter-spacing:.09em;text-transform:uppercase;color:var(--mute)}
+.eyebrow i{display:inline-block;width:7px;height:7px;border-radius:50%;margin:0 6px 1px 0;vertical-align:middle}
+.hero h1{font-size:clamp(46px,12vw,92px);margin:14px 0 16px}
+.hero .lede{font-size:clamp(17px,2.2vw,20px);color:#D9D2C6;max-width:34ch}
+.cta{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
+.cta small{flex-basis:100%;color:var(--mute);font-size:13px}
+/* the screens: a row you can swipe on a phone */
+.shots{display:flex;gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;padding:30px max(20px,env(safe-area-inset-left)) 18px;margin:0 auto;max-width:1120px;scrollbar-width:none}
+.shots::-webkit-scrollbar{display:none}
+.shot{flex:none;width:min(62vw,250px);scroll-snap-align:center;text-align:center}
+.shot img{width:100%;border-radius:28px;display:block;box-shadow:0 0 0 6px #2C2738,0 24px 50px rgba(0,0,0,.45);rotate:var(--r,0deg);background:#000}
+.shot span{display:block;margin-top:16px;font:800 14px var(--head);color:var(--mute)}
+.shot:nth-child(1){--r:-2deg}.shot:nth-child(2){--r:1.5deg}.shot:nth-child(3){--r:-1deg}.shot:nth-child(4){--r:2deg}.shot:nth-child(5){--r:-1.5deg}
 
-/* sections */
-section{padding:100px 0}
-.sec-h{max-width:780px}
-.sec-h h2{font-size:clamp(40px,5.2vw,74px)}
-.lede{font-size:18px;font-weight:500;color:#4E4A60;max-width:58ch;margin-top:22px}
-.split{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:center;margin-top:52px}
-.split.rev>.card{order:-1}
-@media(max-width:940px){.split{grid-template-columns:1fr}.split.rev>.card{order:0}}
-.feat{list-style:none;display:grid;gap:22px}
-.feat li{display:grid;grid-template-columns:52px 1fr;gap:16px;align-items:start}
-.feat .ic{width:52px;height:52px;border-radius:16px;display:grid;place-items:center;font-family:Outfit,sans-serif;font-weight:900;font-size:18px}
-.feat b{font-family:Outfit,sans-serif;font-weight:800;font-size:19px;display:block;letter-spacing:-.02em}
-.feat p{color:#4E4A60;font-size:15.5px;margin-top:4px}
-.card{background:#fff;border-radius:26px;padding:22px;box-shadow:0 30px 60px -40px rgba(21,19,32,.4)}
-.card .h{display:flex;justify-content:space-between;align-items:center;font-family:Outfit,sans-serif;font-weight:900;font-size:18px;padding-bottom:14px;border-bottom:2px solid var(--line);margin-bottom:6px}
-.row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--line)}
-.row:last-child{border-bottom:0}
-.row .t b{display:block;font-family:Outfit,sans-serif;font-weight:800;font-size:17px;letter-spacing:-.01em}
-.row .t small{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12px;font-weight:600;color:var(--mute);margin-top:4px}
-.row .n{font-family:Outfit,sans-serif;font-weight:900;font-size:28px;letter-spacing:-.04em}
-.hi{color:#1E9E6A}.lo{color:#E0407F}
-.bar{display:grid;grid-template-columns:120px 1fr 40px;gap:12px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line)}
-.bar:last-child{border-bottom:0}
-.bar .n{font-weight:700;font-size:14px}
-.bar .tr{height:12px;border-radius:99px;background:var(--cream2);overflow:hidden;display:flex;gap:2px}
-.bar .tr i{display:block;height:100%}
-.bar .p{font-weight:800;font-size:12px;text-align:right;color:var(--mute)}
-.say{font-family:Outfit,sans-serif;font-weight:900;font-size:26px;letter-spacing:-.03em;line-height:1.1;margin-bottom:14px}
-.chips{display:flex;gap:6px;flex-wrap:wrap}
-.chip{font-weight:700;font-size:13px;border:2px solid var(--line);padding:6px 11px;border-radius:999px}
-.chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
-.stars{display:flex;gap:4px}
-.stars i{width:16px;height:16px;display:block;background:var(--ink);clip-path:polygon(50% 2%,62% 36%,98% 38%,70% 60%,80% 96%,50% 76%,20% 96%,30% 60%,2% 38%,38% 36%)}
-.stars i.off{background:var(--line)}
-.talk{background:var(--cream);border-radius:18px;padding:14px 16px;margin-top:14px}
-.talk .who{font-size:12px;font-weight:700;color:var(--mute);display:flex;gap:8px;align-items:center}
-.talk .q{font-weight:600;font-size:15px;margin-top:8px}
-.talk .re{margin-top:10px;padding-left:12px;border-left:3px solid var(--pink);font-size:14px;color:#4E4A60}
-.talk .re b{color:var(--ink)}
-.av{width:32px;height:32px;flex:none;display:inline-block;vertical-align:middle}
-.av svg{width:100%;height:100%;display:block}
-.match{font-family:Outfit,sans-serif;font-weight:900;font-size:22px;display:inline-flex;align-items:baseline;gap:6px}
-.match small{font-size:11px;font-weight:700;color:var(--mute);letter-spacing:.06em;text-transform:uppercase}
-.trio{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:10px 0 14px;border-bottom:2px solid var(--line)}
-.trio b{font-family:Outfit,sans-serif;font-weight:900;font-size:40px;letter-spacing:-.04em;display:block;line-height:1}
-.trio span{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--mute);display:block;margin-top:6px}
+/* the coloured blocks */
+.blocks{display:grid;gap:14px;padding:26px 0 10px}
+@media (min-width:820px){ .blocks{grid-template-columns:1fr 1fr} .blocks .wide{grid-column:1/-1} }
+.block{background:var(--c);color:var(--on);border-radius:28px;padding:26px 22px 24px;position:relative;overflow:hidden;display:grid;gap:12px;align-content:start}
+.block::before{content:"\201C";position:absolute;right:16px;bottom:-104px;font:900 190px/1 var(--head);opacity:.12;pointer-events:none}
+.block>*{position:relative}
+.block .label{font:800 12.5px var(--head);letter-spacing:.09em;text-transform:uppercase;opacity:.7}
+.block h2{font-size:clamp(30px,6vw,44px)}
+.block p{font-size:16.5px;max-width:46ch}
+.block .mk{--c:var(--paper)}
+.tiles{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+.tiles span{background:var(--paper);color:var(--on);font:900 14px var(--head);letter-spacing:-.01em;padding:9px 12px;border-radius:12px;box-shadow:0 6px 14px rgba(21,19,32,.14)}
+.tiles span:nth-child(odd){rotate:-1.5deg}.tiles span:nth-child(even){rotate:1.2deg}
+.dots{display:flex;gap:6px;margin:2px 0}
+.dots i{width:30px;height:9px;border-radius:99px;background:rgba(21,19,32,.18)}
+.dots i:first-child{background:var(--on)}
+.block .btn{justify-self:start;margin-top:4px}
 
-.dark{background:var(--ink);color:var(--cream)}
-.dark .lede{color:#C9C3D6}
-.dark .feat p{color:#C9C3D6}
-.dark .card{background:#23202F;color:var(--cream);box-shadow:none}
-.dark .card .h,.dark .row,.dark .bar,.dark .trio{border-color:#3A3650}
-.dark .row .t small,.dark .bar .p,.dark .trio span{color:#A9A3BC}
-.dark .bar .tr{background:#3A3650}
-.dark .talk{background:#2C2838}
-.dark .talk .re{color:#C9C3D6}.dark .talk .re b{color:var(--cream)}
-.dark .chip{border-color:#3A3650}.dark .chip.on{background:var(--cream);color:var(--ink);border-color:var(--cream)}
-.dark .stars i{background:var(--butter)}.dark .stars i.off{background:#3A3650}
+/* the newsletter */
+.news{margin:14px 0 0}
+.news form{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.news input{flex:1 1 220px;min-width:0;font:500 16px var(--body);padding:14px 18px;border-radius:999px;border:0;background:var(--paper);color:var(--on)}
+.news .msg{font-size:14px;font-weight:600;min-height:1.4em}
 
-/* charts */
-.charts{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:56px}
-.charts .col{border-radius:22px;padding:18px}
-.charts .col .h{display:flex;justify-content:space-between;align-items:center;font-family:Outfit,sans-serif;font-weight:900;font-size:16px;margin-bottom:8px}
-.charts .r{display:flex;justify-content:space-between;gap:8px;padding:9px 0;border-top:1px solid rgba(21,19,32,.12);font-weight:700;font-size:14px}
-.charts .r span{font-size:12px;font-weight:700;opacity:.7;white-space:nowrap}
-@media(max-width:900px){.charts{grid-template-columns:1fr 1fr}}
+footer{padding:40px 0 calc(40px + env(safe-area-inset-bottom));color:var(--mute);font-size:14px}
+footer .wrap{display:flex;flex-wrap:wrap;gap:12px 22px;align-items:center}
+footer a{text-decoration:none}footer a:hover{color:var(--ink)}
+footer .who{flex-basis:100%}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.btn{transition:none}}
 
-/* steps */
-.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:52px}
-.step{border-radius:24px;padding:28px;min-height:220px;display:flex;flex-direction:column;justify-content:space-between}
-.step .no{font-family:Outfit,sans-serif;font-weight:900;font-size:40px;letter-spacing:-.04em;line-height:1}
-.step .tag{margin-top:18px}
-.step h3{font-size:22px;margin-top:14px}
-.step p{font-size:15px;font-weight:500;margin-top:8px;opacity:.85}
-@media(max-width:820px){.steps{grid-template-columns:1fr}}
-
-/* faq */
-.faq{max-width:820px;margin-top:48px;display:grid;gap:10px}
-.faq details{background:#fff;border-radius:18px;padding:18px 22px}
-.faq summary{font-family:Outfit,sans-serif;font-weight:800;font-size:19px;cursor:pointer;list-style:none;display:flex;justify-content:space-between;gap:20px}
-.faq summary:after{content:"+";color:var(--mute);font-size:24px;line-height:1}
-.faq details[open] summary:after{content:"–"}
-.faq p{margin-top:10px;color:#4E4A60;font-size:16px;max-width:66ch}
-
-/* closer + footer */
-.closer{background:var(--blue);color:#fff;padding:120px 0;text-align:center;position:relative;overflow:hidden}
-.closer h2{font-size:clamp(48px,7vw,104px);max-width:none}
-.closer p{color:#D6DFFF;font-size:18px;font-weight:500;margin:16px auto 0;max-width:46ch}
-.closer .cta{display:flex;gap:12px;justify-content:center;margin-top:32px;flex-wrap:wrap}
-.closer .blob{position:absolute;width:280px;height:280px;border-radius:40% 60% 55% 45%/50% 45% 55% 50%;opacity:.9}
-footer{padding:40px 0 64px}
-footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;align-items:center}
-footer ul{display:flex;gap:22px;list-style:none;font-weight:600;font-size:14px;color:#4E4A60}
+/* ---------- life ---------- */
+/* posters: a real cover when we have one, a coloured card with the title while we don't */
+.po{flex:none;width:96px;aspect-ratio:2/3;border-radius:12px;background:var(--c,#2C2738) center/cover no-repeat;color:var(--on);
+  display:flex;align-items:flex-end;padding:8px;font:900 12px/1.1 var(--head);letter-spacing:-.01em;overflow:hidden;box-shadow:0 10px 24px rgba(0,0,0,.35)}
+.po.img{color:transparent}
+.po.img span{display:none}
+/* two rows of what people are watching, reading and playing, sliding opposite ways */
+.reel{margin:30px 0 0;overflow:hidden;display:grid;gap:12px;rotate:-4deg;padding:14px 0;
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent);mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent)}
+.reel .row{display:flex;gap:12px;width:max-content;animation:marq 70s linear infinite}
+.reel .row.r2{animation-duration:84s;animation-direction:reverse}
+.reel .row .po:nth-child(3n){translate:0 -6px}.reel .row .po:nth-child(3n+1){translate:0 5px}
+@keyframes marq{to{transform:translateX(-50%)}}
+.reel-note{text-align:center;color:var(--mute);font-size:13px;margin:6px 0 0}
+/* the headline's block lands with a bounce */
+.hero h1 .mk{animation:pop .9s cubic-bezier(.3,1.6,.5,1) .25s both}
+@keyframes pop{from{transform:scale(.4) rotate(-12deg);opacity:0}to{transform:none;opacity:1}}
+/* the logo's little guy blinks */
+.logo svg .eye{transform-box:fill-box;transform-origin:center;animation:blink 5s infinite}
+@keyframes blink{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.15)}}
+/* things rise into place as you reach them (only once the page knows it can do this) */
+.js .rv{transition:opacity .7s ease,transform .8s cubic-bezier(.2,.9,.25,1)}
+.js .rv.pre{opacity:0;transform:translateY(34px) rotate(var(--rr,0deg))}
+.blocks .block:nth-child(odd){--rr:-1.5deg}.blocks .block:nth-child(even){--rr:1.5deg}
+/* Five Clues: the clues turn over one by one, and the dots keep count */
+.ticker{background:var(--paper);color:var(--on);border-radius:16px;padding:13px 16px;font:800 18px/1.3 var(--head);letter-spacing:-.01em;
+  min-height:3.4em;display:flex;align-items:center;gap:12px;box-shadow:0 8px 18px rgba(21,19,32,.14);rotate:-.8deg}
+.ticker b{flex:none;width:28px;height:28px;border-radius:50%;background:var(--sky);display:grid;place-items:center;font-size:14px}
+.ticker span{transition:opacity .35s,transform .35s}
+.ticker span.out{opacity:0;transform:translateY(8px)}
+.dots i{transition:background .3s}
+.dots i.on{background:var(--on)}
+/* Rooms: a little room talking */
+.chat{display:grid;gap:8px;margin-top:2px}
+.say{display:flex;align-items:flex-end;gap:8px;opacity:0;transform:translateY(10px) scale(.96);transition:opacity .4s,transform .45s cubic-bezier(.3,1.4,.5,1)}
+.say.on{opacity:1;transform:none}
+.say:nth-child(even){flex-direction:row-reverse}
+.face{flex:none;width:34px;height:34px;border-radius:12px;background:var(--f);position:relative;box-shadow:inset 0 -5px 0 rgba(21,19,32,.12)}
+.face::before,.face::after{content:"";position:absolute;top:10px;width:5px;height:12px;border-radius:3px;background:var(--on)}
+.face::before{left:10px}.face::after{left:19px}
+.bub{background:var(--paper);color:var(--on);border-radius:16px 16px 16px 4px;padding:9px 13px;font-weight:600;font-size:15px;max-width:80%}
+.say:nth-child(even) .bub{border-radius:16px 16px 4px 16px}
+/* party games bob about */
+.tiles span{animation:bob 3.2s ease-in-out infinite}
+.tiles span:nth-child(2){animation-delay:-.6s}.tiles span:nth-child(3){animation-delay:-1.3s}.tiles span:nth-child(4){animation-delay:-2s}.tiles span:nth-child(5){animation-delay:-2.6s}
+@keyframes bob{50%{translate:0 -5px}}
+/* Stacks: a stack that fans out when you reach it */
+.fan{display:flex;height:150px;align-items:flex-end;padding-left:8px;margin-top:4px}
+.fan .po{width:84px;margin-right:-44px;transition:transform .9s cubic-bezier(.2,1.3,.4,1),margin .9s cubic-bezier(.2,1.3,.4,1)}
+.fan.open .po{margin-right:-22px}
+.fan.open .po:nth-child(1){transform:rotate(-9deg) translateY(6px)}.fan.open .po:nth-child(2){transform:rotate(-3deg) translateY(-6px)}
+.fan.open .po:nth-child(3){transform:rotate(3deg) translateY(-8px)}.fan.open .po:nth-child(4){transform:rotate(9deg) translateY(4px)}.fan.open .po:nth-child(5){transform:rotate(14deg) translateY(12px)}
+/* Queue: the picker deals one out */
+.picker{display:flex;align-items:center;gap:16px;margin-top:2px}
+.picker .po{width:92px;transition:transform .5s cubic-bezier(.3,1.4,.5,1),opacity .25s}
+.picker .po.flip{transform:rotateY(90deg) scale(.9);opacity:.2}
+.picker .lbl{font:900 20px/1.1 var(--head);letter-spacing:-.02em}
+.picker .lbl small{display:block;font:600 13px var(--body);opacity:.7;margin-top:4px}
+.dice{display:inline-grid;place-items:center;width:44px;height:44px;border-radius:14px;background:var(--on);color:var(--paper);animation:shake 2.4s ease-in-out infinite}
+.dice svg{width:22px;height:22px}
+@keyframes shake{0%,70%,100%{rotate:0deg}75%{rotate:-14deg}82%{rotate:12deg}89%{rotate:-6deg}}
+.shots .shot img{transition:transform .5s}
+.shots .shot:hover img{transform:translateY(-6px)}
+footer .tmdb{flex-basis:100%;font-size:12px}
+@media (prefers-reduced-motion:reduce){
+  .reel .row,.tiles span,.dice,.logo svg .eye,.hero h1 .mk{animation:none}
+  .js .rv.pre{opacity:1;transform:none}.say{opacity:1;transform:none}.picker .po{transition:none}}
 </style>
 </head>
 <body>
+<header class="top"><div class="wrap">
+  <a class="logo" href="#" aria-label="Rooms">
+    <svg viewBox="0 0 80 80" aria-hidden="true"><rect x="12" y="12" width="26" height="26" rx="10" fill="#52758e"/><rect x="42" y="12" width="26" height="26" rx="10" fill="#8c6442"/><rect x="12" y="42" width="26" height="26" rx="10" fill="#685d8e"/><rect x="38" y="38" width="34" height="34" rx="13" fill="#F7B3CF"/><rect class="eye" x="47" y="49" width="5" height="12" rx="2.5" fill="#151320"/><rect class="eye" x="57" y="49" width="5" height="12" rx="2.5" fill="#151320"/></svg>
+    Rooms</a>
+  <a class="btn" href="index.html">Open Rooms</a>
+</div></header>
 
-<nav>
-  <div class="wrap">
-    <a class="logo" href="#top"><svg class="mark" viewBox="10 10 80 80" aria-hidden="true"><rect x="12" y="12" width="34" height="34" rx="14" fill="#6798b8"/><rect x="54" y="12" width="34" height="34" rx="14" fill="#cc8f56"/><rect x="12" y="54" width="34" height="34" rx="14" fill="#9485cc"/><rect x="41" y="41" width="47" height="47" rx="19" fill="#F7B3CF"/><path d="M41.64 55.1A19 19 0 0 1 60 41H69A19 19 0 0 1 87.36 55.1Z" fill="#fbd6e5"/><g fill="#151320"><rect x="49.46" y="60.97" width="6.7" height="14.99" rx="3.35"/><rect x="62.39" y="61.35" width="6.7" height="14.99" rx="3.35"/></g></svg>Rooms</a>
-    <ul><li><a href="#rooms">The rooms</a></li><li><a href="#log">The log</a></li><li><a href="#yours">Your room</a></li><li><a href="#hall">The hall</a></li><li><a href="#clubs">Clubs</a></li></ul>
-    <div class="navr"><a class="btn ghost" href="#">Sign in</a><a class="btn" href="#start">Open a room</a></div>
+<main>
+  <section class="hero"><div class="wrap">
+    <p class="eyebrow"><i style="background:var(--apricot)"></i>Films <i style="background:var(--pink)"></i>TV <i style="background:var(--butter)"></i>Books <i style="background:var(--mint)"></i>Games</p>
+    <h1>Watch, read and <span class="mk" style="--c:var(--mint);--r:-3deg;--rad:.2em">play</span> together.</h1>
+    <p class="lede">Log what you finish with the few people whose taste you trust. Rate it, say what you loved, and argue about it in your room.</p>
+    <div class="cta">
+      <a class="btn" href="https://apps.apple.com/app/id6829551215"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.4 12.6c0-2.4 2-3.6 2.1-3.7-1.2-1.7-3-1.9-3.6-2-1.5-.2-3 .9-3.8.9-.8 0-2-.9-3.3-.9-1.7 0-3.3 1-4.2 2.6-1.8 3.1-.5 7.7 1.3 10.2.9 1.2 1.9 2.6 3.2 2.6 1.3-.1 1.8-.8 3.3-.8s2 .8 3.3.8c1.4 0 2.2-1.2 3.1-2.5 1-1.4 1.4-2.8 1.4-2.9-.1 0-2.8-1.1-2.8-4.3zM13.9 5.2c.7-.8 1.2-2 1-3.2-1 0-2.2.7-3 1.5-.6.7-1.2 1.9-1.1 3.1 1.2.1 2.3-.6 3.1-1.4z"/></svg>Get it on the App Store</a>
+      <a class="btn line" href="index.html">Use it in your browser</a>
+      <small>Free. No ads. Nothing sold.</small>
+    </div>
+  </div></section>
+
+  <div class="reel" aria-hidden="true"><div class="row r1" id="r1"></div><div class="row r2" id="r2"></div></div>
+  <p class="reel-note" id="reelNote">What people are watching, reading and playing this week</p>
+
+  <div class="shots rv" aria-label="Screens from the app">
+    <figure class="shot" style="margin:0"><img src="site/room.jpg" alt="A room: who's in, what they're on, and last week's logs" loading="eager" width="330" height="715"><span>Your room</span></figure>
+    <figure class="shot" style="margin:0"><img src="site/play.jpg" alt="The room's Play card: Five Clues, the weekly prompt, party games and the bracket" loading="lazy" width="330" height="715"><span>Games for the room</span></figure>
+    <figure class="shot" style="margin:0"><img src="site/stacks.jpg" alt="Stacks: themed lists of films, shows, books and games" loading="lazy" width="330" height="715"><span>Stacks</span></figure>
+    <figure class="shot" style="margin:0"><img src="site/feed.jpg" alt="The feed, with today's Five Clues at the top" loading="lazy" width="330" height="715"><span>Five Clues, daily</span></figure>
+    <figure class="shot" style="margin:0"><img src="site/diary.jpg" alt="Your diary of everything you've finished" loading="lazy" width="330" height="715"><span>Your diary</span></figure>
   </div>
-</nav>
 
-<main id="top">
-<div class="hero">
-  <canvas id="drift" aria-hidden="true"></canvas>
-  <div class="wrap"><div class="block">
-    <span class="tag" style="background:var(--butter);color:var(--ink)">Film · TV · Books · Games</span>
-    <h1 style="margin-top:22px">Every<br>room<br>you've<br>been in.</h1>
-    <p>Rooms is a log for film, TV, books and games — and the friends you argue with about them. Rate it, say what you loved, find your taste twins.</p>
-    <div class="cta"><a class="btn" href="#start">Open a room</a><a class="btn soft" href="#rooms">Walk through</a></div>
-    <div class="facts"><span>Free</span><span>No app store</span><span>Your entries are yours</span></div>
-  </div></div>
-  <div class="side">
-    <div class="tiles">
-      <div class="tile" style="background:var(--apricot);--r:-2deg"><span class="cnt">140 logged</span><div><span>Film</span><b>Film</b></div></div>
-      <div class="tile" style="background:var(--pink);--r:1.5deg"><span class="cnt">61 logged</span><div><span>TV</span><b>TV</b></div></div>
-      <div class="tile" style="background:var(--butter);--r:1deg"><span class="cnt">72 logged</span><div><span>Books</span><b>Books</b></div></div>
-      <div class="tile" style="background:var(--mint);--r:-1.5deg"><span class="cnt">39 logged</span><div><span>Games</span><b>Games</b></div></div>
-    </div>
-  </div>
-</div>
-
-<!-- the rooms -->
-<section id="rooms">
   <div class="wrap">
-    <div class="sec-h">
-      <span class="tag" style="background:var(--apricot)">01 · The rooms</span>
-      <h2 style="margin-top:18px">A room for <span class="hl" style="background:var(--butter)">each thing</span> you love.</h2>
-      <p class="lede">Every medium has its own words. A film asks about the cut. A novel asks about the prose. A game asks about the feel. Same log, four vocabularies.</p>
-    </div>
-    <div class="split">
-      <ul class="feat">
-        <li><div class="ic" style="background:var(--apricot)">F</div><div><b>Film</b><p>The look, the cut, the score, direction, performances. Credited to the real crew.</p></div></li>
-        <li><div class="ic" style="background:var(--pink)">T</div><div><b>TV</b><p>The season arc, the cast, writing, the world. Finished it or part way.</p></div></li>
-        <li><div class="ic" style="background:var(--butter)">B</div><div><b>Books</b><p>The prose, the structure, the voice, the ideas. Paper or audio.</p></div></li>
-        <li><div class="ic" style="background:var(--mint)">G</div><div><b>Games</b><p>The feel, the mechanics, the level design, the sound. Finished it or dropped it.</p></div></li>
-      </ul>
-      <div class="card">
-        <div class="h"><span>Parasite · 2019</span><span class="tag film">Film</span></div>
-        <span class="mono">My rating</span>
-        <div class="stars" style="margin:8px 0 16px"><i></i><i></i><i></i><i></i><i></i></div>
-        <span class="mono">What you'd single out</span>
-        <div class="chips" style="margin:8px 0 6px"><span class="chip on">The look · 68%</span><span class="chip on">The ending · 61%</span><span class="chip on">Bong Joon-ho · 44%</span></div>
-        <div class="chips" style="margin:0 0 16px"><span class="chip">Writing</span><span class="chip">The cut</span><span class="chip">Song Kang-ho</span></div>
-        <p class="mono" style="margin-bottom:14px">Most singled out first · from 1,204 entries</p>
-        <span class="mono">Breakdown · four stars and up</span>
-        <div class="bar" style="margin-top:6px"><span class="n">Screenplay</span><span class="tr"><i style="width:90%;background:var(--apricot)"></i></span><span class="p">9</span></div>
-        <div class="bar"><span class="n">Direction</span><span class="tr"><i style="width:100%;background:var(--apricot)"></i></span><span class="p">10</span></div>
-        <div class="bar"><span class="n">Cinematography</span><span class="tr"><i style="width:90%;background:var(--apricot)"></i></span><span class="p">9</span></div>
-      </div>
-    </div>
-  </div>
-</section>
+    <div class="blocks">
+      <section class="block wide rv" style="--c:var(--sky)" id="clues">
+        <span class="label">Five Clues · a new one every day</span>
+        <h2>Guess today's in <span class="mk" style="--r:3deg;--rad:.14em">five</span> clues.</h2>
+        <div class="ticker" aria-live="off"><b id="tkN">1</b><span id="tk">A film from the 1990s</span></div>
+        <div class="dots" id="tkDots" aria-hidden="true"><i class="on"></i><i></i><i></i><i></i><i></i></div>
+        <p>A film, a show, a book or a game. Each clue gives away a little more. Get it on the first and you're unbearable for the rest of the day.</p>
+        <a class="btn dark" href="index.html#clues">Play today's · no sign-up</a>
+      </section>
 
-<!-- the log -->
-<section id="log" style="background:var(--cream2)">
-  <div class="wrap">
-    <div class="sec-h">
-      <span class="tag" style="background:var(--pink)">02 · The log</span>
-      <h2 style="margin-top:18px">Rate it. Then say what it <span class="hl" style="background:var(--pink)">actually</span> did.</h2>
-      <p class="lede">A star out of five is where most trackers stop. Rooms asks one more question: what would you single out? Every answer builds your taste, and your taste is your profile.</p>
-    </div>
-    <div class="steps">
-      <div class="step" style="background:#fff"><div><div class="no">01</div><h3>Tap for a half, hold for a full.</h3><p>One gesture per star. No hunting for the edge.</p></div><span class="tag" style="background:var(--butter);align-self:flex-start">30 seconds</span></div>
-      <div class="step" style="background:var(--lilac)"><div><div class="no">02</div><h3>Single out what you loved.</h3><p>The look, the prose, the feel — and real names from the credits.</p></div><span class="tag" style="background:rgba(255,255,255,.6);align-self:flex-start">10 seconds</span></div>
-      <div class="step" style="background:var(--sky)"><div><div class="no">03</div><h3>Four stars unlocks the breakdown.</h3><p>Screenplay, direction, cinematography — or prose, structure, ideas — out of ten.</p></div><span class="tag" style="background:rgba(255,255,255,.6);align-self:flex-start">If it earned it</span></div>
-    </div>
-  </div>
-</section>
-
-<!-- your room -->
-<section id="yours" class="dark">
-  <div class="wrap">
-    <div class="sec-h">
-      <span class="tag" style="background:var(--mint);color:var(--ink)">03 · Your room</span>
-      <h2 style="margin-top:18px">Small rooms. <span class="hl" style="background:var(--pink);color:var(--ink)">Real</span> arguments.</h2>
-      <p class="lede">A room is five to twenty friends and a six-character code — private, invite-only, where the talk happens. It shows what everyone rated, how much you agree, and the argument underneath.</p>
-    </div>
-    <div class="split rev">
-      <div class="card">
-        <div class="h"><span>Tuesday room</span><span class="chips"><span class="chip on">This room</span><span class="chip">Everyone</span></span></div>
-        <div class="row"><div class="t"><b>Parasite</b><small><span class="tag" style="background:var(--apricot);color:var(--ink);padding:3px 8px;font-size:10px">Film</span><span class="hi">92% agree</span>· 4 of you</small></div><span class="n">4.8</span></div>
-        <div class="row"><div class="t"><b>The Left Hand of Darkness</b><small><span class="tag" style="background:var(--butter);color:var(--ink);padding:3px 8px;font-size:10px">Book</span><span class="hi">85% agree</span>· 3 of you</small></div><span class="n">4.5</span></div>
-        <div class="row"><div class="t"><b>Elden Ring</b><small><span class="tag" style="background:var(--mint);color:var(--ink);padding:3px 8px;font-size:10px">Game</span><span class="lo">25% agree</span>· bronte 5, marcus 2</small></div><span class="n lo">3.5</span></div>
-        <div class="talk">
-          <div class="who"><span class="av" data-av="can|2|pair"></span> bronte · played · yesterday</div>
-          <div class="q">“Marcus is wrong about Elden Ring and I will die on this hill.”</div>
-          <div class="re"><b>marcus</b> you spent forty hours on a hill, I spent them on a life</div>
+      <section class="block rv" style="--c:var(--pink)">
+        <span class="label">Rooms</span>
+        <h2>Small rooms. <span class="mk" style="--r:-2deg;--rad:.22em">Real</span> arguments.</h2>
+        <div class="chat" id="chat">
+          <div class="say"><span class="face" style="--f:var(--butter)"></span><span class="bub">Five stars. No notes.</span></div>
+          <div class="say"><span class="face" style="--f:var(--sky)"></span><span class="bub">Walked out at the hour mark 🙃</span></div>
+          <div class="say"><span class="face" style="--f:var(--mint)"></span><span class="bub">Better than the book. Fight me.</span></div>
         </div>
-      </div>
-      <ul class="feat">
-        <li><div class="ic" style="background:var(--mint);color:var(--ink)">%</div><div><b>A percentage, not an average.</b><p>92% means you all saw the same film. 25% means somebody's wrong.</p></div></li>
-        <li><div class="ic" style="background:var(--pink);color:var(--ink)">“</div><div><b>Every entry is a thread.</b><p>Same, reply, read the breakdown. Nothing else.</p></div></li>
-        <li><div class="ic" style="background:var(--butter);color:var(--ink)">+</div><div><b>Bring someone in.</b><p>One tap sends the room's code through your messages. That's the whole invite system.</p></div></li>
-      </ul>
-    </div>
-  </div>
-</section>
+        <p>A room is a handful of friends. See what everyone's on, who loved it and who walked out, and where you all agree, or very much don't.</p>
+      </section>
 
-<!-- profiles -->
-<section id="profiles">
-  <div class="wrap">
-    <div class="sec-h">
-      <span class="tag" style="background:var(--lilac)">04 · Profiles</span>
-      <h2 style="margin-top:18px">Your profile is your <span class="hl" style="background:var(--lilac)">taste</span>, not a wall of posters.</h2>
-      <p class="lede">Rooms opens with a sentence — what you go for — and the bars behind it, across every medium. Every follow button carries a number: how much your taste and theirs overlap.</p>
-    </div>
-    <div class="split">
-      <ul class="feat">
-        <li><div class="ic" style="background:var(--lilac)">“</div><div><b>The sentence first.</b><p><i>Goes for the ending, the score and the world.</i> You know more about Bronte from that line than from a hundred posters.</p></div></li>
-        <li><div class="ic" style="background:var(--sky)">74</div><div><b>Taste match.</b><p>A reason to follow, not a guess. You both go for the ending; she takes the score, you take the cut.</p></div></li>
-        <li><div class="ic" style="background:var(--mint)">✦</div><div><b>Taste twins.</b><p>Strangers ranked by how close their taste is to yours. The most fun way into a network we know of.</p></div></li>
-      </ul>
-      <div class="card">
-        <div class="h"><span style="display:flex;gap:10px;align-items:center"><span class="av" data-av="can|2|pair"></span> bronte</span><span class="match">74 <small>match</small></span></div>
-        <div class="say">Goes for <span class="hl" style="background:var(--butter)">the ending</span>, the score and the world.</div>
-        <div class="bar"><span class="n">The ending</span><span class="tr"><i style="width:40%;background:var(--apricot)"></i><i style="width:30%;background:var(--butter)"></i><i style="width:20%;background:var(--mint)"></i></span><span class="p">100</span></div>
-        <div class="bar"><span class="n">The score</span><span class="tr"><i style="width:50%;background:var(--apricot)"></i><i style="width:16%;background:var(--mint)"></i></span><span class="p">66</span></div>
-        <div class="bar"><span class="n">The world</span><span class="tr"><i style="width:38%;background:var(--mint)"></i><i style="width:20%;background:var(--butter)"></i></span><span class="p">58</span></div>
-        <div class="bar"><span class="n">The look</span><span class="tr"><i style="width:44%;background:var(--apricot)"></i></span><span class="p">44</span></div>
-        <span class="mono" style="display:block;margin-top:16px">312 entries · 140 film · 61 tv · 72 book · 39 game · following 48 · followers 212</span>
-      </div>
-    </div>
-  </div>
-</section>
+      <section class="block rv" style="--c:var(--mint)">
+        <span class="label">Play</span>
+        <h2>Party games for your <span class="mk" style="--r:2deg;--rad:.16em">room</span>.</h2>
+        <div class="tiles"><span>Fake Blurb</span><span>Bad Pitch</span><span>Title Mash</span><span>Who Rated It?</span><span>Hot Take Court</span></div>
+        <p>Everyone plays on their own phone, in their own time, then the room votes. Plus a weekly prompt, a monthly bracket and watch nights.</p>
+      </section>
 
-<!-- the hall -->
-<section id="hall" style="background:var(--cream2)">
-  <div class="wrap">
-    <div class="sec-h">
-      <span class="tag" style="background:var(--sky)">05 · The hall</span>
-      <h2 style="margin-top:18px">An average is a number. This is a review written by <span class="hl" style="background:var(--sky)">everyone.</span></h2>
-      <p class="lede">Every film, series, book and game gets everyone's score, how many, how much they agree — and what people singled out. A crowd review with no sentences in it.</p>
-    </div>
-    <div class="split rev">
-      <div class="card">
-        <div class="h"><span>Outer Wilds · 2019</span><span class="tag game">Game</span></div>
-        <div class="trio"><div><b>4.6</b><span>Everyone's score</span></div><div><b>1,204</b><span>Have logged it</span></div><div><b class="hi">81%</b><span>Agree</span></div></div>
-        <span class="mono" style="display:block;margin-top:14px">What people singled out</span>
-        <div class="bar" style="margin-top:6px"><span class="n">The ending</span><span class="tr"><i style="width:68%;background:var(--mint)"></i></span><span class="p">68%</span></div>
-        <div class="bar"><span class="n">The world</span><span class="tr"><i style="width:59%;background:var(--mint)"></i></span><span class="p">59%</span></div>
-        <div class="bar"><span class="n">The sound</span><span class="tr"><i style="width:44%;background:var(--mint)"></i></span><span class="p">44%</span></div>
-        <span class="mono" style="display:block;margin-top:14px">You 4.5 · Your room 4.3 · Following 4.7 · Everyone 4.6</span>
-      </div>
-      <ul class="feat">
-        <li><div class="ic" style="background:var(--sky)">%</div><div><b>Agreement, at scale.</b><p>A 4.6 with 81% agreement and a 4.6 with 40% are different things. We show both, always.</p></div></li>
-        <li><div class="ic" style="background:var(--butter)">★</div><div><b>What people singled out.</b><p>Nobody wrote a review. Everybody said what they loved. Read it in three seconds.</p></div></li>
-        <li><div class="ic" style="background:var(--apricot)">4</div><div><b>Four numbers on every work.</b><p>You, your room, your follows, everyone. The distance between them is the conversation.</p></div></li>
-      </ul>
-    </div>
-    <div class="charts">
-      <div class="col" style="background:var(--apricot)"><div class="h">This week<span class="tag" style="background:rgba(255,255,255,.6)">Film</span></div><div class="r">Aftersun<span>4.7 · 88%</span></div><div class="r">Anora<span>4.3 · 71%</span></div><div class="r">The Substance<span>3.6 · 34%</span></div></div>
-      <div class="col" style="background:var(--pink)"><div class="h">This week<span class="tag" style="background:rgba(255,255,255,.6)">TV</span></div><div class="r">Severance<span>4.6 · 84%</span></div><div class="r">Shōgun<span>4.5 · 90%</span></div><div class="r">The Bear<span>4.1 · 62%</span></div></div>
-      <div class="col" style="background:var(--butter)"><div class="h">This week<span class="tag" style="background:rgba(255,255,255,.6)">Books</span></div><div class="r">Piranesi<span>4.5 · 79%</span></div><div class="r">Stoner<span>4.4 · 86%</span></div><div class="r">Intermezzo<span>4.0 · 55%</span></div></div>
-      <div class="col" style="background:var(--mint)"><div class="h">This week<span class="tag" style="background:rgba(255,255,255,.6)">Games</span></div><div class="r">Disco Elysium<span>4.7 · 83%</span></div><div class="r">Outer Wilds<span>4.6 · 81%</span></div><div class="r">Elden Ring<span>4.4 · 57%</span></div></div>
-    </div>
-  </div>
-</section>
+      <section class="block rv" style="--c:var(--lilac)">
+        <span class="label">Stacks</span>
+        <h2>Stacks of what you <span class="mk" style="--r:-3deg;--rad:.2em">love</span>.</h2>
+        <div class="fan" id="fan" aria-hidden="true"></div>
+        <p>Themed lists anyone can make: films, shows, books and games together. Save the ones you like, or watch one with your room.</p>
+      </section>
 
-<!-- clubs -->
-<section id="clubs" style="background:var(--cream2)">
-  <div class="wrap">
-    <div class="sec-h">
-      <span class="tag" style="background:var(--lilac)">06 · Clubs</span>
-      <h2 style="margin-top:18px">A programme with a <span class="hl" style="background:var(--lilac)">deadline.</span></h2>
-      <p class="lede">Thirteen horrors before Halloween. Every Le Guin. Six games before winter. Start one for your room, or open it to everyone. The ballot stays sealed until it closes — then the club produces its own best-of.</p>
-    </div>
-    <div class="split">
-      <ul class="feat">
-        <li><div class="ic" style="background:var(--lilac)">◷</div><div><b>Two kinds.</b><p>A season ends on a date. A standing club has no deadline — finish it whenever, then run it again next year.</p></div></li>
-        <li><div class="ic" style="background:var(--mint)">✕</div><div><b>The ballot is sealed.</b><p>Everyone votes as they finish and nobody sees the standings. A count is all you get until it's called.</p></div></li>
-        <li><div class="ic" style="background:var(--butter)">★</div><div><b>Then it opens.</b><p>Ballots score 5-4-3-2-1 and combine, and the club has a list of its own — with a winner, and an argument.</p></div></li>
-      </ul>
-      <div class="card">
-        <div class="h"><span>Thirteen before Halloween</span><span class="tag" style="background:var(--lilac)">Open to everyone</span></div>
-        <div class="row"><div class="t"><b>Aftersun</b><small><span class="tag film" style="padding:3px 8px;font-size:10px">Film</span>Club 4.7 · Everyone 4.5</small></div><span class="n">1</span></div>
-        <div class="row"><div class="t"><b>Outer Wilds</b><small><span class="tag game" style="padding:3px 8px;font-size:10px">Game</span>Club 4.7 · Everyone 3.7 · <span class="hi">the club is fond of it</span></small></div><span class="n">2</span></div>
-        <div class="row"><div class="t"><b>Piranesi</b><small><span class="tag book" style="padding:3px 8px;font-size:10px">Book</span>Club 4.5 · Everyone 4.5</small></div><span class="n">3</span></div>
-        <p class="mono" style="margin-top:14px">Closed 31 Oct · 24 ballots · the club's best: Aftersun</p>
-      </div>
-    </div>
-  </div>
-</section>
+      <section class="block rv" style="--c:var(--apricot)">
+        <span class="label">Queue</span>
+        <h2>Can't decide? We'll <span class="mk" style="--r:2.5deg;--rad:.14em">pick</span>.</h2>
+        <div class="picker" aria-hidden="true"><span class="dice"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="4"/><circle cx="9" cy="9" r="1.3" fill="currentColor"/><circle cx="15" cy="15" r="1.3" fill="currentColor"/><circle cx="15" cy="9" r="1.3" fill="currentColor"/><circle cx="9" cy="15" r="1.3" fill="currentColor"/></svg></span>
+          <span class="po" id="pickPo"><span></span></span><span class="lbl" id="pickLbl">Tonight's pick<small>from your Up next</small></span></div>
+        <p>Everything you mean to get to, what's out now and what's on your services. Then your diary, and your favourites in your own order.</p>
+      </section>
 
-<!-- faq -->
-<section id="faq" style="padding-top:0">
-  <div class="wrap">
-    <div class="sec-h"><span class="tag" style="background:var(--mint)">07 · Questions</span></div>
-    <div class="faq">
-      <details><summary>Isn't this just Letterboxd with more tabs?</summary><p>Letterboxd tells you what someone watched and how many stars. Rooms tells you what they loved about it, how closely a crowd agrees, and how much their taste matches yours — across film, TV, books and games.</p></details>
-      <details><summary>What's public and what isn't?</summary><p>Your profile, your taste, your entries and ratings are public by default, and anyone can follow you. Any single entry can be switched to room-only. Rooms themselves are private and invite-only — the talk inside them never leaves.</p></details>
-      <details><summary>How is taste match worked out?</summary><p>From what you each single out, weighted by how highly you rated the thing, across all four mediums. Two people who both go for the ending and the world will score high even if they've never logged the same title.</p></details>
-      <details><summary>Where does the data come from?</summary><p>TMDB for film and TV, Open Library for books, IGDB for games. Your entries are yours: export them as JSON any time, and there's a local mode that never touches a server.</p></details>
+      <section class="block wide news rv" style="--c:var(--butter)" id="newsletter">
+        <span class="label">Room Service · once a month</span>
+        <h2>What everyone <span class="mk" style="--r:-2deg;--rad:.18em">logged</span> this month.</h2>
+        <p>The most logged, the one nobody agreed on, the stacks people saved and the Five Clues hardly anyone got. One email a month, and you can leave any time.</p>
+        <form id="nl" novalidate>
+          <label for="nlEmail" class="label" style="position:absolute;left:-9999px">Your email</label>
+          <input id="nlEmail" name="email" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com" required>
+          <button class="btn dark" type="submit">Sign me up</button>
+          <p class="msg" id="nlMsg" role="status" aria-live="polite"></p>
+        </form>
+      </section>
     </div>
   </div>
-</section>
-
-<div class="closer" id="start">
-  <div class="blob" style="background:var(--apricot);left:-80px;top:-60px"></div>
-  <div class="blob" style="background:var(--pink);right:-90px;bottom:-80px"></div>
-  <div class="blob" style="background:var(--mint);right:14%;top:-120px;width:200px;height:200px"></div>
-  <div class="wrap" style="position:relative">
-    <h2>Start with the last room you were in.</h2>
-    <p>Free, on your phone, in about a minute. Find your taste twins. Bring the friends who'll argue with you.</p>
-    <div class="cta"><a class="btn w" href="#">Open a room</a><a class="btn o" href="#">Join with a code</a></div>
-  </div>
-</div>
 </main>
 
+<footer><div class="wrap">
+  <a href="index.html">Open Rooms</a>
+  <a href="privacy.html">Privacy</a>
+  <a href="terms.html">Terms</a>
+  <span>joinroomsapp@gmail.com</span>
+  <span class="who">Rooms · watch, read and play together</span>
+  <span class="tmdb">Film and TV posters from TMDB. This product uses the TMDB API but is not endorsed or certified by TMDB. Book covers from Open Library, game covers from IGDB.</span>
+</div></footer>
+
 <script>
-/* ---------- the solids, drawn to a canvas ---------- */
-const COLS = ["#FFB36B","#FF8E6E","#F5A3C7","#FFE86A","#9EF0C9","#8FD3FF","#B9A6FF"];
-function shade(hex, amt) { const n = parseInt(hex.slice(1),16); let r=n>>16,g=(n>>8)&255,b=n&255;
-  if (amt>0){r+=(255-r)*amt;g+=(255-g)*amt;b+=(255-b)*amt;} else {r*=(1+amt);g*=(1+amt);b*=(1+amt);}
-  return "#"+[r,g,b].map(v=>Math.round(v).toString(16).padStart(2,"0")).join(""); }
-const SHAPES = ["cube","box","ball","can","cone","pill","arch","step"];
-function drawSolid(x, s, kind, col, size, tilt) {
-  const base = COLS[col], light = shade(base,.30), dark = shade(base,-.18);
-  x.save(); x.translate(0,0); x.scale(size/100, size/100); x.rotate(0);
-  const P = (d) => new Path2D(d);
-  const paint = (d, f) => { x.fillStyle = f; x.fill(P(d)); };
-  if (kind==="cube"){ paint("M22 34h56a10 10 0 0 1 10 10v30a10 10 0 0 1-10 10H22a10 10 0 0 1-10-10V44a10 10 0 0 1 10-10z", base);
-    paint("M22 34h56a10 10 0 0 1 10 10H12a10 10 0 0 1 10-10z", light); }
-  if (kind==="box"){ paint("M50 12l34 18v40L50 88 16 70V30z", base); paint("M50 12l34 18-34 18-34-18z", light); paint("M84 30v40L50 88V48z", dark); }
-  if (kind==="ball"){ x.fillStyle=base; x.beginPath(); x.arc(50,54,36,0,7); x.fill();
-    paint("M14 54a36 36 0 0 1 72 0c0-14-16-22-36-22S14 40 14 54z", light);
-    paint("M50 90a36 36 0 0 0 34-24c-6 10-19 16-34 16s-28-6-34-16a36 36 0 0 0 34 24z", dark); }
-  if (kind==="can"){ paint("M18 34h64v40c0 9-14 14-32 14s-32-5-32-14z", base);
-    x.fillStyle=light; x.beginPath(); x.ellipse(50,34,32,13,0,0,7); x.fill();
-    paint("M82 34v40c0 6-6 10-16 12 6-4 8-8 8-14V38z", dark); }
-  if (kind==="cone"){ paint("M50 14l30 58c0 9-13 14-30 14s-30-5-30-14z", base);
-    paint("M50 14l14 27c-4-2-9-3-14-3s-10 1-14 3z", light); paint("M80 72c0 9-13 14-30 14 10-2 16-7 16-14l-6-40z", dark); }
-  if (kind==="pill"){ paint("M50 14h0a24 24 0 0 1 24 24v26a24 24 0 0 1-48 0V38a24 24 0 0 1 24-24z", base);
-    paint("M50 14a24 24 0 0 1 24 24H26a24 24 0 0 1 24-24z", light); paint("M74 38v26a24 24 0 0 1-16 22c8-6 8-12 8-22V38z", dark); }
-  if (kind==="arch"){ paint("M18 88V46a32 32 0 0 1 64 0v42z", base); paint("M50 14a32 32 0 0 1 32 32H18a32 32 0 0 1 32-32z", light);
-    paint("M82 46v42H64V46a14 14 0 0 0-8-13 32 32 0 0 1 26 13z", dark); }
-  if (kind==="step"){ paint("M14 88V56h30V30h42v58z", base); paint("M44 30h42v10H44zM14 56h30v10H14z", light); paint("M86 30v58H62V30z", dark); }
-  x.fillStyle = "#151320";
-  const r = (a,b2,w,h2,rad) => { x.beginPath(); x.roundRect(a,b2,w,h2,rad); x.fill(); };
-  r(40,46,7,20,3.5); r(55,44,7,22,3.5);
-  x.restore();
-}
-/* draw one solid centred at (px,py) with rotation */
-function solidAt(x, px, py, size, kind, col, rot) {
-  x.save(); x.translate(px, py); x.rotate(rot); x.translate(-size/2, -size/2);
-  drawSolid(x, x, kind, col, size, 0); x.restore(); }
+/* the newsletter box keeps an address in Rooms' own database, for the monthly email
+   and nothing else; anyone can add one, nobody can read the list back */
+const SUPABASE_URL = "https://caaxycmobhssxclrakim.supabase.co", KEY = "sb_publishable_zvZhatlvUg6F_CDzTmxX9A_Vlv0n3PX";
+const form = document.getElementById("nl"), box = document.getElementById("nlEmail"), msg = document.getElementById("nlMsg");
+form.addEventListener("submit", async ev => { ev.preventDefault();
+  const email = box.value.trim().toLowerCase();
+  if (!/^[^@\s]+@[^@\s]+\.[a-z]{2,24}$/i.test(email)) { msg.textContent = "That email doesn't look right. Check it and try again."; box.focus(); return; }
+  const btn = form.querySelector("button"); btn.disabled = true; msg.textContent = "Signing you up…";
+  try { const r = await fetch(`${SUPABASE_URL}/rest/v1/newsletter_web`, { method:"POST",
+      headers:{ "Content-Type":"application/json", apikey:KEY, Authorization:`Bearer ${KEY}`, Prefer:"return=minimal" }, body:JSON.stringify({ email }) });
+    /* already on the list counts as done */
+    if (r.ok || r.status === 409) { msg.textContent = "You're on the list. The next one comes at the start of the month."; form.reset(); }
+    else msg.textContent = "Couldn't sign you up just now. Try again in a minute."; }
+  catch { msg.textContent = "Couldn't reach Rooms. Check your connection and try again."; }
+  btn.disabled = false; });
 
+/* ---------- life ---------- */
+document.documentElement.classList.add("js");
+const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const WORKER = "https://rooms.jordandf1.workers.dev";
+const COLS = ["var(--apricot)", "var(--pink)", "var(--butter)", "var(--mint)", "var(--sky)", "var(--lilac)"];
+/* what shows while the real covers load, or if they can't */
+const FALLBACK = ["Heat", "The Bear", "Pachinko", "Outer Wilds", "Past Lives", "Severance", "James", "Hades II", "Aftersun", "The Pitt",
+  "Intermezzo", "Disco Elysium", "Thief", "Slow Horses", "Tomorrow, and Tomorrow", "Celeste"].map(t => ({ t }));
+const esc = x => String(x).replace(/[&<>"]/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" })[c]);
+const poHTML = (w, i) => w.img ? `<span class="po img" style="background-image:url('${esc(w.img)}')"><span>${esc(w.t)}</span></span>`
+  : `<span class="po" style="--c:${COLS[i % COLS.length]}"><span>${esc(w.t)}</span></span>`;
+let pool = FALLBACK;
+function paintReel() {
+  const a = pool.filter((_, i) => i % 2 === 0), b = pool.filter((_, i) => i % 2 === 1);
+  /* each row twice over, so the slide loops without a seam */
+  document.getElementById("r1").innerHTML = [...a, ...a].map(poHTML).join("");
+  document.getElementById("r2").innerHTML = [...b, ...b].map((w, i) => poHTML(w, i + 3)).join("");
+  const fan = document.getElementById("fan"); fan.innerHTML = pool.slice(2, 7).map((w, i) => poHTML(w, i + 1)).join(""); }
+paintReel();
+/* this week's real covers: trending films and shows, books and games, through Rooms' own server */
+const get = async (path, opt) => { const r = await fetch(WORKER + path, opt); if (!r.ok) throw new Error(r.status); return r.json(); };
+Promise.allSettled([
+  get("/3/trending/all/week").then(d => (d.results || []).filter(x => x.poster_path && (x.title || x.name)).slice(0, 18)
+    .map(x => ({ t:x.title || x.name, img:"https://image.tmdb.org/t/p/w185" + x.poster_path }))),
+  get("/ol/trending/weekly.json?limit=24").then(d => (d.works || []).filter(x => x.cover_i).slice(0, 8)
+    .map(x => ({ t:x.title, img:`https://covers.openlibrary.org/b/id/${x.cover_i}-M.jpg` }))),
+  get("/igdb/games", { method:"POST", headers:{ "Content-Type":"text/plain" },
+    body:"fields name,cover.image_id; where cover != null & total_rating_count > 60 & first_release_date > 1640995200; sort total_rating_count desc; limit 12;" })
+    .then(d => (d || []).filter(x => x.cover?.image_id).slice(0, 8).map(x => ({ t:x.name, img:`https://images.igdb.com/igdb/image/upload/t_cover_big/${x.cover.image_id}.jpg` })))
+]).then(([f, bk, gm]) => { const F = f.value || [], B = bk.value || [], G = gm.value || [];
+  if (!F.length && !B.length && !G.length) return;
+  /* two screen things, then a book, then a game, round and round */
+  const mix = []; for (let i = 0; mix.length < 28 && (i < F.length || i < B.length * 2 || i < G.length * 2); i++) {
+    if (F[2 * i]) mix.push(F[2 * i]); if (F[2 * i + 1]) mix.push(F[2 * i + 1]); if (B[i]) mix.push(B[i]); if (G[i]) mix.push(G[i]); }
+  if (mix.length >= 8) { pool = mix; paintReel(); } });
 
+/* rising in as you scroll down to it */
+const rv = [...document.querySelectorAll(".rv")];
+if (!REDUCED && "IntersectionObserver" in window) {
+  const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.remove("pre"); io.unobserve(e.target); onShow(e.target); } }), { threshold:.18 });
+  rv.forEach(el => { if (el.getBoundingClientRect().top > innerHeight * .9) { el.classList.add("pre"); io.observe(el); } else onShow(el); });
+} else rv.forEach(onShow);
+function onShow(el) {
+  if (el.querySelector("#fan")) setTimeout(() => document.getElementById("fan").classList.add("open"), 250);
+  if (el.querySelector("#chat")) [...el.querySelectorAll(".say")].forEach((x, i) => setTimeout(() => x.classList.add("on"), REDUCED ? 0 : 300 + i * 700)); }
 
+/* Five Clues, turning over */
+const CLUES = ["A film from the 1990s", "Crime · Thriller · Drama", "Heist · Los Angeles · rivalry", "1995 · directed by Michael Mann", "“A detective and a thief who can't stop circling each other.”"];
+let ci = 0; const tk = document.getElementById("tk"), tkN = document.getElementById("tkN"), dots = [...document.querySelectorAll("#tkDots i")];
+if (!REDUCED) setInterval(() => { tk.classList.add("out"); setTimeout(() => { ci = (ci + 1) % CLUES.length; tk.textContent = CLUES[ci]; tkN.textContent = ci + 1;
+  dots.forEach((d, i) => d.classList.toggle("on", i <= ci)); tk.classList.remove("out"); }, 350); }, 2600);
 
-
-/* the avatars, from the same generator the app uses */
-(() => {
-  const COLS9 = ["#FFB36B","#FF8E6E","#F5A3C7","#FFE86A","#9EF0C9","#8FD3FF","#B9A6FF","#7A7590","#151320"];
-  const EYES = { pair:`<rect x="40" y="46" width="7" height="20" rx="3.5"/><rect x="55" y="44" width="7" height="22" rx="3.5"/>`,
-    short:`<rect x="41" y="48" width="7" height="13" rx="3.5"/><rect x="54" y="47" width="7" height="14" rx="3.5"/>`,
-    wide:`<rect x="34" y="46" width="7" height="19" rx="3.5"/><rect x="61" y="45" width="7" height="21" rx="3.5"/>`,
-    tall:`<rect x="41" y="41" width="6.5" height="27" rx="3.2"/><rect x="54" y="40" width="6.5" height="28" rx="3.2"/>` };
-  const sh = (hex, amt) => { const n = parseInt(hex.slice(1),16); let r=n>>16,g=(n>>8)&255,b=n&255;
-    if (amt>0){r+=(255-r)*amt;g+=(255-g)*amt;b+=(255-b)*amt;} else {r*=(1+amt);g*=(1+amt);b*=(1+amt);}
-    return "#"+[r,g,b].map(v=>Math.round(v).toString(16).padStart(2,"0")).join(""); };
-  const S = {
-    cube: c => `<path d="M22 34h56a10 10 0 0 1 10 10v30a10 10 0 0 1-10 10H22a10 10 0 0 1-10-10V44a10 10 0 0 1 10-10z" fill="${c.base}"/><path d="M22 34h56a10 10 0 0 1 10 10H12a10 10 0 0 1 10-10z" fill="${c.light}"/>`,
-    box: c => `<path d="M50 12l34 18v40L50 88 16 70V30z" fill="${c.base}"/><path d="M50 12l34 18-34 18-34-18z" fill="${c.light}"/><path d="M84 30v40L50 88V48z" fill="${c.dark}"/>`,
-    ball: c => `<circle cx="50" cy="54" r="36" fill="${c.base}"/><path d="M14 54a36 36 0 0 1 72 0c0-14-16-22-36-22S14 40 14 54z" fill="${c.light}"/><path d="M50 90a36 36 0 0 0 34-24c-6 10-19 16-34 16s-28-6-34-16a36 36 0 0 0 34 24z" fill="${c.dark}"/>`,
-    can: c => `<path d="M18 34h64v40c0 9-14 14-32 14s-32-5-32-14z" fill="${c.base}"/><ellipse cx="50" cy="34" rx="32" ry="13" fill="${c.light}"/><path d="M82 34v40c0 6-6 10-16 12 6-4 8-8 8-14V38z" fill="${c.dark}"/>`,
-    arch: c => `<path d="M18 88V46a32 32 0 0 1 64 0v42z" fill="${c.base}"/><path d="M50 14a32 32 0 0 1 32 32H18a32 32 0 0 1 32-32z" fill="${c.light}"/><path d="M82 46v42H64V46a14 14 0 0 0-8-13 32 32 0 0 1 26 13z" fill="${c.dark}"/>`
-  };
-  document.querySelectorAll("[data-av]").forEach(el => {
-    const [shape, ci, eyes] = el.dataset.av.split("|");
-    const base = COLS9[+ci], dark = base === "#151320";
-    const c = { base, light: dark ? "#3A3650" : sh(base,.30), dark: dark ? "#0B0A12" : sh(base,-.18) };
-    el.innerHTML = `<svg viewBox="0 0 100 100" aria-hidden="true">${(S[shape]||S.cube)(c)}
-      <g fill="${dark ? "#FFF7EC" : "#151320"}">${EYES[eyes] || EYES.pair}</g></svg>`;
-  });
-})();
-/* the sparse curtain: three layers, different sizes, speeds and weights */
-(() => {
-  const cv = document.getElementById("drift"); if (!cv) return;
-  const x = cv.getContext("2d"), hero = cv.parentElement;
-  const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const LAY = [[26,.40,.60],[40,.78,.82],[58,1.15,1]];
-  let W = 0, H = 0, items = [], last = 0, raf = 0;
-  const rnd = (a,b) => a + Math.random()*(b-a);
-  const pick = () => SHAPES[Math.floor(Math.random()*SHAPES.length)];
-  function build() {
-    const box = hero.getBoundingClientRect(), dpr = Math.min(devicePixelRatio||1, 2);
-    W = box.width; H = box.height;
-    cv.width = W*dpr; cv.height = H*dpr; x.setTransform(dpr,0,0,dpr,0,0);
-    const n = Math.round(Math.min(26, Math.max(10, W/44)));      /* sparse, and it scales with the page */
-    const left = W > 900 ? W*.42 : W*.06;                        /* keep clear of the words on a wide screen */
-    items = Array.from({length:n}, (_,i) => { const l = i % 3, [size, sp, op] = LAY[l];
-      return { px: rnd(left, W-14), py: rnd(-H, H), vy: sp, rot: rnd(-.5,.5), vr: rnd(-.006,.006),
-        size, kind: pick(), col: Math.floor(Math.random()*COLS.length), op, l, left }; });
-    items.sort((a,b) => a.l - b.l);
-  }
-  function paint() { x.clearRect(0,0,W,H);
-    for (const b of items) { x.globalAlpha = b.op; solidAt(x, b.px, b.py, b.size, b.kind, b.col, b.rot); x.globalAlpha = 1; } }
-  function step(now) { const dt = Math.min(32, now - (last||now)); last = now;
-    for (const b of items) { b.py += b.vy*(dt/16); b.rot += b.vr*(dt/16);
-      if (b.py > H + 80) { b.py = -80; b.px = rnd(b.left, W-14); b.kind = pick(); b.col = Math.floor(Math.random()*COLS.length); } }
-    paint(); raf = requestAnimationFrame(step); }
-  function start() { cancelAnimationFrame(raf); build(); if (reduced) paint(); else raf = requestAnimationFrame(step); }
-  addEventListener("resize", start); start();
-})();
+/* the picker deals out one of the posters every couple of seconds */
+const pickPo = document.getElementById("pickPo"), pickLbl = document.getElementById("pickLbl"); let pi = 4;
+const deal = () => { const w = pool[pi % pool.length]; pi += 3;
+  pickPo.className = "po" + (w.img ? " img" : ""); pickPo.style.cssText = w.img ? `background-image:url('${w.img}')` : `--c:${COLS[pi % COLS.length]}`;
+  pickPo.innerHTML = `<span>${esc(w.t)}</span>`; pickLbl.innerHTML = `${esc(w.t)}<small>tonight's pick</small>`; };
+deal();
+if (!REDUCED) setInterval(() => { pickPo.classList.add("flip"); setTimeout(() => { deal(); pickPo.classList.remove("flip"); }, 260); }, 2400);
 </script>
-
-<footer>
-  <div class="wrap">
-    <a class="logo" href="#top"><svg class="mark" viewBox="10 10 80 80" aria-hidden="true"><rect x="12" y="12" width="34" height="34" rx="14" fill="#6798b8"/><rect x="54" y="12" width="34" height="34" rx="14" fill="#cc8f56"/><rect x="12" y="54" width="34" height="34" rx="14" fill="#9485cc"/><rect x="41" y="41" width="47" height="47" rx="19" fill="#F7B3CF"/><path d="M41.64 55.1A19 19 0 0 1 60 41H69A19 19 0 0 1 87.36 55.1Z" fill="#fbd6e5"/><g fill="#151320"><rect x="49.46" y="60.97" width="6.7" height="14.99" rx="3.35"/><rect x="62.39" y="61.35" width="6.7" height="14.99" rx="3.35"/></g></svg>Rooms</a>
-    <ul><li><a href="./index.html">Open Rooms</a></li><li><a href="privacy.html">Privacy</a></li><li><a href="terms.html">Terms</a></li><li><a href="mailto:joinroomsapp@gmail.com">joinroomsapp@gmail.com</a></li></ul>
-    <span class="mono">Made in Australia · Data from TMDB, Open Library and IGDB</span>
-  </div>
-</footer>
 </body>
 </html>
