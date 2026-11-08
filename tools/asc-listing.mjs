@@ -55,7 +55,10 @@ async function find() {
   const app = (await api("GET", `/v1/apps?filter[bundleId]=${BUNDLE_ID}`)).data?.[0];
   if (!app) throw new Error(`No app with bundle id ${BUNDLE_ID} in App Store Connect`);
   const infos = (await api("GET", `/v1/apps/${app.id}/appInfos`)).data || [];
-  const info = infos.find(i => !/READY_FOR_DISTRIBUTION|REPLACED/.test(i.attributes.appStoreState || i.attributes.state || "")) || infos[0];
+  /* the app's name, category and age rating live on its info, which Apple only lets you change
+     while there's an editable copy; with a version out and nothing to change there may not be one */
+  const LIVE = /READY_FOR_DISTRIBUTION|READY_FOR_SALE|REPLACED|ACCEPTED|PENDING_RELEASE/;
+  const info = infos.find(i => !LIVE.test(i.attributes.state || "") && !LIVE.test(i.attributes.appStoreState || "")) || null;
   const versions = (await api("GET", `/v1/apps/${app.id}/appStoreVersions?filter[platform]=IOS&limit=10`)).data || [];
   /* this version, never one that's already out */
   const version = versions.find(v => v.attributes.versionString === WANT) || null;
@@ -81,13 +84,14 @@ async function apply() {
   const { info } = await find();
   await step("Content rights: uses third-party content (posters and details from TMDB, IGDB, Open Library)", () =>
     api("PATCH", `/v1/apps/${app.id}`, { data:{ type:"apps", id:app.id, attributes:{ contentRightsDeclaration:"USES_THIRD_PARTY_CONTENT" } } }));
-  await step("Category: Entertainment, then Social Networking", () =>
+  if (!info) console.log("· Name, category and age rating: unchanged from the version that's out (Apple has them locked until something there changes)");
+  if (info) await step("Category: Entertainment, then Social Networking", () =>
     api("PATCH", `/v1/appInfos/${info.id}`, { data:{ type:"appInfos", id:info.id, relationships:{
       primaryCategory:{ data:{ type:"appCategories", id:"ENTERTAINMENT" } }, secondaryCategory:{ data:{ type:"appCategories", id:"SOCIAL_NETWORKING" } } } } }));
-  for (const l of (await api("GET", `/v1/appInfos/${info.id}/appInfoLocalizations`)).data || [])
+  if (info) for (const l of (await api("GET", `/v1/appInfos/${info.id}/appInfoLocalizations`)).data || [])
     await step(`Name, subtitle and privacy link (${l.attributes.locale})`, () => api("PATCH", `/v1/appInfoLocalizations/${l.id}`, { data:{ type:"appInfoLocalizations", id:l.id,
       attributes:{ name:L.name, subtitle:L.subtitle, privacyPolicyUrl:L.privacy } } }).then(() => `"${L.name}"`));
-  await step("Age rating questionnaire", async () => {
+  if (info) await step("Age rating questionnaire", async () => {
     const d = (await api("GET", `/v1/appInfos/${info.id}/ageRatingDeclaration`)).data; const have = d.attributes, set = {};
     /* the content questions: Rooms makes none of this itself */
     const NONE = ["alcoholTobaccoOrDrugUseOrReferences", "contests", "gamblingSimulated", "medicalOrTreatmentInformation", "profanityOrCrudeHumor", "sexualContentGraphicAndNudity",
