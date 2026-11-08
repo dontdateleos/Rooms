@@ -16024,8 +16024,8 @@ async function openYou() { let top = { items:[] }; try { top = await ensureMyTop
     <p class="sub" style="margin-top:4px">A nudge when today's puzzle is up, at the time you pick. Skipped on days you've already played. Needs notifications on.</p>
     <div class="lbl" style="margin-top:10px">New episodes</div><div class="chips" id="epAlerts">${[["on", "Tell me"], ["off", "Off"]].map(([k, l]) => `<button class="chip ${(P.epAlerts === false ? "off" : "on") === k ? "on" : ""}" data-epa="${k}">${l}</button>`).join("")}</div>
     <p class="sub" style="margin-top:4px">A nudge in the evening when a new episode comes out of a show you're watching or have in Up next. Needs notifications on.</p>
-    <div class="lbl" style="margin-top:10px">The Rooms newsletter</div><div class="chips" id="nlSlot"></div>
-    <p class="sub" style="margin-top:4px">Once a month: what everyone logged, the stacks people saved and the Five Clues nobody got. It goes to the email on your account. Switch it off here any time.</p>
+    <div class="lbl" style="margin-top:10px">Room Service, the monthly newsletter</div><div class="chips" id="nlSlot"></div>
+    <p class="sub" style="margin-top:4px">Once a month: each medium's top five, the one nobody agreed on, the stacks people saved and the Five Clues hardly anyone got. It goes to the email on your account. Switch it off here any time.</p>
     <div class="lbl" style="margin-top:10px">Public profile page</div><div id="ppSlot"></div>
     ${isFounder() ? `<div class="lbl" style="margin-top:10px">Founder</div><div class="stack"><button class="btn quiet" id="fTrends">Last week on Rooms</button><button class="btn quiet" id="fList">Copy the newsletter list</button></div>` : ""}
     <div class="lbl" style="margin-top:10px">How the app looks</div><div class="chips">${[["","Auto"],["light","Light"],["dark","Dark"]].map(([k,l]) => `<button class="chip ${(P.theme||"")===k?"on":""}" data-th="${k}">${l}</button>`).join("")}</div>
