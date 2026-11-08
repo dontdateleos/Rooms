@@ -128,6 +128,8 @@ header .wrap{display:flex;align-items:center;justify-content:space-between;heigh
 .cabfind svg{width:16px;height:16px;stroke-width:2.4}
 .cabfind.on{background:var(--ink);color:var(--cream);border-color:var(--ink)}
 .hr{display:flex;align-items:center;gap:8px}
+/* the page name beside the mark gives way, not the buttons: a long room name pushed the bell off a small phone */
+header .logo{min-width:0}header .hr{flex:none}
 /* settings used to be two taps down, behind your own profile; a cog is the one place
    people already look for it */
 .cog{width:38px;height:38px;border-radius:50%;border:0;background:var(--card);color:var(--ink);cursor:pointer;
@@ -2688,9 +2690,12 @@ header,nav{-webkit-backdrop-filter:blur(20px) saturate(1.4);backdrop-filter:blur
 /* every tab's top card at the Up next size: room, Feed, Diary, Ranked, Stacks, You */
 .hero.upbig .hero-go{position:relative;z-index:1}
 .roomcard.upbig .room-body{min-height:190px;align-items:flex-end;margin-top:4px}
+/* a new room with nobody on anything and no covers yet: no tall empty block */
+.roomcard.upbig .room-body:not(:has(.hero-fan)):has(.nowline:empty){min-height:0}
 .roomcard.upbig .nowline{flex:1;min-width:0;align-self:center;font-size:17px;line-height:1.35;-webkit-line-clamp:6;font-weight:600}
 .roomcard.upbig .nowline b{font-family:var(--head);font-weight:900}
 .youhero.upbig .yh-body{min-height:170px;align-items:flex-end}
+.youhero.upbig .yh-body:not(:has(.hero-fan)){min-height:0}
 .youhero.upbig .yh-body .gline{flex:1;min-width:0;align-self:flex-end;margin:0 0 6px}
 .clu-card.upbig .clu-kinds{margin-top:10px;position:relative}
 .clu-card.upbig .hero-go{margin-top:12px}
@@ -9004,7 +9009,8 @@ function paintCabHero() { const el = $("#cabHero"); if (!el) return;
   if (!logCount()) { el.innerHTML = ""; return; }
   const k = P.cabKind || "", col = k ? KIND_TONE[k] : P.cabView === "diary" ? "sky" : "lilac";
   const kindOfE = e => works[e.work_id]?.kind || kindOf(e.work_id);
-  const es = myEntries.filter(e => !k || kindOfE(e) === k);
+  /* what the diary under it lists: no episodes, no favourites from sign-up */
+  const es = myEntries.filter(e => !isPart(e.work_id) && !isBefore(e) && (!k || kindOfE(e) === k));
   const what = k ? K(k).plural.toLowerCase() : "things", one = k ? (k === "tv" ? "show" : K(k).label.toLowerCase()) : "thing";
   if (P.cabView === "diary") {
     const now = new Date(), ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
@@ -9418,7 +9424,7 @@ function renderShelf() {
     const what = P.shelfFilter ? K(P.shelfFilter).plural.toLowerCase() : "things";
     const head = on.length && !ready.length ? `You're in the middle of ${on.length === 1 ? esc(on[0].title) : on.length + " " + what}. Finish one?`
       : left.length >= 2 ? `${left.length} ${what} ready to go. What's next?`
-      : first ? `Next up: ${esc(first.title)}.` : `All caught up. ${soonCount} still to come out.`;
+      : first ? `Next up: ${esc(first.title)}.` : `All caught up.${soonCount ? ` ${soonCount} still to come out.` : ""}`;
     const bits = [on.length ? `${on.length} on the go` : "", soonCount ? `${soonCount} coming` : "", mineCount ? `${mineCount} on your services` : "", done ? `${done} done` : ""].filter(Boolean);
     const fan = left.slice(0, 3);
     return heroHTML({ cls:"upbig", col:P.shelfFilter ? KIND_TONE[P.shelfFilter] : "mint", label:"Up next", tag:`${all.length} in here`, head, meta:bits.join(" · "), fan,
@@ -9618,8 +9624,9 @@ async function loadBest() { bestBusy = true;
    SUPPORTER_ONLY is the switch for then. */
 const SUPPORTER_ONLY = false;
 const isSupporter = () => !SUPPORTER_ONLY || !!me?.supporter;
-async function saveMine(patch) { Object.assign(me, patch);
-  try { if (sb.__local) { Object.assign(sb.__db.profile, patch); sb.__save(); } else await q(sb.from("profiles").update(patch).eq("id", me.id)); return true; }
+async function saveMine(patch) {
+  /* kept in memory only once it's saved, so a failed save doesn't show as done */
+  try { if (sb.__local) { Object.assign(sb.__db.profile, patch); sb.__save(); } else await q(sb.from("profiles").update(patch).eq("id", me.id)); Object.assign(me, patch); return true; }
   catch (err) { oops(err, "Couldn't save that"); return false; } }
 async function openPosterPick(w) { if (!isSupporter()) return say("That's one for supporters");
   openSheet(`<h3>Choose your poster</h3><p class="sub">${esc(w.title)}. The one you pick is what you see, everywhere in Rooms.</p><div id="ppGrid">${skeleton(2)}</div>`);
