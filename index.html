@@ -3564,19 +3564,24 @@ html.sheetup body:has(#updBar) .toast{top:calc(70px + env(safe-area-inset-top))}
 /* ---------- People: the rings across the top, and the story a ring opens ---------- */
 .storyrow{display:flex;gap:12px;overflow-x:auto;scrollbar-width:none;margin:14px -16px 6px;padding:4px 16px 8px;scroll-padding-inline:16px;scroll-snap-type:x proximity}
 .storyrow::-webkit-scrollbar{display:none}
-.sbub{flex:none;width:68px;display:flex;flex-direction:column;align-items:center;gap:6px;position:relative;background:none;border:0;padding:0;color:var(--ink);scroll-snap-align:start;font:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
-.sring{display:block;width:68px;height:68px;border-radius:50%;padding:3px;background:var(--line);transition:transform var(--m-fast) var(--m-ease)}
+.sbub{flex:none;width:78px;display:flex;flex-direction:column;align-items:center;gap:6px;position:relative;background:none;border:0;padding:0;color:var(--ink);scroll-snap-align:start;font:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
+/* each person sits on their own splat of paint (one of four, turned their own way) rather
+   than a ring: bright while there's something new, grey once you've seen it */
+:root{--splat0:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M94.2 50.0C94.5 51.0 93.8 52.1 92.8 53.0C91.8 53.9 89.6 54.6 88.4 55.4C87.2 56.2 86.1 56.8 85.5 57.5C84.8 58.3 84.6 59.0 84.5 59.9C84.4 60.8 84.7 61.7 84.9 62.7C85.1 63.7 85.7 64.9 85.8 65.9C85.9 67.0 85.9 68.1 85.4 68.8C85.0 69.6 83.9 70.1 83.0 70.6C82.1 71.1 80.9 71.3 80.0 71.8C79.1 72.2 78.4 72.7 77.7 73.3C77.1 73.8 76.6 74.5 76.1 75.2C75.5 75.8 75.0 76.5 74.5 77.2C73.9 77.9 73.4 78.5 72.8 79.2C72.2 79.8 71.5 80.4 70.9 81.0C70.3 81.6 69.5 82.0 69.0 82.8C68.4 83.6 67.8 84.3 67.5 85.8C67.2 87.4 67.4 90.2 67.0 92.2C66.7 94.2 66.5 97.4 65.6 97.9C64.6 98.4 62.7 96.7 61.3 95.3C59.9 93.9 58.2 91.0 57.0 89.7C55.8 88.4 54.9 87.9 53.9 87.5C53.0 87.0 52.2 87.1 51.3 86.9C50.4 86.8 49.6 86.7 48.7 86.5C47.9 86.3 47.0 86.1 46.2 85.9C45.4 85.7 44.6 85.4 43.8 85.2C43.0 84.9 42.2 84.6 41.4 84.3C40.7 84.1 39.9 83.6 39.1 83.5C38.3 83.3 37.7 82.7 36.6 83.3C35.4 83.8 33.5 85.9 32.0 86.8C30.6 87.7 28.3 89.5 27.7 88.7C27.0 88.0 28.2 84.0 28.2 82.3C28.3 80.6 28.3 79.2 27.9 78.3C27.5 77.4 26.6 77.3 25.9 76.7C25.2 76.2 24.5 75.8 23.8 75.3C23.1 74.8 22.5 74.2 21.8 73.7C21.1 73.1 20.5 72.5 19.9 71.9C19.3 71.2 18.7 70.6 18.2 69.9C17.6 69.2 17.1 68.5 16.6 67.8C16.1 67.0 15.7 66.2 15.2 65.5C14.6 64.8 14.1 64.1 13.2 63.4C12.3 62.7 10.9 62.2 9.6 61.6C8.3 60.9 6.2 60.4 5.3 59.5C4.4 58.6 4.0 57.5 4.3 56.4C4.7 55.3 6.5 54.1 7.2 53.0C7.9 51.9 8.8 51.0 8.5 50.0C8.2 49.0 6.1 48.0 5.4 46.9C4.6 45.8 3.4 44.5 3.9 43.5C4.4 42.6 6.9 41.8 8.5 41.2C10.2 40.5 12.7 40.2 14.0 39.7C15.4 39.1 16.1 38.5 16.7 37.9C17.4 37.2 17.6 36.5 18.0 35.8C18.4 35.0 18.7 34.3 19.1 33.5C19.4 32.8 19.8 32.1 20.1 31.3C20.4 30.5 20.9 29.9 20.8 28.8C20.8 27.7 20.4 26.4 19.7 24.6C19.1 22.8 17.3 19.8 17.0 18.1C16.8 16.5 17.1 15.0 18.2 14.7C19.4 14.5 22.2 16.1 24.0 16.7C25.7 17.2 27.3 18.0 28.5 18.1C29.7 18.2 30.3 17.6 31.1 17.3C31.9 16.9 32.6 16.4 33.4 15.9C34.2 15.5 35.0 15.1 35.8 14.8C36.6 14.4 37.4 14.1 38.3 13.9C39.1 13.6 40.0 13.4 40.8 13.3C41.7 13.1 42.6 13.0 43.5 13.0C44.3 12.9 45.2 12.9 46.1 12.9C47.0 12.9 47.8 13.0 48.7 13.1C49.6 13.2 50.4 13.4 51.3 13.5C52.1 13.6 52.9 13.8 53.8 13.7C54.7 13.6 55.5 13.6 56.5 13.0C57.5 12.5 58.6 11.5 59.8 10.6C61.0 9.8 62.5 8.3 63.7 7.8C64.9 7.4 66.1 7.4 66.9 8.1C67.7 8.8 68.1 10.8 68.4 12.2C68.8 13.7 68.8 15.7 69.1 17.0C69.4 18.3 69.7 19.2 70.2 20.1C70.7 20.9 71.4 21.3 72.0 21.8C72.7 22.3 73.4 22.7 74.2 23.1C75.0 23.5 75.7 23.9 76.8 24.1C77.8 24.4 79.0 24.5 80.4 24.5C81.7 24.6 83.6 24.3 85.0 24.5C86.5 24.7 88.1 25.0 88.9 25.7C89.6 26.4 89.7 27.7 89.6 28.9C89.5 30.2 88.6 31.8 88.1 33.0C87.7 34.3 87.1 35.5 86.9 36.6C86.7 37.6 86.7 38.5 86.7 39.5C86.8 40.4 86.9 41.3 87.1 42.1C87.4 43.0 87.6 43.8 88.3 44.6C89.0 45.5 90.3 46.2 91.3 47.1C92.3 48.0 94.0 49.0 94.2 50.0ZM33.0 93.0a2.7 2.7 0 1 0 5.4 0a2.7 2.7 0 1 0 -5.4 0Z'/%3E%3C/svg%3E");--splat1:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M96.0 50.0C96.9 51.0 96.5 52.3 95.3 53.2C94.2 54.1 90.7 54.8 89.0 55.5C87.4 56.2 86.2 56.8 85.4 57.5C84.7 58.3 84.7 59.1 84.5 59.9C84.3 60.7 84.2 61.6 84.1 62.4C83.9 63.2 83.7 64.1 83.5 64.9C83.3 65.7 83.0 66.6 82.8 67.4C82.5 68.3 82.2 69.0 82.1 70.1C82.0 71.1 82.1 72.2 82.3 73.5C82.5 74.8 83.3 76.7 83.2 77.9C83.1 79.1 82.6 80.2 81.7 80.6C80.7 81.0 78.8 80.5 77.4 80.5C76.1 80.4 74.8 80.2 73.7 80.3C72.6 80.5 71.9 80.9 71.1 81.2C70.2 81.5 69.4 81.9 68.6 82.3C67.8 82.6 67.0 82.9 66.2 83.1C65.3 83.4 64.5 83.6 63.7 83.8C62.8 84.0 62.0 84.1 61.1 84.3C60.3 84.4 59.5 84.5 58.6 84.6C57.8 84.8 57.0 84.8 56.2 85.3C55.5 85.9 54.8 87.0 54.0 87.9C53.2 88.8 52.3 90.5 51.4 90.7C50.5 90.8 49.5 89.5 48.7 88.6C47.8 87.8 47.0 86.3 46.2 85.7C45.4 85.1 44.7 85.1 43.9 84.9C43.0 84.7 42.2 84.7 41.4 84.6C40.5 84.5 39.7 84.4 38.9 84.3C38.0 84.1 37.2 84.0 36.3 83.8C35.5 83.6 34.7 83.4 33.8 83.1C33.0 82.9 32.2 82.6 31.4 82.3C30.6 81.9 29.8 81.6 29.0 81.2C28.2 80.7 27.4 80.3 26.7 79.8C26.0 79.3 25.3 78.8 24.6 78.2C23.9 77.6 23.3 77.0 22.7 76.4C22.1 75.8 21.5 75.1 21.0 74.4C20.4 73.7 19.9 72.9 19.5 72.2C19.0 71.4 18.6 70.6 18.2 69.9C17.8 69.1 17.4 68.3 16.9 67.6C16.4 66.9 15.8 66.2 15.1 65.5C14.4 64.9 13.4 64.3 12.7 63.6C11.9 62.9 11.0 62.2 10.6 61.3C10.2 60.4 10.2 59.4 10.5 58.4C10.8 57.4 11.6 56.3 12.2 55.3C12.7 54.3 13.4 53.4 13.9 52.5C14.3 51.6 14.5 50.8 14.7 50.0C14.9 49.2 14.9 48.4 15.0 47.6C15.0 46.7 15.1 45.9 15.1 45.1C15.2 44.3 15.3 43.5 15.3 42.6C15.3 41.8 15.7 41.1 15.1 40.0C14.6 38.9 13.4 37.7 12.1 36.2C10.9 34.8 7.7 32.2 7.8 31.2C7.8 30.2 10.9 30.3 12.5 30.1C14.1 29.8 16.5 30.2 17.6 29.8C18.8 29.4 18.9 28.5 19.5 27.8C20.0 27.1 20.4 26.3 21.0 25.6C21.5 24.9 22.1 24.2 22.7 23.6C23.3 23.0 23.9 22.4 24.6 21.8C25.3 21.2 26.0 20.7 26.7 20.2C27.4 19.7 28.2 19.3 29.0 18.8C29.8 18.4 30.6 18.1 31.4 17.7C32.2 17.4 33.0 17.1 33.8 16.9C34.7 16.6 35.5 16.4 36.3 16.2C37.2 16.0 38.0 15.9 38.9 15.7C39.7 15.6 40.6 15.6 41.4 15.4C42.2 15.1 43.0 15.1 43.7 14.4C44.5 13.7 45.1 11.9 45.9 10.9C46.7 10.0 47.7 8.5 48.6 8.7C49.5 8.9 50.5 11.2 51.3 12.2C52.2 13.2 52.9 14.2 53.7 14.7C54.5 15.2 55.3 15.0 56.1 15.2C57.0 15.3 57.8 15.3 58.6 15.4C59.5 15.5 60.3 15.6 61.1 15.7C62.0 15.9 62.8 16.0 63.7 16.2C64.5 16.4 65.3 16.6 66.2 16.9C67.0 17.1 67.8 17.4 68.6 17.7C69.4 18.1 70.2 18.4 71.0 18.8C71.8 19.3 72.6 19.7 73.3 20.2C74.0 20.7 74.7 21.2 75.4 21.8C76.1 22.4 76.7 23.0 77.3 23.6C77.9 24.2 78.5 24.9 79.0 25.6C79.6 26.3 80.1 27.1 80.5 27.8C81.0 28.6 81.4 29.4 81.7 30.2C82.1 31.0 82.4 31.8 82.7 32.6C83.0 33.4 83.3 34.3 83.5 35.1C83.7 35.9 83.9 36.8 84.0 37.6C84.2 38.4 84.3 39.3 84.5 40.1C84.6 41.0 84.6 41.8 84.8 42.6C85.0 43.4 85.0 44.2 85.9 45.0C86.7 45.7 88.3 46.4 90.0 47.2C91.7 48.0 95.1 49.0 96.0 50.0ZM26.8 89.2a2.9 2.9 0 1 0 5.7 0a2.9 2.9 0 1 0 -5.7 0Z'/%3E%3C/svg%3E");--splat2:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M91.0 50.0C92.7 51.0 97.3 52.3 98.3 53.4C99.3 54.5 98.5 55.8 96.9 56.6C95.3 57.4 90.6 57.6 88.7 58.2C86.8 58.8 86.2 59.5 85.5 60.2C84.7 60.9 84.6 61.7 84.1 62.4C83.7 63.2 83.3 63.9 82.8 64.6C82.4 65.3 81.9 66.0 81.4 66.7C80.9 67.4 80.4 68.0 79.9 68.7C79.4 69.3 78.9 70.0 78.4 70.6C77.9 71.3 77.3 71.9 76.8 72.5C76.3 73.1 75.7 73.7 75.2 74.3C74.7 74.9 74.1 75.6 73.5 76.1C73.0 76.7 72.4 77.3 71.8 77.9C71.2 78.5 70.6 79.1 70.0 79.7C69.4 80.3 68.8 80.8 68.2 81.5C67.6 82.1 67.0 82.8 66.5 83.7C65.9 84.7 65.6 86.0 65.1 87.3C64.6 88.7 64.3 90.7 63.6 91.8C62.9 92.9 62.0 93.9 61.0 94.0C60.0 94.2 58.6 93.2 57.5 92.5C56.4 91.9 55.2 90.6 54.2 89.9C53.2 89.2 52.3 88.8 51.3 88.5C50.4 88.1 49.6 88.1 48.7 87.9C47.8 87.7 46.9 87.6 46.1 87.4C45.2 87.2 44.4 87.0 43.5 86.8C42.7 86.5 41.9 86.2 41.1 85.8C40.3 85.5 39.5 85.1 38.7 84.7C37.9 84.3 37.2 83.9 36.5 83.5C35.7 83.0 35.0 82.6 34.3 82.1C33.6 81.6 33.0 81.1 32.3 80.7C31.6 80.2 31.2 79.4 30.1 79.5C29.1 79.5 27.4 80.4 25.9 80.9C24.3 81.4 21.4 83.1 20.8 82.4C20.2 81.7 22.0 78.3 22.4 76.7C22.7 75.1 23.0 73.8 22.8 72.8C22.6 71.9 21.8 71.6 21.2 70.9C20.6 70.3 20.0 69.7 19.3 69.2C18.6 68.6 17.9 68.1 16.9 67.6C16.0 67.1 14.7 66.7 13.6 66.2C12.5 65.7 11.0 65.2 10.2 64.5C9.4 63.8 8.9 62.8 8.9 61.8C8.8 60.8 9.5 59.6 9.9 58.5C10.3 57.5 11.0 56.4 11.3 55.4C11.6 54.5 11.7 53.6 11.9 52.7C12.0 51.8 12.0 50.9 12.0 50.0C12.1 49.1 12.2 48.2 12.3 47.4C12.5 46.5 12.7 45.6 12.8 44.8C13.0 43.9 13.2 43.1 13.2 42.2C13.2 41.3 13.2 40.4 12.8 39.3C12.4 38.3 11.6 37.1 11.0 35.8C10.4 34.5 9.3 33.0 9.1 31.8C8.9 30.6 9.1 29.4 10.0 28.7C10.8 28.0 12.7 27.8 14.2 27.6C15.7 27.4 17.7 27.6 19.0 27.5C20.4 27.4 21.5 27.2 22.5 26.9C23.4 26.6 24.0 26.0 24.7 25.5C25.3 25.0 25.9 24.4 26.4 23.8C27.0 23.3 27.6 22.7 28.2 22.1C28.8 21.5 29.4 20.9 30.0 20.3C30.6 19.8 31.3 19.2 31.9 18.7C32.6 18.1 33.3 17.6 34.0 17.1C34.7 16.6 35.4 16.1 36.1 15.7C36.9 15.3 37.7 14.8 38.5 14.5C39.2 14.1 40.1 13.7 40.9 13.5C41.7 13.2 42.6 12.9 43.4 12.7C44.3 12.5 45.2 12.3 46.0 12.2C46.9 12.1 47.8 12.1 48.7 12.0C49.6 12.0 50.4 12.1 51.3 11.9C52.2 11.7 53.1 11.5 54.1 10.9C55.1 10.3 56.2 9.1 57.3 8.5C58.4 7.9 59.7 7.1 60.6 7.5C61.5 7.8 62.2 9.3 62.8 10.5C63.4 11.8 63.7 13.7 64.2 14.9C64.7 16.0 65.2 16.9 65.8 17.6C66.4 18.3 67.1 18.8 67.7 19.3C68.4 19.9 69.0 20.3 69.7 20.8C70.3 21.4 70.9 21.9 71.6 22.4C72.2 22.9 72.8 23.5 73.6 23.8C74.4 24.1 75.2 24.4 76.6 24.3C78.0 24.2 80.3 23.3 82.1 23.1C83.8 22.9 86.3 22.4 87.1 23.0C87.9 23.7 87.2 25.6 86.8 27.0C86.3 28.5 84.7 30.5 84.3 31.8C83.8 33.1 83.8 34.0 83.9 34.9C84.1 35.8 84.6 36.5 85.0 37.3C85.3 38.1 85.7 38.8 86.1 39.7C86.4 40.5 86.7 41.3 87.0 42.1C87.2 43.0 87.4 43.9 87.6 44.7C87.8 45.6 87.6 46.5 88.1 47.3C88.7 48.2 89.3 49.0 91.0 50.0ZM92.7 43.0a3.2 3.2 0 1 0 6.3 0a3.2 3.2 0 1 0 -6.3 0ZM85.2 72.3a2.6 2.6 0 1 0 5.3 0a2.6 2.6 0 1 0 -5.3 0Z'/%3E%3C/svg%3E");--splat3:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M85.1 50.0C85.0 50.8 85.0 51.6 84.9 52.4C84.9 53.3 84.8 54.1 84.7 54.9C84.6 55.7 84.5 56.5 84.4 57.3C84.3 58.1 84.1 58.9 84.0 59.7C83.8 60.6 83.7 61.4 83.5 62.2C83.3 63.0 83.2 63.8 82.9 64.7C82.7 65.5 82.5 66.3 82.2 67.1C81.9 67.9 81.6 68.7 81.3 69.5C81.0 70.4 80.3 70.9 80.3 72.0C80.3 73.1 80.4 74.2 81.2 76.2C82.0 78.2 85.3 82.7 85.1 83.9C85.0 85.2 82.3 84.3 80.4 83.8C78.6 83.3 75.5 81.1 74.0 80.7C72.5 80.4 72.1 81.1 71.4 81.8C70.8 82.4 70.4 83.5 70.0 84.6C69.6 85.8 69.5 87.8 68.9 88.7C68.3 89.6 67.3 90.3 66.2 90.2C65.1 90.0 63.5 88.6 62.3 87.8C61.1 87.1 59.9 86.3 58.9 85.8C57.9 85.4 57.1 85.4 56.2 85.4C55.4 85.3 54.5 85.3 53.7 85.3C52.9 85.3 52.1 85.2 51.2 85.2C50.4 85.2 49.6 85.1 48.8 85.0C48.0 85.0 47.2 84.9 46.3 84.8C45.5 84.7 44.7 84.6 43.9 84.5C43.1 84.4 42.3 84.3 41.5 84.2C40.7 84.1 39.8 83.9 39.0 83.8C38.2 83.6 37.4 83.4 36.6 83.2C35.7 83.0 34.9 82.8 34.1 82.6C33.3 82.3 32.5 82.1 31.7 81.8C30.9 81.4 30.1 81.1 29.3 80.7C28.5 80.4 27.7 79.9 27.0 79.5C26.2 79.0 25.5 78.6 24.8 78.0C24.1 77.5 23.4 76.9 22.7 76.3C22.1 75.7 21.5 75.1 20.9 74.4C20.3 73.8 19.8 73.0 19.3 72.3C18.8 71.6 18.3 70.8 17.9 70.0C17.5 69.3 17.2 68.4 16.8 67.6C16.4 66.9 16.4 66.0 15.4 65.4C14.5 64.8 12.8 64.6 11.3 64.1C9.7 63.6 6.5 63.5 6.3 62.5C6.0 61.6 8.3 59.8 9.6 58.6C10.9 57.3 13.0 56.1 13.8 55.1C14.7 54.1 14.5 53.3 14.7 52.5C14.9 51.6 14.8 50.8 14.9 50.0C14.9 49.2 15.0 48.4 15.1 47.6C15.1 46.7 15.2 45.9 15.3 45.1C15.4 44.3 15.5 43.5 15.6 42.7C15.7 41.9 15.8 41.1 15.7 40.2C15.7 39.3 15.5 38.4 15.2 37.3C14.9 36.3 14.3 35.1 14.0 34.0C13.7 32.8 13.2 31.5 13.4 30.5C13.6 29.6 14.3 28.8 15.1 28.2C15.9 27.6 17.2 27.3 18.1 26.8C19.0 26.3 19.9 25.9 20.6 25.3C21.2 24.7 21.7 23.9 22.0 23.0C22.4 22.0 22.5 20.8 22.7 19.7C22.9 18.5 22.9 17.0 23.4 15.9C23.8 14.9 24.5 13.9 25.4 13.5C26.3 13.1 27.6 13.2 28.9 13.4C30.1 13.5 31.5 14.1 32.6 14.4C33.8 14.7 34.9 14.9 35.9 15.0C36.9 15.1 37.7 15.1 38.6 15.0C39.5 14.8 40.3 14.7 41.1 14.3C41.9 14.0 42.7 13.5 43.5 12.9C44.2 12.2 45.0 11.1 45.8 10.5C46.7 9.9 47.6 9.1 48.6 9.1C49.5 9.1 50.5 9.7 51.4 10.4C52.3 11.0 53.1 12.2 53.9 13.0C54.7 13.7 55.4 14.4 56.2 14.8C57.0 15.3 57.8 15.5 58.6 15.7C59.3 15.9 60.2 16.0 61.0 16.2C61.8 16.4 62.6 16.6 63.4 16.8C64.3 17.0 65.1 17.2 65.9 17.4C66.7 17.7 67.5 17.9 68.3 18.2C69.1 18.6 69.9 18.9 70.7 19.3C71.5 19.6 72.3 20.1 73.0 20.5C73.8 21.0 74.5 21.5 75.2 22.0C76.0 22.5 76.6 23.1 77.4 23.5C78.3 23.9 79.0 24.4 80.4 24.5C81.7 24.6 83.9 24.1 85.6 24.1C87.3 24.1 90.0 23.8 90.8 24.5C91.6 25.2 91.1 27.0 90.4 28.5C89.8 30.0 87.5 32.2 86.9 33.6C86.2 34.9 85.8 35.9 86.4 36.7C87.0 37.5 89.6 37.7 90.5 38.4C91.3 39.1 92.0 40.1 91.5 41.2C91.0 42.2 88.3 43.7 87.3 44.8C86.3 45.8 85.8 46.6 85.4 47.5C85.1 48.4 85.2 49.2 85.1 50.0ZM88.8 72.2a2.3 2.3 0 1 0 4.7 0a2.3 2.3 0 1 0 -4.7 0ZM89.1 69.7a3.0 3.0 0 1 0 6.0 0a3.0 3.0 0 1 0 -6.0 0ZM13.2 82.1a2.6 2.6 0 1 0 5.2 0a2.6 2.6 0 1 0 -5.2 0Z'/%3E%3C/svg%3E")}
+.sring{display:grid;place-items:center;width:82px;height:82px;margin:-3px -2px -3px;position:relative;--sbg:color-mix(in srgb,var(--mute) 38%,transparent);transition:transform var(--m-fast) var(--m-ease)}
+.sring::before{content:"";position:absolute;inset:0;background:var(--sbg);rotate:var(--srot,0deg);
+  -webkit-mask:var(--splat,var(--splat0)) center/100% 100% no-repeat;mask:var(--splat,var(--splat0)) center/100% 100% no-repeat}
 .sbub:active .sring{transform:scale(.93)}
-.sbub.fresh.f .sring{background:linear-gradient(140deg,var(--pink),var(--apricot) 55%,var(--butter))}
-.sbub.fresh.e .sring{background:linear-gradient(140deg,var(--sky),var(--lilac))}
-.sbub.mine .sring{background:linear-gradient(140deg,var(--mint),var(--sky))}
-.sbub.add .sring{background:none;border:2px dashed var(--line);padding:1px}
-.sin{display:grid;place-items:center;width:100%;height:100%;border-radius:50%;background:var(--card);border:3px solid var(--cream);overflow:hidden}
-.sin .av{width:42px;height:42px}
-.sname{font-size:11.5px;font-weight:600;line-height:1.15;max-width:68px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sbub.fresh.f .sring{--sbg:linear-gradient(140deg,var(--pink),var(--apricot) 55%,var(--butter))}
+.sbub.fresh.e .sring{--sbg:linear-gradient(140deg,var(--sky),var(--lilac))}
+.sbub.mine .sring{--sbg:linear-gradient(140deg,var(--mint),var(--sky))}
+.sbub.add .sring::before{opacity:.55}
+.sin{display:grid;place-items:center;width:46px;height:46px;position:relative;border-radius:50%;background:var(--card);border:3px solid var(--cream);overflow:hidden;box-sizing:content-box}
+.sin .av{width:36px;height:36px}
+.sname{font-size:11.5px;font-weight:600;line-height:1.15;max-width:78px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sbub.seen .sname{color:var(--mute)}
 .scnt{position:absolute;top:-2px;right:-3px;min-width:20px;height:20px;padding:0 5px;border-radius:99px;background:var(--pink);color:var(--onAccent);font:800 11px/16px var(--head);text-align:center;border:2px solid var(--cream)}
-.splus{position:absolute;top:46px;right:-1px;width:23px;height:23px;border-radius:50%;background:var(--ink);color:var(--cream);display:grid;place-items:center;font:900 15px/1 var(--head);border:3px solid var(--cream)}
+.splus{position:absolute;top:48px;right:6px;width:23px;height:23px;border-radius:50%;background:var(--ink);color:var(--cream);display:grid;place-items:center;font:900 15px/1 var(--head);border:3px solid var(--cream)}
 .ssplit{flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;width:14px;padding-bottom:20px}
 .ssplit i{width:1px;flex:1;max-height:20px;background:var(--line)}
 .ssplit small{writing-mode:vertical-rl;transform:rotate(180deg);font-size:9.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--mute)}
@@ -6577,7 +6582,9 @@ function switchTab(n, how = {}) { shelfEdit = false; $("#editDock")?.remove(); i
      big title showed the name twice */
   { const ht = $("#hdrTitle"); if (ht && was !== now) { ht.style.transition = "none"; $("header")?.classList.remove("titled");
       requestAnimationFrame(() => requestAnimationFrame(() => { ht.style.transition = ""; })); } }
-  scrollTo(0, swiped ? (n === cur ? 0 : (tabScroll[n] || 0)) : 0);
+  const feedY = n === "people" && cur !== "people" && !swiped ? feedTarget() : null;
+  if (feedY != null) { feedResumed = true; feedArrive = { t:Date.now(), y:feedY }; }
+  scrollTo(0, feedY != null ? feedY : swiped ? (n === cur ? 0 : (tabScroll[n] || 0)) : 0);
   /* drawn once, now, as it arrives — never again a moment later, which made it jump. The
      room feed drawn in the last minute only needs its live connection back. */
   if (swiped && Date.now() - (drawnAt[n] || 0) < 300000) {
@@ -8736,11 +8743,11 @@ function storyGroupsOf(es, mineEs) {
   const old = (a, b) => String(a.created_at).localeCompare(String(b.created_at));
   const groups = Object.values(by).map(list => { list.sort(old);
     return { p:list[0].profiles || { id:list[0].user_id }, es:list, last:String(list[list.length - 1].created_at) }; });
-  const order = list => list.sort((a, b) => groupFresh(b) - groupFresh(a) || b.last.localeCompare(a.last));
   const mine = mineEs.filter(e => String(e.created_at) > cut).sort(old);
   return { mine:mine.length ? { p:me, es:mine, mine:true } : null,
     /* the bubbles are your people only: strangers are in the feed below, not up here */
-    fol:order(groups.filter(g => fs.has(g.p.id))), all:[] }; }
+    fol:storyOrder(groups.filter(g => fs.has(g.p.id))), all:[] }; }
+const storyOrder = list => list.sort((a, b) => groupFresh(b) - groupFresh(a) || b.last.localeCompare(a.last));
 /* the seen list only needs to remember what could still be on screen */
 function markStorySeen(id) { const m = P.storySeen ||= {}; if (m[id]) return; m[id] = Date.now();
   const keys = Object.keys(m); if (keys.length > 400) keys.sort((a, b) => m[a] - m[b]).slice(0, keys.length - 400).forEach(k => delete m[k]);
@@ -8749,11 +8756,12 @@ const storyNew = () => storyGroups.fol.reduce((n, g) => n + g.es.filter(e => !st
 
 function storyBubble(g, tier) { const fresh = !g.mine && groupFresh(g), left = g.mine ? 0 : g.es.filter(e => !storySeen(e.id)).length;
   const name = g.mine ? "You" : g.p.handle || "someone";
-  return `<button class="sbub ${g.mine ? "mine" : fresh ? "fresh " + tier : "seen"}" data-story="${esc(g.p.id)}" aria-label="${esc(g.mine ? "What you logged lately" : `${name}${fresh ? `, ${left} new` : ""}`)}">
+  const h = avHash(String(g.p.id || name));
+  return `<button class="sbub ${g.mine ? "mine" : fresh ? "fresh " + tier : "seen"}" data-story="${esc(g.p.id)}" style="--splat:var(--splat${h % 4});--srot:${(h * 37) % 360}deg" aria-label="${esc(g.mine ? "What you logged lately" : `${name}${fresh ? `, ${left} new` : ""}`)}">
     <span class="sring"><span class="sin">${avatar(g.p)}</span></span>${left > 1 ? `<span class="scnt" aria-hidden="true">${left}</span>` : ""}
     ${g.mine ? `<span class="splus" aria-hidden="true">+</span>` : ""}<span class="sname">${esc(name)}</span></button>`; }
 function paintStoryRow() { const row = $("#storyRow"); if (!row) return; const { mine, fol, all } = storyGroups;
-  const meB = mine ? storyBubble(mine) : `<button class="sbub add" data-story-add aria-label="Log something"><span class="sring"><span class="sin">${avatar(me)}</span></span><span class="splus" aria-hidden="true">+</span><span class="sname">You</span></button>`;
+  const meB = mine ? storyBubble(mine) : `<button class="sbub add" data-story-add aria-label="Log something" style="--splat:var(--splat${avHash(String(me.id)) % 4})"><span class="sring"><span class="sin">${avatar(me)}</span></span><span class="splus" aria-hidden="true">+</span><span class="sname">You</span></button>`;
   row.innerHTML = meB + fol.map(g => storyBubble(g, "f")).join("")
     + (fol.length && all.length ? `<span class="ssplit" aria-hidden="true"><i></i><small>everyone</small><i></i></span>` : "")
     + all.map(g => storyBubble(g, "e")).join("")
@@ -8763,6 +8771,23 @@ function paintStoryRow() { const row = $("#storyRow"); if (!row) return; const {
     openStory(b.dataset.story); });
   unseen.stories = storyNew(); paintDot(); }
 
+/* The Feed remembers which of your people's logs you've scrolled past. Coming back, it
+   opens at the top if there's something new up there, where you got to if you stopped
+   part way, and at "You're all caught up" (everyone else, below) once you've seen it all. */
+let feedResumed = false, feedSeenSave = 0, feedArrive = null;
+const feedSeenObs = "IntersectionObserver" in window ? new IntersectionObserver(xs => { let any = false;
+  for (const x of xs) { if (!x.isIntersecting) continue; const id = x.target.dataset.slip; feedSeenObs.unobserve(x.target);
+    const m = P.feedSeen ||= {}; if (!m[id]) { m[id] = Date.now(); any = true; } }
+  if (!any) return; const m = P.feedSeen, keys = Object.keys(m);
+  if (keys.length > 600) keys.sort((a, b) => m[a] - m[b]).slice(0, keys.length - 600).forEach(k => delete m[k]);
+  clearTimeout(feedSeenSave); feedSeenSave = setTimeout(saveP, 800); }, { threshold:.6 }) : null;
+function feedTarget() { const fol = $("#pplFol"); if (!fol || !$("#tab-people.on")) return null;
+  const slips = $$(":scope > .slip[data-slip]", fol); if (!slips.length) return null;
+  const i = slips.findIndex(x => !P.feedSeen?.[x.dataset.slip]);
+  if (i === 0) return 0;
+  const el = i > 0 ? slips[i] : ($(".caught", fol) || $("#pplAll")); if (!el) return null;
+  const hd = $("header");
+  return Math.max(0, Math.round(el.getBoundingClientRect().top + scrollY - (hd ? hd.offsetHeight : 0) - 10)); }
 async function renderPeople() {
   const body = $("#peopleBody"); if (!body || !me) return; const gen = ++peopleGen;
   if (!$("#storyRow", body)) body.innerHTML = `<h2 class="pagetitle" data-pagetitle="Feed">${titleMark("Feed")}</h2><div class="storyrow" id="storyRow"></div><div id="pplFol">${skeleton(3, true)}</div>`;
@@ -8794,6 +8819,12 @@ async function renderPeople() {
     <div id="pplTwins"></div><div id="pplAll"></div>`;
   paintStoryRow(); paintDaily(null, $("#pplDaily"), { everyone:true });
   const fb = $("#pplFol"); wireSlips(fb, shown); revealIn(fb);
+  if (feedSeenObs) $$(":scope > .slip[data-slip]", fb).forEach(x => { if (!P.feedSeen?.[x.dataset.slip]) feedSeenObs.observe(x); });
+  /* the first time it's drawn this session, open where you left off; and if it's drawn
+     again just after you arrived (with something new in it) before you've moved, again */
+  const fresh = feedArrive && Date.now() - feedArrive.t < 5000 && Math.abs(scrollY - feedArrive.y) < 4;
+  if (currentTab() === "people" && (!feedResumed && scrollY < 30 || fresh)) { feedResumed = true;
+    requestAnimationFrame(() => { const y = feedTarget(); if (y != null) { scrollTo(0, y); feedArrive = { t:Date.now(), y }; } }); }
   paintEveryone($("#pplAll"), all); paintVenues($("#pplVenues"));
   $$("[data-best]", $("#pplBest")).forEach(x => x.onclick = () => { const e = all.find(y => y.id === x.dataset.best); if (e) openEntry(e); });
   /* the twins take a while to work out, so they arrive after everything else is up */
@@ -8894,7 +8925,14 @@ function openStory(uid) {
 function closeStory() { const v = $("#storyV"); if (!v) return; sv = null;
   document.documentElement.classList.remove("svopen");
   if (REDUCED) v.remove(); else { v.classList.add("out"); setTimeout(() => v.remove(), 200); }
-  paintStoryRow(); }
+  /* like Instagram: whoever you've just watched moves to the back of the row, and the rest
+     slide along to close the gap */
+  const row = $("#storyRow"), was = {};
+  if (row && !REDUCED) $$(".sbub[data-story]", row).forEach(b => was[b.dataset.story] = b.getBoundingClientRect().left);
+  storyOrder(storyGroups.fol); paintStoryRow();
+  if (row && !REDUCED) $$(".sbub[data-story]", row).forEach(b => { const x = was[b.dataset.story]; if (x == null) return;
+    const dx = x - b.getBoundingClientRect().left; if (Math.abs(dx) < 1) return;
+    b.animate([{ transform:`translateX(${dx}px)` }, { transform:"none" }], { duration:420, delay:120, easing:"cubic-bezier(.2,1,.3,1)", fill:"backwards" }); }); }
 function svPaint() { const v = $("#storyV"); if (!v || !sv) return;
   const g = sv.line[sv.gi], e = g.es[sv.ei], w = remember(e.works) || works[e.work_id] || {};
   if (!g.mine) markStorySeen(e.id);
