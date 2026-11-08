@@ -2468,6 +2468,31 @@ html[data-theme="dark"] .slip,html[data-theme="dark"] .club,html[data-theme="dar
 /* the light scroll rise: a few pixels and a soft fade, no more */
 .lite{opacity:.35;translate:0 8px}
 .lite.lite-in{opacity:1;translate:0 0;transition:opacity .28s cubic-bezier(.2,.8,.2,1),translate .32s cubic-bezier(.2,.8,.2,1)}
+/* ---------- scroll styles, being tried out ----------
+   Each page can have its own way for things to arrive as you scroll down to them (picked
+   from the founder's try-out bar). 1 Rise: up from lower down. 2 Lay down: tipped back,
+   laid flat like a card on a table. 3 Zoom: grows into place. 4 Focus: comes out of a
+   blur. 5 Cascade: sprung up with a little turn, one after another. */
+@media (prefers-reduced-motion:no-preference){
+  section[data-sfx] :is(.lite,.reveal:not(.in)){opacity:0;transform:none}
+  section[data-sfx] :is(.lite.lite-in,.reveal.in){opacity:1}
+  section[data-sfx="1"] :is(.lite,.reveal:not(.in)){translate:0 34px}
+  section[data-sfx="1"] :is(.lite.lite-in,.reveal.in){translate:0 0;transition:opacity .38s ease-out,translate .6s cubic-bezier(.2,1.15,.4,1)}
+  section[data-sfx="2"] :is(.lite,.reveal:not(.in)){transform:perspective(800px) translateY(26px) rotateX(24deg);transform-origin:50% 0}
+  section[data-sfx="2"] :is(.lite.lite-in,.reveal.in){transform:perspective(800px) rotateX(0deg);transition:opacity .4s ease-out,transform .65s cubic-bezier(.2,1,.3,1)}
+  section[data-sfx="3"] :is(.lite,.reveal:not(.in)){scale:.86}
+  section[data-sfx="3"] :is(.lite.lite-in,.reveal.in){scale:1;transition:opacity .3s ease-out,scale .55s cubic-bezier(.3,1.45,.5,1)}
+  section[data-sfx="4"] :is(.lite,.reveal:not(.in)){filter:blur(10px);translate:0 12px}
+  section[data-sfx="4"] :is(.lite.lite-in,.reveal.in){filter:blur(0);translate:0 0;transition:opacity .45s ease-out,filter .5s ease-out,translate .5s cubic-bezier(.2,.9,.3,1)}
+  section[data-sfx="5"] :is(.lite,.reveal:not(.in)){translate:0 54px;rotate:-3deg}
+  section[data-sfx="5"] :is(.lite.lite-in,.reveal.in){translate:0 0;rotate:0deg;transition:opacity .3s ease-out,translate .7s cubic-bezier(.2,1.35,.4,1),rotate .7s cubic-bezier(.2,1.35,.4,1)}
+}
+#sfxBar{position:fixed;left:12px;right:12px;bottom:calc(env(safe-area-inset-bottom) + 78px);z-index:7;display:flex;align-items:center;gap:6px;
+  padding:6px;border-radius:16px;background:#151320;color:#F4EDE2;box-shadow:0 10px 30px rgba(21,19,32,.35),0 0 0 1px rgba(244,237,226,.14)}
+#sfxBar .sx-t{flex:1;min-width:0;text-align:center;font-size:13px;line-height:1.25}
+#sfxBar .sx-t b{display:block;font:800 15px/1.2 var(--head)}
+#sfxBar button{flex:none;border:0;border-radius:11px;height:40px;min-width:40px;background:rgba(255,255,255,.14);color:inherit;font:800 18px/1 var(--head);cursor:pointer}
+#sfxBar #sfxDone{font-size:13px;padding:0 10px}
 /* and the older top-level rise, brought down to match */
 .reveal{opacity:.35;transform:translateY(8px);transition:opacity .28s var(--m-ease),transform .32s var(--m-ease)}
 
@@ -2716,6 +2741,30 @@ header,nav{-webkit-backdrop-filter:blur(20px) saturate(1.4);backdrop-filter:blur
   .hero-fan .hero-po:active{translate:0 -10px}
 }
 @keyframes fanDeal{from{rotate:0deg;translate:var(--fx,0) 26px;opacity:0;scale:.9}}
+/* every page deals its posters its own way. Up next: dealt from a stack (above).
+   Rooms: they swing open like doors. Feed: the clue cards flip over. Diary: dropped onto
+   the page. Ranked: they climb up in order. Stacks: shuffled in from either side.
+   Your page: they pop up. */
+@media (prefers-reduced-motion:no-preference){
+  #tab-doors .fanin.dealt .hero-fan .hero-po{animation:fanDoor .75s cubic-bezier(.2,1.1,.3,1) both;transform-origin:0 50%}
+  #tab-people .fanin.dealt .hero-fan .hero-po{animation:fanFlip .7s cubic-bezier(.3,1.3,.4,1) both}
+  #tab-people .fanin .hero-fan .hero-po:nth-child(1){animation-delay:.05s}#tab-people .fanin .hero-fan .hero-po:nth-child(2){animation-delay:.17s}
+  #tab-people .fanin .hero-fan .hero-po:nth-child(3){animation-delay:.29s}#tab-people .fanin .hero-fan .hero-po:nth-child(4){animation-delay:.41s}
+  .fx-diary.fanin.dealt .hero-fan .hero-po{animation:fanDrop .7s cubic-bezier(.3,1.35,.5,1) both}
+  .fx-ranked.fanin.dealt .hero-fan .hero-po{animation:fanClimb .75s cubic-bezier(.2,1.3,.4,1) both}
+  .fx-ranked.fanin .hero-fan .hero-po:nth-child(1){animation-delay:.3s}.fx-ranked.fanin .hero-fan .hero-po:nth-child(2){animation-delay:.2s}
+  .fx-ranked.fanin .hero-fan .hero-po:nth-child(3){animation-delay:.1s}.fx-ranked.fanin .hero-fan .hero-po:nth-child(4){animation-delay:0s}
+  #tab-clubs .fanin.dealt .hero-fan .hero-po{animation:fanShuffleL .7s cubic-bezier(.2,1.2,.35,1) both}
+  #tab-clubs .fanin.dealt .hero-fan .hero-po:nth-child(even){animation-name:fanShuffleR}
+  #tab-taste .fanin.dealt .hero-fan .hero-po{animation:fanPop .6s cubic-bezier(.3,1.6,.5,1) both}
+}
+@keyframes fanDoor{from{transform:perspective(500px) rotateY(-88deg);opacity:0}40%{opacity:1}}
+@keyframes fanFlip{from{transform:perspective(600px) rotateY(-180deg) scale(.85);opacity:0}45%{opacity:1}}
+@keyframes fanDrop{from{translate:0 -150px;rotate:calc(var(--r,0deg) - 14deg);opacity:0}30%{opacity:1}}
+@keyframes fanClimb{from{translate:0 170px;opacity:0}}
+@keyframes fanShuffleL{from{translate:-240px 10px;rotate:-24deg;opacity:0}}
+@keyframes fanShuffleR{from{translate:200px -10px;rotate:24deg;opacity:0}}
+@keyframes fanPop{from{scale:0;rotate:-30deg;opacity:0}}
 
 /* the place you saw it, and the best places */
 .venueline{margin:10px 0 0;font-size:14px;color:var(--mute)}.venueline b{color:var(--ink)}.vr-off{opacity:.3}
@@ -5332,13 +5381,16 @@ const LITE_SEL = ".slip,.logline,.card,.club,.archcard,.sn-tile,.sn-late,.cell,.
    report says where a thing is: on screen or above it, it's left alone; on a page not
    showing yet, it's looked at again when that page opens; below, it waits low and faded
    until it scrolls up into view. */
-const liteObs = !REDUCED && "IntersectionObserver" in window ? new IntersectionObserver(es => es.forEach(en => { const el = en.target;
+const liteObs = !REDUCED && "IntersectionObserver" in window ? new IntersectionObserver(es => { let k = 0; es.forEach(en => { const el = en.target;
     if (!el.classList.contains("lite")) {
       if (en.isIntersecting || en.boundingClientRect.bottom < 0) { liteObs.unobserve(el); return; }
       if (!en.boundingClientRect.height) { liteObs.unobserve(el); delete el.dataset.lite; return; }
       el.classList.add("lite"); return; }
     if (!en.isIntersecting) return; liteObs.unobserve(el);
-    el.classList.add("lite-in"); setTimeout(() => el.classList.remove("lite", "lite-in"), 420); })) : null;
+    /* with a scroll style picked, things that come into view together arrive one after another */
+    const fx = +(el.closest("section")?.dataset.sfx || 0), gap = fx === 5 ? 70 : fx ? 40 : 0, wait = Math.min(k++, 4) * gap;
+    if (wait) el.style.transitionDelay = wait + "ms";
+    el.classList.add("lite-in"); setTimeout(() => { el.classList.remove("lite", "lite-in"); el.style.transitionDelay = ""; }, fx ? 900 + wait : 420); }); }) : null;
 function liteWatch(root) { if (!liteObs || !root?.querySelectorAll) return;
   const els = [...(root.matches?.(LITE_SEL) ? [root] : []), ...root.querySelectorAll(LITE_SEL)];
   for (const el of els) { if (el.dataset.lite || el.classList.contains("reveal")) continue; el.dataset.lite = "1";
@@ -6456,6 +6508,11 @@ const tabScroll = {};
    finished, so logging is a move from one side to the other rather than a trip across
    the bar. The tab opens on whichever side you were last on. */
 const LIB = ["shelf", "archive"];
+/* a swipe goes between the pages on the bar, never between Queue's own two sides:
+   into Queue lands on whichever side you last left it on */
+const SWIPE_ORDER = ["doors", "people", "library", "clubs"];
+const besideTab = (n, dir) => { const t = SWIPE_ORDER[SWIPE_ORDER.indexOf(navOf(n)) + dir];
+  return !t ? null : t === "library" ? (LIB.includes(P.libSide) ? P.libSide : "shelf") : t; };
 const navOf = n => LIB.includes(n) ? "library" : n;
 function paintLib(n, instant) { const bar = $("#libBar"); if (!bar) return;
   bar.hidden = !LIB.includes(n); if (bar.hidden) return;
@@ -6510,7 +6567,7 @@ function switchTab(n, how = {}) { shelfEdit = false; $("#editDock")?.remove(); i
   requestAnimationFrame(() => { movePill(); watchTitle(); if (was !== now && !swiped) riseIn($("#tab-" + n));
     /* a row of tabs drawn while its page was hidden had no width to measure its underline by */
     if (swiped) $$(".seg.glide", $("#tab-" + n)).forEach(g => glideSeg(g, true));
-    liteWatch($("#tab-" + n)); });
+    liteWatch($("#tab-" + n)); paintSfxBar(); });
   /* the old page's name leaves the header at once — fading it out over the new page's own
      big title showed the name twice */
   { const ht = $("#hdrTitle"); if (ht && was !== now) { ht.style.transition = "none"; $("header")?.classList.remove("titled");
@@ -6533,11 +6590,32 @@ function switchTab(n, how = {}) { shelfEdit = false; $("#editDock")?.remove(); i
     requestAnimationFrame(back); }
   if (n === "doors") setTimeout(markSeen, 1200); else paintDot();
   warmBeside(); }
+/* ---------- trying the scroll styles ----------
+   The founder (and the demo) can turn on a little bar that steps through the five scroll
+   styles on whichever page is showing. Each step starts the page from the top again so you
+   can scroll down and feel it. What's picked is kept per page. */
+const SFX_NAMES = ["As now (a faint lift)", "Rise", "Lay down", "Zoom", "Focus", "Cascade"];
+const SFX_PAGES = { doors:"Rooms", people:"Feed", shelf:"Up next", archive:"Finished", clubs:"Stacks", taste:"You" };
+function applySfx() { for (const k of Object.keys(SFX_PAGES)) { const sec = $("#tab-" + k); if (!sec) continue;
+  const v = +(P.sfx?.[k] || 0); if (v) sec.dataset.sfx = v; else delete sec.dataset.sfx; } }
+function sfxRearm(n) { const sec = $("#tab-" + n); if (!sec || !liteObs) return; scrollTo(0, 0);
+  $$("[data-lite]", sec).forEach(el => { liteObs.unobserve(el); delete el.dataset.lite; el.classList.remove("lite", "lite-in"); el.style.transitionDelay = ""; });
+  $$(".reveal", sec).forEach(el => { el.classList.remove("reveal", "in"); delete el.dataset.revealed; });
+  requestAnimationFrame(() => requestAnimationFrame(() => liteWatch(sec))); }
+function paintSfxBar() { let bar = $("#sfxBar");
+  const n = currentTab(), page = SFX_PAGES[n];
+  if (!P.sfxTry || !me || !page) { bar?.remove(); return; }
+  if (!bar) { bar = document.createElement("div"); bar.id = "sfxBar"; document.body.appendChild(bar); }
+  const v = +(P.sfx?.[n] || 0);
+  bar.innerHTML = `<button type="button" data-sx="-1" aria-label="Previous style">‹</button><div class="sx-t" aria-live="polite"><b>${esc(page)} · ${v ? v + " of 5" : "now"}</b>${esc(SFX_NAMES[v])}</div><button type="button" data-sx="1" aria-label="Next style">›</button><button type="button" id="sfxDone">Done</button>`;
+  $$("[data-sx]", bar).forEach(b => b.onclick = () => { P.sfx = { ...(P.sfx || {}), [n]:(v + +b.dataset.sx + 6) % 6 }; saveP(); applySfx(); paintSfxBar(); sfxRearm(n); buzz(6); });
+  $("#sfxDone", bar).onclick = () => { P.sfxTry = false; saveP(); paintSfxBar(); }; }
+applySfx();
 /* the pages either side of this one, drawn while nothing's happening, so a swipe always
    has something beside it (and the page you land on is already there) */
 function warmBeside() { clearTimeout(warmBeside.t);
-  warmBeside.t = setTimeout(() => { const go = () => { const i = TAB_ORDER.indexOf(currentTab()); if (i < 0) return;
-      for (const t of [TAB_ORDER[i - 1], TAB_ORDER[i + 1]]) { const sec = t && $("#tab-" + t);
+  warmBeside.t = setTimeout(() => { const go = () => { const c = currentTab(); if (!TAB_ORDER.includes(c)) return;
+      for (const t of [besideTab(c, -1), besideTab(c, 1)]) { const sec = t && $("#tab-" + t);
         if (sec && !sec.textContent.trim()) { try { RENDER[t]?.(); drawnAt[t] = Date.now(); } catch {} } } };
     "requestIdleCallback" in window ? requestIdleCallback(go, { timeout:1500 }) : go(); }, 900); }
 $$("nav button[data-tab]").forEach(b => b.onclick = () => { if (b.dataset.held) { delete b.dataset.held; return; }
@@ -6598,9 +6676,7 @@ let tabDrag = false;
   const setX = (els, x, t) => els.forEach(el => { el.style.transition = t || (x ? "none" : ""); el.style.transform = x ? `translate3d(${x}px,0,0)` : ""; });
   const unfix = els => els.forEach(el => { el.classList.remove("swipenext"); for (const k of ["position", "top", "left", "width", "zIndex", "transform", "transition"]) el.style[k] = ""; });
   function prepare(d) {
-    d.cur = currentTab(); d.to = TAB_ORDER[TAB_ORDER.indexOf(d.cur) + d.dir] || null;
-    /* into Queue from outside, you arrive on whichever side you last left it on */
-    if (d.to && LIB.includes(d.to) && !LIB.includes(d.cur) && LIB.includes(P.libSide)) d.to = P.libSide;
+    d.cur = currentTab(); d.to = besideTab(d.cur, d.dir);
     d.curEls = groupOf(d.cur, d.to); d.nbEls = [];
     if (!d.to || REDUCED) return;
     const sec = $("#tab-" + d.to); if (!sec) { d.to = null; return; }
@@ -8986,12 +9062,19 @@ const GRID = `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3.5" wi
    posters fanned on the right (each opens), and the one thing you'd do next. */
 /* the posters on a top card fan out like a hand of cards the first time that card is
    drawn this session; after that they just sit there */
-const fanSeen = new Set();
-const fanIn = key => { if (REDUCED || !key || fanSeen.has(key)) return ""; fanSeen.add(key); return " fanin"; };
+/* A card is drawn more than once (from what's saved, then fresh; and the pages beside
+   you are drawn before you get there), so it only counts as seen once its posters have
+   actually dealt on screen. Drawn again mid-deal, it deals again rather than snapping.
+   The key rides along on the card as data-fan (this goes inside its class="…"). */
+const fanDealt = new Map();
+const fanIn = key => { if (REDUCED || !key) return ""; const t = fanDealt.get(key);
+  return t && Date.now() - t > 900 ? "" : ` fanin" data-fan="${esc(key)}`; };
 /* cards are often drawn before their tab is open, so the deal waits until the card is
    actually on screen */
 if ("IntersectionObserver" in window && "MutationObserver" in window) {
-  const io = new IntersectionObserver(xs => xs.forEach(x => { if (x.isIntersecting) { x.target.classList.add("dealt"); io.unobserve(x.target); } }), { threshold:.35 });
+  const io = new IntersectionObserver(xs => xs.forEach(x => { if (!x.isIntersecting) return;
+    const k = x.target.dataset.fan; if (k && !fanDealt.has(k)) fanDealt.set(k, Date.now());
+    x.target.classList.add("dealt"); io.unobserve(x.target); }), { threshold:.35 });
   new MutationObserver(ms => { for (const m of ms) for (const n of m.addedNodes) if (n.nodeType === 1) {
       if (n.classList?.contains("fanin")) io.observe(n); n.querySelectorAll?.(".fanin:not(.dealt)").forEach(c => io.observe(c)); } })
     .observe(document.documentElement, { childList:true, subtree:true });
@@ -9026,7 +9109,7 @@ function paintCabHero() { const el = $("#cabHero"); if (!el) return;
     const avg = es.length ? es.reduce((t, e) => t + e.score, 0) / es.length / 2 : 0;
     const recent = es.slice().sort((a, b) => String(b.rated_on).localeCompare(String(a.rated_on)) || String(b.created_at || "").localeCompare(String(a.created_at || ""))).filter((e, i, arr) => arr.findIndex(x => x.work_id === e.work_id) === i).slice(0, 4).map(e => works[e.work_id]);
     const bits = [best && best[0] !== ym && best[1] > m ? `Busiest month: <b>${MONTH_FULL[+best[0].slice(5) - 1]}, ${best[1]}</b>` : "", es.length ? `<b>${avg.toFixed(1)}★</b> on average` : ""].filter(Boolean);
-    el.innerHTML = heroHTML({ cls:"upbig", col, label:"Diary", tag:`${es.length} logged`,
+    el.innerHTML = heroHTML({ cls:"upbig fx-diary", col, label:"Diary", tag:`${es.length} logged`,
       head:m ? `${numWord(m)} ${m === 1 ? one : what} so far in ${MONTH_FULL[now.getMonth()]}.` : `Nothing yet in ${MONTH_FULL[now.getMonth()]}.`,
       meta:bits.join(" · "), fan:recent, btn:{ id:"cabHeroGo", label:"+ Log", aria:k ? `Log ${k === "tv" ? "a show" : k === "game" ? "a game" : k === "book" ? "a book" : "a film"}` : "Log something" } });
     $("#cabHeroGo", el).onclick = () => openAdd(); }
@@ -9036,7 +9119,7 @@ function paintCabHero() { const el = $("#cabHero"); if (!el) return;
     const counts = kinds.map(x => [x, (rankCache[x] || []).filter(id => works[id]).length]);
     const big = counts.slice().sort((a, b) => b[1] - a[1])[0];
     const head = !tops.length ? "Rate a few and your order builds itself." : k || tops.length === 1 ? `${esc(tops[0].title)} is your number one${k ? " " + one : ""}.` : "Your number ones.";
-    el.innerHTML = heroHTML({ cls:"upbig", col, label:"Ranked", tag:`${counts.reduce((t, c) => t + c[1], 0)} in order`, head,
+    el.innerHTML = heroHTML({ cls:"upbig fx-ranked", col, label:"Ranked", tag:`${counts.reduce((t, c) => t + c[1], 0)} in order`, head,
       meta:counts.map(([x, n]) => `${n} ${n === 1 ? (x === "tv" ? "show" : K(x).label.toLowerCase()) : x === "tv" ? "shows" : K(x).plural.toLowerCase()}`).join(" · "),
       fan:tops, btn:big && big[1] >= 2 ? { id:"cabHeroGo", label:"Sharpen", aria:`Sharpen your ${big[0] === "tv" ? "shows" : K(big[0]).plural.toLowerCase()}` } : null });
     const go = $("#cabHeroGo", el); if (go) go.onclick = () => $(`[data-sharpen="${big[0]}"]`)?.click(); }
@@ -15897,6 +15980,8 @@ async function openYou() { let top = { items:[] }; try { top = await ensureMyTop
     <p class="sub" style="margin-top:4px">Once a month: what everyone logged, the stacks people saved and the Five Clues nobody got. It goes to the email on your account. Switch it off here any time.</p>
     <div class="lbl" style="margin-top:10px">Public profile page</div><div id="ppSlot"></div>
     ${isFounder() ? `<div class="lbl" style="margin-top:10px">Founder</div><div class="stack"><button class="btn quiet" id="fTrends">Last week on Rooms</button><button class="btn quiet" id="fList">Copy the newsletter list</button></div>` : ""}
+    ${isFounder() || sb.__local ? `<div class="lbl" style="margin-top:10px">Scroll animations (trying out)</div><div class="stack"><button class="btn quiet" id="sfxTry">Try the five scroll styles</button></div>
+      <p class="sub" style="margin-top:4px">A bar appears on each page: step through the styles, scroll down to feel each one, and whichever you leave it on stays for that page. ${Object.entries(P.sfx || {}).filter(([, v]) => v).map(([k, v]) => `${SFX_PAGES[k]}: ${SFX_NAMES[v]}`).join(" · ") || "Every page is on the faint lift it has now."}</p>` : ""}
     <div class="lbl" style="margin-top:10px">How the app looks</div><div class="chips">${[["","Auto"],["light","Light"],["dark","Dark"]].map(([k,l]) => `<button class="chip ${(P.theme||"")===k?"on":""}" data-th="${k}">${l}</button>`).join("")}</div>
     <p class="sub" style="margin-top:4px">Auto follows your phone. The ground still warms and dims across the day either way.</p>
     <div class="lbl">The mascots</div><div class="chips"><button class="chip ${P.tilt ? "on" : ""}" id="tiltSw">Eyes follow your tilt</button></div>
@@ -15996,6 +16081,7 @@ async function openYou() { let top = { items:[] }; try { top = await ensureMyTop
     say(P.epAlerts ? "We'll tell you about new episodes" : "No episode nudges"); });
   paintNewsletter($("#nlSlot")); paintPublicPage($("#ppSlot"));
   const ft = $("#fTrends"); if (ft) ft.onclick = () => openTrends(1);
+  const sxt = $("#sfxTry"); if (sxt) sxt.onclick = () => { P.sfxTry = true; saveP(); closeSheet(); setTimeout(() => { paintSfxBar(); sfxRearm(currentTab()); }, 350); };
   const fl = $("#fList"); if (fl) fl.onclick = async () => { try { const rows = await q(sb.rpc("newsletter_list"));
       if (!rows.length) { say("Nobody's on the list yet"); return; }
       await navigator.clipboard.writeText(rows.map(r => r.email).join("\n")); say(`Copied ${rows.length} ${rows.length === 1 ? "address" : "addresses"}`); }
