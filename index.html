@@ -7833,7 +7833,10 @@ function wireCaughtUp(root) { const el = $(".caughtup", root); if (!el) return;
    room's name picks its block from the name itself, so every room looks different but
    the same room always looks the same. */
 const TITLE_MARKS = { Feed:{ at:[1, 3], r:-4, col:"butter", rad:".24em" }, Queue:{ at:[0, 1], r:5, rad:".14em" }, Stacks:{ at:[3, 6], r:-1.5, col:"pink", rad:".18em" } };
-function markHTML(t, sp) { const [a, b] = sp.at;
+function markHTML(t, sp) {
+  /* never cut an emoji in half: a cut on the second half of a pair moves past it */
+  const whole = i => i > 0 && i < t.length && /[\uDC00-\uDFFF]/.test(t[i]) ? i + 1 : i;
+  const a = whole(sp.at[0]), b = whole(sp.at[1]);
   if (!(b > a) || !t.slice(a, b).trim()) return esc(t);
   return `${esc(t.slice(0, a))}<span class="mk" style="--r:${sp.r}deg;--rad:${sp.rad}${sp.col ? `;--mkc:var(--${sp.col})` : ""}">${esc(t.slice(a, b))}</span>${esc(t.slice(b))}`; }
 const titleMark = t => TITLE_MARKS[t] ? markHTML(t, TITLE_MARKS[t]) : esc(t);
