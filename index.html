@@ -9373,8 +9373,9 @@ async function nextEpisodes() { const ids = tvWatchlist(); if (!ids.length) retu
     let info = DEMO || sb.__local ? (w.meta?.next_ep || null) : cache[id]?.day === day ? cache[id].info : undefined;
     if (info === undefined) { try { const d = await tmdb("tv/" + id.split(":")[1]);
         const pick = x => x ? { s:x.season_number, e:x.episode_number, air:x.air_date, name:x.name || "" } : null;
-        info = { next:pick(d.next_episode_to_air), last:pick(d.last_episode_to_air) }; } catch { info = null; }
-      cache[id] = { day, info }; }
+        info = { next:pick(d.next_episode_to_air), last:pick(d.last_episode_to_air) }; cache[id] = { day, info }; }
+      /* not kept when TMDB didn't answer, so being offline once doesn't hide it all day */
+      catch { info = null; } }
     if (!info) return;
     const near = [info.last, info.next].filter(x => x?.air).map(x => ({ w, ...x, gap:dayNo(x.air) - dayNo(day) })).filter(x => x.gap >= -2 && x.gap <= 7);
     if (near.length) out.push({ ...near[0], up:info.next }); }));
