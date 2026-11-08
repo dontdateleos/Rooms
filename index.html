@@ -1387,7 +1387,7 @@ svg .comet{transform-box:fill-box;transform-origin:center;animation:cometTurn 4.
 .pull.going .pmk .pr{animation:pullLamp .9s linear infinite}
 .pull.going .pmk .pr:nth-of-type(2){animation-delay:.225s}.pull.going .pmk .pr:nth-of-type(4){animation-delay:.45s}.pull.going .pmk .pr:nth-of-type(3){animation-delay:.675s}
 @keyframes pullLamp{0%,40%{opacity:1}60%,100%{opacity:.3}}
-/* ---------- the scroll feel being tried out (html.feel) ---------- */
+/* ---------- how scrolling feels (html.feel) ---------- */
 @property --pull{syntax:"<number>";inherits:true;initial-value:0}
 html.feel:not(.pulling){transition:--pull .45s cubic-bezier(.2,1.4,.4,1)}
 @media (prefers-reduced-motion:no-preference){
@@ -2498,31 +2498,6 @@ html[data-theme="dark"] .slip,html[data-theme="dark"] .club,html[data-theme="dar
 /* the light scroll rise: a few pixels and a soft fade, no more */
 .lite{opacity:.35;translate:0 8px}
 .lite.lite-in{opacity:1;translate:0 0;transition:opacity .28s cubic-bezier(.2,.8,.2,1),translate .32s cubic-bezier(.2,.8,.2,1)}
-/* ---------- scroll styles, being tried out ----------
-   Each page can have its own way for things to arrive as you scroll down to them (picked
-   from the founder's try-out bar). 1 Rise: up from lower down. 2 Lay down: tipped back,
-   laid flat like a card on a table. 3 Zoom: grows into place. 4 Focus: comes out of a
-   blur. 5 Cascade: sprung up with a little turn, one after another. */
-@media (prefers-reduced-motion:no-preference){
-  section[data-sfx] :is(.lite,.reveal:not(.in)){opacity:0;transform:none}
-  section[data-sfx] :is(.lite.lite-in,.reveal.in){opacity:1}
-  section[data-sfx="1"] :is(.lite,.reveal:not(.in)){translate:0 90px}
-  section[data-sfx="1"] :is(.lite.lite-in,.reveal.in){translate:0 0;transition:opacity .5s ease-out,translate .85s cubic-bezier(.16,1.2,.3,1)}
-  section[data-sfx="2"] :is(.lite,.reveal:not(.in)){transform:perspective(700px) translateY(70px) rotateX(58deg);transform-origin:50% 0}
-  section[data-sfx="2"] :is(.lite.lite-in,.reveal.in){transform:perspective(700px) rotateX(0deg);transition:opacity .5s ease-out,transform .95s cubic-bezier(.16,1.05,.3,1)}
-  section[data-sfx="3"] :is(.lite,.reveal:not(.in)){scale:.62}
-  section[data-sfx="3"] :is(.lite.lite-in,.reveal.in){scale:1;transition:opacity .4s ease-out,scale .8s cubic-bezier(.3,1.5,.5,1)}
-  section[data-sfx="4"] :is(.lite,.reveal:not(.in)){filter:blur(18px);translate:0 40px;scale:.94}
-  section[data-sfx="4"] :is(.lite.lite-in,.reveal.in){filter:blur(0);translate:0 0;scale:1;transition:opacity .6s ease-out,filter .75s ease-out,translate .8s cubic-bezier(.2,.9,.3,1),scale .8s cubic-bezier(.2,.9,.3,1)}
-  section[data-sfx="5"] :is(.lite,.reveal:not(.in)){translate:-30px 130px;rotate:-8deg}
-  section[data-sfx="5"] :is(.lite.lite-in,.reveal.in){translate:0 0;rotate:0deg;transition:opacity .4s ease-out,translate .95s cubic-bezier(.2,1.4,.4,1),rotate .95s cubic-bezier(.2,1.4,.4,1)}
-}
-#sfxBar{position:fixed;left:12px;right:12px;bottom:calc(env(safe-area-inset-bottom) + 78px);z-index:7;display:flex;align-items:center;gap:6px;
-  padding:6px;border-radius:16px;background:#151320;color:#F4EDE2;box-shadow:0 10px 30px rgba(21,19,32,.35),0 0 0 1px rgba(244,237,226,.14)}
-#sfxBar .sx-t{flex:1;min-width:0;text-align:center;font-size:13px;line-height:1.25}
-#sfxBar .sx-t b{display:block;font:800 15px/1.2 var(--head)}
-#sfxBar button{flex:none;border:0;border-radius:11px;height:40px;min-width:40px;background:rgba(255,255,255,.14);color:inherit;font:800 18px/1 var(--head);cursor:pointer}
-#sfxBar #sfxDone{font-size:13px;padding:0 10px}
 /* and the older top-level rise, brought down to match */
 .reveal{opacity:.35;transform:translateY(8px);transition:opacity .28s var(--m-ease),transform .32s var(--m-ease)}
 
@@ -5414,23 +5389,13 @@ const LITE_SEL = ".slip,.logline,.card,.club,.archcard,.sn-tile,.sn-late,.cell,.
    report says where a thing is: on screen or above it, it's left alone; on a page not
    showing yet, it's looked at again when that page opens; below, it waits low and faded
    until it scrolls up into view. */
-const liteObs = !REDUCED && "IntersectionObserver" in window ? new IntersectionObserver(es => { let k = 0; es.forEach(en => { const el = en.target;
+const liteObs = !REDUCED && "IntersectionObserver" in window ? new IntersectionObserver(es => { es.forEach(en => { const el = en.target;
     if (!el.classList.contains("lite")) {
       if (en.isIntersecting || en.boundingClientRect.bottom < 0) { liteObs.unobserve(el); return; }
       if (!en.boundingClientRect.height) { liteObs.unobserve(el); delete el.dataset.lite; return; }
-      el.classList.add("lite");
-      /* with a scroll style picked, it waits until it's a fifth of the way up the screen,
-         clear of the bar at the bottom, so you actually see it arrive */
-      if (sfxObs && el.closest("section[data-sfx]")) { liteObs.unobserve(el); sfxObs.observe(el); }
-      return; }
-    if (!en.isIntersecting) return; liteObs.unobserve(el); liteArrive(el, 0); }); }) : null;
-/* things that come into view together arrive one after another */
-function liteArrive(el, k) {
-  const fx = +(el.closest("section")?.dataset.sfx || 0), gap = fx === 5 ? 120 : fx ? 70 : 0, wait = Math.min(k, 4) * gap;
-  if (wait) el.style.transitionDelay = wait + "ms";
-  el.classList.add("lite-in"); setTimeout(() => { el.classList.remove("lite", "lite-in"); el.style.transitionDelay = ""; }, fx ? 1300 + wait : 420); }
-const sfxObs = !REDUCED && "IntersectionObserver" in window ? new IntersectionObserver(es => { let k = 0;
-  es.forEach(en => { if (!en.isIntersecting) return; sfxObs.unobserve(en.target); liteArrive(en.target, k++); }); }, { rootMargin:"0px 0px -20% 0px" }) : null;
+      el.classList.add("lite"); return; }
+    if (!en.isIntersecting) return; liteObs.unobserve(el);
+    el.classList.add("lite-in"); setTimeout(() => el.classList.remove("lite", "lite-in"), 420); }); }) : null;
 function liteWatch(root) { if (!liteObs || !root?.querySelectorAll) return;
   const els = [...(root.matches?.(LITE_SEL) ? [root] : []), ...root.querySelectorAll(LITE_SEL)];
   for (const el of els) { if (el.dataset.lite || el.classList.contains("reveal")) continue; el.dataset.lite = "1";
@@ -6607,7 +6572,7 @@ function switchTab(n, how = {}) { shelfEdit = false; $("#editDock")?.remove(); i
   requestAnimationFrame(() => { movePill(); watchTitle(); if (was !== now && !swiped) riseIn($("#tab-" + n));
     /* a row of tabs drawn while its page was hidden had no width to measure its underline by */
     if (swiped) $$(".seg.glide", $("#tab-" + n)).forEach(g => glideSeg(g, true));
-    liteWatch($("#tab-" + n)); paintSfxBar(); feelTick(); });
+    liteWatch($("#tab-" + n)); feelTick(); });
   /* the old page's name leaves the header at once — fading it out over the new page's own
      big title showed the name twice */
   { const ht = $("#hdrTitle"); if (ht && was !== now) { ht.style.transition = "none"; $("header")?.classList.remove("titled");
@@ -6630,36 +6595,13 @@ function switchTab(n, how = {}) { shelfEdit = false; $("#editDock")?.remove(); i
     requestAnimationFrame(back); }
   if (n === "doors") setTimeout(markSeen, 1200); else paintDot();
   warmBeside(); }
-/* ---------- trying the scroll styles ----------
-   The founder (and the demo) can turn on a little bar that steps through the five scroll
-   styles on whichever page is showing. Each step starts the page from the top again so you
-   can scroll down and feel it. What's picked is kept per page. */
-const SFX_NAMES = ["As now (a faint lift)", "Rise", "Lay down", "Zoom", "Focus", "Cascade"];
-const SFX_PAGES = { doors:"Rooms", people:"Feed", shelf:"Up next", archive:"Finished", clubs:"Stacks", taste:"You" };
-function applySfx() { for (const k of Object.keys(SFX_PAGES)) { const sec = $("#tab-" + k); if (!sec) continue;
-  const v = +(P.sfx?.[k] || 0); if (v) sec.dataset.sfx = v; else delete sec.dataset.sfx; } }
-function sfxRearm(n) { const sec = $("#tab-" + n); if (!sec || !liteObs) return; scrollTo(0, 0);
-  $$("[data-lite]", sec).forEach(el => { liteObs.unobserve(el); sfxObs?.unobserve(el); delete el.dataset.lite; el.classList.remove("lite", "lite-in"); el.style.transitionDelay = ""; });
-  $$(".reveal", sec).forEach(el => { el.classList.remove("reveal", "in"); delete el.dataset.revealed; });
-  requestAnimationFrame(() => requestAnimationFrame(() => liteWatch(sec))); }
-function paintSfxBar() { let bar = $("#sfxBar");
-  const n = currentTab(), page = SFX_PAGES[n];
-  if (!P.sfxTry || !me || !page) { bar?.remove(); return; }
-  if (!bar) { bar = document.createElement("div"); bar.id = "sfxBar"; document.body.appendChild(bar); }
-  const v = +(P.sfx?.[n] || 0);
-  bar.innerHTML = `<button type="button" data-sx="-1" aria-label="Previous style">‹</button><div class="sx-t" aria-live="polite"><b>${esc(page)} · ${v ? v + " of 5" : "now"}</b>${esc(SFX_NAMES[v])}</div><button type="button" data-sx="1" aria-label="Next style">›</button><button type="button" id="sfxDone">Done</button>`;
-  $$("[data-sx]", bar).forEach(b => b.onclick = () => { P.sfx = { ...(P.sfx || {}), [n]:(v + +b.dataset.sx + 6) % 6 }; saveP(); applySfx(); paintSfxBar(); sfxRearm(n); buzz(6); });
-  $("#sfxDone", bar).onclick = () => { P.sfxTry = false; saveP(); paintSfxBar(); }; }
-/* ?demo&scroll opens the demo with the try-out bar already showing */
-if (/[?&]scroll\b/.test(location.search)) P.sfxTry = true;
-applySfx();
-/* ---------- the scroll feel being tried out (?feel) ----------
+/* ---------- how scrolling feels ----------
    What the big apps do rather than animating every row: the top card's posters move
    with the scroll (they drift up, tuck in and shrink as you scroll away, and swell when
    you pull down past the top), what goes under the bars is softly blurred, and the pull
    to refresh is your own mascot, stretching as you pull. */
-const FEEL = /[?&]feel\b/.test(location.search) || !!P.feel;
-if (FEEL) document.documentElement.classList.add("feel");
+const FEEL = true;
+document.documentElement.classList.add("feel");
 let feelRaf = 0;
 function feelTick() { feelRaf = 0; if (!FEEL || REDUCED) return;
   const h = $("main section.on .hero.upbig"); if (!h) return;
@@ -6850,8 +6792,7 @@ async function pullRefresh() {
   const PULL_ROOMS = '<g class="pr"><rect x="12" y="12" width="34" height="34" rx="14" fill="#8FD3FF"/><path d="M12.53 22.2A14 14 0 0 1 26 12H32A14 14 0 0 1 45.47 22.2Z" fill="#b1e0ff"/></g><g class="pr"><rect x="54" y="12" width="34" height="34" rx="14" fill="#FFB36B"/><path d="M54.53 22.2A14 14 0 0 1 68 12H74A14 14 0 0 1 87.47 22.2Z" fill="#ffca97"/></g><g class="pr"><rect x="12" y="54" width="34" height="34" rx="14" fill="#B9A6FF"/><path d="M12.53 64.2A14 14 0 0 1 26 54H32A14 14 0 0 1 45.47 64.2Z" fill="#cec1ff"/></g><g class="pr"><rect x="41" y="41" width="47" height="47" rx="19" fill="#c68fa6"/><rect x="41" y="41" width="37.6" height="47" rx="19" fill="#F7B3CF"/><path d="M41.64 55.1A19 19 0 0 1 60 41H69A19 19 0 0 1 87.36 55.1Z" fill="#fbd5e5"/></g>';
   const chip = () => bar ||= (() => { const d = document.createElement("div");
     d.className = "pull"; d.id = "pullBar";
-    /* the logo's four rooms, switching on one at a time as you pull — or, trying out the
-       new feel, your own mascot */
+    /* your own mascot (or, before you're signed in, the logo's four rooms lighting up) */
     d.innerHTML = FEEL && me ? `<span class="pav" aria-hidden="true">${avSVG(avFor(me))}</span><span>Pull down</span>`
       : `<svg class="pmk" viewBox="10 10 80 80" aria-hidden="true">${PULL_ROOMS}</svg><span>Pull down</span>`;
     document.body.appendChild(d); return d; })();
@@ -16048,8 +15989,6 @@ async function openYou() { let top = { items:[] }; try { top = await ensureMyTop
     <p class="sub" style="margin-top:4px">Once a month: what everyone logged, the stacks people saved and the Five Clues nobody got. It goes to the email on your account. Switch it off here any time.</p>
     <div class="lbl" style="margin-top:10px">Public profile page</div><div id="ppSlot"></div>
     ${isFounder() ? `<div class="lbl" style="margin-top:10px">Founder</div><div class="stack"><button class="btn quiet" id="fTrends">Last week on Rooms</button><button class="btn quiet" id="fList">Copy the newsletter list</button></div>` : ""}
-    ${isFounder() || sb.__local ? `<div class="lbl" style="margin-top:10px">Scroll animations (trying out)</div><div class="stack"><button class="btn quiet" id="sfxTry">Try the five scroll styles</button></div>
-      <p class="sub" style="margin-top:4px">A bar appears on each page: step through the styles, scroll down to feel each one, and whichever you leave it on stays for that page. ${Object.entries(P.sfx || {}).filter(([, v]) => v).map(([k, v]) => `${SFX_PAGES[k]}: ${SFX_NAMES[v]}`).join(" · ") || "Every page is on the faint lift it has now."}</p>` : ""}
     <div class="lbl" style="margin-top:10px">How the app looks</div><div class="chips">${[["","Auto"],["light","Light"],["dark","Dark"]].map(([k,l]) => `<button class="chip ${(P.theme||"")===k?"on":""}" data-th="${k}">${l}</button>`).join("")}</div>
     <p class="sub" style="margin-top:4px">Auto follows your phone. The ground still warms and dims across the day either way.</p>
     <div class="lbl">The mascots</div><div class="chips"><button class="chip ${P.tilt ? "on" : ""}" id="tiltSw">Eyes follow your tilt</button></div>
@@ -16149,7 +16088,6 @@ async function openYou() { let top = { items:[] }; try { top = await ensureMyTop
     say(P.epAlerts ? "We'll tell you about new episodes" : "No episode nudges"); });
   paintNewsletter($("#nlSlot")); paintPublicPage($("#ppSlot"));
   const ft = $("#fTrends"); if (ft) ft.onclick = () => openTrends(1);
-  const sxt = $("#sfxTry"); if (sxt) sxt.onclick = () => { P.sfxTry = true; saveP(); closeSheet(); setTimeout(() => { paintSfxBar(); sfxRearm(currentTab()); }, 350); };
   const fl = $("#fList"); if (fl) fl.onclick = async () => { try { const rows = await q(sb.rpc("newsletter_list"));
       if (!rows.length) { say("Nobody's on the list yet"); return; }
       await navigator.clipboard.writeText(rows.map(r => r.email).join("\n")); say(`Copied ${rows.length} ${rows.length === 1 ? "address" : "addresses"}`); }
