@@ -1,0 +1,18 @@
+{
+  "title": "Out this week · 9–15 Nov",
+  "note": "The week's most notable new seasons and games, in the order they land. Streaming dates are the services' own and usually match Australia.",
+  "ranked": true,
+  "post": {
+    "slug": "week-2026-11-09",
+    "mode": "week",
+    "range": "9–15 November",
+    "col": "#8FD3FF"
+  },
+  "items": [
+    { "kind": "tv", "q": "The Devil's Plan", "when": "2026-11-10", "where": "Netflix", "card": "The Devil's Plan", "why": "Season 3 of the mind-game show" },
+    { "kind": "tv", "q": "The Lord of the Rings: The Rings of Power", "when": "2026-11-11", "where": "Prime Video", "card": "The Rings of Power", "why": "Season 3 is here" },
+    { "kind": "tv", "q": "Rivals", "year": 2024, "when": "2026-11-11", "where": "Disney+", "why": "A new season of the 80s drama" },
+    { "kind": "game", "q": "Metaphor: ReFantazio", "when": "2026-11-12", "where": "Switch 2", "why": "The acclaimed RPG lands on Switch 2" },
+    { "kind": "tv", "q": "The Chosen", "when": "2026-11-15", "where": "Prime Video", "why": "Season 6 begins" }
+  ]
+}

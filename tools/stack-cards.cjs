@@ -14,7 +14,7 @@ const data = JSON.parse(fs.readFileSync(`${dir}/items.json`, "utf8"));
   await p.evaluate(async () => { await Promise.all(["900 60px Outfit", "800 30px Outfit", "700 30px Inter", "600 30px Inter"].map(f => document.fonts.load(f))); await document.fonts.ready; });
   for (const [fmt, name] of [["tall", "tiktok"], ["post", "instagram"]]) {
     const pngs = await p.evaluate(async ({ data, fmt }) => {
-      const items = data.items.map(x => ({ w:x.w, why:x.why, title:x.card }));
+      const items = data.items.map(x => ({ w:x.w, why:x.why, title:x.card, when:x.when, where:x.where }));
       const [set] = window.__rooms.stackSets(data.list, items, data.post, fmt), out = [];
       for (const [, draw] of set.slides) out.push((await draw()).toDataURL("image/png"));
       return out; }, { data, fmt });

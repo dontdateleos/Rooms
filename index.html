@@ -16328,6 +16328,16 @@ function stackSets(l, items, o = {}, fmt = "tall") {
   else { const t = String(l.title || "A stack").trim().split(/\s+/); words = [[t.slice(0, -1).join(" ")], [t[t.length - 1], true]].filter(w => w[0]); }
   const sub = o.before ? [day && `${o.where || "Out"} ${day}.`, o.sub || "Catch up in this order."].filter(Boolean).join(" ") : (l.note || `${its.length} things, in order.`);
   const n = its.length, coverWs = its.map(x => x.w);
+  /* a round-up of what's out: this week's, or the month's. Each slide says where and when */
+  if (o.mode === "week" || o.mode === "month") {
+    const dd = d => { const x = new Date(String(d) + "T12:00:00"); return isNaN(x) ? "" : `${["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][x.getDay()]} ${x.getDate()} ${MON[x.getMonth()]}`; };
+    const head = o.mode === "week" ? [["Out this"], ["week", true]] : [["Out in"], [o.month || "", true]];
+    return [{ key:o.mode, name:o.mode === "week" ? "Out this week" : `Out in ${o.month || ""}`, when:o.range || "", slides:[
+      ["Cover", () => czHeroCover(fmt, coverWs, col, head, o.range || null)],
+      ...its.map(x => [x.title || x.w.title, () => czHero(fmt, { ...x.w, title:x.title || x.w.title }, KCOL(x.w.kind),
+        { chip:[x.where, x.when ? dd(x.when) : ""].filter(Boolean).join(" · ") || K(x.w.kind).label, line:x.why || K(x.w.kind).label })]),
+      ["The end", () => czEnd(fmt, o.range || "Rooms", col, [["Add them to your"], ["Up next", true]],
+        `Everything here is in one stack on Rooms, ready to save. Link in bio.`, "Free on the App Store")] ] }]; }
   return [{ key:"stack", name:o.before ? `Watch before ${o.before}` : l.title, when:day ? `before ${day}` : "", slides:[
     ["Cover", () => czHeroCover(fmt, coverWs, col, o.before ? [[`${n} to watch before`], ...words.slice(1)] : words, day ? `${o.where || "Out"} ${day.replace(/^\w+ /, "")}` : null)],
     ...its.map((x, i) => [x.title || x.w.title, () => czHero(fmt, { ...x.w, title:x.title || x.w.title }, KCOL(x.w.kind),

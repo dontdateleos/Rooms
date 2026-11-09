@@ -26,7 +26,8 @@ const BASE = (process.env.BASE || "http://127.0.0.1:8934").replace(/\/$/, "");
     const tap = async (sel, text) => {
       const at = text ? page.locator(sel, { hasText:new RegExp(`^\\s*${text}\\s*(\\d+\\+?)?\\s*$`) }) : page.locator(sel);
       try { await at.first().click({ timeout:4000 }); }
-      catch (e) { throw new Error(`couldn't tap ${sel}${text ? ` "${text}"` : ""}: ${(String(e.message).split("\n").find(l => /intercepts|not visible|not stable|outside of the viewport/.test(l)) || e.message.split("\n")[0]).replace(/\x1b\[\d+m/g, "").trim()}`); } };
+      catch (e) { /* a picture of what was on screen, for the taps that only fail now and then */
+        if (process.env.SMOKE_SHOTS) await page.screenshot({ path:`${process.env.SMOKE_SHOTS}/failed-${scheme}-${sel.replace(/[^a-z0-9]+/gi, "_")}.png` }).catch(() => {}); throw new Error(`couldn't tap ${sel}${text ? ` "${text}"` : ""}: ${(String(e.message).split("\n").find(l => /intercepts|not visible|not stable|outside of the viewport/.test(l)) || e.message.split("\n")[0]).replace(/\x1b\[\d+m/g, "").trim()}`); } };
     const expect = async (sel, what) => { if (!(await page.$(sel))) throw new Error(`missing ${what || sel}`); };
     const wait = ms => page.waitForTimeout(ms);
     /* the back gesture is how a sheet closes on a phone, so it's how the walk closes them */
