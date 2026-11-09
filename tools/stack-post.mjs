@@ -42,7 +42,9 @@ for (const it of spec.items) { const w = it.kind === "film" ? await film(it) : a
   items.push({ w, why:it.why || null, card:it.card || null }); console.log(`✓ ${it.kind} ${w.title} (${w.year}) → ${w.id}${w.cover ? "" : " (no cover)"}`); }
 
 /* the works go in only if they aren't there yet: what's there may already have more in it */
-await db("POST", "works?on_conflict=id", items.map(x => ({ ...x.w })), "resolution=ignore-duplicates,return=minimal");
+/* a batch save needs every row to carry the same fields */
+await db("POST", "works?on_conflict=id", items.map(({ w }) => ({ id:w.id, kind:w.kind, title:w.title, year:w.year || null, cover:w.cover || null, creator:w.creator || null, length:w.length || null })),
+  "resolution=ignore-duplicates,return=minimal");
 const [founder] = await db("GET", "profiles?select=id,handle&founder=eq.true&limit=1");
 if (!founder) throw new Error("no founder account found");
 const have = await db("GET", `theme_lists?select=id&owner=eq.${founder.id}&title=eq.${encodeURIComponent(spec.title)}&limit=1`);
