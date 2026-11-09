@@ -1,0 +1,106 @@
+{
+  "list": {
+    "id": null,
+    "title": "Before Metaphor on Switch 2",
+    "note": "Metaphor: ReFantazio comes to Switch 2 on Thursday 12 November. It's a brand-new world, so there's no homework — but if you want to warm up, these are the Atlus RPGs you can play on Switch, three of them from Metaphor's director."
+  },
+  "items": [
+    {
+      "w": {
+        "id": "game:2985",
+        "kind": "game",
+        "title": "Persona 4 Golden",
+        "year": "2012",
+        "creator": "NIS America",
+        "cover": "https://images.igdb.com/igdb/image/upload/t_cover_big/co1n1x.jpg"
+      },
+      "why": "The cosiest start: small town, big mystery",
+      "card": "Persona 4 Golden",
+      "when": null,
+      "where": null
+    },
+    {
+      "w": {
+        "id": "game:114283",
+        "kind": "game",
+        "title": "Persona 5 Royal",
+        "year": "2019",
+        "creator": "P Studio",
+        "cover": "https://images.igdb.com/igdb/image/upload/t_cover_big/coclf1.jpg"
+      },
+      "why": "The one everyone means. Same director as Metaphor",
+      "card": "Persona 5 Royal",
+      "when": null,
+      "where": null
+    },
+    {
+      "w": {
+        "id": "game:252647",
+        "kind": "game",
+        "title": "Persona 3 Reload",
+        "year": "2024",
+        "creator": "Sega",
+        "cover": "https://images.igdb.com/igdb/image/upload/t_cover_big/coc4jz.jpg"
+      },
+      "why": "The modern remake, and the closest feel to Metaphor",
+      "card": "Persona 3 Reload",
+      "when": null,
+      "where": null
+    },
+    {
+      "w": {
+        "id": "game:287850",
+        "kind": "game",
+        "title": "Shin Megami Tensei V: Vengeance",
+        "year": "2024",
+        "creator": "Sega",
+        "cover": "https://images.igdb.com/igdb/image/upload/t_cover_big/co7sv4.jpg"
+      },
+      "why": "Atlus at its hardest. Good prep for the bosses",
+      "card": "SMT V: Vengeance",
+      "when": null,
+      "where": null
+    },
+    {
+      "w": {
+        "id": "game:11416",
+        "kind": "game",
+        "title": "Persona 3 Portable",
+        "year": "2009",
+        "creator": "Ghostlight Ltd.",
+        "cover": "https://images.igdb.com/igdb/image/upload/t_cover_big/co1n1z.jpg"
+      },
+      "why": "The pocket version, if you've only got an hour a night",
+      "card": "Persona 3 Portable",
+      "when": null,
+      "where": null
+    }
+  ],
+  "post": {
+    "slug": "before-metaphor",
+    "before": "Metaphor on Switch 2",
+    "highlight": "Metaphor",
+    "date": "2026-11-12",
+    "where": "On Switch 2",
+    "sub": "No homework needed, it's a new world. But these are the warm-ups, all on Switch.",
+    "kinds": [
+      "game"
+    ],
+    "col": "#B9A6FF",
+    "finale": {
+      "kind": "game",
+      "q": "Metaphor: ReFantazio",
+      "card": "Metaphor: ReFantazio",
+      "line": "Log these, then start your journey",
+      "extra": "The whole stack is on Rooms · link in bio",
+      "w": {
+        "id": "game:26602",
+        "kind": "game",
+        "title": "Metaphor: ReFantazio",
+        "year": "2024",
+        "creator": "Atlus",
+        "cover": "https://images.igdb.com/igdb/image/upload/t_cover_big/co8d9t.jpg"
+      }
+    }
+  }
+}
