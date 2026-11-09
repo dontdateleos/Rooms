@@ -1,0 +1,142 @@
+{
+  "list": {
+    "id": null,
+    "title": "Before Sunrise on the Reaping",
+    "note": "Everything to catch up on before The Hunger Games: Sunrise on the Reaping, in Australian cinemas Thursday 19 November. The books and the films, each book before its film."
+  },
+  "items": [
+    {
+      "w": {
+        "id": "book:OL5735363W",
+        "kind": "book",
+        "title": "The Hunger Games",
+        "year": "2008",
+        "creator": "Suzanne Collins",
+        "length": 397,
+        "cover": "https://covers.openlibrary.org/b/id/12646537-M.jpg"
+      },
+      "why": null,
+      "card": null
+    },
+    {
+      "w": {
+        "id": "film:70160",
+        "kind": "film",
+        "title": "The Hunger Games",
+        "year": "2012",
+        "cover": "https://image.tmdb.org/t/p/w342/apa5G43Hha7kH7wJG0gkkHT7FA9.jpg"
+      },
+      "why": "Meet Haymitch. Sunrise is his story",
+      "card": "The Hunger Games"
+    },
+    {
+      "w": {
+        "id": "book:OL5735360W",
+        "kind": "book",
+        "title": "Catching Fire",
+        "year": "2009",
+        "creator": "Suzanne Collins",
+        "length": 400,
+        "cover": "https://covers.openlibrary.org/b/id/12646539-M.jpg"
+      },
+      "why": null,
+      "card": null
+    },
+    {
+      "w": {
+        "id": "film:101299",
+        "kind": "film",
+        "title": "The Hunger Games: Catching Fire",
+        "year": "2013",
+        "cover": "https://image.tmdb.org/t/p/w342/vrQHDXjVmbYzadOXQ0UaObunoy2.jpg"
+      },
+      "why": "The Quarter Quell, and Haymitch's old win",
+      "card": "Catching Fire"
+    },
+    {
+      "w": {
+        "id": "book:OL14908941W",
+        "kind": "book",
+        "title": "Mockingjay",
+        "year": "2010",
+        "creator": "Suzanne Collins",
+        "length": 424,
+        "cover": "https://covers.openlibrary.org/b/id/12646459-M.jpg"
+      },
+      "why": null,
+      "card": null
+    },
+    {
+      "w": {
+        "id": "film:131631",
+        "kind": "film",
+        "title": "The Hunger Games: Mockingjay - Part 1",
+        "year": "2014",
+        "cover": "https://image.tmdb.org/t/p/w342/meSGXQ8MXqiC8bXxkKu7lPqnu0L.jpg"
+      },
+      "why": "The rebellion starts in District 13",
+      "card": "Mockingjay – Part 1"
+    },
+    {
+      "w": {
+        "id": "film:131634",
+        "kind": "film",
+        "title": "The Hunger Games: Mockingjay - Part 2",
+        "year": "2015",
+        "cover": "https://image.tmdb.org/t/p/w342/lImKHDfExAulp16grYm8zD5eONE.jpg"
+      },
+      "why": "How it ends for Snow and the Capitol",
+      "card": "Mockingjay – Part 2"
+    },
+    {
+      "w": {
+        "id": "book:OL20716197W",
+        "kind": "book",
+        "title": "The Ballad of Songbirds and Snakes",
+        "year": "2020",
+        "creator": "Suzanne Collins",
+        "length": 528,
+        "cover": "https://covers.openlibrary.org/b/id/14421833-M.jpg"
+      },
+      "why": null,
+      "card": null
+    },
+    {
+      "w": {
+        "id": "film:695721",
+        "kind": "film",
+        "title": "The Hunger Games: The Ballad of Songbirds & Snakes",
+        "year": "2023",
+        "cover": "https://image.tmdb.org/t/p/w342/mBaXZ95R2OxueZhvQbcEWy2DqyO.jpg"
+      },
+      "why": "Young Snow, 64 years before Katniss",
+      "card": "The Ballad of Songbirds & Snakes"
+    },
+    {
+      "w": {
+        "id": "book:OL43426400W",
+        "kind": "book",
+        "title": "Sunrise on the Reaping",
+        "year": "2025",
+        "creator": "Suzanne Collins",
+        "length": 400,
+        "cover": "https://covers.openlibrary.org/b/id/14847912-M.jpg"
+      },
+      "why": null,
+      "card": null
+    }
+  ],
+  "post": {
+    "slug": "before-sunrise",
+    "before": "Sunrise on the Reaping",
+    "highlight": "Sunrise",
+    "date": "2026-11-19",
+    "where": "In cinemas",
+    "sub": "Catch up on the films in this order. The books are in the stack too.",
+    "kinds": [
+      "film"
+    ],
+    "extra": "the books are in it too",
+    "col": "#FFB36B"
+  }
+}
