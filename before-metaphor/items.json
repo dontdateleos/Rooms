@@ -2,7 +2,7 @@
   "list": {
     "id": null,
     "title": "Before Metaphor on Switch 2",
-    "note": "Metaphor: ReFantazio comes to Switch 2 on Thursday 12 November. It's a brand-new world, so there's no homework — but if you want to warm up, these are the Atlus RPGs you can play on Switch, three of them from Metaphor's director."
+    "note": "Metaphor: ReFantazio comes to Switch 2 on Thursday 12 November. It's a brand-new world, so there's no homework — but if you want to warm up, these are the Atlus RPGs you can play on Switch, most of them from Metaphor's director."
   },
   "items": [
     {
@@ -58,20 +58,6 @@
       },
       "why": "Atlus at its hardest. Good prep for the bosses",
       "card": "SMT V: Vengeance",
-      "when": null,
-      "where": null
-    },
-    {
-      "w": {
-        "id": "game:11416",
-        "kind": "game",
-        "title": "Persona 3 Portable",
-        "year": "2009",
-        "creator": "Ghostlight Ltd.",
-        "cover": "https://images.igdb.com/igdb/image/upload/t_cover_big/co1n1z.jpg"
-      },
-      "why": "The pocket version, if you've only got an hour a night",
-      "card": "Persona 3 Portable",
       "when": null,
       "where": null
     }
