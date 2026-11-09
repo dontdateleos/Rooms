@@ -62,5 +62,9 @@ else { [{ id }] = await db("POST", "theme_lists", { owner:founder.id, title:spec
 await db("POST", "theme_list_items", items.map((x, i) => ({ list_id:id, work_id:x.w.id, added_by:founder.id, position:i })), "return=minimal");
 console.log(`${items.length} things on it. Share link: ${WORKER}/s/${id}`); }
 
+/* the thing that's coming out, for the last slide: looked up, but not put on the stack */
+const post = { ...(spec.post || {}) };
+if (post.finale?.q) { const f = post.finale; post.finale = { ...f, w:f.kind === "book" ? await book(f) : await film(f) };
+  console.log(`✓ last slide: ${post.finale.w.title} (${post.finale.w.year})${post.finale.w.cover ? "" : " (no poster yet)"}`); }
 mkdirSync(`out/${slug}`, { recursive:true });
-writeFileSync(`out/${slug}/items.json`, JSON.stringify({ list:{ id, title:spec.title, note:spec.note }, items, post:spec.post || {} }, null, 2));
+writeFileSync(`out/${slug}/items.json`, JSON.stringify({ list:{ id, title:spec.title, note:spec.note }, items, post }, null, 2));

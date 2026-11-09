@@ -16036,7 +16036,7 @@ async function czCover(fmt, label, col, eye, words, sub, o = {}) {
 /* one title: its place in the countdown big on the left, the poster, then the numbers */
 async function czRank(fmt, label, col, w, rank, stat, extra, next, o = {}) {
   const { c, x, L } = czBase(fmt, label, col);
-  const pw = L.tall ? 560 : o.tag ? 400 : 430, ph = Math.round(pw * 1.5), px = o.noNum ? (CZ.W - pw) / 2 : (CZ.W - pw) / 2 + (L.tall ? 40 : 60);
+  const pw = o.bigStat ? (L.tall ? 470 : 340) : L.tall ? 560 : o.tag ? 400 : 430, ph = Math.round(pw * 1.5), px = o.noNum ? (CZ.W - pw) / 2 : (CZ.W - pw) / 2 + (L.tall ? 40 : 60);
   let py = L.top + (L.tall ? 10 : -10);
   /* a label above the poster ("film of the week", "it was"), clear of everything else */
   if (o.tag) { x.save(); x.font = "800 30px Outfit, sans-serif"; const tw = x.measureText(o.tag.toUpperCase()).width + 36;
@@ -16048,12 +16048,14 @@ async function czRank(fmt, label, col, w, rank, stat, extra, next, o = {}) {
   await czPosterLift(x, w, px, py, pw, ph);
   const gap = L.tall ? 1 : .86; let y = py + ph + Math.round((L.tall ? 120 : 84));
   x.fillStyle = CZ.ink; x.fillText(czFitLine(x, w.title || "", L.wide, L.tall ? 76 : 62, 40), CZ.M, y);
-  const by = [w.year, w.creator].filter(Boolean).join(" · ");
+  const by = o.bigStat ? "" : [w.year, w.creator].filter(Boolean).join(" · ");
   if (by) { x.fillStyle = CZ.pale; x.font = "600 30px Inter, sans-serif"; x.fillText(fitText(x, by, L.wide), CZ.M, y + Math.round(46 * gap)); y += Math.round(46 * gap); }
-  x.fillStyle = CZ.ink; x.font = "700 34px Inter, sans-serif";
+  const big = o.bigStat ? (L.tall ? 50 : 42) : 34;
+  x.fillStyle = CZ.ink; x.font = o.bigStat ? `800 ${big}px Outfit, sans-serif` : "700 34px Inter, sans-serif";
+  if (o.bigStat) y += Math.round(big * .4);
   if (o.wrap && x.measureText(stat).width > L.wide) { const ws = String(stat).split(/\s+/); let a = "";
     while (ws.length && x.measureText(a ? a + " " + ws[0] : ws[0]).width <= L.wide) a = a ? a + " " + ws.shift() : ws.shift();
-    x.fillText(a, CZ.M, y + Math.round(56 * gap)); y += 42; x.fillText(fitText(x, ws.join(" "), L.wide), CZ.M, y + Math.round(56 * gap)); }
+    x.fillText(a, CZ.M, y + Math.round(56 * gap)); y += Math.round(big * 1.2); x.fillText(fitText(x, ws.join(" "), L.wide), CZ.M, y + Math.round(56 * gap)); }
   else x.fillText(fitText(x, stat, L.wide), CZ.M, y + Math.round(56 * gap));
   if (extra) { x.fillStyle = col; x.font = "800 30px Outfit, sans-serif"; x.fillText(fitText(x, extra, L.wide), CZ.M, y + Math.round(100 * gap)); }
   czFoot(x, L, col, o.foot?.[0] || next || "What was yours?", o.foot?.[1] || (next ? "Swipe →" : "Log it on Rooms")); return c; }
@@ -16268,7 +16270,12 @@ function stackSets(l, items, o = {}, fmt = "tall") {
     ...its.map((x, i) => [x.title || x.w.title, () => czRank(fmt, label, KCOL(x.w.kind), { ...x.w, title:x.title || x.w.title }, i + 1,
       x.why || [K(x.w.kind).label, x.w.creator].filter(Boolean).join(" · "), null, i < its.length - 1 ? `Next: ${its[i + 1].title || its[i + 1].w.title}` : "One more swipe",
       { noGlow:true, wrap:true, tag:mixed ? K(x.w.kind).label : null, foot:[i < its.length - 1 ? `Next: ${its[i + 1].title || its[i + 1].w.title}` : "That's the lot", "Swipe →"] })]),
-    ["The end", () => czEnd(fmt, label, col, [["The whole stack is on"], ["Rooms", true]],
+    /* the last slide: the thing it's all for, if there is one (its poster, the day it's out, and a nudge
+       to log and rate the rest first); otherwise where the stack is */
+    o.finale?.w ? ["The new one", () => czRank(fmt, label, col, { ...o.finale.w, title:o.finale.card || o.finale.w.title }, 1,
+        o.finale.line || "Log and rate these before the new one comes out", o.finale.extra || "The whole stack is on Rooms · link in bio", null,
+        { noNum:true, wrap:true, bigStat:true, tag:day ? `${o.where || "Out"} ${day}` : "Coming soon", foot:["Then rate the new one too", "Rooms · free on the App Store"] })]
+    : ["The end", () => czEnd(fmt, label, col, [["The whole stack is on"], ["Rooms", true]],
       `"${l.title}"${o.extra ? `, and ${o.extra}` : ""}. Tick them off as you go. Link in bio.`, "Free on the App Store")] ] }]; }
 function openStackPost(l, ws, back) {
   let fmt = P.czFmt === "post" ? "post" : "tall", o = { kinds:[] };
