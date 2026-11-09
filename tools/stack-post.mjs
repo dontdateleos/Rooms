@@ -45,10 +45,14 @@ for (const it of spec.items) { const w = it.kind === "film" ? await film(it) : a
 /* a batch save needs every row to carry the same fields */
 await db("POST", "works?on_conflict=id", items.map(({ w }) => ({ id:w.id, kind:w.kind, title:w.title, year:w.year || null, cover:w.cover || null, creator:w.creator || null, length:w.length || null })),
   "resolution=ignore-duplicates,return=minimal");
-const [founder] = await db("GET", "profiles?select=id,handle&founder=eq.true&limit=1");
-if (!founder) throw new Error("no founder account found");
+/* whose account it goes on: the handle given (STACK_OWNER, or "owner" in the file), else the founder */
+const ownerHandle = (process.env.STACK_OWNER || spec.owner || "").replace(/^@/, "").trim();
+const [founder] = ownerHandle ? await db("GET", `profiles?select=id,handle&handle=eq.${encodeURIComponent(ownerHandle)}&limit=1`)
+  : await db("GET", "profiles?select=id,handle&founder=eq.true&limit=1");
+let id = null;
+if (!founder) console.log(`::warning::No ${ownerHandle ? `account @${ownerHandle}` : "founder account"} found, so the stack wasn't saved. The post is still drawn.`);
+else {
 const have = await db("GET", `theme_lists?select=id&owner=eq.${founder.id}&title=eq.${encodeURIComponent(spec.title)}&limit=1`);
-let id;
 if (have.length) { id = have[0].id;
   await db("PATCH", `theme_lists?id=eq.${id}`, { note:spec.note || null, ranked:!!spec.ranked, updated_at:new Date().toISOString() }, "return=minimal");
   await db("DELETE", `theme_list_items?list_id=eq.${id}`, null, "return=minimal");
@@ -56,7 +60,7 @@ if (have.length) { id = have[0].id;
 else { [{ id }] = await db("POST", "theme_lists", { owner:founder.id, title:spec.title, note:spec.note || null, ranked:!!spec.ranked, open:false }, "return=representation");
   console.log(`Made the stack "${spec.title}" on @${founder.handle}`); }
 await db("POST", "theme_list_items", items.map((x, i) => ({ list_id:id, work_id:x.w.id, added_by:founder.id, position:i })), "return=minimal");
-console.log(`${items.length} things on it. Share link: ${WORKER}/s/${id}`);
+console.log(`${items.length} things on it. Share link: ${WORKER}/s/${id}`); }
 
 mkdirSync(`out/${slug}`, { recursive:true });
 writeFileSync(`out/${slug}/items.json`, JSON.stringify({ list:{ id, title:spec.title, note:spec.note }, items, post:spec.post || {} }, null, 2));

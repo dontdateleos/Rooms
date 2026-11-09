@@ -10,6 +10,10 @@ on:
         description: "The stack file, e.g. stacks/before-sunrise.json"
         required: true
         default: stacks/before-sunrise.json
+      owner:
+        description: "Whose account the stack goes on (a handle); empty means the founder"
+        required: false
+        default: ""
 permissions:
   contents: write
 concurrency: stack-post
@@ -25,6 +29,7 @@ jobs:
       - name: The stack, on the founder's account
         env:
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          STACK_OWNER: ${{ inputs.owner }}
         run: node tools/stack-post.mjs "${{ inputs.spec }}"
       - name: The post
         run: |
