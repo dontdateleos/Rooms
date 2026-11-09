@@ -9600,7 +9600,7 @@ function renderShelf() {
         `<div class="row" style="cursor:default">${cover(w)}<div class="t"><b>${esc(w.title)}</b>
           <small>${tag(w.kind)} from ${esc(h.sender_p?.handle || "someone")}${h.note ? ` · “${esc(h.note)}”` : ""}</small></div>
           <span class="chip" data-yes="${esc(h.id)}">Take it</span><span class="chip" data-no="${esc(h.id)}">No</span></div>`).join("")}</div>`; })()}
-    <div id="waitWrap"><div class="lbl">Out soon · add to Up next</div><div id="waitBody"><p class="msg">Loading what's coming</p></div>
+    <div id="waitWrap"><div class="lbl">Most anticipated · add to Up next</div><div id="waitBody"><p class="msg">Loading what's coming</p></div>
     <p class="sub" style="margin-top:6px;font-size:12px">Films, shows and games with a release date.</p></div>
 `;
   $$("[data-sk]").forEach(b => b.onclick = () => { const k = b.dataset.sk; if (P.kinds.includes(k)) { if (P.kinds.length > 1) P.kinds = P.kinds.filter(x => x !== k); } else P.kinds = [...P.kinds, k]; saveP(); renderShelf(); });
@@ -10827,16 +10827,37 @@ async function saveOrder() { const L = activeList(), grid = $("#shelfGrid"); if 
   try { await Promise.all(changed.map(([id, i]) => q(sb.from("list_items").update({ position:i }).eq("list_id", L.id).eq("work_id", id)))); }
   catch (e) { const m = $("#msg"); if (m) m.textContent = e.message; } }
 
+/* Out soon is the most anticipated things coming, not just the next few by date: the big
+   ones picked by hand (releases.json on the website, the only way to rank books and new
+   seasons), then each medium's own measure of hype. Films and new shows by TMDB's
+   popularity, games by how many people follow them on IGDB before they're out. A few
+   from each medium, so one busy medium can't fill it, and shown in the order they land. */
+const SOON_DAYS = 120, SOON_MAX = 8;
+const plusDays = n => { const d = new Date(); d.setDate(d.getDate() + n); return new Date(d - d.getTimezoneOffset()*6e4).toISOString().slice(0,10); };
+async function bigReleases() { try { const r = await fetch(SITE + "releases.json", { cache:"no-cache" });
+  return r.ok ? ((await r.json()).items || []).map(x => ({ ...x, release:x.date, big:true })) : []; } catch { return []; } }
 async function renderWaiting() { const el = $("#waitBody"); if (!el) return;
-  if (!upcoming) { const jobs = [];
-    if (P.kinds.includes("film")) jobs.push(tmdb("movie/upcoming",{ region:"AU", page:"1" }).then(d => (d.results||[]).map(r => ({ id:"film:"+r.id, kind:"film", title:r.title, year:(r.release_date||"").slice(0,4), release:r.release_date, date:r.release_date, cover:TMDB_IMG(r.poster_path) }))).catch(()=>[]));
-    if (P.kinds.includes("tv")) jobs.push(tmdb("discover/tv",{ "first_air_date.gte":today(), sort_by:"popularity.desc", page:"1" }).then(d => (d.results||[]).map(r => ({ id:"tv:"+r.id, kind:"tv", title:r.name, year:(r.first_air_date||"").slice(0,4), release:r.first_air_date, date:r.first_air_date, cover:TMDB_IMG(r.poster_path) }))).catch(()=>[]));
-    if (P.kinds.includes("game")) jobs.push(igdb("games", `where first_release_date > ${Math.floor(Date.now()/1000)}; sort first_release_date asc; fields name,first_release_date,cover.image_id; limit 6;`).then(g => g.map(x => { const d = new Date(x.first_release_date*1000).toISOString().slice(0,10);
-      return { id:"game:"+x.id, kind:"game", title:x.name, year:d.slice(0,4), release:d, date:d, cover:x.cover?.image_id?`https://images.igdb.com/igdb/image/upload/t_cover_big/${x.cover.image_id}.jpg`:"" }; })).catch(()=>[]));
-    const res = await Promise.all(jobs.map(j => j.catch(() => []))); upcoming = res.flat().filter(x => x.date && x.date >= today()).sort((a,b) => a.date.localeCompare(b.date)).slice(0,8); }
+  if (!upcoming) { const now = today(), until = plusDays(SOON_DAYS), jobs = [];
+    const film = r => ({ id:"film:"+r.id, kind:"film", title:r.title, year:(r.release_date||"").slice(0,4), release:r.release_date, date:r.release_date, cover:TMDB_IMG(r.poster_path), hype:r.popularity||0 });
+    if (P.kinds.includes("film")) jobs.push(tmdb("discover/movie",{ region:"AU", "release_date.gte":now, "release_date.lte":until, with_release_type:"2|3", sort_by:"popularity.desc", include_adult:"false", page:"1" })
+      .then(d => (d.results||[]).map(film)).catch(() => tmdb("movie/upcoming",{ region:"AU", page:"1" }).then(d => (d.results||[]).map(film))));
+    if (P.kinds.includes("tv")) jobs.push(tmdb("discover/tv",{ "first_air_date.gte":now, "first_air_date.lte":until, sort_by:"popularity.desc", page:"1" }).then(d => (d.results||[]).map(r => ({ id:"tv:"+r.id, kind:"tv", title:r.name, year:(r.first_air_date||"").slice(0,4), release:r.first_air_date, date:r.first_air_date, cover:TMDB_IMG(r.poster_path), hype:r.popularity||0 }))));
+    if (P.kinds.includes("game")) { const t = Math.floor(Date.now()/1000);
+      jobs.push(igdb("games", `where first_release_date > ${t} & first_release_date < ${t + SOON_DAYS*86400} & hypes > 20; sort hypes desc; fields name,first_release_date,cover.image_id,hypes; limit 10;`).then(g => g.map(x => { const d = new Date(x.first_release_date*1000).toISOString().slice(0,10);
+        return { id:"game:"+x.id, kind:"game", title:x.name, year:d.slice(0,4), release:d, date:d, cover:x.cover?.image_id?`https://images.igdb.com/igdb/image/upload/t_cover_big/${x.cover.image_id}.jpg`:"", hype:x.hypes||0 }; }))); }
+    const [big, ...res] = await Promise.all([bigReleases(), ...jobs.map(j => j.catch(() => []))]);
+    const soon = x => x.date && x.date >= now && x.date <= until, seen = new Set(), pick = [];
+    const take = x => { if (seen.has(x.id) || pick.length >= SOON_MAX) return; seen.add(x.id); pick.push(x); };
+    big.filter(x => soon(x) && P.kinds.includes(x.kind)).slice(0, SOON_MAX - 2).forEach(take);
+    /* then the most hyped of each medium in turn, so the rest is shared out. Anything with
+       a small fraction of its medium's top hype stays off: a shorter list beats filler */
+    const queues = res.map(r => { const q = r.filter(soon).sort((a, b) => b.hype - a.hype), top = q[0]?.hype || 0;
+      return q.filter(x => x.hype >= top * .15); });
+    while (pick.length < SOON_MAX && queues.some(q => q.length)) queues.forEach(q => { while (q.length) { const x = q.shift(); if (!seen.has(x.id)) { take(x); break; } } });
+    upcoming = pick.sort((a, b) => a.date.localeCompare(b.date)); }
   if (!upcoming.length) { $("#waitWrap")?.remove(); return; } const L = activeList();
   window.__hits = Object.assign(window.__hits||{}, Object.fromEntries(upcoming.map(u => [u.id, u])));
-  el.innerHTML = `<div class="card" style="margin-top:0">${upcoming.map(r => `<div class="row" data-up="${esc(r.id)}">${cover(r)}<div class="t"><b>${esc(r.title)}</b><small>${tag(r.kind)} ${when(r.date)}</small></div><span class="chip ${L?.items.includes(r.id)?"on":""}">${L?.items.includes(r.id)?"In Up next":"Add"}</span></div>`).join("")}</div>`;
+  el.innerHTML = `<div class="card" style="margin-top:0">${upcoming.map(r => `<div class="row" data-up="${esc(r.id)}">${cover(r)}<div class="t"><b>${esc(r.title)}</b><small>${tag(r.kind)} ${when(r.date)}${r.where ? ` · ${esc(r.where)}` : ""}</small></div><span class="chip ${L?.items.includes(r.id)?"on":""}">${L?.items.includes(r.id)?"In Up next":"Add"}</span></div>`).join("")}</div>`;
   $$("[data-up]", el).forEach(x => x.onclick = () => addToShelf(x.dataset.up)); }
 
 /* ============ THE ADD BUTTON ============ */
@@ -16742,7 +16763,7 @@ async function saveText(name, text, type) {
 const downloadJSON = (obj, name) => saveText(name, JSON.stringify(obj, null, 1), "application/json");
 
 /* a small hook so the card renderers can be exercised by the test harness */
-window.__rooms = { stackSets, blank, kindBlank, playMatch, coach, logoCheer, logoHere, openYearStory, storyYear, openWelcome, openOnboarding, openImport, pullRefresh, openFind, setFollow, isFollowing, get follows(){return follows}, openNotes, noteList, noteRow, markNotesSeen, noteCount, newHands, noteSeen, get unseen(){return unseen}, nowVerb, openAdd, RINGS, MARK_RING, ringFromMarks, ringCache, myRing, spanOf, reelIndexNow, memories, dueReview, memForget, MEM_MIN, MEM_DAYS, whoseWord, wordPending, HAND_FLOOR, loadHand, handTo, answerHand, reachable, cameFrom, openHand, get handIn(){return handIn}, get handOut(){return handOut}, get handAll(){return handAll}, reelTo, markReel, REEL, reelCopies, get reelAt(){return reelAt}, facesFor, faceEl, faceMap, FACE_IMG, paintLog, wireLog, openWholeLog, openLog, likeLine, knownName, AV_SHAPES, AV_EYES, AV_COLS, avSVG, avFor, get me(){return me}, get entries(){return myEntries}, get works(){return works}, get rooms(){return rooms},
+window.__rooms = { stackSets, renderWaiting, soonReset:() => { upcoming = null; }, prefs:() => P, blank, kindBlank, playMatch, coach, logoCheer, logoHere, openYearStory, storyYear, openWelcome, openOnboarding, openImport, pullRefresh, openFind, setFollow, isFollowing, get follows(){return follows}, openNotes, noteList, noteRow, markNotesSeen, noteCount, newHands, noteSeen, get unseen(){return unseen}, nowVerb, openAdd, RINGS, MARK_RING, ringFromMarks, ringCache, myRing, spanOf, reelIndexNow, memories, dueReview, memForget, MEM_MIN, MEM_DAYS, whoseWord, wordPending, HAND_FLOOR, loadHand, handTo, answerHand, reachable, cameFrom, openHand, get handIn(){return handIn}, get handOut(){return handOut}, get handAll(){return handAll}, reelTo, markReel, REEL, reelCopies, get reelAt(){return reelAt}, facesFor, faceEl, faceMap, FACE_IMG, paintLog, wireLog, openWholeLog, openLog, likeLine, knownName, AV_SHAPES, AV_EYES, AV_COLS, avSVG, avFor, get me(){return me}, get entries(){return myEntries}, get works(){return works}, get rooms(){return rooms},
   CUTS, openCuts, spanData, tasteOf, reviewData, yearOf, roomPalmares, tagStats, agreement, activeRoom, q, sb: () => sb, remember,
   joinRoomChannel, leaveRoomChannel, paintHere, onLiveEntry, paintDay, get hereNow(){return hereNow},
   say, oops, markLive, takeInvite, dropInvite, inviteLink, useInvite, exportEverything,

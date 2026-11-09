@@ -1,0 +1,30 @@
+# Looks up the hand-picked big releases in stacks/releases.json and writes releases.json,
+# which the app's Out soon list reads from the website. Runs when the list changes, every
+# Monday (so covers and dates that arrive late get picked up), or by hand.
+name: Big releases
+on:
+  push:
+    branches: [main]
+    paths: [stacks/releases.json, tools/releases.mjs, tools/lookup.mjs, .github/workflows/releases.yml]
+  schedule:
+    - cron: "17 20 * * 0"
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency: releases
+jobs:
+  releases:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node tools/releases.mjs stacks/releases.json
+      - name: Save it if it changed
+        run: |
+          git add releases.json
+          git diff --cached --quiet && { echo "No change"; exit 0; }
+          git -c user.name="Rooms" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" commit -qm "The big releases, looked up again"
+          git pull -q --rebase origin main && git push -q origin HEAD:main

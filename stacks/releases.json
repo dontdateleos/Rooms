@@ -1,0 +1,15 @@
+{
+  "note": "The most anticipated things coming out, picked by hand. The app shows these first in Out soon, in date order, then fills the rest from TMDB and IGDB by hype. Anything already out drops off by itself. Films can leave out the date: the Australian cinema date is looked up.",
+  "items": [
+    { "kind": "film", "q": "Ebenezer", "year": 2026, "date": "2026-11-12", "where": "In cinemas" },
+    { "kind": "book", "q": "Peculiar Stars", "author": "Rebecca Yarros", "year": 2026, "date": "2026-11-17" },
+    { "kind": "book", "q": "Birth of the Witch", "author": "Nora Roberts", "year": 2026, "date": "2026-11-17" },
+    { "kind": "film", "q": "The Hunger Games: Sunrise on the Reaping", "year": 2026, "date": "2026-11-19", "where": "In cinemas" },
+    { "kind": "game", "q": "Grand Theft Auto VI", "date": "2026-11-19" },
+    { "kind": "tv", "q": "Percy Jackson and the Olympians", "year": 2023, "date": "2026-11-20", "where": "Disney+", "why": "New season" },
+    { "kind": "tv", "q": "Yellowjackets", "year": 2021, "date": "2026-11-20", "why": "New season" },
+    { "kind": "film", "q": "Dune: Part Three", "year": 2026, "where": "In cinemas" },
+    { "kind": "film", "q": "Avengers: Doomsday", "year": 2026, "where": "In cinemas" },
+    { "kind": "tv", "q": "Harry Potter", "date": "2026-12-25", "where": "HBO Max", "why": "The new series" }
+  ]
+}
