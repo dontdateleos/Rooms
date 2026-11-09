@@ -137,6 +137,21 @@
       "film"
     ],
     "extra": "the books are in it too",
-    "col": "#FFB36B"
+    "col": "#FFB36B",
+    "finale": {
+      "kind": "film",
+      "q": "The Hunger Games: Sunrise on the Reaping",
+      "year": 2026,
+      "card": "Sunrise on the Reaping",
+      "line": "Log and rate these before the new one comes out",
+      "extra": "The whole stack is on Rooms · link in bio",
+      "w": {
+        "id": "film:1300968",
+        "kind": "film",
+        "title": "The Hunger Games: Sunrise on the Reaping",
+        "year": "2026",
+        "cover": "https://image.tmdb.org/t/p/w342/jNcZH8yplxttRlf0wwqfGGMKHxX.jpg"
+      }
+    }
   }
 }
