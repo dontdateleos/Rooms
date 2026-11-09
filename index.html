@@ -3585,8 +3585,9 @@ html.sheetup body:has(#updBar) .toast{top:calc(70px + env(safe-area-inset-top))}
 .sbub.fresh.e .sring{--sbg:linear-gradient(140deg,var(--sky),var(--lilac))}
 .sbub.mine .sring{--sbg:linear-gradient(140deg,var(--mint),var(--sky))}
 .sbub.add .sring::before{opacity:.55}
-.sin{display:grid;place-items:center;width:46px;height:46px;position:relative;border-radius:50%;background:var(--card);border:3px solid var(--cream);overflow:hidden;box-sizing:content-box}
-.sin .av{width:36px;height:36px}
+/* the mascot sits straight on the paint, no circle behind it */
+.sin{display:grid;place-items:center;width:54px;height:54px;position:relative}
+.sin .av{width:52px;height:52px;filter:drop-shadow(0 3px 4px rgba(21,19,32,.28))}
 .sname{font-size:11.5px;font-weight:600;line-height:1.15;max-width:78px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sbub.seen .sname{color:var(--mute)}
 .scnt{position:absolute;top:-2px;right:-3px;min-width:20px;height:20px;padding:0 5px;border-radius:99px;background:var(--pink);color:var(--onAccent);font:800 11px/16px var(--head);text-align:center;border:2px solid var(--cream)}
@@ -3982,10 +3983,11 @@ function avSVG(a) {
    who share a shape from blinking in lockstep */
 const metFaces = new Set();
 const avSeed = who => { let h = 0; for (let i = 0; i < who.length; i++) h = (h * 31 + who.charCodeAt(i)) | 0; return Math.abs(h); };
-const avatar = (p, cls = "") => { const who = String(p?.id || p?.handle || "");
+/* bare: just the mascot, without a ring or the founder's comet (it already sits on a splat) */
+const avatar = (p, cls = "", o = {}) => { const who = String(p?.id || p?.handle || "");
   const fresh = who && !metFaces.has(who); if (fresh) metFaces.add(who);
   const n = avSeed(who);
-  return `<span class="av ${cls}${fresh ? " new" : ""}"${p?.id ? ` data-u="${esc(p.id)}"` : ""} style="--bd:${(n % 61) / 10}s;--id:${(n % 37) / 10}s">${avSVG(avFor(p))}</span>`; };
+  return `<span class="av ${cls}${fresh ? " new" : ""}"${p?.id ? ` data-u="${esc(p.id)}"` : ""} style="--bd:${(n % 61) / 10}s;--id:${(n % 37) / 10}s">${avSVG(o.bare ? { ...avFor(p), founder:false, ring:null } : avFor(p))}</span>`; };
 
 /* ---------- faces that feel things ----------
    Every face in the app has had one expression. These are the others it can pull: drawn
@@ -8767,10 +8769,10 @@ function storyBubble(g, tier) { const fresh = !g.mine && groupFresh(g), left = g
   const name = g.mine ? "You" : g.p.handle || "someone";
   const h = avHash(String(g.p.id || name));
   return `<button class="sbub ${g.mine ? "mine" : fresh ? "fresh " + tier : "seen"}" data-story="${esc(g.p.id)}" style="--splat:var(--splat${h % 4});--srot:${(h * 37) % 360}deg" aria-label="${esc(g.mine ? "What you logged lately" : `${name}${fresh ? `, ${left} new` : ""}`)}">
-    <span class="sring"><span class="sin">${avatar(g.p)}</span></span>${left > 1 ? `<span class="scnt" aria-hidden="true">${left}</span>` : ""}
+    <span class="sring"><span class="sin">${avatar(g.p, "", { bare:true })}</span></span>${left > 1 ? `<span class="scnt" aria-hidden="true">${left}</span>` : ""}
     ${g.mine ? `<span class="splus" aria-hidden="true">+</span>` : ""}<span class="sname">${esc(name)}</span></button>`; }
 function paintStoryRow() { const row = $("#storyRow"); if (!row) return; const { mine, fol, all } = storyGroups;
-  const meB = mine ? storyBubble(mine) : `<button class="sbub add" data-story-add aria-label="Log something" style="--splat:var(--splat${avHash(String(me.id)) % 4})"><span class="sring"><span class="sin">${avatar(me)}</span></span><span class="splus" aria-hidden="true">+</span><span class="sname">You</span></button>`;
+  const meB = mine ? storyBubble(mine) : `<button class="sbub add" data-story-add aria-label="Log something" style="--splat:var(--splat${avHash(String(me.id)) % 4})"><span class="sring"><span class="sin">${avatar(me, "", { bare:true })}</span></span><span class="splus" aria-hidden="true">+</span><span class="sname">You</span></button>`;
   row.innerHTML = meB + fol.map(g => storyBubble(g, "f")).join("")
     + (fol.length && all.length ? `<span class="ssplit" aria-hidden="true"><i></i><small>everyone</small><i></i></span>` : "")
     + all.map(g => storyBubble(g, "e")).join("")
