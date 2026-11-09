@@ -2,7 +2,7 @@
   "list": {
     "id": "2276742b-6078-47df-bd8f-7a6464534b1a",
     "title": "Out this week · 9–15 Nov",
-    "note": "The week's most notable new seasons and games, in the order they land. Streaming dates are the services' own and usually match Australia."
+    "note": "The week's most notable new film, seasons and game, in the order they land. Streaming dates are the services' own and usually match Australia."
   },
   "items": [
     {
@@ -43,6 +43,19 @@
       "card": null,
       "when": "2026-11-11",
       "where": "Disney+"
+    },
+    {
+      "w": {
+        "id": "film:1567605",
+        "kind": "film",
+        "title": "Ebenezer",
+        "year": "2026",
+        "cover": "https://image.tmdb.org/t/p/w342/6H2N59jJW1hZEzn2ZdrMvJw5vNI.jpg"
+      },
+      "why": "Ti West's A Christmas Carol, with Johnny Depp",
+      "card": null,
+      "when": "2026-11-12",
+      "where": "In cinemas"
     },
     {
       "w": {
