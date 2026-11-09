@@ -10,3 +10,4 @@ node_modules/
 www/
 # the App Store screenshots raw screens (made again by tools/store-shots/raw.cjs)
 tools/store-shots/raw-*.png
+out/

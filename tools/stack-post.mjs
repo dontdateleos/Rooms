@@ -1,0 +1,60 @@
+// Makes a stack from a little JSON file (stacks/*.json) and puts it on the founder's
+// account, so a stack for a post can be set up from GitHub without typing it into the app.
+// Each film and book is looked up the way the app looks it up (TMDB and Open Library,
+// through the app's own worker), so the stack points at the same titles people log.
+// Running it again updates the same stack rather than making a second one.
+//   SUPABASE_SERVICE_KEY=… node tools/stack-post.mjs stacks/before-sunrise.json
+// Writes out/<slug>/items.json for tools/stack-cards.cjs to draw the post from.
+import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
+
+const SUPABASE = "https://caaxycmobhssxclrakim.supabase.co";
+const WORKER = "https://rooms.jordandf1.workers.dev";
+const ORIGIN = process.env.ROOMS_ORIGIN || "https://dontdateleos.github.io";
+const KEY = process.env.SUPABASE_SERVICE_KEY;
+if (!KEY) { console.error("SUPABASE_SERVICE_KEY isn't set"); process.exit(1); }
+const spec = JSON.parse(readFileSync(process.argv[2], "utf8"));
+const slug = spec.post?.slug || "stack";
+
+const db = async (method, path, body, prefer) => {
+  const r = await fetch(`${SUPABASE}/rest/v1/${path}`, { method, headers:{ apikey:KEY, Authorization:`Bearer ${KEY}`, "Content-Type":"application/json",
+    ...(prefer ? { Prefer:prefer } : {}) }, body:body ? JSON.stringify(body) : undefined });
+  const text = await r.text(); if (!r.ok) throw new Error(`${method} ${path.split("?")[0]} → ${r.status}: ${text.slice(0, 300)}`);
+  return text ? JSON.parse(text) : null; };
+const look = async path => { const r = await fetch(WORKER + path, { headers:{ Origin:ORIGIN } });
+  if (!r.ok) throw new Error(`${path.split("?")[0]} → ${r.status}`); return r.json(); };
+const same = (a, b) => String(a).toLowerCase().replace(/[^a-z0-9]+/g, " ").trim() === String(b).toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+
+async function film(it) {
+  const d = await look(`/3/search/movie?query=${encodeURIComponent(it.q)}&primary_release_year=${it.year}&include_adult=false`);
+  const r = (d.results || []).find(x => same(x.title, it.q)) || (d.results || []).find(x => String(x.release_date || "").startsWith(String(it.year)));
+  if (!r) throw new Error(`no film found for "${it.q}" (${it.year})`);
+  return { id:"film:" + r.id, kind:"film", title:r.title, year:(r.release_date || "").slice(0, 4), cover:r.poster_path ? "https://image.tmdb.org/t/p/w342" + r.poster_path : null }; }
+async function book(it) {
+  const d = await look(`/ol/search.json?q=${encodeURIComponent(`${it.q} ${it.author || ""}`)}&limit=20&fields=key,title,author_name,first_publish_year,cover_i,number_of_pages_median,edition_count`);
+  const docs = (d.docs || []).filter(b => same(b.title, it.q) && (!it.author || (b.author_name || []).some(a => same(a, it.author))))
+    .sort((a, b) => (b.edition_count || 0) - (a.edition_count || 0));
+  const b = docs[0]; if (!b) throw new Error(`no book found for "${it.q}"`);
+  return { id:"book:" + String(b.key).replace("/works/", ""), kind:"book", title:b.title, year:String(b.first_publish_year || it.year || ""), creator:(b.author_name || [])[0] || null,
+    length:b.number_of_pages_median || null, cover:b.cover_i ? `https://covers.openlibrary.org/b/id/${b.cover_i}-M.jpg` : null }; }
+
+const items = [];
+for (const it of spec.items) { const w = it.kind === "film" ? await film(it) : await book(it);
+  items.push({ w, why:it.why || null, card:it.card || null }); console.log(`✓ ${it.kind} ${w.title} (${w.year}) → ${w.id}${w.cover ? "" : " (no cover)"}`); }
+
+/* the works go in only if they aren't there yet: what's there may already have more in it */
+await db("POST", "works?on_conflict=id", items.map(x => ({ ...x.w })), "resolution=ignore-duplicates,return=minimal");
+const [founder] = await db("GET", "profiles?select=id,handle&founder=eq.true&limit=1");
+if (!founder) throw new Error("no founder account found");
+const have = await db("GET", `theme_lists?select=id&owner=eq.${founder.id}&title=eq.${encodeURIComponent(spec.title)}&limit=1`);
+let id;
+if (have.length) { id = have[0].id;
+  await db("PATCH", `theme_lists?id=eq.${id}`, { note:spec.note || null, ranked:!!spec.ranked, updated_at:new Date().toISOString() }, "return=minimal");
+  await db("DELETE", `theme_list_items?list_id=eq.${id}`, null, "return=minimal");
+  console.log(`Updated the stack "${spec.title}" on @${founder.handle}`); }
+else { [{ id }] = await db("POST", "theme_lists", { owner:founder.id, title:spec.title, note:spec.note || null, ranked:!!spec.ranked, open:false }, "return=representation");
+  console.log(`Made the stack "${spec.title}" on @${founder.handle}`); }
+await db("POST", "theme_list_items", items.map((x, i) => ({ list_id:id, work_id:x.w.id, added_by:founder.id, position:i })), "return=minimal");
+console.log(`${items.length} things on it. Share link: ${WORKER}/s/${id}`);
+
+mkdirSync(`out/${slug}`, { recursive:true });
+writeFileSync(`out/${slug}/items.json`, JSON.stringify({ list:{ id, title:spec.title, note:spec.note }, items, post:spec.post || {} }, null, 2));

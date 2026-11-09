@@ -1,0 +1,48 @@
+# Puts a stack from stacks/*.json on the founder's account and draws its post (the slides
+# to swipe through, for TikTok and Instagram) with the real posters. Run it by hand from
+# the Actions tab. The slides are pushed to the "posts" branch, under the stack's name, and
+# kept as a download on the run.
+name: Stack and its post
+on:
+  workflow_dispatch:
+    inputs:
+      spec:
+        description: "The stack file, e.g. stacks/before-sunrise.json"
+        required: true
+        default: stacks/before-sunrise.json
+permissions:
+  contents: write
+concurrency: stack-post
+jobs:
+  stack:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: The stack, on the founder's account
+        env:
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: node tools/stack-post.mjs "${{ inputs.spec }}"
+      - name: The post
+        run: |
+          slug=$(node -e "console.log(JSON.parse(require('fs').readFileSync('${{ inputs.spec }}','utf8')).post?.slug||'stack')")
+          echo "SLUG=$slug" >> "$GITHUB_ENV"
+          npm i --no-save --no-audit --no-fund playwright@1.49.1 >/dev/null
+          npx playwright install --with-deps chromium >/dev/null
+          (python3 -m http.server 8080 >/dev/null 2>&1 &) ; sleep 1
+          node tools/stack-cards.cjs "$slug"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: post-${{ env.SLUG }}
+          path: out/${{ env.SLUG }}
+      - name: Onto the posts branch
+        run: |
+          rm -rf /tmp/posts && git clone -q --depth 1 --branch posts "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" /tmp/posts 2>/dev/null \
+            || { mkdir -p /tmp/posts && cd /tmp/posts && git init -q && git checkout -q -b posts && cd -; }
+          rm -rf "/tmp/posts/$SLUG" && cp -r "out/$SLUG" "/tmp/posts/$SLUG"
+          cd /tmp/posts && git add -A
+          git -c user.name="Rooms" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" commit -qm "The post for $SLUG" || exit 0
+          git push -q "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" posts

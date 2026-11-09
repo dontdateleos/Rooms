@@ -14117,7 +14117,7 @@ async function openThemeList(id, after = null) {
         : `<p class="empty">Nothing on it yet.${canAdd ? " Search below to add the first one." : ""}</p>`}</div>
       ${canAdd ? `<input id="tlSearch" type="search" placeholder="Add something to it" style="margin-top:12px"><div class="msg" id="tlMsg"></div><div id="tlResults"></div>` : ""}
       <div class="stack">${owner ? `<button class="btn ghost" id="tlOrder">${listEditing ? "Done" : "Reorder or take things off"}</button><button class="btn quiet" id="tlEdit">Name, end date and who can add</button>` : ""}${(() => { const R = activeRoom(), n = ws.filter(x => (x.w.kind === "film" || x.w.kind === "tv") && !logged(x.w.id)).length;
-        return n >= 2 && R && R.members.length > 1 ? `<button class="btn ghost" id="tlWatch">Watch it with ${esc(R.name)}</button>` : ""; })()}<button class="btn quiet" id="tlClose">${after ? "Back" : "Close"}</button></div>${owner ? "" : `<p class="sub" style="text-align:center;margin-top:14px"><button class="linky" id="tlReport">Report this stack</button></p>`}`);
+        return n >= 2 && R && R.members.length > 1 ? `<button class="btn ghost" id="tlWatch">Watch it with ${esc(R.name)}</button>` : ""; })()}${ws.length ? `<button class="btn quiet" id="tlPost">Make a post</button>` : ""}<button class="btn quiet" id="tlClose">${after ? "Back" : "Close"}</button></div>${owner ? "" : `<p class="sub" style="text-align:center;margin-top:14px"><button class="linky" id="tlReport">Report this stack</button></p>`}`);
     $("#tlShare").onclick = async () => { const txt = `${l.title} — a stack on Rooms\n${stackLink(l.id)}`;
       try { if (navigator.share) await navigator.share({ text:txt }); else { await navigator.clipboard.writeText(txt); say("Link copied"); } }
       catch { try { await navigator.clipboard.writeText(txt); say("Link copied"); } catch {} } };
@@ -14129,6 +14129,7 @@ async function openThemeList(id, after = null) {
     const tw = $("#tlWatch"); if (tw) tw.onclick = () => watchWithRoom(ws.map(x => x.w).filter(w => (w.kind === "film" || w.kind === "tv") && !logged(w.id)));
     const trp = $("#tlReport"); if (trp) trp.onclick = () => openReport({ about_list:l.id, about_user:l.owner, what:"this stack" });
     $("#tlClose").onclick = () => { listEditing = false; if (after) { closeSheet(); after(); } else closeSheet(); };
+    const tp = $("#tlPost"); if (tp) tp.onclick = () => openStackPost(l, ws, () => openThemeList(l.id, after));
     $$("[data-prof]", $("#sheetBody")).forEach(b => b.onclick = () => openProfile(b.dataset.prof));
     $$("[data-tw]").forEach(r => r.onclick = ev => { if (ev.target.closest("button")) return; openWork(r.dataset.tw); });
     const lk = $("#tlLike"); if (lk && !owner) lk.onclick = async () => { lk.disabled = true; const was = l.likes.includes(me.id);
@@ -16041,7 +16042,7 @@ async function czRank(fmt, label, col, w, rank, stat, extra, next, o = {}) {
   if (o.tag) { x.save(); x.font = "800 30px Outfit, sans-serif"; const tw = x.measureText(o.tag.toUpperCase()).width + 36;
     x.fillStyle = col; x.beginPath(); x.roundRect(o.noNum ? (CZ.W - tw) / 2 : CZ.M, py, tw, 52, 26); x.fill();
     x.fillStyle = CZ.on; x.fillText(o.tag.toUpperCase(), (o.noNum ? (CZ.W - tw) / 2 : CZ.M) + 18, py + 36); x.restore(); py += 76; }
-  if (rank === 1) { const g = x.createRadialGradient(px + pw / 2, py + ph / 2, 40, px + pw / 2, py + ph / 2, pw * 1.05);
+  if (rank === 1 && !o.noGlow) { const g = x.createRadialGradient(px + pw / 2, py + ph / 2, 40, px + pw / 2, py + ph / 2, pw * 1.05);
     g.addColorStop(0, col + "88"); g.addColorStop(1, col + "00"); x.fillStyle = g; x.fillRect(0, py - 200, CZ.W, ph + 400); }
   if (!o.noNum) { x.fillStyle = col; x.font = `900 ${L.tall ? 280 : 230}px Outfit, sans-serif`; x.fillText(String(rank), CZ.M - 14, py + (L.tall ? 230 : 190)); }
   await czPosterLift(x, w, px, py, pw, ph);
@@ -16049,7 +16050,11 @@ async function czRank(fmt, label, col, w, rank, stat, extra, next, o = {}) {
   x.fillStyle = CZ.ink; x.fillText(czFitLine(x, w.title || "", L.wide, L.tall ? 76 : 62, 40), CZ.M, y);
   const by = [w.year, w.creator].filter(Boolean).join(" · ");
   if (by) { x.fillStyle = CZ.pale; x.font = "600 30px Inter, sans-serif"; x.fillText(fitText(x, by, L.wide), CZ.M, y + Math.round(46 * gap)); y += Math.round(46 * gap); }
-  x.fillStyle = CZ.ink; x.font = "700 34px Inter, sans-serif"; x.fillText(fitText(x, stat, L.wide), CZ.M, y + Math.round(56 * gap));
+  x.fillStyle = CZ.ink; x.font = "700 34px Inter, sans-serif";
+  if (o.wrap && x.measureText(stat).width > L.wide) { const ws = String(stat).split(/\s+/); let a = "";
+    while (ws.length && x.measureText(a ? a + " " + ws[0] : ws[0]).width <= L.wide) a = a ? a + " " + ws.shift() : ws.shift();
+    x.fillText(a, CZ.M, y + Math.round(56 * gap)); y += 42; x.fillText(fitText(x, ws.join(" "), L.wide), CZ.M, y + Math.round(56 * gap)); }
+  else x.fillText(fitText(x, stat, L.wide), CZ.M, y + Math.round(56 * gap));
   if (extra) { x.fillStyle = col; x.font = "800 30px Outfit, sans-serif"; x.fillText(fitText(x, extra, L.wide), CZ.M, y + Math.round(100 * gap)); }
   czFoot(x, L, col, o.foot?.[0] || next || "What was yours?", o.foot?.[1] || (next ? "Swipe →" : "Log it on Rooms")); return c; }
 async function czEnd(fmt, label, col, words, sub, foot = "Free on the App Store") {
@@ -16243,6 +16248,45 @@ function rsSets(m, fmt) { const tk = m.d.top_kind || {}, ks = ["film", "tv", "bo
     ["Cover", () => czCover(fmt, lab, "#FFE86A", "Room Service", [[`${m.month}'s`], ["number", true], ["ones"]], `The ${ks.map(k => kWord(k, 1)).join(", ").replace(/, ([^,]*)$/, " and $1")} most people finished in ${m.month}.`, { n:3, foot:"One for each" })],
     ...ks.map(k => [K(k).label, () => czRank(fmt, lab, KCOL(k), tk[k][0], 1, `Logged by ${trNum(tk[k][0].n)} people · ${trStars(tk[k][0].avg)}`, null, k === ks[ks.length - 1] ? null : "Swipe for the next", { tag:`${kWord(k, 1)} of the month` })]),
     ["The end", () => czEnd(fmt, lab, "#FFE86A", [["The top fives are in"], ["Room Service", true]], "Our monthly newsletter. Switch it on in Rooms under Settings, or sign up on the website.", "Sign up in Rooms")] ] }]; }
+/* ---------- a stack as a post ----------
+   Any stack as stills to swipe through: a cover (or "watch these before…" with the day
+   the thing comes out), one slide per thing on it, in its order, with why it's there if
+   there's a reason, and a last slide saying where the whole stack is. */
+const czDay = d => { const x = new Date(String(d) + "T12:00:00"); return isNaN(x) ? "" : `${["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][x.getDay()]} ${x.getDate()} ${MONTH_FULL[x.getMonth()]}`; };
+function stackSets(l, items, o = {}, fmt = "tall") {
+  const its = items.filter(x => x.w && (!o.kinds?.length || o.kinds.includes(x.w.kind))); if (!its.length) return [];
+  const col = o.col || "#F5A3C7", day = o.date ? czDay(o.date) : "";
+  const label = day ? `${o.where || "Out"} ${day.replace(/^\w+ /, "")}` : "A stack on Rooms";
+  const mixed = new Set(its.map(x => x.w.kind)).size > 1;
+  let words;
+  if (o.before) { const h = o.highlight && o.before.includes(o.highlight) ? o.highlight : null;
+    words = [["Watch these before"], ...(h ? [[o.before.slice(0, o.before.indexOf(h))], [h, true], [o.before.slice(o.before.indexOf(h) + h.length)]] : [[o.before, true]])].filter(w => String(w[0]).trim()); }
+  else { const t = String(l.title || "A stack").trim().split(/\s+/); words = [[t.slice(0, -1).join(" ")], [t[t.length - 1], true]].filter(w => w[0]); }
+  const sub = o.before ? [day && `${o.where || "Out"} ${day}.`, o.sub || "Catch up in this order."].filter(Boolean).join(" ") : (l.note || `${its.length} things, in order.`);
+  return [{ key:"stack", name:o.before ? `Watch before ${o.before}` : l.title, when:day ? `before ${day}` : "", slides:[
+    ["Cover", () => czCover(fmt, label, col, o.before ? "Before it's out" : "A stack on Rooms", words, sub, { posters:its.slice(0, 3).map(x => x.w), foot:`${its.length} to get through` })],
+    ...its.map((x, i) => [x.title || x.w.title, () => czRank(fmt, label, KCOL(x.w.kind), { ...x.w, title:x.title || x.w.title }, i + 1,
+      x.why || [K(x.w.kind).label, x.w.creator].filter(Boolean).join(" · "), null, i < its.length - 1 ? `Next: ${its[i + 1].title || its[i + 1].w.title}` : "One more swipe",
+      { noGlow:true, wrap:true, tag:mixed ? K(x.w.kind).label : null, foot:[i < its.length - 1 ? `Next: ${its[i + 1].title || its[i + 1].w.title}` : "That's the lot", "Swipe →"] })]),
+    ["The end", () => czEnd(fmt, label, col, [["The whole stack is on"], ["Rooms", true]],
+      `"${l.title}"${o.extra ? `, and ${o.extra}` : ""}. Tick them off as you go. Link in bio.`, "Free on the App Store")] ] }]; }
+function openStackPost(l, ws, back) {
+  let fmt = P.czFmt === "post" ? "post" : "tall", o = { kinds:[] };
+  const films = ws.some(x => x.w.kind === "film" || x.w.kind === "tv") && ws.some(x => x.w.kind === "book" || x.w.kind === "game");
+  openSheet(`<div class="tr-head"><button class="iconbtn sm" id="spBack" aria-label="Back to the stack">‹</button><div><h3>Make a post</h3><small>${esc(l.title)}</small></div></div>
+    <p class="sub">Slides to swipe through, for TikTok or Instagram: a cover, one slide for each thing on the stack in its order, and a last slide pointing at the stack.</p>
+    <div class="lbl">Watch these before… (if something's coming out)</div><input id="spBefore" placeholder="e.g. a film that's out soon" autocomplete="off">
+    <div class="lbl">Out on</div><input id="spDate" type="date">
+    ${films ? `<div class="chips" id="spKinds"><button class="chip on" data-k="">Everything on it</button><button class="chip" data-k="film,tv">Films and shows only</button></div>` : ""}
+    <div class="lbl">Shape</div>${fmtChips("spFmt", fmt)}<div id="spSets"></div>`);
+  const items = ws.map(x => ({ w:x.w }));
+  const paint = () => { o.before = $("#spBefore").value.trim(); o.date = $("#spDate").value; o.where = "Out";
+    paintSets($("#spSets"), stackSets(l, items, o, fmt), `stack-${String(l.title).toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 40)}`); };
+  let t = 0; $("#spBefore").oninput = () => { clearTimeout(t); t = setTimeout(paint, 400); }; $("#spDate").onchange = paint;
+  $$("#spKinds [data-k]").forEach(b => b.onclick = () => { o.kinds = b.dataset.k ? b.dataset.k.split(",") : []; $$("#spKinds [data-k]").forEach(x => x.classList.toggle("on", x === b)); paint(); });
+  $$("#spFmt [data-fmt]").forEach(b => b.onclick = () => { fmt = P.czFmt = b.dataset.fmt; saveP();
+    $$("#spFmt [data-fmt]").forEach(x => { x.classList.toggle("on", x === b); x.setAttribute("aria-checked", x === b); }); paint(); });
+  $("#spBack").onclick = back; paint(); }
 async function openRoomService(off = 1) {
   const from = rsFrom(off), days = rsDays(from), month = rsMonth(from), prevFrom = rsFrom(off + 1);
   openSheet(`<div class="tr-head"><div><h3>Room Service</h3><small>${esc(month)}</small></div></div>${skeleton(3)}`);
@@ -16621,7 +16665,7 @@ async function saveText(name, text, type) {
 const downloadJSON = (obj, name) => saveText(name, JSON.stringify(obj, null, 1), "application/json");
 
 /* a small hook so the card renderers can be exercised by the test harness */
-window.__rooms = { blank, kindBlank, playMatch, coach, logoCheer, logoHere, openYearStory, storyYear, openWelcome, openOnboarding, openImport, pullRefresh, openFind, setFollow, isFollowing, get follows(){return follows}, openNotes, noteList, noteRow, markNotesSeen, noteCount, newHands, noteSeen, get unseen(){return unseen}, nowVerb, openAdd, RINGS, MARK_RING, ringFromMarks, ringCache, myRing, spanOf, reelIndexNow, memories, dueReview, memForget, MEM_MIN, MEM_DAYS, whoseWord, wordPending, HAND_FLOOR, loadHand, handTo, answerHand, reachable, cameFrom, openHand, get handIn(){return handIn}, get handOut(){return handOut}, get handAll(){return handAll}, reelTo, markReel, REEL, reelCopies, get reelAt(){return reelAt}, facesFor, faceEl, faceMap, FACE_IMG, paintLog, wireLog, openWholeLog, openLog, likeLine, knownName, AV_SHAPES, AV_EYES, AV_COLS, avSVG, avFor, get me(){return me}, get entries(){return myEntries}, get works(){return works}, get rooms(){return rooms},
+window.__rooms = { stackSets, blank, kindBlank, playMatch, coach, logoCheer, logoHere, openYearStory, storyYear, openWelcome, openOnboarding, openImport, pullRefresh, openFind, setFollow, isFollowing, get follows(){return follows}, openNotes, noteList, noteRow, markNotesSeen, noteCount, newHands, noteSeen, get unseen(){return unseen}, nowVerb, openAdd, RINGS, MARK_RING, ringFromMarks, ringCache, myRing, spanOf, reelIndexNow, memories, dueReview, memForget, MEM_MIN, MEM_DAYS, whoseWord, wordPending, HAND_FLOOR, loadHand, handTo, answerHand, reachable, cameFrom, openHand, get handIn(){return handIn}, get handOut(){return handOut}, get handAll(){return handAll}, reelTo, markReel, REEL, reelCopies, get reelAt(){return reelAt}, facesFor, faceEl, faceMap, FACE_IMG, paintLog, wireLog, openWholeLog, openLog, likeLine, knownName, AV_SHAPES, AV_EYES, AV_COLS, avSVG, avFor, get me(){return me}, get entries(){return myEntries}, get works(){return works}, get rooms(){return rooms},
   CUTS, openCuts, spanData, tasteOf, reviewData, yearOf, roomPalmares, tagStats, agreement, activeRoom, q, sb: () => sb, remember,
   joinRoomChannel, leaveRoomChannel, paintHere, onLiveEntry, paintDay, get hereNow(){return hereNow},
   say, oops, markLive, takeInvite, dropInvite, inviteLink, useInvite, exportEverything,

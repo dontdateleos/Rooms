@@ -1,0 +1,28 @@
+{
+  "title": "Before Sunrise on the Reaping",
+  "note": "Everything to catch up on before The Hunger Games: Sunrise on the Reaping, in Australian cinemas Thursday 19 November. The books and the films, each book before its film.",
+  "ranked": true,
+  "post": {
+    "slug": "before-sunrise",
+    "before": "Sunrise on the Reaping",
+    "highlight": "Sunrise",
+    "date": "2026-11-19",
+    "where": "In cinemas",
+    "sub": "Catch up on the films in this order. The books are in the stack too.",
+    "kinds": ["film"],
+    "extra": "the books are in it too",
+    "col": "#FFB36B"
+  },
+  "items": [
+    { "kind": "book", "q": "The Hunger Games", "author": "Suzanne Collins", "year": 2008 },
+    { "kind": "film", "q": "The Hunger Games", "year": 2012, "card": "The Hunger Games", "why": "Meet Haymitch. Sunrise is his story" },
+    { "kind": "book", "q": "Catching Fire", "author": "Suzanne Collins", "year": 2009 },
+    { "kind": "film", "q": "The Hunger Games: Catching Fire", "year": 2013, "card": "Catching Fire", "why": "The Quarter Quell, and Haymitch's old win" },
+    { "kind": "book", "q": "Mockingjay", "author": "Suzanne Collins", "year": 2010 },
+    { "kind": "film", "q": "The Hunger Games: Mockingjay - Part 1", "year": 2014, "card": "Mockingjay – Part 1", "why": "The rebellion starts in District 13" },
+    { "kind": "film", "q": "The Hunger Games: Mockingjay - Part 2", "year": 2015, "card": "Mockingjay – Part 2", "why": "How it ends for Snow and the Capitol" },
+    { "kind": "book", "q": "The Ballad of Songbirds and Snakes", "author": "Suzanne Collins", "year": 2020 },
+    { "kind": "film", "q": "The Hunger Games: The Ballad of Songbirds & Snakes", "year": 2023, "card": "The Ballad of Songbirds & Snakes", "why": "Young Snow, 64 years before Katniss" },
+    { "kind": "book", "q": "Sunrise on the Reaping", "author": "Suzanne Collins", "year": 2025 }
+  ]
+}
