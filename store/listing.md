@@ -49,23 +49,19 @@ PRIVATE BY DESIGN
 No ads and no tracking. Your rooms are yours. Report and block are always one tap away, and you can download everything or close your account from Settings.
 
 ## What's new in this version
-(This is for 1.0.2. 1.0.1 went to review with Stacks, Five Clues, party games, Wrapped, places, moods, the Feed for your people and the new cards; update below before submitting 1.0.2.)
+(For 1.0.2.)
 
-Stacks: make a stack of films, shows, books or games, find everyone else's, and save the ones you like. Filter by genre, search inside them, or turn one into a watch night with your room.
+A new look: the new Rooms logo, four rooms with someone peeking up in each, and a launch screen that lights them up one by one.
 
-Five Clues: a new puzzle every day. Guess the film, show, book or game in as few clues as you can, keep a streak going, and see how your room's doing this week.
+Your Feed picks up where you left off, or tells you you're all caught up. Bubbles you've watched move to the back, and everyone now sits on their own splash of paint.
 
-Party games for your room: Fake Blurb, Bad Pitch, Title Mash, Who Rated It? and Hot Take Court. Everyone plays on their own phone, in their own time.
+Most anticipated: Out soon now shows the biggest films, shows, books and games on the way, not just whatever's next.
 
-Rooms Wrapped: your year in films, shows, books and games, with cards to share. Arrives on 1 December.
+Smoother scrolling: cards fan out as you scroll, the top and bottom bars blur what's underneath, and the mascot pulls down to refresh.
 
-Where you saw it: tag the cinema, bookshop or library and rate it, and see the best ones everyone's found.
+Room Service: our monthly newsletter with the top five of each from everyone's logs. Sign up in Settings.
 
-How it felt: tag a log with a mood or two, and say where you watched or played it.
-
-A Feed for your people: the bubbles at the top are just the people you follow and your rooms, their logs come first, then the most liked from everyone.
-
-Also: bigger cards on every page, posters that deal out and move as you scroll, new mascot shapes and eyes, read-alongs for your room, this week's new episodes, heads-ups before you watch, a public profile page if you want one, a log out button, and a lot of fixes.
+Also: bolder page titles and a lot of small fixes.
 
 ## Screenshots
 `store/screenshots/iphone-6.9-1.jpg` to `-8.jpg`, 1320×2868: drop all eight into the **6.9" Display**
