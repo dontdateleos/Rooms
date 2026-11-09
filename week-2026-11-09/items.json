@@ -1,0 +1,81 @@
+{
+  "list": {
+    "id": "2276742b-6078-47df-bd8f-7a6464534b1a",
+    "title": "Out this week · 9–15 Nov",
+    "note": "The week's most notable new seasons and games, in the order they land. Streaming dates are the services' own and usually match Australia."
+  },
+  "items": [
+    {
+      "w": {
+        "id": "tv:214582",
+        "kind": "tv",
+        "title": "The Devil's Plan",
+        "year": "2023",
+        "cover": "https://image.tmdb.org/t/p/w342/jNY6UVgvKz03yrSgCflkF5NF25K.jpg"
+      },
+      "why": "Season 3 of the mind-game show",
+      "card": "The Devil's Plan",
+      "when": "2026-11-10",
+      "where": "Netflix"
+    },
+    {
+      "w": {
+        "id": "tv:84773",
+        "kind": "tv",
+        "title": "The Lord of the Rings: The Rings of Power",
+        "year": "2022",
+        "cover": "https://image.tmdb.org/t/p/w342/bMXWXKM9ydUmMTNvDnYo9QtCBRt.jpg"
+      },
+      "why": "Season 3 is here",
+      "card": "The Rings of Power",
+      "when": "2026-11-11",
+      "where": "Prime Video"
+    },
+    {
+      "w": {
+        "id": "tv:208921",
+        "kind": "tv",
+        "title": "Rivals",
+        "year": "2024",
+        "cover": "https://image.tmdb.org/t/p/w342/3p9t1KDo5iXAn1zsSPn8sdtakWs.jpg"
+      },
+      "why": "A new season of the 80s drama",
+      "card": null,
+      "when": "2026-11-11",
+      "where": "Disney+"
+    },
+    {
+      "w": {
+        "id": "game:26602",
+        "kind": "game",
+        "title": "Metaphor: ReFantazio",
+        "year": "2024",
+        "creator": "Atlus",
+        "cover": "https://images.igdb.com/igdb/image/upload/t_cover_big/co8d9t.jpg"
+      },
+      "why": "The acclaimed RPG lands on Switch 2",
+      "card": null,
+      "when": "2026-11-12",
+      "where": "Switch 2"
+    },
+    {
+      "w": {
+        "id": "tv:85077",
+        "kind": "tv",
+        "title": "The Chosen",
+        "year": "2019",
+        "cover": "https://image.tmdb.org/t/p/w342/nr0r7YTn1l84KLG1iCSO5ofHTvO.jpg"
+      },
+      "why": "Season 6 begins",
+      "card": null,
+      "when": "2026-11-15",
+      "where": "Prime Video"
+    }
+  ],
+  "post": {
+    "slug": "week-2026-11-09",
+    "mode": "week",
+    "range": "9–15 November",
+    "col": "#8FD3FF"
+  }
+}
