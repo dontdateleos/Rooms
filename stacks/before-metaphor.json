@@ -1,0 +1,29 @@
+{
+  "title": "Before Metaphor on Switch 2",
+  "note": "Metaphor: ReFantazio comes to Switch 2 on Thursday 12 November. It's a brand-new world, so there's no homework — but if you want to warm up, these are the Atlus RPGs you can play on Switch, three of them from Metaphor's director.",
+  "ranked": true,
+  "post": {
+    "slug": "before-metaphor",
+    "before": "Metaphor on Switch 2",
+    "highlight": "Metaphor",
+    "date": "2026-11-12",
+    "where": "On Switch 2",
+    "sub": "No homework needed, it's a new world. But these are the warm-ups, all on Switch.",
+    "kinds": ["game"],
+    "col": "#B9A6FF",
+    "finale": {
+      "kind": "game",
+      "q": "Metaphor: ReFantazio",
+      "card": "Metaphor: ReFantazio",
+      "line": "Log these, then start your journey",
+      "extra": "The whole stack is on Rooms · link in bio"
+    }
+  },
+  "items": [
+    { "kind": "game", "q": "Persona 4 Golden", "card": "Persona 4 Golden", "why": "The cosiest start: small town, big mystery" },
+    { "kind": "game", "q": "Persona 5 Royal", "card": "Persona 5 Royal", "why": "The one everyone means. Same director as Metaphor" },
+    { "kind": "game", "q": "Persona 3 Reload", "card": "Persona 3 Reload", "why": "The modern remake, and the closest feel to Metaphor" },
+    { "kind": "game", "q": "Shin Megami Tensei V: Vengeance", "card": "SMT V: Vengeance", "why": "Atlus at its hardest. Good prep for the bosses" },
+    { "kind": "game", "q": "Persona 3 Portable", "card": "Persona 3 Portable", "why": "The pocket version, if you've only got an hour a night" }
+  ]
+}

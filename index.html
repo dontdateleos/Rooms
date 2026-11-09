@@ -16340,12 +16340,15 @@ async function czHeroCover(fmt, ws, col, words, chip) {
 const czDay = d => { const x = new Date(String(d) + "T12:00:00"); return isNaN(x) ? "" : `${["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][x.getDay()]} ${x.getDate()} ${MONTH_FULL[x.getMonth()]}`; };
 function stackSets(l, items, o = {}, fmt = "tall") {
   const its = items.filter(x => x.w && (!o.kinds?.length || o.kinds.includes(x.w.kind))); if (!its.length) return [];
+  /* games are played and books read: the post says so when the stack is all one of them */
+  const verb = o.verb || (its.every(x => x.w.kind === "game") ? "play" : its.every(x => x.w.kind === "book") ? "read" : "watch"),
+    Verb = verb[0].toUpperCase() + verb.slice(1);
   const col = o.col || "#F5A3C7", day = o.date ? czDay(o.date) : "";
   const label = day ? `${o.where || "Out"} ${day.replace(/^\w+ /, "")}` : "A stack on Rooms";
   const mixed = new Set(its.map(x => x.w.kind)).size > 1;
   let words;
   if (o.before) { const h = o.highlight && o.before.includes(o.highlight) ? o.highlight : null;
-    words = [["Watch these before"], ...(h ? [[o.before.slice(0, o.before.indexOf(h))], [h, true], [o.before.slice(o.before.indexOf(h) + h.length)]] : [[o.before, true]])].filter(w => String(w[0]).trim()); }
+    words = [[`${Verb} these before`], ...(h ? [[o.before.slice(0, o.before.indexOf(h))], [h, true], [o.before.slice(o.before.indexOf(h) + h.length)]] : [[o.before, true]])].filter(w => String(w[0]).trim()); }
   else { const t = String(l.title || "A stack").trim().split(/\s+/); words = [[t.slice(0, -1).join(" ")], [t[t.length - 1], true]].filter(w => w[0]); }
   const sub = o.before ? [day && `${o.where || "Out"} ${day}.`, o.sub || "Catch up in this order."].filter(Boolean).join(" ") : (l.note || `${its.length} things, in order.`);
   const n = its.length, coverWs = its.map(x => x.w);
@@ -16359,8 +16362,8 @@ function stackSets(l, items, o = {}, fmt = "tall") {
         { chip:[x.where, x.when ? dd(x.when) : ""].filter(Boolean).join(" · ") || K(x.w.kind).label, line:x.why || K(x.w.kind).label })]),
       ["The end", () => czEnd(fmt, o.range || "Rooms", col, [["Add them to your"], ["Up next", true]],
         `Everything here is in one stack on Rooms, ready to save. Link in bio.`, "Free on the App Store")] ] }]; }
-  return [{ key:"stack", name:o.before ? `Watch before ${o.before}` : l.title, when:day ? `before ${day}` : "", slides:[
-    ["Cover", () => czHeroCover(fmt, coverWs, col, o.before ? [[`${n} to watch before`], ...words.slice(1)] : words, day ? `${o.where || "Out"} ${day.replace(/^\w+ /, "")}` : null)],
+  return [{ key:"stack", name:o.before ? `${Verb} before ${o.before}` : l.title, when:day ? `before ${day}` : "", slides:[
+    ["Cover", () => czHeroCover(fmt, coverWs, col, o.before ? [[`${n} to ${verb} before`], ...words.slice(1)] : words, day ? `${o.where || "Out"} ${day.replace(/^\w+ /, "")}` : null)],
     ...its.map((x, i) => [x.title || x.w.title, () => czHero(fmt, { ...x.w, title:x.title || x.w.title }, KCOL(x.w.kind),
       { count:`${i + 1} of ${n}`, line:x.why || [K(x.w.kind).label, x.w.year].filter(Boolean).join(" · ") })]),
     /* the last slide: the thing it's all for, if there is one; otherwise where the stack is */
