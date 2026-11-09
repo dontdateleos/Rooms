@@ -1,1 +1,98 @@
-{ "updated": null, "items": [] }
+{
+ "updated": "2026-11-09",
+ "items": [
+  {
+   "id": "film:1567605",
+   "kind": "film",
+   "title": "Ebenezer",
+   "year": "2026",
+   "cover": "https://image.tmdb.org/t/p/w342/6H2N59jJW1hZEzn2ZdrMvJw5vNI.jpg",
+   "date": "2026-11-12",
+   "where": "In cinemas",
+   "why": null
+  },
+  {
+   "id": "book:OL45361437W",
+   "kind": "book",
+   "title": "Birth of the Witch",
+   "year": "2026",
+   "creator": "Nora Roberts",
+   "length": null,
+   "cover": null,
+   "date": "2026-11-17",
+   "where": null,
+   "why": null
+  },
+  {
+   "id": "film:1300968",
+   "kind": "film",
+   "title": "The Hunger Games: Sunrise on the Reaping",
+   "year": "2026",
+   "cover": "https://image.tmdb.org/t/p/w342/jNcZH8yplxttRlf0wwqfGGMKHxX.jpg",
+   "date": "2026-11-19",
+   "where": "In cinemas",
+   "why": null
+  },
+  {
+   "id": "game:52189",
+   "kind": "game",
+   "title": "Grand Theft Auto VI",
+   "year": "2026",
+   "creator": "Rockstar North",
+   "cover": "https://images.igdb.com/igdb/image/upload/t_cover_big/cocv1v.jpg",
+   "date": "2026-11-19",
+   "where": null,
+   "why": null
+  },
+  {
+   "id": "tv:103540",
+   "kind": "tv",
+   "title": "Percy Jackson and the Olympians",
+   "year": "2023",
+   "cover": "https://image.tmdb.org/t/p/w342/zofPiEpwCRYaezOncTlQwXebHFU.jpg",
+   "date": "2026-11-20",
+   "where": "Disney+",
+   "why": "New season"
+  },
+  {
+   "id": "tv:117488",
+   "kind": "tv",
+   "title": "Yellowjackets",
+   "year": "2021",
+   "cover": "https://image.tmdb.org/t/p/w342/xRnGrn7Z7SC0KIBodocoU1QgDZF.jpg",
+   "date": "2026-11-20",
+   "where": null,
+   "why": "New season"
+  },
+  {
+   "id": "film:1170608",
+   "kind": "film",
+   "title": "Dune: Part Three",
+   "year": "2026",
+   "cover": "https://image.tmdb.org/t/p/w342/glt0v4I89rMWstDNCaFXc5SNyO1.jpg",
+   "date": "2026-12-16",
+   "where": "In cinemas",
+   "why": null
+  },
+  {
+   "id": "film:1003596",
+   "kind": "film",
+   "title": "Avengers: Doomsday",
+   "year": "2026",
+   "cover": "https://image.tmdb.org/t/p/w342/9jlZ59UALLLOE279HMT19rP9XQs.jpg",
+   "date": "2026-12-16",
+   "where": "In cinemas",
+   "why": null
+  },
+  {
+   "id": "tv:224377",
+   "kind": "tv",
+   "title": "Harry Potter",
+   "year": "2026",
+   "cover": "https://image.tmdb.org/t/p/w342/AcVckVxfN169mGOgQGYe983KT1C.jpg",
+   "date": "2026-12-25",
+   "where": "HBO Max",
+   "why": "The new series"
+  }
+ ]
+}
