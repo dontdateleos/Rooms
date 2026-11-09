@@ -16250,6 +16250,58 @@ function rsSets(m, fmt) { const tk = m.d.top_kind || {}, ks = ["film", "tv", "bo
     ["Cover", () => czCover(fmt, lab, "#FFE86A", "Room Service", [[`${m.month}'s`], ["number", true], ["ones"]], `The ${ks.map(k => kWord(k, 1)).join(", ").replace(/, ([^,]*)$/, " and $1")} most people finished in ${m.month}.`, { n:3, foot:"One for each" })],
     ...ks.map(k => [K(k).label, () => czRank(fmt, lab, KCOL(k), tk[k][0], 1, `Logged by ${trNum(tk[k][0].n)} people · ${trStars(tk[k][0].avg)}`, null, k === ks[ks.length - 1] ? null : "Swipe for the next", { tag:`${kWord(k, 1)} of the month` })]),
     ["The end", () => czEnd(fmt, lab, "#FFE86A", [["The top fives are in"], ["Room Service", true]], "Our monthly newsletter. Switch it on in Rooms under Settings, or sign up on the website.", "Sign up in Rooms")] ] }]; }
+/* ---------- the poster as the hero ----------
+   For stack posts: the poster big in the middle over a blurred, darkened copy of itself
+   filling the frame, a few words, and Rooms as a small mark at the bottom. Everything sits
+   clear of TikTok's buttons on the right and its caption along the bottom. */
+const czHL = fmt => fmt === "tall"
+  ? { H:1920, pw:640, py:250, title:1330, brand:1500 }
+  : { H:1350, pw:540, py:120, title:1000, brand:1262 };
+async function czHeroBase(fmt, w, col) {
+  const L = czHL(fmt), c = document.createElement("canvas"); c.width = CZ.W; c.height = L.H; const x = c.getContext("2d");
+  x.fillStyle = CZ.ground; x.fillRect(0, 0, CZ.W, L.H);
+  const im = w?.cover ? await imgLoad(w.cover) : null;
+  if (im) { /* a blur that works everywhere: draw it tiny, then stretch it back up */
+    const t = document.createElement("canvas"); t.width = 27; t.height = Math.round(27 * L.H / CZ.W); const tx = t.getContext("2d");
+    const k = Math.max(t.width / im.width, t.height / im.height); tx.drawImage(im, (t.width - im.width * k) / 2, (t.height - im.height * k) / 2, im.width * k, im.height * k);
+    x.imageSmoothingEnabled = true; x.imageSmoothingQuality = "high"; x.drawImage(t, 0, 0, CZ.W, L.H); }
+  else { const g = x.createRadialGradient(CZ.W / 2, L.H * .4, 50, CZ.W / 2, L.H * .4, L.H * .7); g.addColorStop(0, col + "66"); g.addColorStop(1, col + "00"); x.fillStyle = g; x.fillRect(0, 0, CZ.W, L.H); }
+  const sh = x.createLinearGradient(0, 0, 0, L.H); sh.addColorStop(0, "rgba(14,12,18,.55)"); sh.addColorStop(.55, "rgba(14,12,18,.6)"); sh.addColorStop(1, "rgba(14,12,18,.92)");
+  x.fillStyle = sh; x.fillRect(0, 0, CZ.W, L.H);
+  return { c, x, L }; }
+function czBrand(x, L) { const s = 34; x.save(); x.globalAlpha = .75; x.font = "900 30px Outfit, sans-serif";
+  const tw = x.measureText("ROOMS").width, w0 = s + 14 + tw, left = (CZ.W - w0) / 2;
+  cardMark(x, left, L.brand - s + 6, s); x.fillStyle = CZ.ink; x.fillText("ROOMS", left + s + 14, L.brand); x.restore(); }
+function czCentre(x, text, y, maxW, font, fill, lh, maxLines = 2) { x.font = font; x.fillStyle = fill; x.textAlign = "center";
+  const ws = String(text).split(/\s+/), lines = []; let a = "";
+  for (const w of ws) { const t = a ? a + " " + w : w; if (x.measureText(t).width > maxW && a) { lines.push(a); a = w; } else a = t; } if (a) lines.push(a);
+  lines.slice(0, maxLines).forEach((l, i) => x.fillText(i === maxLines - 1 && lines.length > maxLines ? fitText(x, lines.slice(i).join(" "), maxW) : l, CZ.W / 2, y + i * lh));
+  x.textAlign = "left"; return y + Math.min(lines.length, maxLines) * lh; }
+function czChip(x, text, y, col) { x.save(); x.font = "800 30px Outfit, sans-serif"; const t = text.toUpperCase(), tw = x.measureText(t).width + 40;
+  x.fillStyle = col; x.beginPath(); x.roundRect((CZ.W - tw) / 2, y, tw, 54, 27); x.fill(); x.fillStyle = CZ.on; x.textAlign = "center"; x.fillText(t, CZ.W / 2, y + 37); x.restore(); }
+async function czHero(fmt, w, col, o = {}) {
+  const { c, x, L } = await czHeroBase(fmt, w, col), tall = fmt === "tall", pw = o.big ? L.pw - (tall ? 90 : 70) : L.pw, ph = Math.round(pw * 1.5), px = (CZ.W - pw) / 2;
+  let py = L.py;
+  if (o.chip) { czChip(x, o.chip, py - (fmt === "tall" ? 100 : 76), col); py += fmt === "tall" ? 0 : 20; }
+  else if (o.count) { x.font = "800 34px Outfit, sans-serif"; x.fillStyle = col; x.textAlign = "center"; x.fillText(o.count, CZ.W / 2, py - (fmt === "tall" ? 50 : 36)); x.textAlign = "left"; }
+  await czPosterLift(x, w, px, py, pw, ph, 30);
+  let y = py + ph + (tall ? 84 : 66);
+  x.fillStyle = CZ.ink; x.textAlign = "center"; x.fillText(czFitLine(x, w.title || "", CZ.W - 200, fmt === "tall" ? 66 : 56, 38), CZ.W / 2, y); x.textAlign = "left";
+  if (o.big) y = czCentre(x, o.big, y + (fmt === "tall" ? 74 : 60), CZ.W - 180, `800 ${fmt === "tall" ? 44 : 36}px Outfit, sans-serif`, col, fmt === "tall" ? 54 : 44);
+  if (o.line) czCentre(x, o.line, y + (fmt === "tall" ? 56 : 46), CZ.W - 220, `600 ${fmt === "tall" ? 32 : 28}px Inter, sans-serif`, "rgba(244,237,226,.78)", fmt === "tall" ? 42 : 36);
+  czBrand(x, L); return c; }
+async function czHeroCover(fmt, ws, col, words, chip) {
+  const { c, x, L } = await czHeroBase(fmt, ws[0], col), tall = fmt === "tall";
+  if (chip) czChip(x, chip, tall ? 230 : 70, col);
+  const y = czHead(x, { ...L, wide:CZ.W - CZ.M * 2, tall }, tall ? 400 : 210, words, col, tall ? 96 : 80);
+  /* the posters fanned out big, running off both edges */
+  const n = Math.min(ws.length, 5), pw = tall ? 330 : 250, ph = pw * 1.5, cy = tall ? 1080 : 820, step = tall ? 170 : 150;
+  const rot = n === 1 ? [0] : Array.from({ length:n }, (_, i) => -14 + 28 * i / (n - 1));
+  const order = Array.from({ length:n }, (_, i) => i).sort((a, b) => Math.abs(b - (n - 1) / 2) - Math.abs(a - (n - 1) / 2));
+  for (const i of order) { x.save(); x.translate(CZ.W / 2 + (i - (n - 1) / 2) * step, Math.max(y + ph / 2 + 30, cy) + Math.abs(i - (n - 1) / 2) * 30); x.rotate(rot[i] * Math.PI / 180);
+    await czPosterLift(x, ws[i], -pw / 2, -ph / 2, pw, ph, 22); x.restore(); }
+  x.font = "700 30px Inter, sans-serif"; x.fillStyle = "rgba(244,237,226,.7)"; x.textAlign = "center"; x.fillText("In this order  →", CZ.W / 2, L.brand - 70); x.textAlign = "left";
+  czBrand(x, L); return c; }
 /* ---------- a stack as a post ----------
    Any stack as stills to swipe through: a cover (or "watch these before…" with the day
    the thing comes out), one slide per thing on it, in its order, with why it's there if
@@ -16265,16 +16317,14 @@ function stackSets(l, items, o = {}, fmt = "tall") {
     words = [["Watch these before"], ...(h ? [[o.before.slice(0, o.before.indexOf(h))], [h, true], [o.before.slice(o.before.indexOf(h) + h.length)]] : [[o.before, true]])].filter(w => String(w[0]).trim()); }
   else { const t = String(l.title || "A stack").trim().split(/\s+/); words = [[t.slice(0, -1).join(" ")], [t[t.length - 1], true]].filter(w => w[0]); }
   const sub = o.before ? [day && `${o.where || "Out"} ${day}.`, o.sub || "Catch up in this order."].filter(Boolean).join(" ") : (l.note || `${its.length} things, in order.`);
+  const n = its.length, coverWs = its.map(x => x.w);
   return [{ key:"stack", name:o.before ? `Watch before ${o.before}` : l.title, when:day ? `before ${day}` : "", slides:[
-    ["Cover", () => czCover(fmt, label, col, o.before ? "Before it's out" : "A stack on Rooms", words, sub, { posters:its.slice(0, 3).map(x => x.w), foot:`${its.length} to get through` })],
-    ...its.map((x, i) => [x.title || x.w.title, () => czRank(fmt, label, KCOL(x.w.kind), { ...x.w, title:x.title || x.w.title }, i + 1,
-      x.why || [K(x.w.kind).label, x.w.creator].filter(Boolean).join(" · "), null, i < its.length - 1 ? `Next: ${its[i + 1].title || its[i + 1].w.title}` : "One more swipe",
-      { noGlow:true, wrap:true, tag:mixed ? K(x.w.kind).label : null, foot:[i < its.length - 1 ? `Next: ${its[i + 1].title || its[i + 1].w.title}` : "That's the lot", "Swipe →"] })]),
-    /* the last slide: the thing it's all for, if there is one (its poster, the day it's out, and a nudge
-       to log and rate the rest first); otherwise where the stack is */
-    o.finale?.w ? ["The new one", () => czRank(fmt, label, col, { ...o.finale.w, title:o.finale.card || o.finale.w.title }, 1,
-        o.finale.line || "Log and rate these before the new one comes out", o.finale.extra || "The whole stack is on Rooms · link in bio", null,
-        { noNum:true, wrap:true, bigStat:true, tag:day ? `${o.where || "Out"} ${day}` : "Coming soon", foot:["Then rate the new one too", "Rooms · free on the App Store"] })]
+    ["Cover", () => czHeroCover(fmt, coverWs, col, o.before ? [[`${n} to watch before`], ...words.slice(1)] : words, day ? `${o.where || "Out"} ${day.replace(/^\w+ /, "")}` : null)],
+    ...its.map((x, i) => [x.title || x.w.title, () => czHero(fmt, { ...x.w, title:x.title || x.w.title }, KCOL(x.w.kind),
+      { count:`${i + 1} of ${n}`, line:x.why || [K(x.w.kind).label, x.w.year].filter(Boolean).join(" · ") })]),
+    /* the last slide: the thing it's all for, if there is one; otherwise where the stack is */
+    o.finale?.w ? ["The new one", () => czHero(fmt, { ...o.finale.w, title:o.finale.card || o.finale.w.title }, col,
+        { chip:day ? `${o.where || "Out"} ${day}` : "Coming soon", big:o.finale.line || "Log and rate these before the new one comes out", line:o.finale.extra || "The whole stack is on Rooms · link in bio" })]
     : ["The end", () => czEnd(fmt, label, col, [["The whole stack is on"], ["Rooms", true]],
       `"${l.title}"${o.extra ? `, and ${o.extra}` : ""}. Tick them off as you go. Link in bio.`, "Free on the App Store")] ] }]; }
 function openStackPost(l, ws, back) {
