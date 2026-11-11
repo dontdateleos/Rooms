@@ -1,0 +1,29 @@
+{
+  "title": "Before GTA VI",
+  "note": "Grand Theft Auto VI is out Thursday 19 November on PS5 and Xbox Series X|S, set in Leonida and back in Vice City. Catch up on the games that got us here, in order.",
+  "ranked": true,
+  "post": {
+    "slug": "before-gta",
+    "before": "GTA VI",
+    "highlight": "GTA VI",
+    "date": "2026-11-19",
+    "where": "On PS5 & Xbox",
+    "sub": "Back to Vice City. Here's how we got here.",
+    "kinds": ["game"],
+    "col": "#F5A3C7",
+    "finale": {
+      "kind": "game",
+      "q": "Grand Theft Auto VI",
+      "card": "Grand Theft Auto VI",
+      "line": "Log these, then head back to Vice City",
+      "extra": "The whole stack is on Rooms · link in bio"
+    }
+  },
+  "items": [
+    { "kind": "game", "q": "Grand Theft Auto: Vice City", "card": "GTA: Vice City", "why": "The first trip to Vice City. GTA VI goes back" },
+    { "kind": "game", "q": "Grand Theft Auto: San Andreas", "card": "GTA: San Andreas", "why": "A whole state to roam, like Leonida" },
+    { "kind": "game", "q": "Grand Theft Auto IV", "card": "GTA IV", "why": "Where Rockstar's stories got serious" },
+    { "kind": "game", "q": "Red Dead Redemption 2", "card": "Red Dead Redemption 2", "why": "Rockstar's last game, and the best preview of VI" },
+    { "kind": "game", "q": "Grand Theft Auto V", "card": "GTA V", "why": "Three leads, one heist. VI has two" }
+  ]
+}
