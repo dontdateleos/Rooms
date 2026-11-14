@@ -1,0 +1,32 @@
+{
+  "title": "Resident Evil, ranked by the director",
+  "note": "Watched the new Resident Evil movie, then played the games for the first time. This is the order. Still to play: 0, 1, Code: Veronica and 6.",
+  "ranked": true,
+  "post": {
+    "slug": "re-ranked",
+    "before": "Resident Evil",
+    "highlight": "Resident Evil",
+    "date": "2026-11-14",
+    "where": "Ranked",
+    "sub": "One movie. Seven games.",
+    "kinds": ["game"],
+    "col": "#B9A6FF",
+    "finale": {
+      "kind": "film",
+      "q": "Resident Evil",
+      "year": 2026,
+      "card": "Resident Evil",
+      "line": "Wrong? Prove it.",
+      "extra": "The stack is on Rooms"
+    }
+  },
+  "items": [
+    { "kind": "game", "q": "Resident Evil 4", "card": "Resident Evil 4", "why": "Leon. A village. A suplex. Zero notes." },
+    { "kind": "game", "q": "Resident Evil 2", "card": "Resident Evil 2", "why": "Mr. X is still following me." },
+    { "kind": "game", "q": "Resident Evil Requiem", "card": "Resident Evil Requiem", "why": "The new one. Already picking fights with the classics." },
+    { "kind": "game", "q": "Resident Evil Village", "card": "Resident Evil Village", "why": "Still not okay about the dollhouse." },
+    { "kind": "game", "q": "Resident Evil 5", "card": "Resident Evil 5", "why": "Chris punched a boulder and we all accepted it." },
+    { "kind": "game", "q": "Resident Evil 7: Biohazard", "card": "Resident Evil 7", "why": "Dinner with the Bakers. Not going back." },
+    { "kind": "game", "q": "Resident Evil 3", "card": "Resident Evil 3", "why": "Nemesis deserved a longer game." }
+  ]
+}

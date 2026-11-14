@@ -50,3 +50,14 @@ if (post.finale?.q) { const f = post.finale; post.finale = { ...f, w:await lookU
   console.log(`✓ last slide: ${post.finale.w.title} (${post.finale.w.year})${post.finale.w.cover ? "" : " (no poster yet)"}`); }
 mkdirSync(`out/${slug}`, { recursive:true });
 writeFileSync(`out/${slug}/items.json`, JSON.stringify({ list:{ id, title:spec.title, note:spec.note }, items, post }, null, 2));
+
+/* the posters themselves, saved next to the post (covers/01-….jpg in stack order, then the last slide's),
+   so a post drawn by hand can use the same artwork */
+mkdirSync(`out/${slug}/covers`, { recursive:true });
+const covers = [...items.map(x => x.w), ...(post.finale?.w ? [post.finale.w] : [])];
+for (const [i, w] of covers.entries()) { if (!w.cover) continue;
+  const big = w.cover.replace("/t/p/w342/", "/t/p/w780/").replace("/t_cover_big/", "/t_1080p/");
+  const r = await fetch(big).then(r => r.ok ? r : fetch(w.cover)).catch(() => null);
+  if (!r?.ok) { console.log(`(couldn't fetch the poster for ${w.title})`); continue; }
+  const name = `${String(i + 1).padStart(2, "0")}-${w.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}.jpg`;
+  writeFileSync(`out/${slug}/covers/${name}`, Buffer.from(await r.arrayBuffer())); console.log(`poster saved: ${name}`); }
