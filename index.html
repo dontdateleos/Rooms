@@ -1009,6 +1009,9 @@ nav .in:has(.navpill.set) button.on{background:none}
 .rate button{width:44px;height:44px;background:none;border:0;padding:0;cursor:pointer;-webkit-user-select:none;user-select:none;transition:transform .12s}
 .rate button svg{width:44px;height:44px;display:block;pointer-events:none}
 .rate.holding button{transform:scale(1.1)}
+button.restar{background:none;border:0;padding:4px 2px;margin:-4px 0;cursor:pointer;display:inline-flex;border-radius:8px}
+button.restar:active{background:color-mix(in srgb,var(--ink) 10%,transparent)}
+.restar-row{margin:14px auto 4px}.restar-n{text-align:center;font-weight:700;color:var(--mute);min-height:1.4em;margin:4px 0 8px}
 .hint{font-size:11px;font-weight:700;color:var(--mute);letter-spacing:.04em;text-transform:uppercase;margin-top:6px}
 .ticks{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
 .tk{font-family:var(--body);font-weight:700;font-size:12.5px;border:2px solid var(--line);background:var(--card);padding:7px 11px;border-radius:999px;cursor:pointer}
@@ -8382,7 +8385,7 @@ function likeLine(e) {
 function slipHTML(e, opts = {}) { const w = remember(e.works) || works[e.work_id] || {}; const mine = e.user_id === me.id;
   const same = (e.reactions||[]).some(r => r.user_id === me.id), n = (e.reactions||[]).length;
   return `<div class="slip" data-slip="${e.id}" style="animation-delay:-${(avHash(e.id) % 65) / 10}s">
-    <div class="who" data-prof="${esc(e.user_id)}" style="cursor:pointer">${avatar(e.profiles)} <b>${esc(mine ? "you" : e.profiles?.handle)}</b>${stars(e.score, "sm")}<span class="when">${whenE(e)}</span></div>
+    <div class="who" data-prof="${esc(e.user_id)}" style="cursor:pointer">${avatar(e.profiles)} <b>${esc(mine ? "you" : e.profiles?.handle)}</b>${mine ? `<button class="restar" type="button" data-restar="${e.id}" aria-label="Change your stars">${stars(e.score, "sm")}</button>` : stars(e.score, "sm")}<span class="when">${whenE(e)}</span></div>
     ${opts.here ? (dnfOf(e) ? `<div class="here-dnf">${dnfLine(e)}</div>` : "") : `<div class="ttl" data-work="${esc(e.work_id)}"><span class="season-cover">${cover(w)}</span><div><b>${esc(w.title)}</b><small>${esc(w.year||"")}${w.creator ? ` \u00b7 ${esc(String(w.creator).split(",")[0])}` : ""}${dnfOf(e) ? ` ${dnfLine(e)}` : ""}</small></div></div>`}
     ${e.note?`<div class="q${String(e.note).length > 210 ? " clip" : ""}">“${noteHTML(e.note)}”</div>${String(e.note).length > 210 ? `<button class="more" data-more="${e.id}">More</button>` : ""}`:""}
     ${lineOf(e) ? `<blockquote class="kept" style="--k:${K(w.kind || "film").colour}">${esc(lineOf(e))}</blockquote>` : ""}
@@ -8391,6 +8394,24 @@ function slipHTML(e, opts = {}) { const w = remember(e.works) || works[e.work_id
       }${mine && (e.private ?? myEntries.find(x => x.id === e.id)?.private) ? `<span class="tag dim">just me</span>` : mine && e.room_only ? `<span class="tag dim">room only</span>` : ""}</div></div>
     <div class="likes" data-likes="${e.id}">${(() => { const l = likeLine(e); return l ? `${rfHTML(e)}<span>${l}</span>` : ""; })()}</div>
     <div class="thread" data-thread="${e.id}">${threadHTML(e)}</div></div>`; }
+/* re-starring: your mind changes after a log, so tapping your own stars on a log asks
+   again, in place, without the whole log sheet. Only the score changes. */
+async function restar(e) { const w = works[e.work_id] || e.works || {}; let v = e.score;
+  const fmt = x => `${(x / 2).toFixed(x % 2 ? 1 : 0)}★`;
+  const next = await openAsk(`<h3>Re-star ${esc(w.title || "it")}</h3><p class="sub">You gave it ${fmt(e.score)}. Tap or drag across the stars.</p>
+    <div class="rate restar-row" id="rsRow">${[0, 1, 2, 3, 4].map(() => `<button type="button" tabindex="-1"><svg viewBox="0 0 24 24"></svg></button>`).join("")}</div>
+    <p class="restar-n" id="rsN"></p><div class="stack"><button class="btn" id="rsSave">Save</button><button class="btn quiet" id="rsNo">Leave it</button></div>`, done => {
+    const row = $("#rsRow"), paint = () => { [...row.querySelectorAll("svg")].forEach((sv, i) => sv.innerHTML = starPath(Math.max(0, Math.min(1, v / 2 - i))));
+      $("#rsN").textContent = v === e.score ? "Same as before" : `${fmt(e.score)} → ${fmt(v)}`; $("#rsSave").disabled = v === e.score; };
+    const at = ev => { const r = row.getBoundingClientRect(); return Math.max(1, Math.min(10, Math.ceil((ev.clientX - r.left) / r.width * 10))); };
+    row.onpointerdown = ev => { ev.preventDefault(); row.setPointerCapture(ev.pointerId); row.classList.add("holding"); v = at(ev); paint(); buzz(3); };
+    row.onpointermove = ev => { if (!row.classList.contains("holding")) return; const n = at(ev); if (n !== v) { v = n; paint(); buzz(2); } };
+    row.onpointerup = row.onpointercancel = () => row.classList.remove("holding");
+    $("#rsSave").onclick = () => done(v); $("#rsNo").onclick = () => done(null); paint(); });
+  if (!next || next === e.score) return;
+  try { await q(sb.from("entries").update({ score:next }).eq("id", e.id).eq("user_id", me.id)); }
+  catch (err) { oops(err, "Couldn't save that"); return; }
+  e.score = next; await loadMine(); say(`${w.title || "It"}: now ${fmt(next)}`, "good"); refresh(); }
 /* Replies: the table has been there since the start and nothing ever showed one. The last
    two sit under the card; the rest open on a tap. Yours can be taken back with a tap. */
 function threadHTML(e, all = false) { const rs = (e.replies || []).slice().sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)));
@@ -8438,6 +8459,7 @@ function wireSlips(el, es) { const by = Object.fromEntries(es.map(e => [e.id, e]
   $$("[data-edit-review]", el).forEach(b => b.onclick = () => { const e = by[b.dataset.editReview];
     if (e?.user_id === me.id) openLog(works[e.work_id] || e.works, e); });
   $$("[data-delete-review]", el).forEach(b => b.onclick = () => deleteReview(by[b.dataset.deleteReview]));
+  $$("[data-restar]", el).forEach(b => b.onclick = ev => { ev.stopPropagation(); const e = by[b.dataset.restar]; if (e && e.user_id === me.id) restar(e); });
   $$("[data-mine-menu]", el).forEach(b => b.onclick = async ev => { ev.stopPropagation(); const e = by[b.dataset.mineMenu]; if (!e || e.user_id !== me.id) return;
     const v = await openAsk(`<h3>${esc(works[e.work_id]?.title || e.works?.title || "Your entry")}</h3><div class="stack menu"><button class="btn quiet" data-mm="edit">Edit it</button><button class="btn quiet" data-mm="del" style="color:var(--bad)">Delete it</button><button class="btn quiet" data-mm="">Not now</button></div>`,
       done => $$("[data-mm]", $("#askBox")).forEach(x => x.onclick = () => done(x.dataset.mm || null)));
