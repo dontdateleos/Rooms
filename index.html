@@ -582,6 +582,13 @@ header:has(#meBtn:not([hidden])) .logoword{display:none}
 .row .n small{display:block;font-size:10px;font-weight:700;color:var(--mute);letter-spacing:.04em;text-transform:uppercase;text-align:right}
 .row.done .t,.row.done .co{opacity:.45}
 .rk{font-family:var(--head);font-weight:900;font-size:13px;width:18px;color:var(--mute);flex:none}
+.rr-acts{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}.rr-acts:empty{display:none}.rr-acts .btn{width:auto;flex:1;padding:10px 14px;font-size:14px}
+.rr-list{padding:4px 0;margin-top:12px}.rr-row{position:relative;background:var(--card);transition:box-shadow .15s}
+.rr-row.dragging{z-index:3;box-shadow:0 10px 24px rgba(21,19,32,.28);border-radius:12px;transition:none}
+.rr-up{flex:none;border:0;background:none;color:var(--mute);font:700 17px/1 inherit;padding:8px 6px;cursor:pointer}
+.rr-row:first-child .rr-up{visibility:hidden}
+.rr-grip{flex:none;display:grid;gap:3px;padding:12px 8px;touch-action:none;cursor:grab}
+.rr-grip i{display:block;width:16px;height:2.5px;border-radius:2px;background:var(--mute)}
 /* the archive, as banners rather than a row sharing space with its rank and stars —
    full width, your actual cover blurred-dark behind the title, a title card rather
    than a list item. No cover to work with at all: the hashed colour+type treatment
@@ -11218,8 +11225,8 @@ async function paintRankMeet(R) {
       ${orders.length > 1 ? `<div class="chips" style="margin-top:8px">${orders.map(([kk]) => `<button class="chip ${kk === k ? "on" : ""}" data-rok="${kk}">${K(kk).plural}</button>`).join("")}</div>` : ""}
       ${o.slice(0, open ? 30 : 10).map((x, i) => { const w = works[x.id] || {};
         return `<div class="row" data-rmw="${esc(x.id)}"><span class="rk">${i + 1}</span>${cover(w)}<div class="t"><b>${esc(w.title || "")}</b><span class="rpos">${pos(x.id).map(({ m, i:j }) => `<span title="${esc(m.id === me.id ? "you" : m.handle)}: #${j + 1}">${avatar(m)}<b>#${j + 1}</b></span>`).join("")}</span></div></div>`; }).join("")}
-      ${!open && o.length > 10 ? `<div class="stack" style="margin-top:6px"><button class="btn quiet" data-roall="${k}">See all ${Math.min(30, o.length)}</button></div>` : ""}
-      <p class="sub" style="margin-top:8px;font-size:12px">Folded together from everyone's ranked lists — only what at least two of you have ranked. Sharpen yours in Ranked and this moves.</p></div>`; };
+      <div class="rr-acts">${(rankCache[k] || []).filter(id => o.some(x => x.id === id)).length >= 2 ? `<button class="btn" data-rerank="${k}">Re-rank yours</button>` : ""}${!open && o.length > 10 ? `<button class="btn quiet" data-roall="${k}">See all ${Math.min(30, o.length)}</button>` : ""}</div>
+      <p class="sub" style="margin-top:8px;font-size:12px">Folded together from everyone's ranked lists — only what at least two of you have ranked. Re-rank yours and this moves.</p></div>`; };
   el.innerHTML = (top.length ? `<div class="card"><div class="h"><span>Where your orders meet</span><span class="tag dim">ranked lists</span></div>
     ${top.map(l => { const w = works[l.w] || {};
       return `<div class="row" data-rmw="${esc(l.w)}">${cover(w)}<div class="t"><b>${esc(w.title || "")}</b><small>${esc(l.text)}</small></div></div>`; }).join("")}</div>` : "")
@@ -11231,7 +11238,9 @@ async function paintRankMeet(R) {
   const wireRows = root => $$("[data-rmw]", root).forEach(x => x.onclick = () => openWork(x.dataset.rmw));
   const wireOrder = () => { wireRows($("#roomOrder"));
     $$("[data-rok]", el).forEach(b => b.onclick = () => { $("#roomOrder").outerHTML = orderCard(b.dataset.rok); wireOrder(); });
-    $$("[data-roall]", el).forEach(b => b.onclick = () => { $("#roomOrder").outerHTML = orderCard(b.dataset.roall, true); wireOrder(); }); };
+    $$("[data-roall]", el).forEach(b => b.onclick = () => { $("#roomOrder").outerHTML = orderCard(b.dataset.roall, true); wireOrder(); });
+    $$("[data-rerank]", el).forEach(b => b.onclick = () => { const k = b.dataset.rerank;
+      openRoomRerank(R, k, (orders.find(([kk]) => kk === k) || [, []])[1], () => paintRankMeet(R)); }); };
   wireRows(el); wireOrder();
   $$("[data-settle]", el).forEach(b => b.onclick = async () => {
     const pick = b.dataset.settle, other = pick === duel.a ? duel.b : duel.a, k = duel.k;
@@ -11243,6 +11252,40 @@ async function paintRankMeet(R) {
     say(moved ? `${works[pick]?.title} goes above ${works[other]?.title} on your list` : `You already had it that way round`);
     paintRankMeet(R); });
 }
+/* re-ranking from a room: the room's order is only ever everyone's own lists folded
+   together, so re-ranking means putting yours in order. The sheet shows the ones the room
+   has ranked that are on your list, in your order; you drag them about, and they go back
+   into the same slots on your full list, so everything else on it stays where it was */
+async function openRoomRerank(R, k, order, done) {
+  if (!rankListId[k]) { try { const t = await ensureMyRank(k); rankListId[k] = t.id; } catch (err) { oops(err, "Couldn't open your list"); return; } }
+  const L = (rankCache[k] || []).slice(), roomPos = new Map(order.map((x, i) => [x.id, i + 1]));
+  const mine = L.filter(id => roomPos.has(id) && works[id]).slice(0, 30);
+  if (mine.length < 2) { say(`Rank a couple of the room's ${inWords(k)} first`); return; }
+  openSheet(`<h3>Your order · ${esc(K(k).plural)}</h3>
+    <p class="sub">The ${inWords(k)} ${esc(R.name)} has ranked between you, in your order. Drag them by the handle. It saves to your own list, and the room's top moves with it.</p>
+    <div class="card rr-list" id="rrList">${mine.map((id, i) => { const w = works[id];
+      return `<div class="row rr-row" data-rr="${esc(id)}"><span class="rk">${i + 1}</span>${cover(w)}<div class="t"><b>${esc(w.title || "")}</b><small>Room's #${roomPos.get(id)}</small></div>
+        <button class="rr-up" type="button" aria-label="Move ${esc(w.title || "")} up">↑</button><span class="rr-grip" aria-hidden="true"><i></i><i></i><i></i></span></div>`; }).join("")}</div>
+    <div class="stack"><button class="btn" id="rrSave">Save my order</button><button class="btn quiet" id="rrCancel">Leave it</button></div>`);
+  const list = $("#rrList"), rows = () => [...list.querySelectorAll(".rr-row")];
+  const renumber = () => rows().forEach((r, i) => { r.querySelector(".rk").textContent = i + 1; });
+  list.querySelectorAll(".rr-up").forEach(b => b.onclick = () => { const row = b.closest(".rr-row"), prev = row.previousElementSibling;
+    if (prev) { list.insertBefore(row, prev); buzz(4); renumber(); } });
+  list.querySelectorAll(".rr-grip").forEach(g => g.onpointerdown = ev => { ev.preventDefault();
+    const row = g.closest(".rr-row"); g.setPointerCapture(ev.pointerId); let y0 = ev.clientY; row.classList.add("dragging");
+    g.onpointermove = e => { const dy = e.clientY - y0, prev = row.previousElementSibling, next = row.nextElementSibling;
+      if (prev && dy < -prev.offsetHeight / 2) { list.insertBefore(row, prev); y0 -= prev.offsetHeight; buzz(4); renumber(); }
+      else if (next && dy > next.offsetHeight / 2) { list.insertBefore(next, row); y0 += next.offsetHeight; buzz(4); renumber(); }
+      row.style.transform = `translateY(${e.clientY - y0}px)`; };
+    g.onpointerup = g.onpointercancel = () => { g.onpointermove = null; row.style.transform = ""; row.classList.remove("dragging"); }; });
+  $("#rrCancel").onclick = closeSheet;
+  $("#rrSave").onclick = async () => { const shown = rows().map(r => r.dataset.rr);
+    if (shown.every((id, i) => id === mine[i])) { closeSheet(); return; }
+    const slots = []; L.forEach((id, i) => { if (mine.includes(id)) slots.push(i); });
+    const next = L.slice(); slots.forEach((slot, j) => { next[slot] = shown[j]; });
+    $("#rrSave").disabled = true;
+    try { await persistRank(rankListId[k], next); rankCache[k] = next; } catch (err) { $("#rrSave").disabled = false; oops(err, "Couldn't save that"); return; }
+    closeSheet(); say("Your order's saved, and the room's top has moved", "good"); done?.(); }; }
 /* ============ the room's games ============
    Two things a room plays, both slower than Quiplash because nobody's in the same room
    at the same time: a prompt a week, answered from your own archive with one line of
