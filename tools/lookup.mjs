@@ -20,7 +20,9 @@ async function game(it) {
   const r = await fetch(WORKER + "/igdb/games", { method:"POST", headers:{ Origin:ORIGIN, "Content-Type":"text/plain" },
     body:`search "${String(it.q).replace(/"/g, "")}"; fields name,first_release_date,cover.image_id,involved_companies.company.name,total_rating_count; limit 15;` });
   if (!r.ok) throw new Error(`/igdb/games → ${r.status}`);
-  const gs = (await r.json()).filter(g => same(g.name, it.q)).sort((a, b) => (b.total_rating_count || 0) - (a.total_rating_count || 0));
+  const gs = (await r.json()).filter(g => same(g.name, it.q))
+    .filter(g => !it.year || (g.first_release_date && new Date(g.first_release_date * 1000).getFullYear() === Number(it.year)))
+    .sort((a, b) => (b.total_rating_count || 0) - (a.total_rating_count || 0));
   const g = gs[0]; if (!g) throw new Error(`no game found for "${it.q}"`);
   return { id:"game:" + g.id, kind:"game", title:g.name, year:g.first_release_date ? String(new Date(g.first_release_date * 1000).getFullYear()) : "",
     creator:g.involved_companies?.[0]?.company?.name || null, cover:g.cover?.image_id ? `https://images.igdb.com/igdb/image/upload/t_cover_big/${g.cover.image_id}.jpg` : null }; }
