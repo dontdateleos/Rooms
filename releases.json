@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-09",
+ "updated": "2026-11-14",
  "items": [
   {
    "id": "film:1567605",
@@ -28,7 +28,7 @@
    "kind": "film",
    "title": "The Hunger Games: Sunrise on the Reaping",
    "year": "2026",
-   "cover": "https://image.tmdb.org/t/p/w342/jNcZH8yplxttRlf0wwqfGGMKHxX.jpg",
+   "cover": "https://image.tmdb.org/t/p/w342/j1MNyNNgNQL6f27cb3m3uKaPKd6.jpg",
    "date": "2026-11-19",
    "where": "In cinemas",
    "why": null
@@ -79,7 +79,7 @@
    "kind": "film",
    "title": "Avengers: Doomsday",
    "year": "2026",
-   "cover": "https://image.tmdb.org/t/p/w342/9jlZ59UALLLOE279HMT19rP9XQs.jpg",
+   "cover": "https://image.tmdb.org/t/p/w342/tTMmREfhVd51CCg7GN73wL8cIoT.jpg",
    "date": "2026-12-16",
    "where": "In cinemas",
    "why": null
@@ -89,7 +89,7 @@
    "kind": "tv",
    "title": "Harry Potter",
    "year": "2026",
-   "cover": "https://image.tmdb.org/t/p/w342/AcVckVxfN169mGOgQGYe983KT1C.jpg",
+   "cover": "https://image.tmdb.org/t/p/w342/6spxkjxCcog8HR3cLsDVROsjz3h.jpg",
    "date": "2026-12-25",
    "where": "HBO Max",
    "why": "The new series"
