@@ -1,0 +1,134 @@
+{
+  "list": {
+    "id": null,
+    "title": "Resident Evil, ranked by the director",
+    "note": "Watched the new Resident Evil movie, then played the games for the first time. This is the order. Still to play: 0, 1, Code: Veronica and 6."
+  },
+  "items": [
+    {
+      "w": {
+        "id": "game:974",
+        "kind": "game",
+        "title": "Resident Evil 4",
+        "year": "2005",
+        "creator": "Capcom Production Studio 4",
+        "cover": "https://images.igdb.com/igdb/image/upload/t_cover_big/co2wk8.jpg"
+      },
+      "why": "Leon. A village. A suplex. Zero notes.",
+      "card": "Resident Evil 4",
+      "when": null,
+      "where": null
+    },
+    {
+      "w": {
+        "id": "game:19686",
+        "kind": "game",
+        "title": "Resident Evil 2",
+        "year": "2019",
+        "creator": "Capcom",
+        "cover": "https://images.igdb.com/igdb/image/upload/t_cover_big/co1ir3.jpg"
+      },
+      "why": "Mr. X is still following me.",
+      "card": "Resident Evil 2",
+      "when": null,
+      "where": null
+    },
+    {
+      "w": {
+        "id": "game:347668",
+        "kind": "game",
+        "title": "Resident Evil Requiem",
+        "year": "2026",
+        "creator": "Capcom",
+        "cover": "https://images.igdb.com/igdb/image/upload/t_cover_big/cobmj0.jpg"
+      },
+      "why": "The new one. Already picking fights with the classics.",
+      "card": "Resident Evil Requiem",
+      "when": null,
+      "where": null
+    },
+    {
+      "w": {
+        "id": "game:55163",
+        "kind": "game",
+        "title": "Resident Evil Village",
+        "year": "2021",
+        "creator": "Capcom Development Division 1",
+        "cover": "https://images.igdb.com/igdb/image/upload/t_cover_big/coab9q.jpg"
+      },
+      "why": "Still not okay about the dollhouse.",
+      "card": "Resident Evil Village",
+      "when": null,
+      "where": null
+    },
+    {
+      "w": {
+        "id": "game:847",
+        "kind": "game",
+        "title": "Resident Evil 5",
+        "year": "2009",
+        "creator": "Mercenary Technology",
+        "cover": "https://images.igdb.com/igdb/image/upload/t_cover_big/cobtgs.jpg"
+      },
+      "why": "Chris punched a boulder and we all accepted it.",
+      "card": "Resident Evil 5",
+      "when": null,
+      "where": null
+    },
+    {
+      "w": {
+        "id": "game:19562",
+        "kind": "game",
+        "title": "Resident Evil 7: Biohazard",
+        "year": "2017",
+        "creator": "Capcom",
+        "cover": "https://images.igdb.com/igdb/image/upload/t_cover_big/cobtwh.jpg"
+      },
+      "why": "Dinner with the Bakers. Not going back.",
+      "card": "Resident Evil 7",
+      "when": null,
+      "where": null
+    },
+    {
+      "w": {
+        "id": "game:115115",
+        "kind": "game",
+        "title": "Resident Evil 3",
+        "year": "2020",
+        "creator": "NeoBards Entertainment",
+        "cover": "https://images.igdb.com/igdb/image/upload/t_cover_big/cocw1u.jpg"
+      },
+      "why": "Nemesis deserved a longer game.",
+      "card": "Resident Evil 3",
+      "when": null,
+      "where": null
+    }
+  ],
+  "post": {
+    "slug": "re-ranked",
+    "before": "Resident Evil",
+    "highlight": "Resident Evil",
+    "date": "2026-11-14",
+    "where": "Ranked",
+    "sub": "One movie. Seven games.",
+    "kinds": [
+      "game"
+    ],
+    "col": "#B9A6FF",
+    "finale": {
+      "kind": "film",
+      "q": "Resident Evil",
+      "year": 2026,
+      "card": "Resident Evil",
+      "line": "Wrong? Prove it.",
+      "extra": "The stack is on Rooms",
+      "w": {
+        "id": "film:1423191",
+        "kind": "film",
+        "title": "Resident Evil",
+        "year": "2026",
+        "cover": "https://image.tmdb.org/t/p/w342/gAgWJhUSQWCgtKR8170nMkYlBda.jpg"
+      }
+    }
+  }
+}
