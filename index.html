@@ -422,6 +422,8 @@ a:focus-visible,[tabindex]:focus-visible,.chip:focus-visible,[data-work]:focus-v
 .ll-w{display:flex;flex-direction:column;gap:5px;align-items:center;width:56px;border:0;background:none;padding:0;cursor:pointer;flex:none;overflow:visible}
 .ll-w .co{width:56px;height:82px;border-radius:8px;object-fit:cover}
 .ll-w .stars{zoom:.62;white-space:nowrap}
+.ll-who .ll-edit{margin-left:auto;flex:none}
+.ll-w.ll-pick .co{animation:llPick .9s ease-in-out 2}@keyframes llPick{50%{transform:translateY(-6px) rotate(-3deg)}}
 /* the room's year: its six best, as posters */
 .ywall{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
 .yw{position:relative;display:flex;flex-direction:column;gap:3px;border:0;background:none;padding:0;color:var(--ink);text-align:left;cursor:pointer;min-width:0}
@@ -681,6 +683,7 @@ header:has(#meBtn:not([hidden])) .logoword{display:none}
 .acts{display:flex;gap:14px}
 .acts button{background:none;border:0;font-family:var(--head);font-weight:800;font-size:13px;color:var(--mute);cursor:pointer;padding:0}
 .acts button.on{color:var(--bad)}
+.acts button.minemenu{border:1.5px solid var(--line);color:var(--ink);padding:0 12px;height:30px;border-radius:15px;font-size:13px}
 
 /* tiles + grid */
 .tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
@@ -3473,7 +3476,7 @@ blockquote.kept.big{margin-top:14px;font-size:18px;padding:6px 0 6px 14px}
 .nowrow::-webkit-scrollbar{display:none}
 .nowrow .nowpill{flex:none;max-width:250px;scroll-snap-align:start}
 .nowrow:empty{display:none}
-.minemenu{border:0;background:none;color:var(--mute);width:34px;height:30px;border-radius:10px;display:grid;place-items:center;cursor:pointer;margin-left:-6px}
+.minemenu{border:1.5px solid var(--line);background:none;color:var(--ink);height:30px;padding:0 12px;border-radius:15px;display:grid;place-items:center;cursor:pointer;font:700 13px/1 inherit}
 .minemenu svg{width:20px;height:20px;fill:currentColor}
 .minemenu:hover{background:var(--cream2)}
 /* a review is words on the page, not a box: the person and their stars on one line,
@@ -8390,10 +8393,15 @@ function slipHTML(e, opts = {}) { const w = remember(e.works) || works[e.work_id
     ${e.note?`<div class="q${String(e.note).length > 210 ? " clip" : ""}">“${noteHTML(e.note)}”</div>${String(e.note).length > 210 ? `<button class="more" data-more="${e.id}">More</button>` : ""}`:""}
     ${lineOf(e) ? `<blockquote class="kept" style="--k:${K(w.kind || "film").colour}">${esc(lineOf(e))}</blockquote>` : ""}
     ${e.loved?.length ? `<p class="lovedline">Loved ${e.loved.slice(0,3).map(k => `<b>${esc(k.startsWith("person:") ? k.slice(7) : k)}</b>`).join(", ").replace(/, ([^,]*)$/, " and $1")}</p>` : ""}
-    <div class="foot"><div class="acts">${mine ? `<button class="minemenu" data-mine-menu="${e.id}" aria-label="Edit or delete">${ICON_MORE}</button>` : `<button data-like="${e.id}" class="lk ${same?"on":""}" aria-pressed="${same}" aria-label="${same ? "Liked — tap to take it back" : "Like this. Hold for faces"}">${myReactHTML(e)}</button><button data-reply="${e.id}" class="lk" aria-label="Reply">${BUBBLE}</button>`
+    <div class="foot"><div class="acts">${mine ? `<button class="minemenu" data-mine-menu="${e.id}" aria-label="Edit, re-star or delete">Edit</button>` : `<button data-like="${e.id}" class="lk ${same?"on":""}" aria-pressed="${same}" aria-label="${same ? "Liked — tap to take it back" : "Like this. Hold for faces"}">${myReactHTML(e)}</button><button data-reply="${e.id}" class="lk" aria-label="Reply">${BUBBLE}</button>`
       }${mine && (e.private ?? myEntries.find(x => x.id === e.id)?.private) ? `<span class="tag dim">just me</span>` : mine && e.room_only ? `<span class="tag dim">room only</span>` : ""}</div></div>
     <div class="likes" data-likes="${e.id}">${(() => { const l = likeLine(e); return l ? `${rfHTML(e)}<span>${l}</span>` : ""; })()}</div>
     <div class="thread" data-thread="${e.id}">${threadHTML(e)}</div></div>`; }
+/* your own log's menu: change the stars, change anything, or take it down */
+async function mineMenu(e) {
+  const v = await openAsk(`<h3>${esc(works[e.work_id]?.title || e.works?.title || "Your entry")}</h3><div class="stack menu"><button class="btn quiet" data-mm="star">Change the stars</button><button class="btn quiet" data-mm="edit">Edit the log</button><button class="btn quiet" data-mm="del" style="color:var(--bad)">Delete it</button><button class="btn quiet" data-mm="">Not now</button></div>`,
+    done => $$("[data-mm]", $("#askBox")).forEach(x => x.onclick = () => done(x.dataset.mm || null)));
+  if (v === "star") restar(e); else if (v === "edit") openLog(works[e.work_id] || e.works, e); else if (v === "del") deleteReview(e); }
 /* re-starring: your mind changes after a log, so tapping your own stars on a log asks
    again, in place, without the whole log sheet. Only the score changes. */
 async function restar(e) { const w = works[e.work_id] || e.works || {}; let v = e.score;
@@ -8425,7 +8433,7 @@ function logLineHTML(es) { const e = es[0], mine = e.user_id === me.id;
   const verbs = [...new Set(ws.map(w => K(w.kind || "film").verb))];
   const names = ws.map(w => `<b>${esc(w.title || "")}</b>`);
   const list = names.length < 3 ? names.join(" and ") : names.slice(0, -1).join(", ") + " and " + names[names.length - 1];
-  return `<div class="logline"><div class="ll-who">${avatar(e.profiles)}<p><b data-prof="${esc(e.user_id)}">${esc(mine ? "you" : e.profiles?.handle || "someone")}</b> ${verbs.length === 1 ? verbs[0] : "logged"} ${list}<small> · ${whenE(e)}</small></p></div>
+  return `<div class="logline"><div class="ll-who">${avatar(e.profiles)}<p><b data-prof="${esc(e.user_id)}">${esc(mine ? "you" : e.profiles?.handle || "someone")}</b> ${verbs.length === 1 ? verbs[0] : "logged"} ${list}<small> · ${whenE(e)}</small></p>${mine ? `<button class="minemenu ll-edit" type="button" data-ll-edit="${esc(e.id)}" aria-label="Edit, re-star or delete">Edit</button>` : ""}</div>
     <div class="ll-row">${es.map((x, i) => `<button class="ll-w" data-entry="${esc(x.id)}" data-gw="${esc(x.work_id)}" aria-label="${esc(`${ws[i].title || "Untitled"}, ${(x.score / 2).toFixed(1)} stars`)}">${cover(ws[i])}${stars(x.score, "sm")}</button>`).join("")}</div></div>`; }
 /* asks for the words, sends them, and keeps them on the entry; true once it's gone */
 async function replyTo(e) {
@@ -8455,15 +8463,16 @@ function wireThreads(el, by) {
   /* the bubble in the card's foot opens the same thing as the Reply under a thread */
   wireOne(el, false); }
 function wireSlips(el, es) { const by = Object.fromEntries(es.map(e => [e.id, e]));
-  $$("[data-entry]", el).forEach(b => b.onclick = () => { const e = by[b.dataset.entry]; if (e) openEntry(e); });
+  $$("[data-entry]", el).forEach(b => b.onclick = () => { const e = by[b.dataset.entry]; if (!e) return; if (e.user_id === me.id && b.classList.contains("ll-w")) mineMenu(e); else openEntry(e); });
+  /* Edit on a line of several of yours: one is the menu straight away; more, you pick which */
+  $$("[data-ll-edit]", el).forEach(b => b.onclick = ev => { ev.stopPropagation(); const ps = [...b.closest(".logline").querySelectorAll(".ll-w")];
+    if (ps.length === 1) { const e = by[ps[0].dataset.entry]; if (e) mineMenu(e); return; }
+    say("Tap the one to change"); ps.forEach(x => { x.classList.remove("ll-pick"); void x.offsetWidth; x.classList.add("ll-pick"); }); });
   $$("[data-edit-review]", el).forEach(b => b.onclick = () => { const e = by[b.dataset.editReview];
     if (e?.user_id === me.id) openLog(works[e.work_id] || e.works, e); });
   $$("[data-delete-review]", el).forEach(b => b.onclick = () => deleteReview(by[b.dataset.deleteReview]));
   $$("[data-restar]", el).forEach(b => b.onclick = ev => { ev.stopPropagation(); const e = by[b.dataset.restar]; if (e && e.user_id === me.id) restar(e); });
-  $$("[data-mine-menu]", el).forEach(b => b.onclick = async ev => { ev.stopPropagation(); const e = by[b.dataset.mineMenu]; if (!e || e.user_id !== me.id) return;
-    const v = await openAsk(`<h3>${esc(works[e.work_id]?.title || e.works?.title || "Your entry")}</h3><div class="stack menu"><button class="btn quiet" data-mm="edit">Edit it</button><button class="btn quiet" data-mm="del" style="color:var(--bad)">Delete it</button><button class="btn quiet" data-mm="">Not now</button></div>`,
-      done => $$("[data-mm]", $("#askBox")).forEach(x => x.onclick = () => done(x.dataset.mm || null)));
-    if (v === "edit") openLog(works[e.work_id] || e.works, e); else if (v === "del") deleteReview(e); });
+  $$("[data-mine-menu]", el).forEach(b => b.onclick = ev => { ev.stopPropagation(); const e = by[b.dataset.mineMenu]; if (e && e.user_id === me.id) mineMenu(e); });
   wireThreads(el, by);
   $$("[data-more]", el).forEach(b => b.onclick = ev => { ev.stopPropagation();
     const qd = b.previousElementSibling; qd.classList.toggle("clip"); b.textContent = qd.classList.contains("clip") ? "More" : "Less"; });
