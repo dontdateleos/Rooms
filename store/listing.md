@@ -49,7 +49,7 @@ PRIVATE BY DESIGN
 No ads and no tracking. Your rooms are yours. Report and block are always one tap away, and you can download everything or close your account from Settings.
 
 ## What's new in this version
-(For 1.0.2.)
+(This was 1.0.2's, which is live. Update below before submitting 1.0.3.)
 
 A new look: the new Rooms logo, four rooms with someone peeking up in each, and a launch screen that lights them up one by one.
 
