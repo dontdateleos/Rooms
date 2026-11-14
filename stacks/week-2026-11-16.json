@@ -1,6 +1,6 @@
 {
   "title": "Out this week · 16–22 Nov",
-  "note": "The week's most notable new film, seasons, game and book, in the order they land. Streaming dates are the services' own and usually match Australia.",
+  "note": "The week's most notable new film, seasons and game, in the order they land. Streaming dates are the services' own and usually match Australia.",
   "ranked": true,
   "post": {
     "slug": "week-2026-11-16",
@@ -9,10 +9,39 @@
     "col": "#F5A3C7"
   },
   "items": [
-    { "kind": "book", "q": "Peculiar Stars", "author": "Rebecca Yarros", "year": 2026, "when": "2026-11-17", "where": "Bookshops", "why": "The new one from Rebecca Yarros" },
-    { "kind": "film", "q": "The Hunger Games: Sunrise on the Reaping", "year": 2026, "when": "2026-11-19", "where": "In cinemas", "card": "Sunrise on the Reaping", "why": "Haymitch's Games, on the big screen" },
-    { "kind": "game", "q": "Grand Theft Auto VI", "when": "2026-11-19", "where": "PS5 & Xbox", "card": "GTA VI", "why": "Back to Vice City. Finally" },
-    { "kind": "tv", "q": "Percy Jackson and the Olympians", "year": 2023, "when": "2026-11-20", "where": "Disney+", "card": "Percy Jackson", "why": "Season 3: The Titan's Curse" },
-    { "kind": "tv", "q": "Yellowjackets", "year": 2021, "when": "2026-11-20", "where": "Paramount+", "why": "The fourth and final season" }
+    {
+      "kind": "film",
+      "q": "The Hunger Games: Sunrise on the Reaping",
+      "year": 2026,
+      "when": "2026-11-19",
+      "where": "In cinemas",
+      "card": "Sunrise on the Reaping",
+      "why": "Haymitch's Games, on the big screen"
+    },
+    {
+      "kind": "game",
+      "q": "Grand Theft Auto VI",
+      "when": "2026-11-19",
+      "where": "PS5 & Xbox",
+      "card": "GTA VI",
+      "why": "Back to Vice City. Finally"
+    },
+    {
+      "kind": "tv",
+      "q": "Percy Jackson and the Olympians",
+      "year": 2023,
+      "when": "2026-11-20",
+      "where": "Disney+",
+      "card": "Percy Jackson",
+      "why": "Season 3: The Titan's Curse"
+    },
+    {
+      "kind": "tv",
+      "q": "Yellowjackets",
+      "year": 2021,
+      "when": "2026-11-20",
+      "where": "Paramount+",
+      "why": "The fourth and final season"
+    }
   ]
 }
