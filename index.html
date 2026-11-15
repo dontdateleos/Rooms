@@ -8657,10 +8657,9 @@ async function renderRoomFeed(fb, R) {
     </div>
     <div data-rsec="play"${sec === "play" ? "" : " hidden"}><div id="roomGames">${skeleton(2)}</div></div>
     <div data-rsec="charts"${sec === "charts" ? "" : " hidden"}>
-    ${split ? `<div class="card"><div class="h"><span>A friendly argument</span></div>${compRows([split])}</div>` : ""}
-    <div class="card"><div class="h"><span>In competition</span><span class="tag dim">weighted</span></div>${comp.length ? compRows(comp) : blank("var(--butter)","%","No scores yet","Once two of you have rated the same thing, the agreement number appears here.",[["compAdd","Log something"]])}</div>
+    ${split ? `<div class="card" id="roomSplit"><div class="h"><span>A friendly argument</span></div>${compRows([split])}</div>` : ""}
+    <div class="card" id="roomComp"><div class="h"><span>In competition</span><span class="tag dim">weighted</span></div>${comp.length ? compRows(comp) : blank("var(--butter)","%","No scores yet","Once two of you have rated the same thing, the agreement number appears here.",[["compAdd","Log something"]])}</div>
     <div id="rankMeet"></div>
-    <div id="roomLists"></div>
     </div>
     ${hasYear ? (() => { const t = id => esc(works[id]?.title || "");
       const best = competition(yearEs, 200);
@@ -8672,7 +8671,7 @@ async function renderRoomFeed(fb, R) {
     `;
   endLine($('[data-rsec="talk"]', fb), es, 60);
   paintRoomGoals(R, es); paintAwards(R);
-  paintListsCard($("#roomLists"), { build:x => x.in("owner", R.members.map(m => m.id)), title:"Stacks from the room" });
+
   if (awardsPhase() === "vote" && R.members.length > 1 && P.awardCoach !== `${R.id}:${awardYear()}` && currentTab() === "doors") {
     P.awardCoach = `${R.id}:${awardYear()}`; saveP(); setTimeout(() => coach(`${awardsName(R)} are open. Vote in the Year tab`), 2600); }
   if (!P.holdTip && myEntries.length >= 3 && currentTab() === "doors") { P.holdTip = 1; saveP(); setTimeout(() => coach("Hold any poster to rate it, shelve it or pass it on"), 1600); }
@@ -11261,9 +11260,10 @@ async function paintRankMeet(R) {
         return `<div class="row" data-rmw="${esc(x.id)}"><span class="rk">${i + 1}</span>${cover(w)}<div class="t"><b>${esc(w.title || "")}</b><span class="rpos">${pos(x.id).map(({ m, i:j }) => `<span title="${esc(m.id === me.id ? "you" : m.handle)}: #${j + 1}">${avatar(m)}<b>#${j + 1}</b></span>`).join("")}</span></div></div>`; }).join("")}
       <div class="rr-acts">${(rankCache[k] || []).filter(id => o.some(x => x.id === id)).length >= 2 ? `<button class="btn" data-rerank="${k}">Re-rank yours</button>` : ""}${!open && o.length > 10 ? `<button class="btn quiet" data-roall="${k}">See all ${Math.min(30, o.length)}</button>` : ""}</div>
       <p class="sub" style="margin-top:8px;font-size:12px">Folded together from everyone's ranked lists — only what at least two of you have ranked. Re-rank yours and this moves.</p></div>`; };
-  el.innerHTML = (top.length ? `<div class="card"><div class="h"><span>Where your orders meet</span><span class="tag dim">ranked lists</span></div>
-    ${top.map(l => { const w = works[l.w] || {};
-      return `<div class="row" data-rmw="${esc(l.w)}">${cover(w)}<div class="t"><b>${esc(w.title || "")}</b><small>${esc(l.text)}</small></div></div>`; }).join("")}</div>` : "")
+  /* one top list and one argument: the ranked top stands in for the starred one once
+     there's enough of it, and Settle it for the friendly argument */
+  $("#roomComp")?.toggleAttribute("hidden", !!orders.length); $("#roomSplit")?.toggleAttribute("hidden", !!duel);
+  el.innerHTML = ""
     + (duel ? `<div class="card settle"><div class="h"><span>Settle it</span><span class="tag dim">${esc(K(duel.k).plural)}</span></div>
       <p class="sub" style="margin-top:6px">${who(duel.forA)} put <b>${esc(works[duel.a]?.title || "")}</b> higher. ${who(duel.forB)} put <b>${esc(works[duel.b]?.title || "")}</b> higher. You decide.</p>
       <div class="vs">${[duel.a, duel.b].map(id => { const w = works[id] || {};
