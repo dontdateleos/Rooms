@@ -7872,7 +7872,7 @@ async function renderDoors() {
   body.innerHTML = `${pagerHTML(places, cur.key, { id:"pager", titleId:"feedPick", titleHint:"see everywhere you can go" })}
     ${inRoom ? "" : tonightCard()}
     <div id="feedBody">${skeleton(3, true)}</div>
-    ${weekCard()}${rev ? `<div class="card look" id="revCard"><div class="h"><span>${esc(rev.head)}</span><span class="tag dim">${rev.kind === "year" ? "the year" : "last month"}</span></div>
+    ${rev ? `<div class="card look" id="revCard"><div class="h"><span>${esc(rev.head)}</span><span class="tag dim">${rev.kind === "year" ? "the year" : "last month"}</span></div>
       <div class="stack"><button class="btn soft" id="revGo">Have a look</button></div></div>` : ""}
     ${mem ? `<div class="card look" id="memCard"><div class="h"><span>${esc(mem.head)}</span><span class="tag dim">${
         mem.kind === "still" ? "and never went back" : when(mem.when || mem.entries[0].rated_on)}</span></div>
@@ -8654,7 +8654,6 @@ async function renderRoomFeed(fb, R) {
         /* where the new ends: a line you can tick off, and everything under it is older */
         else if (String(e.created_at) <= since && shown && !caught) { caught = true; head = caughtUpHTML(); }
         return head + (run.plain ? logLineHTML(run.es) : slipHTML(e, { talk:true })); }).join(""); })()}
-    ${roomPrompt()}
     ${pick ? `<div class="result"><small>Tonight's pick</small><b>${esc(pick.title)}</b><div class="stack" style="margin-top:10px"><button class="btn" id="pickLog">${K(pick.kind).verb} it</button></div></div>` : ""}
     </div>
     <div data-rsec="play"${sec === "play" ? "" : " hidden"}><div id="roomGames">${skeleton(2)}</div></div>
