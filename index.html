@@ -423,6 +423,10 @@ a:focus-visible,[tabindex]:focus-visible,.chip:focus-visible,[data-work]:focus-v
 .ll-w .co{width:56px;height:82px;border-radius:8px;object-fit:cover}
 .ll-w .stars{zoom:.62;white-space:nowrap}
 .ll-who .ll-edit{margin-left:auto;flex:none}
+/* Queue: your posters first; what needs a look (finished it?, now streaming, this week's
+   episodes, the next in a series) together under them, with a label only when there's any */
+.headsup > .lbl{display:none}.headsup:has(> .stale, > .arrived, > #tvWeek:not(:empty), > #seriesNext:not(:empty)) > .lbl{display:block;margin-top:22px}
+.headsup #seriesNext > .lbl:first-child{margin-top:12px}
 .ll-w.ll-pick .co{animation:llPick .9s ease-in-out 2}@keyframes llPick{50%{transform:translateY(-6px) rotate(-3deg)}}
 /* the room's year: its six best, as posters */
 .ywall{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
@@ -9679,7 +9683,7 @@ function renderShelf() {
     <div class="shelfsearch"><input id="search" type="search" placeholder="Search ${esc(scope)}" aria-label="Search ${esc(scope)}" autocomplete="off">${all.length ? `<button class="cabfind ${P.when ? "on" : ""}" id="shelfFilterBtn" aria-label="Filter Up next">${SLIDERS}</button>` : ""}${
         shelfEdit || all.length ? "" : `<button class="chip filt pickchip" id="spinOpen" aria-label="${left.length >= 2 ? `Can't decide? Pick from ${left.length}` : "Spin the best of something"}">${ICON_DICE}Pick</button>`}</div>
     ${P.when ? `<div class="cabfacets"><button class="cfchip on" id="whenOff" aria-label="Show everything">${({ out:"Out now", now:"In the middle of", soon:"Coming", mine:"On your services" })[P.when] || ""}<i aria-hidden="true">×</i></button></div>` : ""}
-    <div class="msg" id="msg"></div><div id="results"></div>${staleHTML()}${arrivedHTML()}<div id="tvWeek"></div>
+    <div class="msg" id="msg"></div><div id="results"></div>
     ${all.length ? `${pickBar}
       <div class="grid" id="shelfGrid">${rows.map(w => { const soon = isSoon(w), n = nowOf(w.id);
         return `<div class="cell" data-cell="${esc(w.id)}"><div class="po ${logged(w.id)?"done":""} ${soon?"soon":""} ${n?"onit":""}" data-w="${esc(w.id)}">${cover(w,"")}<b>${esc(w.title)}</b>
@@ -9687,7 +9691,7 @@ function renderShelf() {
           <div class="cap"><span>${soon ? "Coming" : n ? nowLine(n) : (() => { const f = cameFrom(w.id), sv = svcMine(w.id)[0];
             return f ? `from ${esc(f.sender_p?.handle || "a friend")}` : sv ? `<em class="onsvc">on ${esc(svcName(sv))}</em>` : ""; })()}</span></div></div>`; }).join("")}</div>`
       : `<div class="tiles" style="margin-top:16px">${Object.keys(KINDS).map((k,i) => `<div class="tile" style="background:${K(k).colour};--r:${[-2,1.5,1,-1.5][i]}deg" data-kt="${k}"><small>Search</small><b>${K(k).plural}</b></div>`).join("")}</div>${blank("var(--mint)","+","Nothing up next","Everything you meant to get to, in one place — out now or still coming. Tap a medium above, or search for it.",[])}${pickBar}`}
-    <div id="seriesNext"></div>
+    <div class="headsup"><div class="lbl">Heads up</div>${staleHTML()}${arrivedHTML()}<div id="tvWeek"></div><div id="seriesNext"></div></div>
     ${(() => { const q = handIn.map(h => [h, h.works || works[h.work_id]]).filter(([, w]) => w);
       if (!q.length) return "";
       return `<div class="lbl">Handed to you</div><div class="card" style="margin-top:0">${q.map(([h, w]) =>

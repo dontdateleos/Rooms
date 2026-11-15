@@ -63,7 +63,8 @@ const BASE = (process.env.BASE || "http://127.0.0.1:8934").replace(/\/$/, "");
     await step("play: five clues and party games", async () => { await tap("nav button", "Rooms"); await wait(1200);
       await tap('[data-rsecbtn="play"]'); await wait(2500); await expect('#playHub [data-ph="clues"]', "the Play hub"); await expect(".pg", "a party game");
       await tap('#playHub [data-ph="clues"]'); await wait(1200); await expect(".clu-list li.on", "the first clue"); await closeSheet();
-      await tap("#pgStart"); await wait(600); await expect("[data-pk]", "the party games to pick from"); await tap("#pkNo"); await wait(400);
+      /* a game's own card opens under the Play cards when you tap its row */
+      await tap('#playHub [data-ph="party"]'); await wait(600); await tap("#pgStart"); await wait(600); await expect("[data-pk]", "the party games to pick from"); await tap("#pkNo"); await wait(400);
       await tap('[data-rsecbtn="talk"]'); await wait(600); });
     await step("stacks", async () => { await tap("nav button", "Stacks"); await wait(1200); await expect("#stackPager", "the stacks page");
       await expect(".stk", "a stack"); await tap('#stackPager [data-place="yours"]'); await wait(900);
@@ -101,8 +102,10 @@ const BASE = (process.env.BASE || "http://127.0.0.1:8934").replace(/\/$/, "");
       if (await page.$("#tab-shelf.on, #tab-archive.on")) throw new Error("the hold also switched tabs");
       await closeSheet(); });
     await step("lists, makers and series", async () => { await tap("nav button", "Rooms"); await wait(1200);
-      await tap('[data-rsecbtn]', "Charts"); await wait(900); await expect("#roomLists .tlist", "the room's lists");
-      await tap("#roomLists .tlist"); await wait(900); await expect(".tlitems .tlitem", "a list's things"); await closeSheet();
+      /* the room's stacks are in Stacks, under Friends */
+      await tap("nav button", "Stacks"); await wait(1200); await tap('#stackPager [data-place="friends"]'); await wait(900); await expect(".stk", "a stack from your people");
+      await tap(".stk"); await wait(900); await expect(".tlitems .tlitem", "a list's things"); await closeSheet();
+      await tap('#stackPager [data-place="popular"]'); await wait(500); await tap("nav button", "Rooms"); await wait(1200);
       await tap('[data-rsecbtn]', "Talk"); await wait(700);
       await tap('#feedBody [data-work="film:1"]'); await wait(1200);
       await tap("#wMore"); await wait(500); await tap('[data-more="list"]'); await wait(800); await expect("[data-addl]", "your lists to add it to"); await closeSheet();
