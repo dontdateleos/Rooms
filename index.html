@@ -2233,6 +2233,9 @@ nav button .dot{top:0;right:calc(50% - 24px)}
 .ph-row.todo em{background:var(--onAccent);color:#FFF7EC}
 .ph-row.todo .ph-t small{color:var(--ink);font-weight:650}
 .playhub .clu-streak{margin:10px 0 0;position:relative}
+.ph-table .clu-table{margin:10px 0 0;box-shadow:none;position:relative;background:rgba(255,255,255,.42)}.ph-table .clu-tnote{margin:8px 0 0;position:relative}
+.ph-row.open{outline:2.5px solid var(--onAccent);outline-offset:1px}
+.ph-detail .card:first-child{margin-top:12px}
 .ph-flash{animation:phFlash 1.1s ease}
 @keyframes phFlash{0%,100%{box-shadow:none}30%{box-shadow:0 0 0 4px var(--room,var(--butter))}}
 /* the top of a page: one coloured block, the same pieces on every page that has one */
@@ -12200,7 +12203,12 @@ async function paintGames(R, es) {
   if (swNow.deck.length) await fillWorks(swNow.matches).catch(() => {});
   const al = await loadAlong(R);
   if ($("#roomGames") !== el) return;
-  el.innerHTML = `<div id="playHub"></div>${al.a ? alongHTML(R, al) : ""}<div id="partyBox"></div>` + pickFlowHTML(R, g, night) + `<div id="roomPicks"></div>` + promptHTML(R, g) + bracketHTML(R, br, g) + (!night && past ? nightAfterHTML(R, past, g) : "") + `<div id="cluTable"></div>`;
+  /* the tab is two cards, Games and Together, listing everything; a game's own card opens
+     under them when you tap its row, one at a time, rather than all of them stacked */
+  const dt = (k, html) => `<div class="ph-detail" data-phd="${k}" hidden>${html}</div>`;
+  el.innerHTML = `<div id="playHub"></div>` + dt("along", al.a ? alongHTML(R, al) : "") + dt("party", `<div id="partyBox"></div>`)
+    + dt("night", pickFlowHTML(R, g, night) + (!night && past ? nightAfterHTML(R, past, g) : "")) + dt("prompt", promptHTML(R, g)) + dt("bracket", bracketHTML(R, br, g));
+  phShow(el, phOpen[R.id] || null);
   /* the Play tab gets a dot while there's something waiting on you */
   const s = promptState(R, g, gameWeek()), bst = br ? bracketState(R, br, g.votes) : null;
   const todo = (!s.voting && !s.mine) || (s.voting && !s.revealed && !s.myVote) || !!bst?.current?.matches.some(mt => !mt.mine)
@@ -12234,12 +12242,16 @@ async function paintGames(R, es) {
     catch (e) { oops(e, "Couldn't vote"); } again(); });
   $$("[data-gw]", el).forEach(x => x.onclick = () => openWork(x.dataset.gw));
   wireNights(R, el, night, past, again, g); wireSwipe(R, el, g, again); wireAlong(R, el, al, again);
-  paintRoomPicks(R, $("#roomPicks", el), !night, again);
-  paintPlayHub(R, $("#playHub", el), { g, br, bst, night, sw:swNow, again, al }); paintParty(R, es, $("#partyBox", el)); paintDailyTable(R, $("#cluTable", el));
+  paintPlayHub(R, $("#playHub", el), { g, br, bst, night, sw:swNow, again, al }); paintParty(R, es, $("#partyBox", el));
   if (gameFocus) { const want = gameFocus; gameFocus = null;
     const card = $$(".card.game", el).find(c => ($(".h span", c)?.textContent || "").toLowerCase().includes(want.toLowerCase()));
-    if (card) setTimeout(() => card.scrollIntoView({ block:"center", behavior:REDUCED ? "auto" : "smooth" }), 250); }
+    if (card) { const d = card.closest(".ph-detail"); if (d) { phOpen[R.id] = d.dataset.phd; phShow(el, d.dataset.phd); }
+      setTimeout(() => card.scrollIntoView({ block:"center", behavior:REDUCED ? "auto" : "smooth" }), 250); } }
 }
+/* which game's card is open under the Play cards, per room, so a repaint keeps it open */
+const phOpen = {};
+function phShow(el, k) { $$(".ph-detail", el).forEach(d => d.hidden = d.dataset.phd !== k);
+  const map = { swipe:"night" }; $$("[data-ph]", el).forEach(b => b.classList.toggle("open", (map[b.dataset.ph] || b.dataset.ph) === k)); }
 /* ---------- the Play hub ----------
    The top of a room's Play tab: everything there is to play, in one coloured card, each
    saying whether it's waiting on you. A row takes you to its game further down, or opens
@@ -12274,6 +12286,7 @@ async function paintPlayHub(R, box, o) {
     line:"A book, show or game, together at your own pace", go:"Start one" });
   if (night) { const voted = g.votes.some(v => v.game === "night:" + night.id && v.voter === me.id);
     rows.push({ key:"night", col:"var(--apricot)", name:"Watch night", todo:!voted, line:`${nightLabel(night.at)} · ${voted ? "you've voted" : "pick what to watch"}`, go:voted ? "Look" : "Vote" }); }
+  else if (many && !sw.deck.length) rows.push({ key:"night", col:"var(--apricot)", name:"Watch night", todo:false, line:"Pick a night and what to watch", go:"Plan one" });
   else if (many && sw.deck.length) rows.push({ key:"swipe", col:"var(--apricot)", name:"Tonight's pick", todo:sw.left.length > 0,
     line:sw.left.length ? `${sw.left.length} left to swipe${sw.matches.length ? ` · ${sw.matches.length} ${sw.matches.length === 1 ? "match" : "matches"}` : ""}` : sw.matches.length ? `${sw.matches.length} ${sw.matches.length === 1 ? "match" : "matches"} so far` : "You've swiped them all",
     go:sw.left.length ? "Swipe" : "Look" });
@@ -12282,16 +12295,24 @@ async function paintPlayHub(R, box, o) {
       line:bst.champion ? "This month's winner is in" : open ? `Round ${bst.current.r} needs your votes` : `Round ${bst.current.r} · you've voted`, go:open ? "Vote" : "Look" }); }
   const n = rows.filter(r => r.todo).length;
   const head = n ? `${NUMW[Math.min(n, 5)]} waiting on you.` : many ? "You're all square. Start something?" : "Today's Five Clues is ready.";
-  box.innerHTML = `<div class="card game promptcard playhub mo" style="--room:var(--mint)"><div class="h"><span>Play</span><span class="tag dim">${n ? `${n} for you` : "all caught up"}</span></div>
+  const rowHTML = r => `<button class="ph-row ${r.todo ? "todo" : ""}" data-ph="${r.key}" type="button" style="--c:${r.col}">
+      <i aria-hidden="true"></i><span class="ph-t"><b>${esc(r.name)}</b><small>${esc(r.line)}</small></span><em>${esc(r.go)}</em></button>`;
+  const TOGETHER = ["along", "night", "swipe"], games = rows.filter(r => !TOGETHER.includes(r.key)), together = rows.filter(r => TOGETHER.includes(r.key));
+  box.innerHTML = `<div class="card game promptcard playhub mo" style="--room:var(--mint)"><div class="h"><span>Games</span><span class="tag dim">${n ? `${n} for you` : "all caught up"}</span></div>
     <div class="gprompt">${esc(head)}</div>
-    <div class="ph-list">${rows.map(r => `<button class="ph-row ${r.todo ? "todo" : ""}" data-ph="${r.key}" type="button" style="--c:${r.col}">
-      <i aria-hidden="true"></i><span class="ph-t"><b>${esc(r.name)}</b><small>${esc(r.line)}</small></span><em>${esc(r.go)}</em></button>`).join("")}</div>
-    <p class="sub gline clu-streak" id="cluStreak" hidden></p></div>`;
+    <div class="ph-list">${games.map(rowHTML).join("")}</div>
+    <p class="sub gline clu-streak" id="cluStreak" hidden></p><div id="cluTable" class="ph-table"></div></div>
+    ${together.length ? `<div class="card game promptcard playhub mo" style="--room:var(--apricot)"><div class="h"><span>Together</span></div>
+    <div class="ph-list">${together.map(rowHTML).join("")}</div></div>` : ""}`;
+  paintDailyTable(R, $("#cluTable", box));
   const el = box.closest("#roomGames") || document;
   const to = c => { if (!c) return; c.scrollIntoView({ block:"start", behavior:REDUCED ? "auto" : "smooth" });
     c.classList.remove("ph-flash"); void c.offsetWidth; c.classList.add("ph-flash"); };
   const byHead = t => $$(".card.game", el).find(c => ($(".h span", c)?.textContent || "").toLowerCase().includes(t));
+  const open = k => { const d = { swipe:"night" }[k] || k, now = phOpen[R.id] === d && !$(`.ph-detail[data-phd="${d}"]`, el)?.hidden;
+    phOpen[R.id] = now ? null : d; phShow(el, phOpen[R.id]); return !now; };
   $$("[data-ph]", box).forEach(b => b.onclick = () => { buzz(4); const k = b.dataset.ph;
+    if (k !== "clues" && !(k === "along" && !$(".alongcard", el)) && !(k === "party" && !$("#partyBox .pg", el)) && !open(k)) return;
     if (k === "clues") openClues(() => paintPlayHub(R, box, o), pick);
     else if (k === "prompt") to(byHead("this week's prompt"));
     else if (k === "party") { const first = $("#partyBox .pg", el); if (first) to($("#partyBox", el)); else $("#pgStart", el)?.click(); }
