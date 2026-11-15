@@ -8272,11 +8272,13 @@ function openFind() {
   openSheet(`<h3>Find</h3><p class="sub">Something you or your rooms have logged or shelved, or a person by their handle.</p>
     <div class="searchline"><input id="findQ" type="search" placeholder="A title, or a handle" autocapitalize="none" autocorrect="off"><button type="button" class="btn ghost clearsearch" id="findClear">Clear</button></div>
     <div id="findWorks"></div><p class="msg" id="findMsg"></p><div id="findRes"></div>
+    <div id="findMore"><div id="findTwins"></div><div id="findVenues"></div></div>
     <div class="stack"><button class="btn quiet" id="findClose">Not now</button></div>`);
+  paintTwins($("#findTwins")); paintVenues($("#findVenues"));
   $("#findClose").onclick = closeSheet;
-  $("#findClear").onclick = () => { $("#findQ").value = ""; $("#findRes").innerHTML = ""; $("#findWorks").innerHTML = ""; $("#findMsg").textContent = ""; $("#findQ").focus(); };
+  $("#findClear").onclick = () => { $("#findQ").value = ""; $("#findMore").hidden = false; $("#findRes").innerHTML = ""; $("#findWorks").innerHTML = ""; $("#findMsg").textContent = ""; $("#findQ").focus(); };
   setTimeout(() => $("#findQ")?.focus(), 350);
-  $("#findQ").oninput = e => { clearTimeout(findT); const v = e.target.value.trim().replace(/^@/, "");
+  $("#findQ").oninput = e => { clearTimeout(findT); const v = e.target.value.trim().replace(/^@/, ""); $("#findMore").hidden = !!v;
     const res = $("#findRes"), msg = $("#findMsg");
     findWorksInto($("#findWorks"), v);
     if (v.length < 2) { res.innerHTML = ""; msg.textContent = ""; return; }
@@ -8927,8 +8929,7 @@ async function renderPeople() {
       : `<div id="folTop"></div>${shown.map(e => slipHTML(e)).join("")}
         ${shown.length ? `<div class="caught"><span class="ctick" aria-hidden="true">✓</span><b>You're all caught up</b><small>That's your people. Here's what everyone else is finishing, most liked first.</small></div>`
           : `<p class="sub" style="text-align:center;margin:18px 0">Nobody you follow has logged anything yet.</p>`}`}</div>
-    <div id="pplBest">${bestSaidHTML(all)}</div><div id="pplVenues"></div>
-    <div id="pplTwins"></div><div id="pplAll"></div>`;
+    <div id="pplBest">${bestSaidHTML(all)}</div><div id="pplAll"></div>`;
   paintStoryRow(); paintDaily(null, $("#pplDaily"), { everyone:true });
   const fb = $("#pplFol"); wireSlips(fb, shown); revealIn(fb);
   if (feedSeenObs) $$(":scope > .slip[data-slip]", fb).forEach(x => { if (!P.feedSeen?.[x.dataset.slip]) feedSeenObs.observe(x); });
@@ -8937,17 +8938,19 @@ async function renderPeople() {
   const fresh = feedArrive && Date.now() - feedArrive.t < 5000 && Math.abs(scrollY - feedArrive.y) < 4;
   if (currentTab() === "people" && (!feedResumed && scrollY < 30 || fresh)) { feedResumed = true;
     requestAnimationFrame(() => { const y = feedTarget(); if (y != null) { scrollTo(0, y); feedArrive = { t:Date.now(), y }; } }); }
-  paintEveryone($("#pplAll"), all); paintVenues($("#pplVenues"));
+  paintEveryone($("#pplAll"), all);
   $$("[data-best]", $("#pplBest")).forEach(x => x.onclick = () => { const e = all.find(y => y.id === x.dataset.best); if (e) openEntry(e); });
-  /* the twins take a while to work out, so they arrive after everything else is up */
-  tasteTwins(6).then(tw => { if (gen !== peopleGen) return; const box = $("#pplTwins"); if (!box) return;
+}
+/* people with your taste: in Find, under the search, rather than at the end of the Feed */
+function paintTwins(box) { if (!box) return;
+  tasteTwins(6).then(tw => { if (!box.isConnected) return;
     if (!tw.length) { if (tasteOf(myEntries).tagged < 3) { box.innerHTML = blank("var(--mint)","✧","Twins need a taste","Single out what you loved on three entries and we can find the people who go for the same things.",[["twinAdd","Log something"]]);
         const ta = $("#twinAdd", box); if (ta) ta.onclick = openAdd; }
       return; }
     box.innerHTML = `<div class="card"><div class="h"><span>People with your taste</span><span class="tag dim">by what you single out</span></div>${tw.map(t => `<div class="twin pairing" data-prof="${esc(t.p.id)}" data-match="${parseInt(t.match) || 0}">${avatar(me)}${avatar(t.p)}<div class="t"><b>${esc(t.p.handle)}</b><small>${esc(t.top.join(" · "))}</small></div><span class="ring">${t.match}</span><button class="chip twinfol" data-follow="${esc(t.p.id)}">Follow</button></div>`).join("")}</div>`;
     $$("[data-prof]", box).forEach(x => x.onclick = () => openProfile(x.dataset.prof));
     $$("[data-follow]", box).forEach(b => b.onclick = async ev => { ev.stopPropagation(); b.disabled = true; b.textContent = "Following";
-      if (await setFollow(b.dataset.follow, true)) { buzz(8); say(`Following ${b.closest(".twin")?.querySelector("b")?.textContent || "them"}`); renderPeople(); }
+      if (await setFollow(b.dataset.follow, true)) { buzz(8); say(`Following ${b.closest(".twin")?.querySelector("b")?.textContent || "them"}`); paintTwins(box); }
       else { b.disabled = false; b.textContent = "Follow"; } });
     drawTogether(box); }).catch(() => {}); }
 
@@ -9000,15 +9003,11 @@ function bestSaidHTML(es) { const best = bestSaid(es); if (!best.length) return 
 function paintEveryone(box, es) { if (!box) return;
   const fs = friendSet(), rest = es.filter(e => e.user_id !== me.id && !fs.has(e.user_id));
   if (!rest.length) { box.innerHTML = `<div class="lbl">Everyone</div>` + blank("var(--sky)", "◎", "Nobody else yet", "Logs from people you don't follow land here — their scores, how much they agree, and what they loved.", []); return; }
-  const weekAgo = new Date(Date.now() - 7*864e5).toISOString().slice(0,10), recent = es.filter(e => e.rated_on >= weekAgo);
-  const divisive = competition(recent.length >= 5 ? recent : es, 40)
-    .filter(f => f.n >= 2).sort((a,b) => (a.agree ?? 100) - (b.agree ?? 100)).slice(0, 5);
-  const f = feedSort(rest), shown = f.rows.slice(0, 20);
-  box.innerHTML = `<div class="lbl">Everyone</div>
-    ${divisive.length ? `<div class="card"><div class="h"><span>Most divisive</span><span class="tag dim">bring these into a room</span></div>${compRows(divisive)}</div>` : ""}
-    ${f.html}${shown.map(e => slipHTML(e)).join("")}`;
+  /* one order, most liked first, the way the caught-up line says */
+  const shown = sortEntries(rest, "popular", tasteOf(myEntries)).slice(0, 20);
+  box.innerHTML = `<div class="lbl">Everyone</div>${shown.map(e => slipHTML(e)).join("")}`;
   endLine(box, shown, 20);
-  wireSlips(box, rest); revealIn(box); wireFeedSort(box, () => paintEveryone(box, es));
+  wireSlips(box, rest); revealIn(box);
   $$("[data-best]", box).forEach(x => x.onclick = () => { const e = es.find(y => y.id === x.dataset.best); if (e) openEntry(e); });
 
   $$("[data-cw]", box).forEach(x => x.onclick = () => openWork(x.dataset.cw)); }
