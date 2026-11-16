@@ -1476,6 +1476,23 @@ html.v2 nav button[data-tab]:not(.on){font-size:0;gap:0}
 @media (prefers-reduced-motion:reduce){.tapsay{animation:none}}
 /* 22: one poster size in a list of rows */
 html.v2 :is(.row,.twin,.tvw-row,.stale,.nowrow,.rr-row,.ph-row) > :is(.co,img.co){width:40px!important;height:60px!important;border-radius:7px;object-fit:cover;flex:none}
+/* 24: one stream in a room: no filter */
+html.v2 .tfilters{display:none}
+/* 26: the one filter button, saying what it shows */
+html.v2 .cabfind.v2f{width:auto;padding:0 14px;gap:6px;font:800 13.5px var(--head);color:var(--ink);border-radius:999px;display:inline-flex;align-items:center}
+html.v2 .cabfind.v2f i{font-style:normal;font-size:11px;color:var(--mute)}
+html.v2 .cabfind.v2f svg{display:none}
+/* 27: Up next posters are just posters; the tick and friends' scores show on the one you press */
+html.v2 #shelfGrid .po :is(.tick:not(.done),.mate){visibility:hidden;opacity:0;transition:opacity .18s}
+html.v2 #shelfGrid .po:is(:active,:focus-within,.held,.lift) :is(.tick,.mate){visibility:visible;opacity:1}
+/* 33: one button style per job: the main thing filled, the rest outlined */
+html.v2 .btn.soft,html.v2 .btn.blue{background:var(--ink);color:var(--cream)}
+html.v2 .tn-spin{background:none!important;box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--ink) 35%,transparent);color:var(--ink)}
+html.v2 :is(.trayact,.tk){background:none;box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--ink) 30%,transparent);color:var(--ink)}
+/* 34: the same gap between blocks on every page */
+html.v2 main section :is(.card,.blank1,.stale,.arrived,.tonight,.stk){margin-top:14px}
+html.v2 main section .lbl{margin-top:24px;margin-bottom:8px}
+html.v2 main section .lbl + :is(.card,.blank1){margin-top:0}
 /* ---------- how scrolling feels (html.feel) ---------- */
 @property --pull{syntax:"<number>";inherits:true;initial-value:0}
 html.feel:not(.pulling){transition:--pull .45s cubic-bezier(.2,1.4,.4,1)}
@@ -4813,6 +4830,7 @@ function sayUndo(msg, undo, seconds = 5) {
    it sits just above the first poster on screen (or below, if that's too near the top),
    the poster gives a nudge, and any tap or scroll puts it away */
 function coach(text) {
+  if (V2) { const seen = P.coached || []; if (seen.includes(text)) return; P.coached = [...seen, text].slice(-40); saveP(); }
   const sec = $("main > section.on") || document;
   const t = [...sec.querySelectorAll(".co")].find(el => { const r = el.getBoundingClientRect();
     return r.width > 24 && r.top > 110 && r.bottom < innerHeight - 110; });
@@ -8715,7 +8733,7 @@ async function renderRoomFeed(fb, R) {
     if (f) x = x.eq("part", false);
     return x.in("user_id", ids).order("created_at",{ascending:false}).limit(60); })); } catch (e) { fb.innerHTML = `<p class="empty">${esc(e.message)}</p>`; return; }
   es.sort(newestFirst); widgetSync(R, es);
-  const roomFilter = ["all", "reviews", "activity"].includes(P.roomFilter) ? P.roomFilter : "all";
+  const roomFilter = V2 ? "all" : ["all", "reviews", "activity"].includes(P.roomFilter) ? P.roomFilter : "all";
   const roomEntries = roomFilter === "reviews" ? es.filter(e => e.note || (e.loved || []).length) : roomFilter === "activity" ? es.filter(e => !e.note && !(e.loved || []).length) : es;
   es.forEach(e => remember(e.works)); const allComp = competition(es, 60), comp = allComp.slice(0, 6);
   const lastOther = es.find(e => e.user_id !== me.id);
@@ -8728,7 +8746,8 @@ async function renderRoomFeed(fb, R) {
   /* one long scroll used to hold the conversation, the charts and the year end to end;
      now they're three places you switch between, and the room remembers which you were in */
   const yearEs = es.filter(e => String(e.rated_on || "").startsWith(goalYear()));
-  const pal = roomPalmares(es), hasYear = R.members.length > 1 && (!!pal || yearEs.length > 0 || !!awardsPhase());
+  const pal = roomPalmares(es), hasYear = R.members.length > 1 && (!!pal || yearEs.length > 0 || !!awardsPhase())
+    && (!V2 || ["vote", "won"].includes(awardsPhase()));
   const sec = P.roomSec === "charts" || P.roomSec === "play" || (P.roomSec === "year" && hasYear) ? P.roomSec : "talk";
   const secs = [["talk", "Talk"], ["play", "Play"], ["charts", "Charts"], ...(hasYear ? [["year", "Year"]] : [])];
   fb.innerHTML = `<div class="card game promptcard roomcard hero slim${fanIn("room:" + R.id)}" style="--room:var(--${roomColour(R)})"><div class="roomline"><div class="rl-l">${roomStreak(es, R)}<small class="herenote" id="hereNote" aria-live="polite" hidden></small></div>
@@ -8750,7 +8769,7 @@ async function renderRoomFeed(fb, R) {
     <div id="recapSlot"></div>${tonightCard()}
     <div id="roomAsks"></div>
     ${roomMomentsHTML(moments, freshMoments)}
-    <div class="tagrow" id="talkTop" style="margin:18px 0 8px"><span class="lbl" style="margin:0">What the room said</span><span class="tfilters" aria-label="Room activity filter">${[["all","All"],["reviews","Reviews"],["activity","Activity"]].map(([k,l]) => `<button data-rfilter="${k}" class="${roomFilter===k?"on":""}">${l}</button>`).join("")}</span></div>${(() => { if (!roomEntries.length && !(roomFilter === "activity" && moments.length)) return blank("var(--pink)","“",roomFilter === "reviews" ? "No reviews yet" : roomFilter === "activity" ? "No activity yet" : "Nothing said yet",roomFilter === "reviews" ? "Reviews with a note or reaction will appear here." : roomFilter === "activity" ? "Room activity without a written review will appear here." : "Log something and it lands here for the room to see.",[["talkAdd","Log something"]]);
+    <div class="tagrow" id="talkTop" style="margin:18px 0 8px"><span class="lbl" style="margin:0">What the room said</span><span class="tfilters" aria-label="Room activity filter"${V2 ? " hidden" : ""}>${[["all","All"],["reviews","Reviews"],["activity","Activity"]].map(([k,l]) => `<button data-rfilter="${k}" class="${roomFilter===k?"on":""}">${l}</button>`).join("")}</span></div>${(() => { if (!roomEntries.length && !(roomFilter === "activity" && moments.length)) return blank("var(--pink)","“",roomFilter === "reviews" ? "No reviews yet" : roomFilter === "activity" ? "No activity yet" : "Nothing said yet",roomFilter === "reviews" ? "Reviews with a note or reaction will appear here." : roomFilter === "activity" ? "Room activity without a written review will appear here." : "Log something and it lands here for the room to see.",[["talkAdd","Log something"]]);
       const since = feedSince || lastSeen(); let shown = false, caught = false;
       /* A log with nothing said about it is a fact, not a conversation, and a card each
          made the room scroll like a ledger. Back-to-back ones from the same person fold
@@ -9708,7 +9727,8 @@ function shelfFilterSheet(counts, soonCount, nowCount, mineCount = 0) {
     ...(soonCount ? [["soon", `Coming · ${soonCount}`]] : []),
     ...(myServices().length ? [["mine", `On your services · ${mineCount}`]] : [])];
   return `<h3>Filter Up next</h3>
-    <p class="sub">Move along the top to pick a medium. This is for when.</p>
+    <p class="sub">${V2 ? "What, and when." : "Move along the top to pick a medium. This is for when."}</p>
+    ${V2 ? `<div class="chips" style="margin-top:12px">${kindOpts.map(([k, l]) => `<button class="chip ${(P.shelfFilter||"")===k?"on":""}" data-kf="${k}">${l}</button>`).join("")}</div>` : ""}
     <div class="chips" style="margin-top:12px">${whenOpts.map(([k, l]) => `<button class="chip ${(P.when||"")===k?"on":""}" data-wf="${k}">${l}</button>`).join("")}</div>`;
 }
 let shelfTurn = 0;
@@ -9788,7 +9808,7 @@ function renderShelf() {
     const fan = left.slice(0, 3);
     return heroHTML({ mid:true, col:P.shelfFilter ? KIND_TONE[P.shelfFilter] : "mint", label:"Up next", tag:`${all.length} in here`, head, meta:bits.join(" · "), fan,
       btn:{ id:"spinOpen", icon:ICON_DICE, label:left.length >= 2 ? "Pick one" : "Find one", aria:left.length >= 2 ? `Can't decide? Pick from ${left.length}` : "Spin the best of something" } }); })();
-  $("#shelfBody").innerHTML = `${pagerHTML(places, P.shelfFilter || "", { id:"shelfPager", mode:"chips", allLabel:"All" })}${all.length ? upTop : `<p class="sub shelfsub">Everything you meant to get to.</p>`}
+  $("#shelfBody").innerHTML = `${V2 ? "" : pagerHTML(places, P.shelfFilter || "", { id:"shelfPager", mode:"chips", allLabel:"All" })}${all.length ? upTop : `<p class="sub shelfsub">Everything you meant to get to.</p>`}
     <div class="shelfsearch"><input id="search" type="search" placeholder="Search ${esc(scope)}" aria-label="Search ${esc(scope)}" autocomplete="off">${all.length ? `<button class="cabfind ${P.when ? "on" : ""}" id="shelfFilterBtn" aria-label="Filter Up next">${SLIDERS}</button>` : ""}${
         shelfEdit || all.length ? "" : `<button class="chip filt pickchip" id="spinOpen" aria-label="${left.length >= 2 ? `Can't decide? Pick from ${left.length}` : "Spin the best of something"}">${ICON_DICE}Pick</button>`}</div>
     ${P.when ? `<div class="cabfacets"><button class="cfchip on" id="whenOff" aria-label="Show everything">${({ out:"Out now", now:"In the middle of", soon:"Coming", mine:"On your services" })[P.when] || ""}<i aria-hidden="true">×</i></button></div>` : ""}
@@ -9817,7 +9837,9 @@ function renderShelf() {
   wirePager($("#shelfPager"), places, P.shelfFilter || "", (k, d) => { P.shelfFilter = k; P.kinds = k ? [k] : Object.keys(KINDS); saveP(); shelfTurn = d; renderShelf(); });
   pagerArrive(shelfTurn, $("#shelfPager"), $("#shelfGrid")); shelfTurn = 0;
   const wo = $("#whenOff"); if (wo) wo.onclick = () => { P.when = ""; saveP(); buzz(5); renderShelf(); };
-  const ffb = $("#shelfFilterBtn"); if (ffb) ffb.onclick = () => {
+  const ffb = $("#shelfFilterBtn");
+  if (ffb && V2) { ffb.classList.add("v2f"); ffb.innerHTML = `${esc(P.shelfFilter ? K(P.shelfFilter).plural : "All")}<i aria-hidden="true">▾</i>`; }
+  if (ffb) ffb.onclick = () => {
     openSheet(shelfFilterSheet(counts, soonCount, nowCount, mineCount));
     $$("[data-kf]").forEach(b => b.onclick = () => { P.shelfFilter = b.dataset.kf; saveP(); closeSheet(); renderShelf(); });
     $$("[data-wf]").forEach(b => b.onclick = () => { P.when = b.dataset.wf; saveP(); closeSheet(); renderShelf(); });
@@ -14650,7 +14672,7 @@ async function renderStacks() {
   if (stackTag && !tagsHere.includes(stackTag)) stackTag = "";
   const paintFilters = () => { const f = $("#stkFilters"); if (!f) return;
     f.innerHTML = (kindsHere.length > 1 ? kindsHere.map(k => `<button class="chip ${stackKind === k ? "on" : ""}" data-sk="${k}"><i class="kdot" style="background:${K(k).colour}"></i>${K(k).plural}</button>`).join("") + `<span class="stk-sep"></span>` : "")
-      + tagsHere.map(t => `<button class="chip ${stackTag === t ? "on" : ""}" data-st="${t}">${STACK_TAG_WORD[t] || t}</button>`).join("");
+      + (V2 ? "" : tagsHere.map(t => `<button class="chip ${stackTag === t ? "on" : ""}" data-st="${t}">${STACK_TAG_WORD[t] || t}</button>`).join(""));
     f.hidden = !f.innerHTML;
     $$("[data-sk]", f).forEach(b => b.onclick = () => { stackKind = stackKind === b.dataset.sk ? "" : b.dataset.sk; buzz(4); paintFilters(); paint(); });
     $$("[data-st]", f).forEach(b => b.onclick = () => { stackTag = stackTag === b.dataset.st ? "" : b.dataset.st; buzz(4); paintFilters(); paint(); }); };
@@ -14903,6 +14925,8 @@ async function svcFill(ws) {
         arrived.push({ id:w.id, svc:k, at:Date.now() }); fresh.push([w, k]); }
       svcStore[w.id] = { at:Date.now(), on }; changed++; }
     if (changed) { try { localStorage.setItem(SVC_KEY, JSON.stringify(svcStore)); } catch {} setArrived(arrived); }
+    if (V2) { const said = new Set(P.arrivedSaid || []), news = fresh.filter(([w, k]) => !said.has(w.id + "|" + k));
+      news.forEach(([w, k]) => said.add(w.id + "|" + k)); P.arrivedSaid = [...said].slice(-60); saveP(); fresh.length = 0; fresh.push(...news); }
     if (fresh.length) say(fresh.length === 1 ? `${fresh[0][0].title} is now on ${svcName(fresh[0][1])}` : `${fresh.length} things in Up next just arrived on your services`, "good"); }
   finally { svcBusy = false; }
   return changed; }
