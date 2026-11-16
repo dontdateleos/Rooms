@@ -1,0 +1,18 @@
+{
+  "title": "The six Bonds before Pattinson",
+  "note": "One film for every actor who's played 007, in order. Which one's yours?",
+  "ranked": true,
+  "post": {
+    "slug": "bonds-before-pattinson",
+    "kinds": ["film"],
+    "col": "#FFD27A"
+  },
+  "items": [
+    { "kind": "film", "q": "Goldfinger", "year": 1964, "card": "Goldfinger", "why": "Sean Connery · the one that set the template" },
+    { "kind": "film", "q": "On Her Majesty's Secret Service", "year": 1969, "card": "On Her Majesty's Secret Service", "why": "George Lazenby · one film, and a great one" },
+    { "kind": "film", "q": "The Spy Who Loved Me", "year": 1977, "card": "The Spy Who Loved Me", "why": "Roger Moore · Bond at his most fun" },
+    { "kind": "film", "q": "The Living Daylights", "year": 1987, "card": "The Living Daylights", "why": "Timothy Dalton · the darker Bond, years early" },
+    { "kind": "film", "q": "GoldenEye", "year": 1995, "card": "GoldenEye", "why": "Pierce Brosnan · Bond for the 90s (and the N64)" },
+    { "kind": "film", "q": "Casino Royale", "year": 2006, "card": "Casino Royale", "why": "Daniel Craig · the reboot that rewrote Bond" }
+  ]
+}
