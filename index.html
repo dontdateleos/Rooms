@@ -1643,11 +1643,13 @@ html.v2 .av{transform-origin:50% 88%}
 @keyframes czSleep{0%,100%{scale:1 1}50%{scale:1.04 .95}}
 html.v2 .couchrow .cz.zz .av{animation:czSleep 3.8s ease-in-out infinite;transform-origin:50% 100%}
 html.v2 .couchrow .cz.zz::after{content:"z";position:absolute;right:-3px;top:-8px;font:900 11px var(--head);color:var(--mute);animation:zz 3.2s ease-in-out infinite;animation-delay:var(--zd,0s);pointer-events:none}
-/* your own mascot, out for a walk along the bottom of the screen now and then */
-#walker{position:fixed;left:0;z-index:8;width:34px;height:34px;pointer-events:auto;cursor:pointer;will-change:transform}
-#walker .av{width:34px;height:34px}
-#walker svg{filter:drop-shadow(0 0 1.2px #151320) drop-shadow(0 0 .6px #151320) drop-shadow(0 4px 5px rgba(0,0,0,.35))}
-@media (prefers-reduced-motion:reduce){html.v2 main .av{translate:none}html.v2 .couchrow .cz.zz .av,html.v2 .couchrow .cz.zz::after{animation:none}#walker{display:none}}
+/* blinks, glances and head turns come from the script, each mascot on its own random
+   clock; the only loop left is a slow breath, out of step from one mascot to the next */
+html.v2 .av:not(.new) .eyes{animation:none!important}
+html.v2 .av.new .eyes{animation:asm .42s cubic-bezier(.3,1.5,.5,1) both!important}
+html.v2 .av:not(#meAv) svg{animation-name:avBreathe!important;animation-duration:calc(3.4s + var(--id,0s))!important;animation-timing-function:ease-in-out!important}
+html.v2 .av svg{overflow:visible}
+@media (prefers-reduced-motion:reduce){html.v2 main .av{translate:none}html.v2 .couchrow .cz.zz .av,html.v2 .couchrow .cz.zz::after{animation:none}}
 @media (prefers-reduced-motion:reduce){html.v2 :is(.dealt,.couchrow .cz.wake,.slip .stars i,#yearBand .yb,#yearBand .yb i.new){animation:none!important}html.v2 :is(.pagetitle,[data-pagetitle])::before{animation:none!important}}
 /* 22, and the rest of a room: every small poster is one size, every strip poster another */
 html.v2 :is(.slip .ttl .co,.tn-main .co,.ttl .season-cover .co){width:40px!important;height:60px!important;border-radius:7px;object-fit:cover}
@@ -4325,13 +4327,24 @@ function ringFromMarks(marks) {
     return RINGS[kind] ? RINGS[kind](c) : null; }
   return null; }
 
-function avSVG(a) {
+/* the new look draws the mascots in the round: a shine from the top left, falling away to
+   shade round the far side, clipped to the shape's own outline (one set of these, shared by
+   every mascot on the page), and a soft shadow on the ground under them */
+let av3d = false;
+function av3dDefs() { if (av3d || !V2 || !document.body) return; av3d = true;
+  const flat = k => AV_SHAPES[k]({ base:"#000", light:"#000", dark:"#000" }).replace(/<\/?g[^>]*>/g, "");
+  document.body.insertAdjacentHTML("afterbegin", `<svg width="0" height="0" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true" focusable="false"><defs>
+    <radialGradient id="avSheen" gradientUnits="userSpaceOnUse" cx="36" cy="30" r="66"><stop offset="0" stop-color="#fff" stop-opacity=".7"/><stop offset=".12" stop-color="#fff" stop-opacity=".28"/>
+      <stop offset=".42" stop-color="#fff" stop-opacity="0"/><stop offset=".72" stop-color="#000" stop-opacity=".1"/><stop offset="1" stop-color="#000" stop-opacity=".38"/></radialGradient>
+    ${Object.keys(AV_SHAPES).map(k => `<clipPath id="avc-${k}" clipPathUnits="userSpaceOnUse">${flat(k)}</clipPath>`).join("")}</defs></svg>`); }
+function avSVG(a) { av3dDefs();
   const base = AV_COLS[a.col] || AV_COLS[0], dark = base === "#151320";
   const c = { base, light: dark ? "#3A3650" : avShade(base, .30), dark: dark ? "#0B0A12" : avShade(base, -.18) };
   const ink = dark ? "#FFF7EC" : "#151320";
   const eyes = AV_EYES[a.eyes] || AV_EYES.pair;
-  return `<svg viewBox="0 0 100 100" data-shape="${a.shape}" aria-hidden="true"><g transform="rotate(${a.tilt||0} 50 54)">${AV_SHAPES[a.shape](c)}
-    <g class="eyes" fill="${ink}">${eyes}</g></g>${
+  const round = V2 && AV_SHAPES[a.shape];
+  return `<svg viewBox="0 0 100 100" data-shape="${a.shape}" aria-hidden="true">${round ? `<ellipse class="avgr" cx="50" cy="93" rx="26" ry="4" fill="#000" opacity=".22"/>` : ""}<g transform="rotate(${a.tilt||0} 50 54)">${AV_SHAPES[a.shape](c)}
+    ${round ? `<rect class="avsh" width="100" height="100" fill="url(#avSheen) none" clip-path="url(#avc-${a.shape})"/>` : ""}<g class="eyes" fill="${ink}">${eyes}</g></g>${
       a.founder ? COMET : (a.ring || "")}</svg>`; }
 /* a face is new until you've seen it this session; the seed keeps two people
    who share a shape from blinking in lockstep */
@@ -8788,77 +8801,70 @@ function paintCouch() { const row = $("#couchRow"); if (!row) return; let n = 0;
     t.innerHTML = `<span class="czc">${all}</span> in here${n ? ` \u00b7 ${n} now` : ""}`; rollOnce($(".czc", t), all, "couch:" + (R?.id || ""));
     t.onclick = () => openCouch(); }
   const add = $("[data-czadd]", row); if (add) add.onclick = () => { const R2 = activeRoom(); if (R2) openInvite(R2); }; }
-/* the mascots, alive. In the new look they don't only breathe in place: one at a time they
-   hop, spin, wiggle or turn to look at whoever's beside them; eyes wander; a tap makes one
-   jump; somebody logging makes theirs leap; they trail a fast scroll; and now and then your
-   own walks along the bottom of the screen, stops to look at you, and walks off. Only what's
-   on screen moves, nothing moves in the background, and reduce motion stills all of it. */
+/* the mascots, alive. In the new look every mascot on screen keeps its own random clock,
+   so nothing happens in turns: each one blinks (sometimes twice), looks off to one side and
+   turns its head that way, cocks its head, nods or glances up, whenever it feels like it.
+   On the couch and the feed's story row they also hop, spin and wiggle, and turn to look at
+   whoever's beside them. A tap makes one jump, somebody logging makes theirs leap, and they
+   trail a fast scroll a little. Only what's on screen moves, nothing runs in the background,
+   and reduce motion stills all of it. */
 const alive = (() => { const none = { leap() {} };
   if (!V2 || REDUCED || !Element.prototype.animate) return none;
-  const pick = a => a[Math.floor(Math.random() * a.length)];
-  const onScreen = el => { const r = el.getBoundingClientRect(); return r.width > 0 && r.bottom > 70 && r.top < innerHeight - 90 && r.right > 0 && r.left < innerWidth; };
+  const pick = a => a[Math.floor(Math.random() * a.length)], rnd = (a, b) => a + Math.random() * (b - a);
+  const onScreen = el => { const r = el.getBoundingClientRect(); return r.width > 0 && r.bottom > 60 && r.top < innerHeight - 60 && r.right > 0 && r.left < innerWidth; };
   const sheetOn = () => $("#sheet")?.classList.contains("on");
-  const live = () => { const root = sheetOn() ? $("#sheetBody") : $("main > section.on"); if (!root) return [];
-    return [...root.querySelectorAll(".av")].filter(a => !a.closest(".zz, .tilting") && onScreen(a)).slice(0, 40); };
+  const ADD = { composite:"add" };
+  /* a hold: out over `inMs`, stays for `hold`, back over `outMs` */
+  const held = (el, to, inMs, hold, outMs, from) => { const T = inMs + hold + outMs;
+    return el.animate([from, { ...to, offset:inMs / T }, { ...to, offset:(inMs + hold) / T }, from], { duration:T, easing:"ease-in-out", ...ADD }); };
   const busy = new WeakSet();
-  const play = (el, frames, ms, ease = "cubic-bezier(.3,1.3,.5,1)") => { if (!el || busy.has(el)) return null; busy.add(el);
-    const an = el.animate(frames, { duration:ms, easing:ease, composite:"add" }); const done = () => busy.delete(el); an.onfinish = done; an.oncancel = done; return an; };
+  const once = (el, frames, ms, ease = "cubic-bezier(.3,1.3,.5,1)") => { if (!el || busy.has(el)) return; busy.add(el);
+    const an = el.animate(frames, { duration:ms, easing:ease, ...ADD }); const done = () => busy.delete(el); an.onfinish = done; an.oncancel = done; };
+  const eyes = a => a.querySelector(".eyes"), head = a => a.querySelector("svg");
   const HOP = [{ translate:"0 0", scale:"1 1" }, { translate:"0 1px", scale:"1.14 .84", offset:.14 }, { translate:"0 -12px", scale:".9 1.12", offset:.45 },
     { translate:"0 0", scale:"1.1 .88", offset:.78 }, { translate:"0 0", scale:"1 1" }];
-  const eyesTo = (a, dx, dy, hold = 1300) => { const g = a.querySelector(".eyes"); if (!g || g.style.translate) return;
-    g.style.transition = "translate .25s cubic-bezier(.3,1.4,.5,1)"; g.style.translate = `${dx}px ${dy}px`;
-    setTimeout(() => { g.style.transition = "translate .5s ease"; g.style.translate = ""; }, hold); };
-  /* the mascot beside this one in its row, if it has one */
-  const beside = a => { const row = a.closest(".couchrow, .storyrow, .faces, .nowrows"); if (!row) return null;
-    const all = [...row.querySelectorAll(".av")].filter(onScreen), i = all.indexOf(a); return all[i + (Math.random() < .5 ? -1 : 1)] || all[i - 1] || all[i + 1] || null; };
+  const beside = a => { const row = a.closest(".couchrow, .storyrow"); if (!row) return null;
+    const all = [...row.querySelectorAll(".av")].filter(onScreen), i = all.indexOf(a); return all[i + pick([-1, 1])] || all[i - 1] || all[i + 1] || null; };
   const M = {
-    hop:a => play(a, HOP, 620),
-    twohop:a => play(a, [...HOP.slice(0, 4), { translate:"0 -7px", scale:".95 1.06", offset:.88 }, { translate:"0 0", scale:"1 1" }], 900),
-    spin:a => play(a, [{ rotate:"0deg", translate:"0 0" }, { rotate:"180deg", translate:"0 -9px", offset:.5 }, { rotate:"360deg", translate:"0 0" }], 720, "cubic-bezier(.45,0,.3,1)"),
-    wiggle:a => play(a, [{ rotate:"0deg" }, { rotate:"-13deg" }, { rotate:"11deg" }, { rotate:"-6deg" }, { rotate:"0deg" }], 640, "ease-in-out"),
-    lean:a => play(a, [{ rotate:"0deg" }, { rotate:"9deg", offset:.25 }, { rotate:"9deg", offset:.75 }, { rotate:"0deg" }], 1500, "ease-in-out"),
-    /* two neighbours turn to each other */
-    look:a => { const b = beside(a); if (!b) { eyesTo(a, pick([-4, 4]), pick([-2, 0, 1])); return; }
-      const ra = a.getBoundingClientRect(), rb = b.getBoundingClientRect(), d = rb.left > ra.left ? 4 : -4;
-      eyesTo(a, d, 0, 1600); setTimeout(() => eyesTo(b, -d, 0, 1300), 250); if (Math.random() < .4) setTimeout(() => M.hop(b), 700); } };
-  const STAGE = ["hop", "hop", "twohop", "wiggle", "spin", "lean", "look", "look", "look"];
-  const tick = () => { setTimeout(tick, 1500 + Math.random() * 2300);
-    if (document.hidden) return; const avs = live(); if (!avs.length) return;
-    const stage = avs.filter(a => a.closest(".couchrow, .storyrow"));
-    if (stage.length && Math.random() < .7) M[pick(STAGE)](pick(stage));
-    else { const a = pick(avs); if (Math.random() < .7) eyesTo(a, pick([-4, -3, 3, 4]), pick([-2, -1, 0, 1])); else M[pick(["hop", "wiggle"])](a); } };
-  setTimeout(tick, 2500);
+    blink:a => { const e = eyes(a); if (!e) return; const two = Math.random() < .22;
+      e.animate(two ? [{ scale:"1 1" }, { scale:"1 .08", offset:.16 }, { scale:"1 1", offset:.38 }, { scale:"1 .08", offset:.58 }, { scale:"1 1" }]
+        : [{ scale:"1 1" }, { scale:"1 .08", offset:.45 }, { scale:"1 1" }], { duration:two ? 430 : 180, ...ADD }); },
+    /* looks off to one side: the eyes slide over and narrow as the face turns away, and
+       the head turns with them, the way a round thing turns */
+    look:(a, dir = pick([-1, 1])) => { const e = eyes(a), h = head(a); if (!e || !h) return; const up = pick([-2, -1, 0, 0, 1]), hold = rnd(600, 2200);
+      held(e, { translate:`${dir * 6}px ${up}px`, scale:".8 1" }, 260, hold, 320, { translate:"0 0", scale:"1 1" });
+      held(h, { rotate:`${dir * 6}deg`, translate:`${dir * 1.5}px 0` }, 300, hold, 340, { rotate:"0deg", translate:"0 0" });
+      if (Math.random() < .3) setTimeout(() => M.blink(a), 260 + hold * .5); },
+    cock:a => { const h = head(a), e = eyes(a); if (!h) return; const d = pick([-1, 1]), hold = rnd(500, 1400);
+      held(h, { rotate:`${d * 13}deg` }, 280, hold, 360, { rotate:"0deg" }); if (e) held(e, { translate:`${d * 2}px -1px` }, 280, hold, 360, { translate:"0 0" }); },
+    nod:a => once(head(a), [{ translate:"0 0" }, { translate:"0 4px", offset:.25 }, { translate:"0 0", offset:.5 }, { translate:"0 3px", offset:.75 }, { translate:"0 0" }], 700, "ease-in-out"),
+    up:a => { const e = eyes(a); if (e) held(e, { translate:`${pick([-2, 0, 2])}px -4px` }, 240, rnd(500, 1300), 300, { translate:"0 0" }); },
+    hop:a => once(a, HOP, 620),
+    twohop:a => once(a, [...HOP.slice(0, 4), { translate:"0 -7px", scale:".95 1.06", offset:.88 }, { translate:"0 0", scale:"1 1" }], 900),
+    spin:a => once(a, [{ rotate:"0deg", translate:"0 0" }, { rotate:"180deg", translate:"0 -9px", offset:.5 }, { rotate:"360deg", translate:"0 0" }], 720, "cubic-bezier(.45,0,.3,1)"),
+    wiggle:a => once(a, [{ rotate:"0deg" }, { rotate:"-13deg" }, { rotate:"11deg" }, { rotate:"-6deg" }, { rotate:"0deg" }], 640, "ease-in-out"),
+    /* turns to whoever's beside it, and sometimes they look back */
+    other:a => { const b = beside(a); if (!b) return M.look(a); const d = b.getBoundingClientRect().left > a.getBoundingClientRect().left ? 1 : -1;
+      M.look(a, d); if (Math.random() < .6) setTimeout(() => M.look(b, -d), rnd(150, 500)); } };
+  const QUIET = ["blink", "blink", "blink", "look", "look", "look", "cock", "nod", "up"];
+  const STAGE = [...QUIET, "hop", "hop", "twohop", "wiggle", "spin", "other", "other"];
+  const next = new WeakMap(); let pool = [], poolAt = 0;
+  const gather = () => { const root = sheetOn() ? $("#sheetBody") : $("main > section.on");
+    pool = root ? [...root.querySelectorAll(".av")].filter(a => !a.closest(".zz, .tilting") && onScreen(a)).slice(0, 40) : []; poolAt = performance.now(); };
+  setInterval(() => { if (document.hidden) return; const now = performance.now(); if (now - poolAt > 900) gather();
+    for (const a of pool) { const t = next.get(a); if (t === undefined) { next.set(a, now + rnd(200, 3200)); continue; } if (now < t) continue;
+      const stage = !!a.closest(".couchrow, .storyrow"); M[pick(stage ? STAGE : QUIET)](a);
+      next.set(a, now + (stage ? rnd(900, 3600) : rnd(1400, 5200))); } }, 180);
   /* a tap makes one jump, whatever else the tap does */
-  document.addEventListener("pointerdown", e => { const a = e.target.closest?.(".av"); if (a && a.closest("main, #sheet, #walker")) M.hop(a); }, { capture:true, passive:true });
+  document.addEventListener("pointerdown", e => { const a = e.target.closest?.(".av"); if (a && a.closest("main, #sheet")) M.hop(a); }, { capture:true, passive:true });
   /* they trail a fast scroll a little, then spring back to their places */
   let lastY = scrollY, lag = 0, raf = 0; const root = document.documentElement;
   const settle = () => { raf = 0; lag *= .8; if (Math.abs(lag) < .15) { lag = 0; root.style.removeProperty("--lag"); return; }
     root.style.setProperty("--lag", lag.toFixed(2) + "px"); raf = requestAnimationFrame(settle); };
   addEventListener("scroll", () => { const dy = scrollY - lastY; lastY = scrollY; if (Math.abs(dy) > 120) return;
     lag = Math.max(-8, Math.min(8, lag + dy * .3)); if (!raf) raf = requestAnimationFrame(settle); }, { passive:true });
-  /* your own mascot goes for a walk now and then, along the top of the bar at the bottom */
-  const walkOnce = () => {
-    if (document.hidden || !me || sheetOn() || $("#walker") || !["doors", "people", "shelf", "archive", "clubs"].includes(root.dataset.tab)) return;
-    const base = root.classList.contains("hasnow") && $("#nowBar") ? $("#nowBar") : $("#nav"); const b = base?.getBoundingClientRect(); if (!b?.width) return;
-    const w = document.createElement("div"); w.id = "walker"; w.setAttribute("aria-hidden", "true"); w.innerHTML = avatar(me, "", { bare:true });
-    w.style.top = (b.top - 33) + "px"; document.body.append(w); const a = $(".av", w);
-    const ltr = Math.random() < .5, from = ltr ? -44 : innerWidth + 10, to = ltr ? innerWidth + 10 : -44, mid = innerWidth * (.3 + Math.random() * .4) - 17;
-    const flip = ltr ? "" : " scaleX(-1)";
-    const waddle = a.animate([{ rotate:"-7deg", translate:"0 0" }, { rotate:"0deg", translate:"0 -3px" }, { rotate:"7deg", translate:"0 0" }, { rotate:"0deg", translate:"0 -3px" }, { rotate:"-7deg", translate:"0 0" }],
-      { duration:520, iterations:Infinity });
-    const leg = (x0, x1, ms) => w.animate([{ transform:`translateX(${x0}px)${flip}` }, { transform:`translateX(${x1}px)${flip}` }], { duration:ms, easing:"linear", fill:"forwards" }).finished;
-    const gone = () => { waddle.cancel(); w.remove(); };
-    w.onclick = () => { M.spin(a); buzz(5); };
-    leg(from, mid, Math.abs(mid - from) * 9).then(() => { waddle.pause(); a.style.rotate = "0deg";
-      /* stops, turns to you, hops, carries on */
-      setTimeout(() => M.hop(a), 350);
-      return new Promise(r => setTimeout(r, 1500)); })
-      .then(() => { if (!w.isConnected) return; a.style.rotate = ""; waddle.play(); return leg(mid, to, Math.abs(to - mid) * 9); })
-      .then(gone, gone); };
-  const walk = () => { setTimeout(walk, 50000 + Math.random() * 50000); walkOnce(); };
-  setTimeout(walk, 25000 + Math.random() * 20000);
   /* somebody's log just landed: their mascot leaps, wherever it's on screen */
-  return { walkOnce, leap(uid) { if (!uid) return; setTimeout(() => $$(`.av[data-u="${CSS.escape(String(uid))}"]`).filter(onScreen).slice(0, 3).forEach(a => M.twohop(a)), 250); } }; })();
+  return { leap(uid) { if (!uid) return; setTimeout(() => $$(`.av[data-u="${CSS.escape(String(uid))}"]`).filter(onScreen).slice(0, 3).forEach(a => M.twohop(a)), 250); } }; })();
 /* 90: a number rolls up the first time it's on screen (once a session per thing) */
 const rolled = new Set();
 function rollOnce(el, n, key) { if (!el) return;
