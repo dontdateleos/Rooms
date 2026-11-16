@@ -1647,7 +1647,26 @@ html.v2 .couchrow .cz.zz::after{content:"z";position:absolute;right:-3px;top:-8p
    clock; the only loop left is a slow breath, out of step from one mascot to the next */
 html.v2 .av:not(.new) .eyes{animation:none!important}
 html.v2 .av.new .eyes{animation:asm .42s cubic-bezier(.3,1.5,.5,1) both!important}
-html.v2 .av:not(#meAv) svg{animation-name:avBreathe!important;animation-duration:calc(3.4s + var(--id,0s))!important;animation-timing-function:ease-in-out!important}
+html.v2 .av:not(#meAv) svg{animation:none!important}
+/* a mascot turns its head in the round. --yaw is left and right, --pitch up and down, --roll
+   a tilt (each -1 to 1, with --ay and --ap their sizes). As the head turns, the eyes slide
+   across its face and foreshorten, the shine slides the other way (the light stays where it
+   is), and the whole head rotates and narrows a touch. The script only sets where to look;
+   the easing, a little past and back, is here. */
+@property --yaw{syntax:"<number>";inherits:true;initial-value:0}
+@property --pitch{syntax:"<number>";inherits:true;initial-value:0}
+@property --roll{syntax:"<number>";inherits:true;initial-value:0}
+@property --ay{syntax:"<number>";inherits:true;initial-value:0}
+@property --ap{syntax:"<number>";inherits:true;initial-value:0}
+html.v2 .av{--turn:.55s cubic-bezier(.3,1.25,.5,1);transition:--yaw var(--turn),--pitch var(--turn),--roll var(--turn),--ay var(--turn),--ap var(--turn)}
+html.v2 .av .avb{transform-box:view-box;transform-origin:50% 62%;translate:calc(var(--yaw) * 2.5px) calc(var(--pitch) * 2px);
+  rotate:calc(var(--roll) * 13deg);scale:calc(1 - var(--ay) * .06) calc(1 - var(--ap) * .04)}
+/* the shape's own sides: its shaded side narrows as the face turns toward it and widens as it
+   turns away, and its top shows more looking down, less looking up */
+html.v2 .av .avd{transform-box:fill-box;transform-origin:100% 50%;scale:calc(1 - var(--yaw) * .42) 1}
+html.v2 .av .avl{transform-box:fill-box;transform-origin:50% 100%;scale:1 calc(1 + max(0, var(--pitch)) * .45)}
+html.v2 .av .eyes{translate:calc(var(--yaw) * 11px) calc(var(--pitch) * 9px);scale:calc(1 - var(--ay) * .34) calc(1 - var(--ap) * .3)}
+html.v2 .av .avsh{translate:calc(var(--yaw) * -15px) calc(var(--pitch) * -12px)}
 html.v2 .av svg{overflow:visible}
 @media (prefers-reduced-motion:reduce){html.v2 main .av{translate:none}html.v2 .couchrow .cz.zz .av,html.v2 .couchrow .cz.zz::after{animation:none}}
 @media (prefers-reduced-motion:reduce){html.v2 :is(.dealt,.couchrow .cz.wake,.slip .stars i,#yearBand .yb,#yearBand .yb i.new){animation:none!important}html.v2 :is(.pagetitle,[data-pagetitle])::before{animation:none!important}}
@@ -4343,8 +4362,9 @@ function avSVG(a) { av3dDefs();
   const ink = dark ? "#FFF7EC" : "#151320";
   const eyes = AV_EYES[a.eyes] || AV_EYES.pair;
   const round = V2 && AV_SHAPES[a.shape];
-  return `<svg viewBox="0 0 100 100" data-shape="${a.shape}" aria-hidden="true">${round ? `<ellipse class="avgr" cx="50" cy="93" rx="26" ry="4" fill="#000" opacity=".22"/>` : ""}<g transform="rotate(${a.tilt||0} 50 54)">${AV_SHAPES[a.shape](c)}
-    ${round ? `<rect class="avsh" width="100" height="100" fill="url(#avSheen) none" clip-path="url(#avc-${a.shape})"/>` : ""}<g class="eyes" fill="${ink}">${eyes}</g></g>${
+  const body = round ? AV_SHAPES[a.shape](c).split(`fill="${c.dark}"`).join(`fill="${c.dark}" class="avd"`).split(`fill="${c.light}"`).join(`fill="${c.light}" class="avl"`) : AV_SHAPES[a.shape](c);
+  return `<svg viewBox="0 0 100 100" data-shape="${a.shape}" aria-hidden="true">${round ? `<ellipse class="avgr" cx="50" cy="93" rx="26" ry="4" fill="#000" opacity=".22"/>` : ""}<g class="avb" transform="rotate(${a.tilt||0} 50 54)">${round ? `<g clip-path="url(#avc-${a.shape})">${body}</g>` : body}
+    ${round ? `<g clip-path="url(#avc-${a.shape})"><rect class="avsh" x="-25" y="-25" width="150" height="150" fill="url(#avSheen) none"/></g>` : ""}<g class="eyes" fill="${ink}">${eyes}</g></g>${
       a.founder ? COMET : (a.ring || "")}</svg>`; }
 /* a face is new until you've seen it this session; the seed keeps two people
    who share a shape from blinking in lockstep */
@@ -5825,7 +5845,7 @@ function liteWatch(root) { if (!liteObs || !root?.querySelectorAll) return;
 /* the faces near where you touch glance at it, the logo's four included — the room
    noticing you, once per tap, then looking away again */
 let glanceT = null;
-document.addEventListener("pointerdown", e => { if (REDUCED || e.pointerType === "mouse" && e.button !== 0) return;
+document.addEventListener("pointerdown", e => { if (REDUCED || V2 || e.pointerType === "mouse" && e.button !== 0) return;
   const x = e.clientX, y = e.clientY, near = [];
   for (const g of document.querySelectorAll(".logo .mark .eyes, .av .eyes")) {
     if (g.closest("#rateBuddy,.minih") || g.closest(".av")?.contains(e.target)) continue;
@@ -8802,61 +8822,55 @@ function paintCouch() { const row = $("#couchRow"); if (!row) return; let n = 0;
     t.onclick = () => openCouch(); }
   const add = $("[data-czadd]", row); if (add) add.onclick = () => { const R2 = activeRoom(); if (R2) openInvite(R2); }; }
 /* the mascots, alive. In the new look every mascot on screen keeps its own random clock,
-   so nothing happens in turns: each one blinks (sometimes twice), looks off to one side and
-   turns its head that way, cocks its head, nods or glances up, whenever it feels like it.
-   On the couch and the feed's story row they also hop, spin and wiggle, and turn to look at
-   whoever's beside them. A tap makes one jump, somebody logging makes theirs leap, and they
-   trail a fast scroll a little. Only what's on screen moves, nothing runs in the background,
-   and reduce motion stills all of it. */
+   so nothing happens in turns. Now and then each one looks around: it turns its head (in
+   the round, see --yaw above) to one side, maybe up or down, maybe a second and third place,
+   holds each a moment, and then settles back to facing you. In between it blinks, sometimes
+   twice. On the couch and the story row they also turn to whoever's beside them, who may
+   look back. Touch the screen and the ones nearby turn to your finger. Somebody logging
+   makes theirs leap, and they trail a fast scroll a little. Only what's on screen moves,
+   nothing runs in the background, and reduce motion stills all of it. */
 const alive = (() => { const none = { leap() {} };
   if (!V2 || REDUCED || !Element.prototype.animate) return none;
-  const pick = a => a[Math.floor(Math.random() * a.length)], rnd = (a, b) => a + Math.random() * (b - a);
+  const pick = a => a[Math.floor(Math.random() * a.length)], rnd = (a, b) => a + Math.random() * (b - a), clamp = v => Math.max(-1, Math.min(1, v));
   const onScreen = el => { const r = el.getBoundingClientRect(); return r.width > 0 && r.bottom > 60 && r.top < innerHeight - 60 && r.right > 0 && r.left < innerWidth; };
   const sheetOn = () => $("#sheet")?.classList.contains("on");
-  const ADD = { composite:"add" };
-  /* a hold: out over `inMs`, stays for `hold`, back over `outMs` */
-  const held = (el, to, inMs, hold, outMs, from) => { const T = inMs + hold + outMs;
-    return el.animate([from, { ...to, offset:inMs / T }, { ...to, offset:(inMs + hold) / T }, from], { duration:T, easing:"ease-in-out", ...ADD }); };
-  const busy = new WeakSet();
-  const once = (el, frames, ms, ease = "cubic-bezier(.3,1.3,.5,1)") => { if (!el || busy.has(el)) return; busy.add(el);
-    const an = el.animate(frames, { duration:ms, easing:ease, ...ADD }); const done = () => busy.delete(el); an.onfinish = done; an.oncancel = done; };
-  const eyes = a => a.querySelector(".eyes"), head = a => a.querySelector("svg");
-  const HOP = [{ translate:"0 0", scale:"1 1" }, { translate:"0 1px", scale:"1.14 .84", offset:.14 }, { translate:"0 -12px", scale:".9 1.12", offset:.45 },
-    { translate:"0 0", scale:"1.1 .88", offset:.78 }, { translate:"0 0", scale:"1 1" }];
+  /* where a head points; each new plan for a mascot cancels the rest of its last one */
+  const plan = new WeakMap();
+  const face = (a, y = 0, p = 0, r = 0) => { const st = a.style;
+    st.setProperty("--yaw", y.toFixed(2)); st.setProperty("--pitch", p.toFixed(2)); st.setProperty("--roll", r.toFixed(2));
+    st.setProperty("--ay", Math.abs(y).toFixed(2)); st.setProperty("--ap", Math.abs(p).toFixed(2)); };
+  /* a run of places to look, [yaw, pitch, roll, hold], then back to facing you */
+  const run = (a, steps) => { const id = (plan.get(a) || 0) + 1; plan.set(a, id); let t = 0;
+    for (const [y, p, r, hold] of steps) { setTimeout(() => { if (plan.get(a) === id) face(a, y, p, r); }, t); t += hold; }
+    setTimeout(() => { if (plan.get(a) === id) face(a); }, t); return t + 600; };
+  const blink = a => { const e = a.querySelector(".eyes"); if (!e) return; const two = Math.random() < .22;
+    e.animate(two ? [{ scale:"1 1" }, { scale:"1 .08", offset:.16 }, { scale:"1 1", offset:.38 }, { scale:"1 .08", offset:.58 }, { scale:"1 1" }]
+      : [{ scale:"1 1" }, { scale:"1 .08", offset:.45 }, { scale:"1 1" }], { duration:two ? 430 : 180, composite:"add" }); return 600; };
+  const lookAround = a => { const n = pick([1, 1, 2, 2, 3]), steps = []; let side = pick([-1, 1]);
+    for (let i = 0; i < n; i++) { steps.push([side * rnd(.55, 1), pick([0, 0, -1, 1]) * rnd(.3, .8), Math.random() < .2 ? pick([-1, 1]) * rnd(.4, .8) : 0, rnd(700, 1700)]);
+      if (Math.random() < .6) side = -side; }
+    const t = run(a, steps); if (Math.random() < .4) setTimeout(() => blink(a), rnd(300, t - 600)); return t; };
+  const cock = a => run(a, [[0, 0, pick([-1, 1]) * rnd(.6, 1), rnd(700, 1500)]]);
+  const upDown = a => run(a, [[rnd(-.3, .3), pick([-1, 1]) * rnd(.6, .9), 0, rnd(700, 1400)]]);
+  /* turns to whoever's beside it, and they may look back */
   const beside = a => { const row = a.closest(".couchrow, .storyrow"); if (!row) return null;
     const all = [...row.querySelectorAll(".av")].filter(onScreen), i = all.indexOf(a); return all[i + pick([-1, 1])] || all[i - 1] || all[i + 1] || null; };
-  const M = {
-    blink:a => { const e = eyes(a); if (!e) return; const two = Math.random() < .22;
-      e.animate(two ? [{ scale:"1 1" }, { scale:"1 .08", offset:.16 }, { scale:"1 1", offset:.38 }, { scale:"1 .08", offset:.58 }, { scale:"1 1" }]
-        : [{ scale:"1 1" }, { scale:"1 .08", offset:.45 }, { scale:"1 1" }], { duration:two ? 430 : 180, ...ADD }); },
-    /* looks off to one side: the eyes slide over and narrow as the face turns away, and
-       the head turns with them, the way a round thing turns */
-    look:(a, dir = pick([-1, 1])) => { const e = eyes(a), h = head(a); if (!e || !h) return; const up = pick([-2, -1, 0, 0, 1]), hold = rnd(600, 2200);
-      held(e, { translate:`${dir * 6}px ${up}px`, scale:".8 1" }, 260, hold, 320, { translate:"0 0", scale:"1 1" });
-      held(h, { rotate:`${dir * 6}deg`, translate:`${dir * 1.5}px 0` }, 300, hold, 340, { rotate:"0deg", translate:"0 0" });
-      if (Math.random() < .3) setTimeout(() => M.blink(a), 260 + hold * .5); },
-    cock:a => { const h = head(a), e = eyes(a); if (!h) return; const d = pick([-1, 1]), hold = rnd(500, 1400);
-      held(h, { rotate:`${d * 13}deg` }, 280, hold, 360, { rotate:"0deg" }); if (e) held(e, { translate:`${d * 2}px -1px` }, 280, hold, 360, { translate:"0 0" }); },
-    nod:a => once(head(a), [{ translate:"0 0" }, { translate:"0 4px", offset:.25 }, { translate:"0 0", offset:.5 }, { translate:"0 3px", offset:.75 }, { translate:"0 0" }], 700, "ease-in-out"),
-    up:a => { const e = eyes(a); if (e) held(e, { translate:`${pick([-2, 0, 2])}px -4px` }, 240, rnd(500, 1300), 300, { translate:"0 0" }); },
-    hop:a => once(a, HOP, 620),
-    twohop:a => once(a, [...HOP.slice(0, 4), { translate:"0 -7px", scale:".95 1.06", offset:.88 }, { translate:"0 0", scale:"1 1" }], 900),
-    spin:a => once(a, [{ rotate:"0deg", translate:"0 0" }, { rotate:"180deg", translate:"0 -9px", offset:.5 }, { rotate:"360deg", translate:"0 0" }], 720, "cubic-bezier(.45,0,.3,1)"),
-    wiggle:a => once(a, [{ rotate:"0deg" }, { rotate:"-13deg" }, { rotate:"11deg" }, { rotate:"-6deg" }, { rotate:"0deg" }], 640, "ease-in-out"),
-    /* turns to whoever's beside it, and sometimes they look back */
-    other:a => { const b = beside(a); if (!b) return M.look(a); const d = b.getBoundingClientRect().left > a.getBoundingClientRect().left ? 1 : -1;
-      M.look(a, d); if (Math.random() < .6) setTimeout(() => M.look(b, -d), rnd(150, 500)); } };
-  const QUIET = ["blink", "blink", "blink", "look", "look", "look", "cock", "nod", "up"];
-  const STAGE = [...QUIET, "hop", "hop", "twohop", "wiggle", "spin", "other", "other"];
+  const other = a => { const b = beside(a); if (!b || b.closest(".zz")) return lookAround(a);
+    const d = b.getBoundingClientRect().left > a.getBoundingClientRect().left ? 1 : -1, hold = rnd(1100, 1900);
+    const t = run(a, [[d * .95, 0, 0, hold]]); if (Math.random() < .65) setTimeout(() => run(b, [[-d * .95, 0, 0, hold - 300]]), rnd(250, 500)); return t; };
+  const QUIET = [blink, blink, lookAround, lookAround, lookAround, cock, upDown];
+  const STAGE = [...QUIET, other, other];
   const next = new WeakMap(); let pool = [], poolAt = 0;
   const gather = () => { const root = sheetOn() ? $("#sheetBody") : $("main > section.on");
     pool = root ? [...root.querySelectorAll(".av")].filter(a => !a.closest(".zz, .tilting") && onScreen(a)).slice(0, 40) : []; poolAt = performance.now(); };
   setInterval(() => { if (document.hidden) return; const now = performance.now(); if (now - poolAt > 900) gather();
-    for (const a of pool) { const t = next.get(a); if (t === undefined) { next.set(a, now + rnd(200, 3200)); continue; } if (now < t) continue;
-      const stage = !!a.closest(".couchrow, .storyrow"); M[pick(stage ? STAGE : QUIET)](a);
-      next.set(a, now + (stage ? rnd(900, 3600) : rnd(1400, 5200))); } }, 180);
-  /* a tap makes one jump, whatever else the tap does */
-  document.addEventListener("pointerdown", e => { const a = e.target.closest?.(".av"); if (a && a.closest("main, #sheet")) M.hop(a); }, { capture:true, passive:true });
+    for (const a of pool) { const t = next.get(a); if (t === undefined) { next.set(a, now + rnd(300, 4000)); continue; } if (now < t) continue;
+      const took = pick(a.closest(".couchrow, .storyrow") ? STAGE : QUIET)(a) || 0;
+      next.set(a, now + took + rnd(1200, 4500)); } }, 180);
+  /* touch the screen and the mascots near your finger turn to look at it, then back */
+  document.addEventListener("pointerdown", e => { if (e.pointerType === "mouse" && e.button !== 0) return; const x = e.clientX, y = e.clientY;
+    for (const a of pool) { if (a.contains(e.target)) continue; const r = a.getBoundingClientRect(), dx = x - (r.left + r.width / 2), dy = y - (r.top + r.height / 2);
+      if (Math.hypot(dx, dy) > 300) continue; run(a, [[clamp(dx / 110), clamp(dy / 150) * .85, 0, rnd(1100, 1500)]]); } }, { capture:true, passive:true });
   /* they trail a fast scroll a little, then spring back to their places */
   let lastY = scrollY, lag = 0, raf = 0; const root = document.documentElement;
   const settle = () => { raf = 0; lag *= .8; if (Math.abs(lag) < .15) { lag = 0; root.style.removeProperty("--lag"); return; }
@@ -8864,7 +8878,10 @@ const alive = (() => { const none = { leap() {} };
   addEventListener("scroll", () => { const dy = scrollY - lastY; lastY = scrollY; if (Math.abs(dy) > 120) return;
     lag = Math.max(-8, Math.min(8, lag + dy * .3)); if (!raf) raf = requestAnimationFrame(settle); }, { passive:true });
   /* somebody's log just landed: their mascot leaps, wherever it's on screen */
-  return { leap(uid) { if (!uid) return; setTimeout(() => $$(`.av[data-u="${CSS.escape(String(uid))}"]`).filter(onScreen).slice(0, 3).forEach(a => M.twohop(a)), 250); } }; })();
+  const LEAP = [{ translate:"0 0", scale:"1 1" }, { translate:"0 1px", scale:"1.14 .84", offset:.14 }, { translate:"0 -12px", scale:".9 1.12", offset:.4 },
+    { translate:"0 0", scale:"1.1 .88", offset:.7 }, { translate:"0 -6px", scale:".96 1.05", offset:.85 }, { translate:"0 0", scale:"1 1" }];
+  return { face, leap(uid) { if (!uid) return; setTimeout(() => $$(`.av[data-u="${CSS.escape(String(uid))}"]`).filter(onScreen).slice(0, 3)
+    .forEach(a => a.animate(LEAP, { duration:900, easing:"cubic-bezier(.3,1.3,.5,1)", composite:"add" })), 250); } }; })();
 /* 90: a number rolls up the first time it's on screen (once a session per thing) */
 const rolled = new Set();
 function rollOnce(el, n, key) { if (!el) return;
