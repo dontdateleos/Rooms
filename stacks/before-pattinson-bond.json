@@ -1,0 +1,20 @@
+{
+  "title": "Before Pattinson's Bond",
+  "note": "Robert Pattinson is the next James Bond, in Denis Villeneuve's Bond 26. Five films that show why he's ready for 007.",
+  "ranked": true,
+  "post": {
+    "slug": "before-pattinson-bond",
+    "before": "Pattinson's Bond",
+    "highlight": "Bond",
+    "sub": "Robert Pattinson is 007. Denis Villeneuve directs. Here's the case for him.",
+    "kinds": ["film"],
+    "col": "#FFD27A"
+  },
+  "items": [
+    { "kind": "film", "q": "Tenet", "year": 2020, "card": "Tenet", "why": "He's already done the tux, the spy work and the one-liners" },
+    { "kind": "film", "q": "The Batman", "year": 2022, "card": "The Batman", "why": "Proof he can carry a legendary character" },
+    { "kind": "film", "q": "Good Time", "year": 2017, "card": "Good Time", "why": "One night on the run. Pure nerve" },
+    { "kind": "film", "q": "High Life", "year": 2018, "card": "High Life", "why": "The film that made Danny Boyle say he should be Bond" },
+    { "kind": "film", "q": "The Lighthouse", "year": 2019, "card": "The Lighthouse", "why": "Range. So much range" }
+  ]
+}
