@@ -1429,7 +1429,6 @@ html.v2 .nowrow .t b{font:800 15.5px/1.2 var(--head);white-space:nowrap;overflow
 html.v2 .nowrow .t small em{font-style:normal;color:var(--ink)}
 html.v2 .nowrow .av svg{width:26px;height:26px}
 /* 4: the slim title at the top carries the room's line */
-html.v2 #hdrTitle small{margin-left:8px;font:600 11.5px/1 var(--body,inherit);color:var(--mute);white-space:nowrap}
 /* 8: folding */
 html.v2 .card.foldable > .h{cursor:pointer}
 html.v2 .card.foldable > .h > span:first-child::after{content:"";display:inline-block;width:6px;height:6px;margin:0 0 3px 8px;border:solid currentColor;border-width:0 2px 2px 0;rotate:45deg;opacity:.45;transition:rotate .2s}
@@ -1576,6 +1575,43 @@ html.v2 :is(.caughtup,.caught).sleepyup{display:grid;justify-items:center;gap:4p
 .sleepy em + em{right:-18px;top:-16px;font-size:11px;animation-delay:1.2s}
 @keyframes zz{0%{opacity:0;translate:0 6px}40%{opacity:1}100%{opacity:0;translate:6px -8px}}
 @media (prefers-reduced-motion:reduce){.sleepy em{animation:none}}
+/* 64: the couch says how many are in here, so the chip beside the room's name goes */
+html.v2:has(#couchRow) #hereRow{display:none!important}
+.couchrow .czn{margin-left:auto;border:0;background:none;padding:0 0 6px;font:inherit;font-size:12.5px;color:var(--mute);cursor:pointer;white-space:nowrap}
+/* 73: a mascot on the couch wakes up and stretches when its person arrives */
+.couchrow .cz .eyes{transition:transform .25s}
+@keyframes czWake{0%{transform:none}30%{transform:scale(1.15,.8)}60%{transform:scale(.9,1.18) translateY(-6px)}100%{transform:none}}
+.couchrow .cz.wake{animation:czWake .65s ease-out;transform-origin:50% 100%}
+/* 66: + Log beside Diary's search, now the summary block has gone */
+.cabfind.cablog{width:auto;padding:0 13px;border-radius:999px;white-space:nowrap;font:800 13px var(--head);color:var(--ink)}
+/* 67: a title's scores in one line, yours first */
+html.v2 #wNumbers{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 0;margin-top:10px}
+html.v2 #wNumbers > div{display:inline-flex;flex:none;width:auto;min-width:0;flex-direction:row-reverse;align-items:baseline;gap:4px;background:none!important;box-shadow:none!important;border:0!important;padding:0;border-radius:0;animation:none!important}
+html.v2 #wNumbers > div + div::after{content:"\00b7";margin:0 6px;color:var(--mute)}
+html.v2 #wNumbers b{display:inline;font:600 13.5px/1.4 var(--body,inherit);letter-spacing:0;color:var(--ink);background:none;box-shadow:none}
+html.v2 #wNumbers span{display:inline;margin:0;font-size:13.5px;font-weight:500;color:var(--mute);opacity:1!important}
+html.v2 #wNumbers > div:first-child :is(b,span){color:var(--butter);font-weight:800}
+/* 70: posters deal in like cards, the first time you open a page in a while */
+@keyframes dealIn{from{transform:translate(calc((1.5 - var(--dc,0)) * 28px),46px) rotate(calc((var(--dc,0) - 1.5) * 6deg));opacity:0}}
+html.v2 .dealt{animation:dealIn .5s cubic-bezier(.2,1.2,.4,1) both;animation-delay:calc(var(--di,0) * 55ms - var(--dt,0ms))}
+/* 71: stars pop in one by one on a log that's just arrived, or that you've just saved */
+@keyframes starPop{0%{transform:scale(0)}60%{transform:scale(1.4)}100%{transform:none}}
+html.v2 .slip:is(.landedNow,.popstars) .who .stars i{display:inline-block;animation:starPop .4s cubic-bezier(.3,1.6,.5,1) both}
+html.v2 .slip:is(.landedNow,.popstars) .who .stars i:nth-child(2){animation-delay:.11s}
+html.v2 .slip:is(.landedNow,.popstars) .who .stars i:nth-child(3){animation-delay:.22s}
+html.v2 .slip:is(.landedNow,.popstars) .who .stars i:nth-child(4){animation-delay:.33s}
+html.v2 .slip:is(.landedNow,.popstars) .who .stars i:nth-child(5){animation-delay:.44s}
+/* 72: what you've just finished pops onto the end of your year */
+@keyframes ybNew{from{flex-grow:0;filter:brightness(1.8)}}
+#yearBand .yb i.new{animation:ybNew .55s cubic-bezier(.3,1.5,.5,1) .3s both}
+/* 75 and 76: switching pages, the title's splat paints in and your year draws itself */
+@keyframes splatIn{from{transform:scale(.2) rotate(-40deg);opacity:0}}
+html.v2.tabgo :is(.pagetitle,[data-pagetitle])::before{animation:splatIn .5s cubic-bezier(.2,1.3,.4,1) both}
+@keyframes ybSweep{from{clip-path:inset(-2px 100% -2px -2px)}to{clip-path:inset(-2px -2px -2px -2px)}}
+html.v2.tabgo #yearBand .yb{animation:ybSweep 1s cubic-bezier(.3,.7,.3,1) both}
+/* 77: a held poster lifts and tilts toward your finger */
+html.v2 .tilting{position:relative;z-index:5;transition:transform .12s ease-out,box-shadow .12s;box-shadow:0 22px 34px -12px rgba(0,0,0,.6)!important;will-change:transform}
+@media (prefers-reduced-motion:reduce){html.v2 :is(.dealt,.couchrow .cz.wake,.slip .stars i,#yearBand .yb,#yearBand .yb i.new){animation:none!important}html.v2 :is(.pagetitle,[data-pagetitle])::before{animation:none!important}}
 /* 22, and the rest of a room: every small poster is one size, every strip poster another */
 html.v2 :is(.slip .ttl .co,.tn-main .co,.ttl .season-cover .co){width:40px!important;height:60px!important;border-radius:7px;object-fit:cover}
 html.v2 .slip:not(.feature) .season-cover{width:40px;height:60px}
@@ -5401,7 +5437,7 @@ async function loadFollows() { try { follows = await q(sb.from("follows").select
 const activeList = () => lists.find(l => l.id === P.activeList) || lists[0];
 let shelfEdit = false, shelfOff = null, shelfStale = false;
 /* set by the thing that just happened, read once by the next render, then cleared */
-let justDealt = null, justSwept = null;
+let justDealt = null, justSwept = null, popStars = null;
 const activeRoom = () => rooms.find(r => r.id === P.activeRoom) || rooms[0];
 /* each room wears one of four pastels — lilac and blue belong to Following and Everyone,
    so a room never looks like either in the row of dots. Until somebody picks, it's
@@ -6857,8 +6893,8 @@ let titleEl = null, titleW = 0, titleIO = null;
 function watchTitle() { titleW = 0; const slot = $("#hdrTitle"); if (!slot) return;
   const lib = $("#libBar"), inLib = lib && !lib.hidden;
   const el = (inLib ? lib.querySelector("[data-pagetitle]") : null) || document.querySelector("main > section.on")?.querySelector("[data-pagetitle]") || null;
-  { const t = el?.dataset.pagetitle || "", st = V2 ? el?.dataset.pagestatus || "" : "", key = t + "|" + st;
-    if (slot.dataset.k !== key) { slot.dataset.k = key; slot.innerHTML = esc(t) + (st ? `<small>${esc(st)}</small>` : ""); } }
+  { const t = el?.dataset.pagetitle || "";
+    if (slot.dataset.k !== t) { slot.dataset.k = t; slot.innerHTML = esc(t); } }
   if (el === titleEl && titleIO) return;
   titleEl = el;
   titleIO?.disconnect(); titleIO = null; const hdr = $("header"); if (!hdr) return;
@@ -6895,7 +6931,10 @@ function riseIn(sec) { if (!sec || REDUCED) return;
       const r = el.getBoundingClientRect(); return r.height > 0 && r.bottom > 60 && r.top < innerHeight; }).slice(0, 7);
   blocks.forEach((el, i) => el.animate([{ opacity:0, transform:"translateY(14px)" }, { opacity:1, transform:"none" }],
     { duration:320, delay:i * 45, easing:"cubic-bezier(.2,.8,.2,1)", fill:"backwards" })); }
-function switchTab(n, how = {}) { document.documentElement.dataset.tab = n; if (V2) setTimeout(paintNowBar, 0); shelfEdit = false; $("#editDock")?.remove(); if (n !== "doors") hidePill();
+let tabGoT = 0;
+function switchTab(n, how = {}) { document.documentElement.dataset.tab = n; if (V2) setTimeout(paintNowBar, 0);
+  if (V2 && !REDUCED) { const h = document.documentElement; h.classList.remove("tabgo"); void h.offsetWidth; h.classList.add("tabgo"); clearTimeout(tabGoT); tabGoT = setTimeout(() => h.classList.remove("tabgo"), 1400);
+    setTimeout(() => { if (n === "library") paintYearBand(); dealPosters($("#shelfGrid"), "shelf", ":scope > *"); const ct = $("#cabTrays"); if (ct && diaryGrid()) dealPosters(ct, "diary", ".dtile"); }, 40); } shelfEdit = false; $("#editDock")?.remove(); if (n !== "doors") hidePill();
   if (n === "library") n = LIB.includes(P.libSide) ? P.libSide : "shelf";
   if (LIB.includes(n) && P.libSide !== n) { P.libSide = n; saveP(); }
   const cur = currentTab(); if (cur) tabScroll[cur] = scrollY;
@@ -7703,7 +7742,7 @@ async function openYearStory(year = storyYear() || String(new Date().getFullYear
    a line or two, and a tap to go on. Seven stops, skippable at any point, and it can be
    asked for again from settings. */
 const TOUR = [
-  { at:'#hereRow .couch, #hereRow', title:"Your room", body:"Everyone in the room is in this chip. Tap it to see who's here and what they're watching, reading or playing.", col:"#F5A3C7", need:"doors" },
+  { at:V2 ? '#couchRow' : '#hereRow .couch, #hereRow', title:"Your room", body:V2 ? "Everyone in the room sits on this couch, awake when they're here. Tap someone to see what they're on." : "Everyone in the room is in this chip. Tap it to see who's here and what they're watching, reading or playing.", col:"#F5A3C7", need:"doors" },
   { at:'#add', title:"Log something", body:"Finished a film, show, book or game? Tap + and drag across the stars. Then pick the one thing you loved most.", col:"#FFB36B" },
   { at:'nav button[data-tab="doors"]', title:"Rooms", body:"What your friends log lands here. Hold a heart to answer with your mascot, or tap the bubble to reply.", col:"#F5A3C7" },
   { at:'nav button[data-tab="people"]', title:"Feed", body:"The people you follow, then everyone else. A ring means they've logged something in the last two days — tap it to see.", col:"#9EF0C9" },
@@ -8668,7 +8707,7 @@ function likeLine(e) {
 
 function slipHTML(e, opts = {}) { const w = remember(e.works) || works[e.work_id] || {}; const mine = e.user_id === me.id;
   const same = (e.reactions||[]).some(r => r.user_id === me.id), n = (e.reactions||[]).length;
-  return `<div class="slip${opts.feature ? " feature" : ""}" data-slip="${e.id}" style="animation-delay:-${(avHash(e.id) % 65) / 10}s;--kc:var(--${w.kind || "film"})">
+  return `<div class="slip${opts.feature ? " feature" : ""}${popStars && popStars === e.id ? " popstars" : ""}" data-slip="${e.id}" style="animation-delay:-${(avHash(e.id) % 65) / 10}s;--kc:var(--${w.kind || "film"})">
     <div class="who" data-prof="${esc(e.user_id)}" style="cursor:pointer">${avatar(e.profiles)} <b>${esc(mine ? "you" : e.profiles?.handle)}</b>${mine ? `<button class="restar" type="button" data-restar="${e.id}" aria-label="Change your stars">${stars(e.score, "sm")}</button>` : stars(e.score, "sm")}<span class="when">${whenE(e)}</span></div>
     ${opts.here ? (dnfOf(e) ? `<div class="here-dnf">${dnfLine(e)}</div>` : "") : `<div class="ttl" data-work="${esc(e.work_id)}"><span class="season-cover">${cover(w)}</span><div><b>${esc(w.title)}</b><small>${esc(w.year||"")}${w.creator ? ` \u00b7 ${esc(String(w.creator).split(",")[0])}` : ""}${dnfOf(e) ? ` ${dnfLine(e)}` : ""}</small></div></div>`}
     ${e.note?`<div class="q${String(e.note).length > 210 ? " clip" : ""}">“${noteHTML(e.note)}”</div>${String(e.note).length > 210 ? `<button class="more" data-more="${e.id}">More</button>` : ""}`:""}
@@ -8695,10 +8734,37 @@ function openWeekSheet(R, es) { const { ws } = wkWorks(es);
     <div class="stack"><button class="btn quiet" id="wkClose">Close</button></div>`);
   $("#wkClose").onclick = closeSheet; $$("[data-wkw]").forEach(b => b.onclick = () => openWork(b.dataset.wkw)); }
 function couchHTML(R) { if (!R || R.members.length < 2) return "";
-  return `<div class="couchrow" id="couchRow">${R.members.map(m => `<button class="cz${m.id === me.id || hereNow.some(p => p.id === m.id) ? "" : " zz"}" data-cz="${esc(m.id)}" type="button" aria-label="${esc(m.id === me.id ? "you" : m.handle)}">${avatar(m)}</button>`).join("")}<small id="couchN"></small></div>`; }
-function paintCouch() { const row = $("#couchRow"); if (!row) return; let n = 0;
-  $$("[data-cz]", row).forEach(b => { const on = b.dataset.cz === me.id || hereNow.some(p => p.id === b.dataset.cz); if (on && b.dataset.cz !== me.id) n++; b.classList.toggle("zz", !on); });
-  const t = $("#couchN", row); if (t) t.textContent = n ? `${n} here now` : ""; }
+  return `<div class="couchrow" id="couchRow">${R.members.map(m => `<button class="cz${m.id === me.id || hereNow.some(p => p.id === m.id) ? "" : " zz"}" data-cz="${esc(m.id)}" type="button" aria-label="${esc(m.id === me.id ? "you" : m.handle)}">${avatar(m)}</button>`).join("")}<button class="czn" id="couchN" type="button"></button></div>`; }
+function paintCouch() { const row = $("#couchRow"); if (!row) return; let n = 0; const again = row.dataset.painted === "1"; row.dataset.painted = "1";
+  $$("[data-cz]", row).forEach(b => { const on = b.dataset.cz === me.id || hereNow.some(p => p.id === b.dataset.cz); if (on && b.dataset.cz !== me.id) n++;
+    /* 73: somebody arriving wakes up and stretches */
+    if (on && again && b.classList.contains("zz") && !REDUCED) { b.classList.remove("wake"); void b.offsetWidth; b.classList.add("wake"); setTimeout(() => b.classList.remove("wake"), 700); }
+    b.classList.toggle("zz", !on); });
+  const t = $("#couchN", row), R = activeRoom();
+  if (t) { t.textContent = `${R?.members.length || row.querySelectorAll("[data-cz]").length} in here${n ? ` \u00b7 ${n} now` : ""}`; t.onclick = () => openCouch(); } }
+/* 70: a page's posters deal in like cards, the first time you open it in a while (and
+   only when it's actually on screen) */
+const dealtAt = {};
+function dealPosters(box, key, sel) { if (!V2 || REDUCED || !box || !box.offsetParent || box.closest("main > section:not(.on)")) return;
+  /* a page redrawn while its posters are still landing carries on from where they were */
+  const now = Date.now(), age = now - (dealtAt[key] || 0); if (age < 1500) { if (age > 700) return; } else if (age < 20 * 60e3) return; else { dealtAt[key] = now; }
+  const dt = age < 1500 ? age : 0;
+  [...box.querySelectorAll(sel)].slice(0, 12).forEach((t, i) => { t.style.setProperty("--di", i); t.style.setProperty("--dc", i % 4); t.style.setProperty("--dt", dt + "ms");
+    t.classList.remove("dealt"); void t.offsetWidth; t.classList.add("dealt"); const end = ev => { if (ev.target !== t) return; t.classList.remove("dealt"); t.removeEventListener("animationend", end); }; t.addEventListener("animationend", end); }); }
+/* 77: hold a poster and it lifts, tilting toward your finger; a scroll that's already
+   started is left alone, and once it's lifted the page holds still under it */
+if (V2 && !REDUCED) { let tEl = null, tHold = 0, sx = 0, sy = 0;
+  const POSTER = ".po, .dtile .dtco, img.co, .tcov";
+  const tiltTo = (x, y) => { if (!tEl) return; const r = tEl.getBoundingClientRect(); if (!r.width) return;
+    const px = Math.max(-.5, Math.min(.5, (x - r.left) / r.width - .5)), py = Math.max(-.5, Math.min(.5, (y - r.top) / r.height - .5));
+    tEl.style.transform = `perspective(500px) translateY(-6px) scale(1.07) rotateY(${(px * 24).toFixed(1)}deg) rotateX(${(-py * 24).toFixed(1)}deg)`; };
+  const drop = () => { clearTimeout(tHold); tHold = 0; const t = tEl; tEl = null; if (t) { t.style.transform = ""; setTimeout(() => t.classList.remove("tilting"), 160); } };
+  document.addEventListener("pointerdown", e => { drop(); if (e.pointerType === "mouse" || shelfEdit) return;
+    const t = e.target.closest?.(POSTER); if (!t || !t.closest("main, #sheet") || t.closest(".editing, .grip, [draggable='true']")) return;
+    sx = e.clientX; sy = e.clientY; tHold = setTimeout(() => { tHold = 0; tEl = t; t.classList.add("tilting"); tiltTo(sx, sy); }, 220); }, { passive:true });
+  document.addEventListener("pointermove", e => { if (tHold && Math.hypot(e.clientX - sx, e.clientY - sy) > 8) drop(); else if (tEl) tiltTo(e.clientX, e.clientY); }, { passive:true });
+  document.addEventListener("touchmove", e => { if (!tEl) return; e.preventDefault(); const p = e.touches[0]; if (p) tiltTo(p.clientX, p.clientY); }, { passive:false });
+  ["pointerup", "pointercancel"].forEach(ev => document.addEventListener(ev, drop, { passive:true })); }
 /* the colour of a poster: drawn tiny, averaged over its brighter, more colourful pixels, and
    kept on this phone so each poster is only ever worked out once */
 const PCOL_KEY = "rooms.pcol";
@@ -8727,16 +8793,22 @@ function paintNowBar() { if (!V2) return; let bar = $("#nowBar");
   const nav = $("#nav"); bar.style.bottom = ((nav?.offsetHeight || 72) + 8) + "px"; document.documentElement.classList.add("hasnow"); }
 /* 52: your year in colour, at the top of Queue: a thin stripe for each thing you finished,
    in its poster's colour where it's known (its medium's until then) */
-let bandBusy = false;
+let bandBusy = false, bandN = null, bandFresh = 0;
 function paintYearBand() { if (!V2) return; const bar = $("#libBar"); if (!bar) return; let el = $("#yearBand");
   const y = String(new Date().getFullYear()), es = myEntries.filter(e => String(e.rated_on || "").startsWith(y) && !isPart(e.work_id)).sort((a, b) => String(a.rated_on).localeCompare(String(b.rated_on)));
   if (!es.length) { el?.remove(); return; }
-  if (!el) { el = document.createElement("button"); el.id = "yearBand"; el.type = "button"; bar.querySelector(".pagetitle")?.after(el);
-    el.onclick = () => $("#libBar [data-lib='archive']")?.click(); }
+  /* the stripe row stays put between paints, so drawing itself in (76) isn't restarted
+     every time a colour comes in */
+  if (!el) { el = document.createElement("button"); el.id = "yearBand"; el.type = "button"; el.innerHTML = `<span class="yb-l"></span><span class="yb"></span>`;
+    bar.querySelector(".pagetitle")?.after(el); el.onclick = () => $("#libBar [data-lib='archive']")?.click(); }
+  /* 72: something just finished pops onto the end, the next time the band is in view */
+  if (bandN != null && es.length > bandN) bandFresh = Math.min(3, bandFresh + es.length - bandN); bandN = es.length;
+  const inView = !!el.offsetParent, fresh = inView && !REDUCED ? bandFresh : 0; if (inView) bandFresh = 0;
   const m = pcolCache(), todo = [];
-  el.innerHTML = `<span class="yb-l"><b>Your ${y}</b> · ${es.length} ${es.length === 1 ? "thing" : "things"}</span><span class="yb">${es.map(e => { const w = works[e.work_id] || e.works || {}, src = myCoverOf(w) || w.cover;
+  $(".yb-l", el).innerHTML = `<b>Your ${y}</b> \u00b7 ${es.length} ${es.length === 1 ? "thing" : "things"}`;
+  $(".yb", el).innerHTML = es.map((e, i) => { const w = works[e.work_id] || e.works || {}, src = myCoverOf(w) || w.cover;
     if (src && !(src in m) && todo.length < 24) todo.push(src);
-    return `<i style="background:${(src && m[src]) || K(w.kind || kindOf(e.work_id)).colour}"></i>`; }).join("")}</span>`;
+    return `<i${i >= es.length - fresh ? ` class="new"` : ""} style="background:${(src && m[src]) || K(w.kind || kindOf(e.work_id)).colour}"></i>`; }).join("");
   /* the colours it doesn't know yet, a few at a time, then once more with them in */
   if (todo.length && !bandBusy) { bandBusy = true;
     (async () => { for (const src of todo) await posterColour(src).catch(() => null); bandBusy = false; if ($("#yearBand")) paintYearBand(); })(); } }
@@ -9058,9 +9130,6 @@ async function renderRoomFeed(fb, R) {
   wireSlips(fb, es); revealIn(fb); wireCaughtUp(fb); rollAll(fb); roomWeeks(R); if (currentTab() === "doors") joinRoomChannel(R); roomMood(es);
   /* presence says who is here; this says what they are actually in the middle of */
   paintRoomNow(R);
-  /* the line the slim header keeps once the title scrolls away */
-  { const tl = $("#tab-doors [data-pagetitle]"), line = $(".roomcard .rstreak", fb)?.textContent.replace(/\s+/g, " ").trim();
-    if (tl) tl.dataset.pagestatus = [`${R.members.length} in here`, line].filter(Boolean).join(" · "); }
   ["talkAdd","compAdd"].forEach(id => { const el = $("#"+id); if (el) el.onclick = openAdd; });
   const promptLog = $("#roomPromptLog"); if (promptLog) promptLog.onclick = openAdd;
   /* today(), not toISOString: roomPrompt() compares against the local date, and a UTC
@@ -9600,7 +9669,7 @@ function paintCabHero() { const el = $("#cabHero"); if (!el) return;
   /* what the diary under it lists: no episodes, no favourites from sign-up */
   const es = myEntries.filter(e => !isPart(e.work_id) && !isBefore(e) && (!k || kindOfE(e) === k));
   const what = k ? K(k).plural.toLowerCase() : "things", one = k ? (k === "tv" ? "show" : K(k).label.toLowerCase()) : "thing";
-  if (P.cabView === "diary") {
+  if (P.cabView === "diary") { if (V2) { el.innerHTML = ""; return; }
     const now = new Date(), ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
     const by = {}; es.forEach(e => { const m = String(e.rated_on || "").slice(0, 7); if (m.startsWith(String(now.getFullYear()))) by[m] = (by[m] || 0) + 1; });
     const m = by[ym] || 0, best = Object.entries(by).sort((a, b) => b[1] - a[1])[0];
@@ -9636,6 +9705,7 @@ function renderCabinet() { paintYearBand();
   body.innerHTML = `${pagerHTML(places, P.cabKind || "", { id:"cabPager", mode:"chips", allLabel:"All" })}<div id="cabHero"></div>
     ${logCount() ? `<div class="cabbar">
         <p class="cabcount" id="cabCount">${cabRanked() ? "Your order, best first" : "Newest first"}</p>
+        ${V2 && P.cabView === "diary" ? `<button class="cabfind cablog" id="cabLogBtn" type="button" aria-label="Log something">+ Log</button>` : ""}
         ${P.cabView === "diary" ? `<button class="cabfind ${diaryGrid() ? "on" : ""}" id="cabGridBtn" aria-label="Show it as covers" aria-pressed="${diaryGrid()}">${GRID}</button>` : ""}
         <button class="cabfind ${cabQ ? "on" : ""}" id="cabFindBtn" aria-label="Search what you've finished" aria-expanded="${cabQ ? "true" : "false"}">${LENS}</button>
         <button class="cabfind ${cabFiltered() ? "on" : ""}" id="cabSortBtn" aria-label="Sort and filter">${SLIDERS}</button>
@@ -9886,9 +9956,11 @@ function paintDiary(el) {
   html += `</div></div>`;
   if (rows.length > show.length) html += `<div class="stack"><button class="btn quiet" id="diaryMore">Show more · ${rows.length - show.length} earlier</button></div>`;
   el.innerHTML = html;
+  if (diaryGrid()) dealPosters(el, "diary", ".dtile");
   $$(".drow, .dtile", el).forEach(r => r.onclick = () => openWork(r.dataset.work));
   const more = $("#diaryMore"); if (more) more.onclick = () => { diaryShown += 200; paintDiary(el); }; }
 function wireCabinet() {
+  const cl = $("#cabLogBtn"); if (cl) cl.onclick = () => openAdd();
   $$("[data-cabview]").forEach(b => b.onclick = () => { const k = b.dataset.cabview; if (k === cabViewNow()) return;
     if (k === "diary") { P.cabView = "diary"; unrank(); diaryShown = 120; }
     else if (k === "rank") { P.cabSortWas = cabSort(); P.cabSort = "rank"; P.cabView = ""; }
@@ -10048,7 +10120,7 @@ function renderShelf() { paintYearBand();
   $$("[data-kt]").forEach(b => b.onclick = () => { P.kinds = [b.dataset.kt]; saveP(); renderShelf(); $("#search")?.focus(); });
   /* moving along the shelf narrows it to a medium, and search narrows with it */
   wirePager($("#shelfPager"), places, P.shelfFilter || "", (k, d) => { P.shelfFilter = k; P.kinds = k ? [k] : Object.keys(KINDS); saveP(); shelfTurn = d; renderShelf(); });
-  pagerArrive(shelfTurn, $("#shelfPager"), $("#shelfGrid")); shelfTurn = 0;
+  pagerArrive(shelfTurn, $("#shelfPager"), $("#shelfGrid")); shelfTurn = 0; dealPosters($("#shelfGrid"), "shelf", ":scope > *");
   const wo = $("#whenOff"); if (wo) wo.onclick = () => { P.when = ""; saveP(); buzz(5); renderShelf(); };
   const ffb = $("#shelfFilterBtn");
   if (ffb && V2) { ffb.classList.add("v2f"); ffb.innerHTML = `${esc(P.shelfFilter ? K(P.shelfFilter).plural : "All")}<i aria-hidden="true">▾</i>`; }
@@ -14428,7 +14500,7 @@ async function openWork(id, back = null) { let w = works[id]; if (!w) { try { co
   const derived = !mine.length && w.kind === "tv" && !isPart(w.id) ? derivedScore(myParts, w.id) : null;
   if ($("#wNumbers")) { const vals = [["You", mine.length ? (mine[0].score/2).toFixed(1) : derived ? (derived.score/2).toFixed(1) : "—"],["Your room",avg(room)],["Following",avg(fol)],["Everyone",avg(es)]];
     $("#wNumbers").innerHTML = vals.map(([l],i) => `<div><b>—</b><span>${
-      i === 0 && derived ? `From ${derived.seasons === 1 ? "a season" : derived.seasons + " seasons"}` : l}</span></div>`).join("");
+      i === 0 && derived ? `From ${derived.seasons === 1 ? "a season" : derived.seasons + " seasons"}` : V2 ? ["You", "room", "following", "everyone"][i] : l}</span></div>`).join("");
     $$("#wNumbers b").forEach((b,i) => countUp(b, vals[i][1]));
     /* before you've rated it, the averages of the people you know wait too; a tap shows one */
     if (!mine.length && !derived) $$("#wNumbers > div").slice(1, 4).forEach(d => { d.classList.add("hushed"); d.title = "Rate it first, or tap to peek";
@@ -15834,6 +15906,7 @@ function openLog(w, edit = null, preset = 0) { setDoing("logging"); const cfg = 
         && (!edit?.id || wasPrivate) && !(await ensureRankCache([w.kind]).then(() => (rankCache[w.kind] || []).includes(w.id)).catch(() => false));
       justSwept = w.id; logoCheer(); setDoing(null); meReact(score); recs = null; if (!edit?.id) checkGuess(w, score); delete tagCache[w.id]; if (P.picked === w.id) { P.picked = null; saveP(); }
       const saved = (edit ? myEntries.find(x => x.id === edit.id) : myEntries.find(x => x.work_id === w.id)) || e;
+      if (saved.id) { popStars = saved.id; setTimeout(() => { if (popStars === saved.id) popStars = null; }, 4000); }
       /* rate it, place it, done: the placing happens in this sheet, and the end is a toast
          saying where it landed rather than a second sheet to close */
       /* where the poster sits now — the placing questions are about to take over the sheet */
