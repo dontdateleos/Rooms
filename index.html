@@ -1406,6 +1406,73 @@ svg .comet{transform-box:fill-box;transform-origin:center;animation:cometTurn 4.
 .pull.going .pmk .pr{animation:pullLamp .9s linear infinite}
 .pull.going .pmk .pr:nth-of-type(2){animation-delay:.225s}.pull.going .pmk .pr:nth-of-type(4){animation-delay:.45s}.pull.going .pmk .pr:nth-of-type(3){animation-delay:.675s}
 @keyframes pullLamp{0%,40%{opacity:1}60%,100%{opacity:.3}}
+/* ---------- the new look, on trial (html.v2) ---------- */
+/* 2: each page's colour is a wash behind its title; the cards stay as they are */
+html.v2 body{background-image:linear-gradient(180deg,color-mix(in srgb,var(--tint,transparent) 24%,transparent),transparent 440px);background-repeat:no-repeat;background-size:100% 440px}
+html.v2[data-tab="doors"] body{--tint:var(--room,var(--pink))}html.v2[data-tab="people"] body{--tint:var(--butter)}
+html.v2:is([data-tab="shelf"],[data-tab="archive"]) body{--tint:var(--mint)}html.v2[data-tab="clubs"] body{--tint:var(--lilac)}
+html.v2 .roomwash{display:none}
+/* 1 and 13: no room card; its numbers are a line under the name, then who's on what */
+html.v2 .roomcard.slim{background:none!important;padding:0;margin-top:2px;box-shadow:none;overflow:visible}
+html.v2 .roomcard.slim::before,html.v2 .roomcard.slim::after{display:none}
+html.v2 .roomcard .room-streak,html.v2 .roomcard .room-streak b,html.v2 .roomcard .wstreak,html.v2 .roomcard .herenote{color:var(--mute)!important}
+html.v2 .roomcard .roomline{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:10.5px;letter-spacing:.05em;text-transform:uppercase}
+html.v2 .roomcard .room-streak b{color:var(--ink)!important}
+html.v2 .roomcard.slim .room-body{display:block;margin-top:10px}
+html.v2 .roomcard .hero-fan{display:none}
+html.v2 .roomcard .nowline.nowrows{display:grid!important;margin:0;-webkit-line-clamp:unset;overflow:visible!important;font-size:inherit}
+html.v2 .nowrows > .nowrow{margin:0!important;width:100%;max-width:100%;box-sizing:border-box;overflow:visible}
+html.v2 .nowrow{display:flex;align-items:center;gap:11px;padding:9px 0;border-top:1px solid var(--line);cursor:pointer;color:var(--ink)}
+html.v2 .nowrow:first-child{border-top:0}
+html.v2 .nowrow .t{flex:1;min-width:0;display:grid}
+html.v2 .nowrow .t b{font:800 15.5px/1.2 var(--head);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+html.v2 .nowrow .t small em{font-style:normal;color:var(--ink)}
+html.v2 .nowrow .av svg{width:26px;height:26px}
+/* 4: the slim title at the top carries the room's line */
+html.v2 #hdrTitle small{margin-left:8px;font:600 9.5px/1 ui-monospace,"SF Mono",Menlo,monospace;letter-spacing:.05em;text-transform:uppercase;color:var(--mute);white-space:nowrap}
+/* 8: folding */
+html.v2 .card.foldable > .h{cursor:pointer}
+html.v2 .card.foldable > .h > span:first-child::after{content:"";display:inline-block;width:6px;height:6px;margin:0 0 3px 8px;border:solid currentColor;border-width:0 2px 2px 0;rotate:45deg;opacity:.45;transition:rotate .2s}
+html.v2 .card.folded > .h > span:first-child::after{rotate:-45deg;margin-bottom:0}
+html.v2 .card.folded > :not(.h){display:none!important}
+html.v2 .card.folded{padding-bottom:12px}
+/* 9: an empty section, one line */
+.blank1{display:flex;align-items:center;gap:12px;padding:12px 14px;margin:10px 0;border-radius:16px;background:var(--card)}
+.blank1::before{content:"";flex:none;width:10px;height:10px;border-radius:50%;background:var(--c);box-shadow:0 0 0 3px color-mix(in srgb,var(--c) 30%,transparent)}
+.b1-t{flex:1;min-width:0;display:grid;gap:2px}.b1-t b{font:800 15px/1.2 var(--head)}
+.b1-t small{color:var(--mute);font-size:12.5px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.b1-go{flex:none;border:1.5px solid color-mix(in srgb,var(--ink) 45%,transparent);background:none;color:var(--ink);border-radius:10px;padding:8px 11px;font:700 11px/1 ui-monospace,"SF Mono",Menlo,monospace;letter-spacing:.06em;text-transform:uppercase;cursor:pointer}
+/* 11: the details in small even capitals */
+html.v2 :is(.slip .when,.logline small,.row .t small,.tvw-t small,.cell .cap span,.twin .t small,.stk-t small,.nowrow small,.rpos-w,.stale small,.vsit small,.arrived p){font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;font-weight:600}
+/* 15: positions as words */
+html.v2 .rpos-w{display:block;color:var(--mute);margin-top:3px}html.v2 .rpos-w em{font-style:normal;color:var(--ink)}
+/* 16: Settle it, small, under the top list */
+html.v2 .card.settle{background:none;box-shadow:none;border:1.5px dashed color-mix(in srgb,var(--ink) 22%,transparent);padding:12px 14px}
+html.v2 .settle .vs{margin-top:10px;gap:8px}
+html.v2 .settle .vsit{padding:9px 10px;border-radius:12px;flex-direction:row;align-items:center;gap:9px}
+html.v2 .settle .vsit .co{width:28px!important;height:42px!important;border-radius:5px}
+/* 17: heads up, as one-line rows */
+html.v2 .headsup :is(.stale,.arrived,.tvweek){background:none;box-shadow:none;border-radius:0;margin:0;border-top:1px solid var(--line);padding:12px 0}
+html.v2 .headsup .tvweek .h{margin-bottom:2px}
+html.v2 .stale [data-stale="stop"]{display:none}
+html.v2 .stale{align-items:center}
+/* 18: stacks: the posters and a title, no coloured block */
+html.v2 .stk.promptcard{background:var(--card);color:var(--ink)}
+html.v2 .stk.promptcard::before,html.v2 .stk.promptcard::after{display:none}
+html.v2 .stk-strip > span{margin-left:-30px}html.v2 .stk-strip > span:first-child{margin-left:0}
+html.v2 .stk.promptcard :is(.stk-t small,.stk-seen em,.stk-none){color:var(--mute)!important}
+html.v2 .stk.promptcard .stk-tags i{background:color-mix(in srgb,var(--room) 22%,transparent);color:var(--ink)}
+html.v2 .stk.promptcard .stk-t b{color:var(--ink)}
+/* 19: the bottom bar names only the page you're on */
+html.v2 nav button[data-tab]:not(.on){font-size:0;gap:0}
+/* 20: said beside the button */
+.tapsay{position:fixed;z-index:9999;max-width:min(280px,calc(100vw - 24px));padding:8px 12px;border-radius:12px;background:var(--ink);color:var(--cream);font:700 13px/1.3 var(--head);box-shadow:0 8px 22px rgba(0,0,0,.35);pointer-events:none;animation:tapIn .22s cubic-bezier(.2,1.3,.4,1) both}
+.tapsay.good::before{content:"✓ ";color:var(--mint)}
+.tapsay.out{transition:opacity .35s,translate .35s;opacity:0;translate:0 -4px}
+@keyframes tapIn{from{opacity:0;translate:0 6px;scale:.96}}
+@media (prefers-reduced-motion:reduce){.tapsay{animation:none}}
+/* 22: one poster size in a list of rows */
+html.v2 :is(.row,.twin,.tvw-row,.stale,.nowrow,.rr-row,.ph-row) > :is(.co,img.co){width:40px!important;height:60px!important;border-radius:7px;object-fit:cover;flex:none}
 /* ---------- how scrolling feels (html.feel) ---------- */
 @property --pull{syntax:"<number>";inherits:true;initial-value:0}
 html.feel:not(.pulling){transition:--pull .45s cubic-bezier(.2,1.4,.4,1)}
@@ -4166,6 +4233,10 @@ const proxy = () => (P.workerUrl || WORKER).replace(/\/+$/, "");
 const P = Object.assign({ workerUrl:"", tmdbKey:"", activeList:null, activeRoom:null, picked:null, kinds:["film","tv","book","game"], shelfFilter:"", pickTag:"", pickFrom:"shelf", bestGenre:{}, howLong:"", spinN:20, feedPicked:false, weekSeen:"", view:"shelf", seen:"", cardSkin:"", feed:"room", theme:"dark", chart:"month", cabSort:"recent", cabKind:"" },
   JSON.parse(localStorage.getItem("rooms.prefs") || "{}"));
 const saveP = () => localStorage.setItem("rooms.prefs", JSON.stringify(P));
+/* the new look, on trial: ?v2 in the address, or Settings → Try the new look. Everything
+   it changes hangs off html.v2 (and V2 where the markup differs), so it switches off clean */
+const V2 = /[?&]v2\b/.test(location.search) || !!P.newLook;
+document.documentElement.classList.toggle("v2", V2);
 async function tmdb(path, params = {}) {
   const direct = !proxy(); if (direct && !P.tmdbKey) throw new Error("needs a TMDB key or the worker");
   const u = new URL((direct ? "https://api.themoviedb.org" : proxy()) + "/3/" + path);
@@ -4760,11 +4831,26 @@ function say(msg, kind = "") {
   const el = document.getElementById("toast"); if (!el) return;
   clearTimeout(toastT);
   if (!msg) { el.className = "toast"; return; }
+  if (V2 && tapSay(msg, kind)) { el.className = "toast"; return; }
   el.textContent = msg; el.className = "toast on " + kind; el.style.translate = "";
   if (kind === "good" || kind === "bad") { const i = document.createElement("i"); i.className = "ti face-" + kind; i.setAttribute("aria-hidden", "true");
     i.innerHTML = tinyFace(kind === "good" ? "happy" : "sad", "#FFF7EC"); el.prepend(i); }
   toastT = setTimeout(() => { el.className = "toast"; }, kind === "bad" ? 5200 : 3000);
 }
+/* the new look says a short thing beside the button you just pressed, rather than in a
+   toast at the bottom: only straight after a tap, only if that button is still on screen,
+   and never for something that went wrong (those stay as toasts) */
+let lastTap = null;
+document.addEventListener("pointerdown", e => { const b = e.target.closest?.("button,[role=button],.chip"); lastTap = b ? { el:b, t:Date.now() } : null; }, true);
+function tapSay(msg, kind) { const tap = lastTap; lastTap = null;
+  if (!tap || kind === "bad" || Date.now() - tap.t > 2500 || !tap.el.isConnected || String(msg).length > 70) return false;
+  const r = tap.el.getBoundingClientRect(); if (!r.width || r.bottom < 40 || r.top > innerHeight - 20) return false;
+  const t = document.createElement("div"); t.className = "tapsay" + (kind ? " " + kind : ""); t.textContent = msg; t.setAttribute("role", "status");
+  document.body.append(t);
+  const w = t.offsetWidth, h = t.offsetHeight, left = Math.max(12, Math.min(innerWidth - w - 12, r.left + r.width / 2 - w / 2));
+  let top = r.top - h - 8; if (top < 70) top = r.bottom + 8;
+  t.style.left = left + "px"; t.style.top = top + "px";
+  setTimeout(() => t.classList.add("out"), 1900); setTimeout(() => t.remove(), 2300); return true; }
 /* a toast can be flicked down out of the way, like a notification */
 (() => { const el = document.getElementById("toast"); if (!el) return; let y0 = null, dy = 0;
   el.addEventListener("pointerdown", e => { if (!el.classList.contains("on") || el.classList.contains("undo")) return; y0 = e.clientY; dy = 0; el.style.transition = "none"; });
@@ -6631,8 +6717,10 @@ let titleEl = null, titleW = 0, titleIO = null;
 function watchTitle() { titleW = 0; const slot = $("#hdrTitle"); if (!slot) return;
   const lib = $("#libBar"), inLib = lib && !lib.hidden;
   const el = (inLib ? lib.querySelector("[data-pagetitle]") : null) || document.querySelector("main > section.on")?.querySelector("[data-pagetitle]") || null;
+  { const t = el?.dataset.pagetitle || "", st = V2 ? el?.dataset.pagestatus || "" : "", key = t + "|" + st;
+    if (slot.dataset.k !== key) { slot.dataset.k = key; slot.innerHTML = esc(t) + (st ? `<small>${esc(st)}</small>` : ""); } }
   if (el === titleEl && titleIO) return;
-  titleEl = el; const t = el?.dataset.pagetitle || ""; if (slot.textContent !== t) slot.textContent = t;
+  titleEl = el;
   titleIO?.disconnect(); titleIO = null; const hdr = $("header"); if (!hdr) return;
   if (!el || !("IntersectionObserver" in window)) { hdr.classList.remove("titled"); return; }
   titleIO = new IntersectionObserver(([en]) => hdr.classList.toggle("titled", !en.isIntersecting
@@ -6641,6 +6729,18 @@ function watchTitle() { titleW = 0; const slot = $("#hdrTitle"); if (!slot) retu
   titleIO.observe(el); }
 new MutationObserver(() => { if (!titleW) titleW = requestAnimationFrame(watchTitle); })
   .observe(document.querySelector("main"), { childList:true, subtree:true, attributes:true, attributeFilter:["hidden"] });
+/* the new look: a card's heading folds it to one line, and it stays folded. Cards are
+   known by their page and heading (numbers taken out, so "Five Clues · #14" stays the same
+   card tomorrow). */
+if (V2) { let foldT = 0;
+  const foldKey = c => { const h = c.querySelector(":scope > .h > span:first-child"); if (!h) return null;
+    const t = h.textContent.replace(/[#\d]+/g, "").replace(/\s+/g, " ").replace(/[·\s]+$/, "").trim(); return t ? (c.closest("main > section")?.id || "") + ":" + t : null; };
+  const applyFolds = () => { foldT = 0; $$("main .card:not(.hero)").forEach(c => { if (c.dataset.fk) return; const k = foldKey(c); if (!k) return;
+    c.dataset.fk = k; c.classList.add("foldable"); if (P.folded?.[k]) c.classList.add("folded"); }); };
+  new MutationObserver(() => { if (!foldT) foldT = requestAnimationFrame(applyFolds); }).observe(document.querySelector("main"), { childList:true, subtree:true });
+  document.addEventListener("click", e => { const h = e.target.closest?.("main .card.foldable > .h"); if (!h || e.target.closest("button,a,input,[data-w],[role=button]")) return;
+    const c = h.parentElement, k = c.dataset.fk, on = c.classList.toggle("folded"); buzz(3);
+    P.folded ||= {}; if (on) P.folded[k] = 1; else delete P.folded[k]; saveP(); }); }
 /* A tab opening: the blocks you can see rise a few pixels into place, a beat apart —
    the same straight-up movement as scrolling to them. One page, nothing sliding sideways. */
 function riseIn(sec) { if (!sec || REDUCED) return;
@@ -6649,7 +6749,7 @@ function riseIn(sec) { if (!sec || REDUCED) return;
       const r = el.getBoundingClientRect(); return r.height > 0 && r.bottom > 60 && r.top < innerHeight; }).slice(0, 7);
   blocks.forEach((el, i) => el.animate([{ opacity:0, transform:"translateY(14px)" }, { opacity:1, transform:"none" }],
     { duration:320, delay:i * 45, easing:"cubic-bezier(.2,.8,.2,1)", fill:"backwards" })); }
-function switchTab(n, how = {}) { shelfEdit = false; $("#editDock")?.remove(); if (n !== "doors") hidePill();
+function switchTab(n, how = {}) { document.documentElement.dataset.tab = n; shelfEdit = false; $("#editDock")?.remove(); if (n !== "doors") hidePill();
   if (n === "library") n = LIB.includes(P.libSide) ? P.libSide : "shelf";
   if (LIB.includes(n) && P.libSide !== n) { P.libSide = n; saveP(); }
   const cur = currentTab(); if (cur) tabScroll[cur] = scrollY;
@@ -7613,6 +7713,9 @@ function emptyDoor(colour, mark) {
     ${mood === "look" ? `<g class="glass" transform="translate(98 92)"><circle r="8" fill="none" stroke="currentColor" stroke-width="3.5"/><path d="M5.5 5.5l6 6" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></g>` : ""}
   </svg>`; }
 function blank(colour, mark, title, body, actions = []) {
+  /* one line with its one button; any other buttons stay (hidden) so whatever wires them still finds them */
+  if (V2) return `<div class="blank1" style="--c:${colour}"><span class="b1-t"><b>${title}</b><small>${body}</small></span>${actions.map(([id, label], i) =>
+    `<button class="b1-go" id="${id}"${i ? " hidden" : ""}>${label}</button>`).join("")}</div>`;
   return `<div class="blank">${emptyDoor(colour, mark)}<h3>${title}</h3><p>${body}</p>
     ${actions.length ? `<div class="stack">${actions.map(([id,label,cls]) => `<button class="btn ${cls||"soft"}" id="${id}">${label}</button>`).join("")}</div>` : ""}</div>`; }
 const skeleton = (n = 3, face = false) => (face ? `<div class="skelface" aria-hidden="true">${tinyFace("ok", "#B9A6FF")}</div>` : "")
@@ -8724,6 +8827,9 @@ async function renderRoomFeed(fb, R) {
   wireSlips(fb, es); revealIn(fb); wireCaughtUp(fb); rollAll(fb); roomWeeks(R); if (currentTab() === "doors") joinRoomChannel(R); roomMood(es);
   /* presence says who is here; this says what they are actually in the middle of */
   paintRoomNow(R);
+  /* the line the slim header keeps once the title scrolls away */
+  { const tl = $("#tab-doors [data-pagetitle]"), line = $(".roomcard .rl-l", fb)?.textContent.replace(/\s+/g, " ").trim();
+    if (tl) tl.dataset.pagestatus = [`${R.members.length} in here`, line].filter(Boolean).join(" · "); }
   ["talkAdd","compAdd"].forEach(id => { const el = $("#"+id); if (el) el.onclick = openAdd; });
   const promptLog = $("#roomPromptLog"); if (promptLog) promptLog.onclick = openAdd;
   /* today(), not toISOString: roomPrompt() compares against the local date, and a UTC
@@ -10313,6 +10419,11 @@ async function paintRoomNow(R) {
   /* what people are on reads as one plain line, not a row of pills: "ali is reading
      Pachinko · mo is watching The Leftovers". Anything moved in the last 45 minutes has a
      small live dot, and each part opens the title. */
+  if (V2) { el.classList.add("nowrows");
+    el.innerHTML = pick.map(r => { const w = r.works || works[r.work_id]; if (!w) return "";
+      const who = r.user_id === me.id ? "you" : (r.profiles?.handle || ""), up = (() => { try { return nowLine(r); } catch { return ""; } })();
+      return `<span class="nowrow" data-w="${esc(r.work_id)}" role="button" tabindex="0">${cover(w)}<span class="t"><b>${esc(w.title)}</b><small><em>${esc(who)}</em> · ${esc(lc(nowVerb(w.kind)))}${up ? ` · ${up}` : ""}</small></span>${avatar(r.profiles || { id:r.user_id })}</span>`; }).join("");
+    $$("[data-w]", el).forEach(x => x.onclick = () => openWork(x.dataset.w)); return; }
   el.innerHTML = pick.map(r => { const w = r.works || works[r.work_id]; if (!w) return "";
     const mine = r.user_id === me.id, who = mine ? "You" : (r.profiles?.handle || ""), doing = lc(nowVerb(w.kind));
     const age = Date.now() - Date.parse(r.updated_at || "");
@@ -11259,18 +11370,20 @@ async function paintRankMeet(R) {
     return `<div class="card" id="roomOrder"><div class="h"><span>${esc(R.name)}'s top ${Math.min(open ? o.length : 10, o.length)}</span><span class="tag dim">everyone's lists</span></div>
       ${orders.length > 1 ? `<div class="chips" style="margin-top:8px">${orders.map(([kk]) => `<button class="chip ${kk === k ? "on" : ""}" data-rok="${kk}">${K(kk).plural}</button>`).join("")}</div>` : ""}
       ${o.slice(0, open ? 30 : 10).map((x, i) => { const w = works[x.id] || {};
-        return `<div class="row" data-rmw="${esc(x.id)}"><span class="rk">${i + 1}</span>${cover(w)}<div class="t"><b>${esc(w.title || "")}</b><span class="rpos">${pos(x.id).map(({ m, i:j }) => `<span title="${esc(m.id === me.id ? "you" : m.handle)}: #${j + 1}">${avatar(m)}<b>#${j + 1}</b></span>`).join("")}</span></div></div>`; }).join("")}
+        return `<div class="row" data-rmw="${esc(x.id)}"><span class="rk">${i + 1}</span>${cover(w)}<div class="t"><b>${esc(w.title || "")}</b>${V2 ? `<small class="rpos-w">${pos(x.id).map(({ m, i:j }) => m.id === me.id ? `<em>you #${j + 1}</em>` : `${esc(m.handle)} #${j + 1}`).join(" · ")}</small>`
+          : `<span class="rpos">${pos(x.id).map(({ m, i:j }) => `<span title="${esc(m.id === me.id ? "you" : m.handle)}: #${j + 1}">${avatar(m)}<b>#${j + 1}</b></span>`).join("")}</span>`}</div></div>`; }).join("")}
       <div class="rr-acts">${(rankCache[k] || []).filter(id => o.some(x => x.id === id)).length >= 2 ? `<button class="btn" data-rerank="${k}">Re-rank yours</button>` : ""}${!open && o.length > 10 ? `<button class="btn quiet" data-roall="${k}">See all ${Math.min(30, o.length)}</button>` : ""}</div>
       <p class="sub" style="margin-top:8px;font-size:12px">Folded together from everyone's ranked lists — only what at least two of you have ranked. Re-rank yours and this moves.</p></div>`; };
   /* one top list and one argument: the ranked top stands in for the starred one once
      there's enough of it, and Settle it for the friendly argument */
   $("#roomComp")?.toggleAttribute("hidden", !!orders.length); $("#roomSplit")?.toggleAttribute("hidden", !!duel);
-  el.innerHTML = ""
-    + (duel ? `<div class="card settle"><div class="h"><span>Settle it</span><span class="tag dim">${esc(K(duel.k).plural)}</span></div>
+  const settleHTML = (duel ? `<div class="card settle"><div class="h"><span>Settle it</span><span class="tag dim">${esc(K(duel.k).plural)}</span></div>
       <p class="sub" style="margin-top:6px">${who(duel.forA)} put <b>${esc(works[duel.a]?.title || "")}</b> higher. ${who(duel.forB)} put <b>${esc(works[duel.b]?.title || "")}</b> higher. You decide.</p>
       <div class="vs">${[duel.a, duel.b].map(id => { const w = works[id] || {};
         return `<button class="vsit" data-settle="${esc(id)}">${cover(w)}<b>${esc(w.title || "")}</b><small>${tag(w.kind)} ${esc(w.year || "")}</small></button>`; }).join("")}</div></div>` : "")
-    + (orders.length ? orderCard(orders[0][0]) : "");
+  ;
+  const topHTML = orders.length ? orderCard(orders[0][0]) : "";
+  el.innerHTML = V2 ? topHTML + settleHTML : settleHTML + topHTML;
   const wireRows = root => $$("[data-rmw]", root).forEach(x => x.onclick = () => openWork(x.dataset.rmw));
   const wireOrder = () => { wireRows($("#roomOrder"));
     $$("[data-rok]", el).forEach(b => b.onclick = () => { $("#roomOrder").outerHTML = orderCard(b.dataset.rok); wireOrder(); });
@@ -16663,7 +16776,7 @@ async function openYou() { let top = { items:[] }; try { top = await ensureMyTop
     ${isFounder() ? `<div class="lbl" style="margin-top:10px">Founder</div><div class="stack"><button class="btn quiet" id="fTrends">Last week on Rooms</button><button class="btn quiet" id="fRS">Room Service</button><button class="btn quiet" id="fList">Copy the newsletter list</button></div>` : ""}
     <div class="lbl" style="margin-top:10px">How the app looks</div><div class="chips">${[["","Auto"],["light","Light"],["dark","Dark"]].map(([k,l]) => `<button class="chip ${(P.theme||"")===k?"on":""}" data-th="${k}">${l}</button>`).join("")}</div>
     <p class="sub" style="margin-top:4px">Auto follows your phone. The ground still warms and dims across the day either way.</p>
-    <div class="lbl">The mascots</div><div class="chips"><button class="chip ${P.tilt ? "on" : ""}" id="tiltSw">Eyes follow your tilt</button></div>
+    <div class="lbl">The mascots</div><div class="chips"><button class="chip ${P.tilt ? "on" : ""}" id="tiltSw">Eyes follow your tilt</button><button class="chip ${P.newLook ? "on" : ""}" id="newLookSw">Try the new look</button></div>
     <p class="sub" style="margin-top:4px">Tilt your phone and every mascot looks the way it leans.</p>
     <div class="lbl">Cards</div><div class="chips">${[["","Auto"],["day","Day"],["night","Night"]].map(([k,l]) => `<button class="chip ${(P.cardTheme||"")===k?"on":""}" data-ct="${k}">${l}</button>`).join("")}</div>
     <p class="sub" style="margin-top:4px">Auto goes dark in the evening. The medium tints the light either way.</p>
@@ -16739,6 +16852,7 @@ async function openYou() { let top = { items:[] }; try { top = await ensureMyTop
     $$("[data-ave]").forEach(b => b.onclick = () => { av.eyes = b.dataset.ave; paintAv(); });
     $$("[data-avc]").forEach(b => b.onclick = () => { av.col = +b.dataset.avc; paintAv(); }); };
   paintAv();
+  $("#newLookSw").onclick = () => { P.newLook = !P.newLook; saveP(); location.reload(); };
   $("#tiltSw").onclick = async () => { const b = $("#tiltSw");
     if (P.tilt) { P.tilt = false; saveP(); tiltOff(); b.classList.remove("on"); return; }
     if (await tiltOn(true)) { P.tilt = true; saveP(); b.classList.add("on"); } else say("Your phone didn't allow it"); };
