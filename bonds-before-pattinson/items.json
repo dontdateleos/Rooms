@@ -1,0 +1,94 @@
+{
+  "list": {
+    "id": null,
+    "title": "The six Bonds before Pattinson",
+    "note": "One film for every actor who's played 007, in order. Which one's yours?"
+  },
+  "items": [
+    {
+      "w": {
+        "id": "film:658",
+        "kind": "film",
+        "title": "Goldfinger",
+        "year": "1964",
+        "cover": "https://image.tmdb.org/t/p/w342/aKNFzaqQgPzsGXnsMc4kJH5hFIV.jpg"
+      },
+      "why": "Sean Connery · the one that set the template",
+      "card": "Goldfinger",
+      "when": null,
+      "where": null
+    },
+    {
+      "w": {
+        "id": "film:668",
+        "kind": "film",
+        "title": "On Her Majesty's Secret Service",
+        "year": "1969",
+        "cover": "https://image.tmdb.org/t/p/w342/yVzJLLhBwuWJBR9BYEMurShu2WT.jpg"
+      },
+      "why": "George Lazenby · one film, and a great one",
+      "card": "On Her Majesty's Secret Service",
+      "when": null,
+      "where": null
+    },
+    {
+      "w": {
+        "id": "film:691",
+        "kind": "film",
+        "title": "The Spy Who Loved Me",
+        "year": "1977",
+        "cover": "https://image.tmdb.org/t/p/w342/3ZxHKFxMYvAko680DsRgAZKWcLi.jpg"
+      },
+      "why": "Roger Moore · Bond at his most fun",
+      "card": "The Spy Who Loved Me",
+      "when": null,
+      "where": null
+    },
+    {
+      "w": {
+        "id": "film:708",
+        "kind": "film",
+        "title": "The Living Daylights",
+        "year": "1987",
+        "cover": "https://image.tmdb.org/t/p/w342/1oRlmWX9hewpn2B44wawBjHd7dx.jpg"
+      },
+      "why": "Timothy Dalton · the darker Bond, years early",
+      "card": "The Living Daylights",
+      "when": null,
+      "where": null
+    },
+    {
+      "w": {
+        "id": "film:710",
+        "kind": "film",
+        "title": "GoldenEye",
+        "year": "1995",
+        "cover": "https://image.tmdb.org/t/p/w342/z0ljRnNxIO7CRBhLEO0DvLgAFPR.jpg"
+      },
+      "why": "Pierce Brosnan · Bond for the 90s (and the N64)",
+      "card": "GoldenEye",
+      "when": null,
+      "where": null
+    },
+    {
+      "w": {
+        "id": "film:36557",
+        "kind": "film",
+        "title": "Casino Royale",
+        "year": "2006",
+        "cover": "https://image.tmdb.org/t/p/w342/lMrxYKKhd4lqRzwUHAy5gcx9PSO.jpg"
+      },
+      "why": "Daniel Craig · the reboot that rewrote Bond",
+      "card": "Casino Royale",
+      "when": null,
+      "where": null
+    }
+  ],
+  "post": {
+    "slug": "bonds-before-pattinson",
+    "kinds": [
+      "film"
+    ],
+    "col": "#FFD27A"
+  }
+}
