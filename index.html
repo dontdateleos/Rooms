@@ -1408,7 +1408,7 @@ svg .comet{transform-box:fill-box;transform-origin:center;animation:cometTurn 4.
 @keyframes pullLamp{0%,40%{opacity:1}60%,100%{opacity:.3}}
 /* ---------- the new look, on trial (html.v2) ---------- */
 /* 2: each page's colour is a wash behind its title; the cards stay as they are */
-html.v2 body{background-image:linear-gradient(180deg,color-mix(in srgb,var(--tint,transparent) 24%,transparent),transparent 440px);background-repeat:no-repeat;background-size:100% 440px}
+html.v2 body{background-image:linear-gradient(180deg,color-mix(in srgb,var(--tint,transparent) 34%,transparent),transparent 440px);background-repeat:no-repeat;background-size:100% 440px}
 html.v2[data-tab="doors"] body{--tint:var(--room,var(--pink))}html.v2[data-tab="people"] body{--tint:var(--butter)}
 html.v2:is([data-tab="shelf"],[data-tab="archive"]) body{--tint:var(--mint)}html.v2[data-tab="clubs"] body{--tint:var(--lilac)}
 html.v2 .roomwash{display:none}
@@ -1460,12 +1460,6 @@ html.v2 .headsup .tvweek .h{margin-bottom:2px}
 html.v2 .stale [data-stale="stop"]{display:none}
 html.v2 .stale{align-items:center}
 /* 18: stacks: the posters and a title, no coloured block */
-html.v2 .stk.promptcard{background:var(--card);color:var(--ink)}
-html.v2 .stk.promptcard::before,html.v2 .stk.promptcard::after{display:none}
-html.v2 .stk-strip > span{margin-left:-30px}html.v2 .stk-strip > span:first-child{margin-left:0}
-html.v2 .stk.promptcard :is(.stk-t small,.stk-seen em,.stk-none){color:var(--mute)!important}
-html.v2 .stk.promptcard .stk-tags i{background:color-mix(in srgb,var(--room) 22%,transparent);color:var(--ink)}
-html.v2 .stk.promptcard .stk-t b{color:var(--ink)}
 /* 19: the bottom bar names only the page you're on */
 html.v2 nav button[data-tab]:not(.on){font-size:0;gap:0}
 /* 20: said beside the button */
@@ -1474,6 +1468,17 @@ html.v2 nav button[data-tab]:not(.on){font-size:0;gap:0}
 .tapsay.out{transition:opacity .35s,translate .35s;opacity:0;translate:0 -4px}
 @keyframes tapIn{from{opacity:0;translate:0 6px;scale:.96}}
 @media (prefers-reduced-motion:reduce){.tapsay{animation:none}}
+/* 22, and the rest of a room: every small poster is one size, every strip poster another */
+html.v2 :is(.slip .ttl .co,.tn-main .co,.ttl .season-cover .co){width:40px!important;height:60px!important;border-radius:7px;object-fit:cover}
+html.v2 :is(.ll-w .co,.rstrip .co,.aska .co,.al-co .co,.swm .co){width:54px!important;height:81px!important;border-radius:8px;object-fit:cover}
+html.v2 .ll-w{width:54px}
+html.v2 .roomcard .roomline{display:block}
+html.v2 .roomcard .rl-l{display:block;font-size:13.5px;line-height:1.5}
+html.v2 .roomcard .rstreak{display:inline}
+html.v2 .roomcard .herenote{display:none!important}
+html.v2 .roomcard .rcline{display:inline;color:var(--mute)}
+html.v2 .roomcard .rcline b{color:var(--ink);font-weight:700}
+html.v2 .roomcard .rcline .linky{font:inherit;font-weight:700;color:var(--ink);background:none;border:0;padding:0;text-decoration:underline;text-underline-offset:2px;cursor:pointer}
 /* 22: one poster size in a list of rows */
 html.v2 :is(.row,.twin,.tvw-row,.stale,.nowrow,.rr-row,.ph-row) > :is(.co,img.co){width:40px!important;height:60px!important;border-radius:7px;object-fit:cover;flex:none}
 /* 24: one stream in a room: no filter */
@@ -7777,6 +7782,18 @@ function roomMoments(entries) {
 /* ---------- last week in the room ----------
    Monday to Wednesday, once a week, a small card: last week's posters running past like a
    filmstrip, the room's top pick, and who logged the most. Dismissed, it's gone till next week. */
+function recapData(R, es) { if (!R) return null;
+  const lastWk = weekStart(new Date(Date.now() - 7 * 864e5));
+  const wk = es.filter(e => !e.part && !isQuiet(e) && weekOf(e) === lastWk);
+  if (wk.length < 3) return null;
+  const byW = {}; wk.forEach(e => (byW[e.work_id] ||= []).push(e.score));
+  const top = Object.entries(byW).map(([id, ss]) => [id, ss.reduce((a, b) => a + b, 0) / ss.length, ss.length]).sort((a, b) => (b[2] > 1) - (a[2] > 1) || b[1] - a[1])[0];
+  const byU = {}; wk.forEach(e => byU[e.user_id] = (byU[e.user_id] || 0) + 1);
+  const [busy, bn] = Object.entries(byU).sort((a, b) => b[1] - a[1])[0];
+  return { top, tw:works[top[0]] || wk.find(e => e.work_id === top[0])?.works || {}, busy, bn }; }
+/* the new look: last week as the line under the room's name, all week, instead of a card */
+function recapLineHTML(R, es) { const d = recapData(R, es); if (!d) return "";
+  return `<span class="rcline"><b>Last week</b> · <b>${esc(d.tw.title || "")}</b> was the pick, ${(d.top[1] / 2).toFixed(1)}★${d.top[2] > 1 ? ` from ${said(d.top[2])} of you` : ""} · <b>${esc(d.busy === me.id ? "you" : profOfId(d.busy).handle || "someone")}</b> logged the most · <button class="linky" type="button" id="recapShare">Share</button></span>`; }
 function recapHTML(R, es) { const d = new Date().getDay(); if (!R || ![1, 2, 3].includes(d)) return "";
   const thisWk = weekStart(new Date()), lastWk = weekStart(new Date(Date.now() - 7 * 864e5));
   if ((P.recapSeen || {})[R.id] === thisWk) return "";
@@ -7859,6 +7876,9 @@ async function roomWeeks(R) { if (!R) return;
   rows.forEach(e => remember(e.works));
   const wk = weekStreak(R, rows), slot = $("#wkSlot");
   if (slot) slot.innerHTML = wk >= 2 ? ` · <span class="wstreak" title="Weeks in a row that ${R.members.length <= 4 ? "all of you" : "most of you"} logged something">${wk}-week streak</span>` : "";
+  if (V2) { const st = $(".roomcard .rstreak"), line = recapLineHTML(R, rows);
+    if (st && line) { st.innerHTML = line; const sh = $("#recapShare", st); if (sh) sh.onclick = () => shareRoomWeek(R, sh); }
+    return; }
   const rs = $("#recapSlot"); if (rs) { rs.innerHTML = recapHTML(R, rows); wireRecap(rs, R); } }
 function wireRecap(root, R) { const x = $("#recapX", root); if (!x) return;
   const sh = $("#recapShare", root); if (sh) sh.onclick = () => shareRoomWeek(R, sh);
@@ -8750,7 +8770,7 @@ async function renderRoomFeed(fb, R) {
     && (!V2 || ["vote", "won"].includes(awardsPhase()));
   const sec = P.roomSec === "charts" || P.roomSec === "play" || (P.roomSec === "year" && hasYear) ? P.roomSec : "talk";
   const secs = [["talk", "Talk"], ["play", "Play"], ["charts", "Charts"], ...(hasYear ? [["year", "Year"]] : [])];
-  fb.innerHTML = `<div class="card game promptcard roomcard hero slim${fanIn("room:" + R.id)}" style="--room:var(--${roomColour(R)})"><div class="roomline"><div class="rl-l">${roomStreak(es, R)}<small class="herenote" id="hereNote" aria-live="polite" hidden></small></div>
+  fb.innerHTML = `<div class="card game promptcard roomcard hero slim${fanIn("room:" + R.id)}" style="--room:var(--${roomColour(R)})"><div class="roomline"><div class="rl-l"><span class="rstreak">${roomStreak(es, R)}</span><small class="herenote" id="hereNote" aria-live="polite" hidden></small></div>
       <span class="rl-r"><button class="herechip" id="hereRow"><b>${R.members.length} in here</b></button><button class="iconbtn sm" id="roomMenu" aria-label="Room options"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button></span></div>
       <div class="hero-body room-body"><p class="nowline" id="roomNow"></p>${(() => {
         const ws = [...new Set(es.filter(e => !isPart(e.work_id)).map(e => e.work_id))].map(id => works[id]).filter(w => w?.cover).slice(0, 4);
@@ -8850,7 +8870,7 @@ async function renderRoomFeed(fb, R) {
   /* presence says who is here; this says what they are actually in the middle of */
   paintRoomNow(R);
   /* the line the slim header keeps once the title scrolls away */
-  { const tl = $("#tab-doors [data-pagetitle]"), line = $(".roomcard .rl-l", fb)?.textContent.replace(/\s+/g, " ").trim();
+  { const tl = $("#tab-doors [data-pagetitle]"), line = $(".roomcard .rstreak", fb)?.textContent.replace(/\s+/g, " ").trim();
     if (tl) tl.dataset.pagestatus = [`${R.members.length} in here`, line].filter(Boolean).join(" · "); }
   ["talkAdd","compAdd"].forEach(id => { const el = $("#"+id); if (el) el.onclick = openAdd; });
   const promptLog = $("#roomPromptLog"); if (promptLog) promptLog.onclick = openAdd;
