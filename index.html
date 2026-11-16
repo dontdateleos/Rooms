@@ -1518,6 +1518,9 @@ html.v2 .card .h mark.lmk{rotate:1.5deg}
 .b1-peek{position:absolute;left:18px;top:-19px;width:30px;height:20px;border-radius:11px 11px 0 0;background:var(--c);overflow:hidden}
 .b1-peek::after{content:"";position:absolute;left:10px;top:7px;width:3px;height:7px;border-radius:2px;background:#151320;box-shadow:7px 0 0 #151320}
 .blank1::before{display:none}
+/* every poster keeps the poster shape, loaded or not */
+html.v2 main :is(img.co,span.co,div.co){aspect-ratio:2/3;object-fit:cover}
+html.v2 .cfail{display:block!important;background:linear-gradient(160deg,color-mix(in srgb,var(--ink) 22%,var(--card)),color-mix(in srgb,var(--ink) 6%,var(--card)))!important;box-shadow:inset 0 0 0 1px var(--line);border-radius:8px}
 /* 22, and the rest of a room: every small poster is one size, every strip poster another */
 html.v2 :is(.slip .ttl .co,.tn-main .co,.ttl .season-cover .co){width:40px!important;height:60px!important;border-radius:7px;object-fit:cover}
 html.v2 .slip:not(.feature) .season-cover{width:40px;height:60px}
@@ -4301,7 +4304,11 @@ const coverBg = u => { if (seenCovers.has(u)) return ""; const t = blurSrc(u); i
    it, on your phone; everybody else still sees the usual one */
 const COVER_OK = /^https:\/\/(image\.tmdb\.org|images\.igdb\.com|covers\.openlibrary\.org)\//;
 const myCoverOf = w => { const c = w?.id && me?.covers?.[w.id]; return c && COVER_OK.test(c) ? c : ""; };
-const cover = (w, cls = "co") => { const src = myCoverOf(w) || w?.cover; return src ? `<img class="${cls}${seenCovers.has(src) ? " ok" : ""}" src="${esc(src)}"${coverBg(src)} alt="" onload="this.classList.add('ok');window.__seenCovers.add(this.getAttribute('src'))" onerror="this.remove()">` : `<div class="${cls}"></div>`; };
+const cover = (w, cls = "co") => { const src = myCoverOf(w) || w?.cover; return src ? `<img class="${cls}${seenCovers.has(src) ? " ok" : ""}" src="${esc(src)}"${coverBg(src)} alt="" onload="this.classList.add('ok');window.__seenCovers.add(this.getAttribute('src'))" onerror="window.__coverFail(this)">` : `<div class="${cls}"></div>`; };
+/* a cover that won't load: the new look keeps its place with a stand-in of the same size and
+   shape (so a row of posters never has a hole or a short one in it); the old look drops it */
+window.__coverFail = img => { if (!V2) { img.remove(); return; }
+  const d = document.createElement("span"); d.className = img.className.replace(/\bok\b/, "") + " tcov cfail"; d.setAttribute("aria-hidden", "true"); img.replaceWith(d); };
 
 /* ============ prefs + sources ============ */
 const WORKER = "https://rooms.jordandf1.workers.dev";
