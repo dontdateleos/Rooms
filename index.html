@@ -1416,7 +1416,7 @@ html.v2 .roomwash{display:none}
 html.v2 .roomcard.slim{background:none!important;padding:0;margin-top:2px;box-shadow:none;overflow:visible}
 html.v2 .roomcard.slim::before,html.v2 .roomcard.slim::after{display:none}
 html.v2 .roomcard .room-streak,html.v2 .roomcard .room-streak b,html.v2 .roomcard .wstreak,html.v2 .roomcard .herenote{color:var(--mute)!important}
-html.v2 .roomcard .roomline{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:10.5px;letter-spacing:.05em;text-transform:uppercase}
+html.v2 .roomcard .roomline{font-size:12.5px;font-variant-numeric:tabular-nums}
 html.v2 .roomcard .room-streak b{color:var(--ink)!important}
 html.v2 .roomcard.slim .room-body{display:block;margin-top:10px}
 html.v2 .roomcard .hero-fan{display:none}
@@ -1429,7 +1429,7 @@ html.v2 .nowrow .t b{font:800 15.5px/1.2 var(--head);white-space:nowrap;overflow
 html.v2 .nowrow .t small em{font-style:normal;color:var(--ink)}
 html.v2 .nowrow .av svg{width:26px;height:26px}
 /* 4: the slim title at the top carries the room's line */
-html.v2 #hdrTitle small{margin-left:8px;font:600 9.5px/1 ui-monospace,"SF Mono",Menlo,monospace;letter-spacing:.05em;text-transform:uppercase;color:var(--mute);white-space:nowrap}
+html.v2 #hdrTitle small{margin-left:8px;font:600 11.5px/1 var(--body,inherit);color:var(--mute);white-space:nowrap}
 /* 8: folding */
 html.v2 .card.foldable > .h{cursor:pointer}
 html.v2 .card.foldable > .h > span:first-child::after{content:"";display:inline-block;width:6px;height:6px;margin:0 0 3px 8px;border:solid currentColor;border-width:0 2px 2px 0;rotate:45deg;opacity:.45;transition:rotate .2s}
@@ -1441,9 +1441,12 @@ html.v2 .card.folded{padding-bottom:12px}
 .blank1::before{content:"";flex:none;width:10px;height:10px;border-radius:50%;background:var(--c);box-shadow:0 0 0 3px color-mix(in srgb,var(--c) 30%,transparent)}
 .b1-t{flex:1;min-width:0;display:grid;gap:2px}.b1-t b{font:800 15px/1.2 var(--head)}
 .b1-t small{color:var(--mute);font-size:12.5px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.b1-go{flex:none;border:1.5px solid color-mix(in srgb,var(--ink) 45%,transparent);background:none;color:var(--ink);border-radius:10px;padding:8px 11px;font:700 11px/1 ui-monospace,"SF Mono",Menlo,monospace;letter-spacing:.06em;text-transform:uppercase;cursor:pointer}
+.b1-go{flex:none;border:1.5px solid color-mix(in srgb,var(--ink) 45%,transparent);background:none;color:var(--ink);border-radius:10px;padding:8px 12px;font:700 13px/1 var(--head);cursor:pointer}
 /* 11: the details in small even capitals */
-html.v2 :is(.slip .when,.logline small,.row .t small,.tvw-t small,.cell .cap span,.twin .t small,.stk-t small,.nowrow small,.rpos-w,.stale small,.vsit small,.arrived p){font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;font-weight:600}
+/* 11, softened: the details stay small, quiet and even (numbers line up), in ordinary case */
+html.v2 :is(.slip .when,.logline small,.row .t small,.tvw-t small,.cell .cap span,.twin .t small,.stk-t small,.nowrow small,.rpos-w,.stale small,.vsit small,.arrived p){font-size:12.5px;font-weight:500;font-variant-numeric:tabular-nums;letter-spacing:0;text-transform:none}
+/* and no shouting anywhere: labels and tags the app set in capitals read in ordinary case */
+html.v2 :is(.lbl,.tag,.hint,.newline,.avgs span,.awrow .t small:first-child,.cfl,.champ small,.dday small,.fav small,.numbers span,.pd-k,.result small,.review .grid4 span,.row .n small,.sealed .count small,.snext small,.ssplit small,.st-slide small,.sv-kind,.tile small,.trio span,.waiton > small:first-child,.ynk span,.soon-tag){text-transform:none;letter-spacing:0}
 /* 15: positions as words */
 html.v2 .rpos-w{display:block;color:var(--mute);margin-top:3px}html.v2 .rpos-w em{font-style:normal;color:var(--ink)}
 /* 16: Settle it, small, under the top list */
