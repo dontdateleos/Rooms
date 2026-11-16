@@ -1635,6 +1635,19 @@ html.v2 :is(main,#sheet) img.co:not(.ok){background-color:color-mix(in srgb,var(
 /* 91: the bar with what you're on lifts as you swipe it up */
 #nowBar{touch-action:none}#nowBar.dragging{transition:none}#nowBar.going{transition:transform .25s ease-in,opacity .25s;opacity:0}
 @media (prefers-reduced-motion:reduce){html.v2 img.co:not(.ok){animation:none}}
+/* the mascots, alive: they trail a little behind a fast scroll and spring back */
+html.v2 main .av:not(#meAv){translate:0 var(--lag,0px)}
+html.v2 .av{transform-origin:50% 88%}
+/* the ones asleep on the couch breathe slowly, and a z drifts up off them */
+.couchrow .cz{position:relative}
+@keyframes czSleep{0%,100%{scale:1 1}50%{scale:1.04 .95}}
+html.v2 .couchrow .cz.zz .av{animation:czSleep 3.8s ease-in-out infinite;transform-origin:50% 100%}
+html.v2 .couchrow .cz.zz::after{content:"z";position:absolute;right:-3px;top:-8px;font:900 11px var(--head);color:var(--mute);animation:zz 3.2s ease-in-out infinite;animation-delay:var(--zd,0s);pointer-events:none}
+/* your own mascot, out for a walk along the bottom of the screen now and then */
+#walker{position:fixed;left:0;z-index:8;width:34px;height:34px;pointer-events:auto;cursor:pointer;will-change:transform}
+#walker .av{width:34px;height:34px}
+#walker svg{filter:drop-shadow(0 0 1.2px #151320) drop-shadow(0 0 .6px #151320) drop-shadow(0 4px 5px rgba(0,0,0,.35))}
+@media (prefers-reduced-motion:reduce){html.v2 main .av{translate:none}html.v2 .couchrow .cz.zz .av,html.v2 .couchrow .cz.zz::after{animation:none}#walker{display:none}}
 @media (prefers-reduced-motion:reduce){html.v2 :is(.dealt,.couchrow .cz.wake,.slip .stars i,#yearBand .yb,#yearBand .yb i.new){animation:none!important}html.v2 :is(.pagetitle,[data-pagetitle])::before{animation:none!important}}
 /* 22, and the rest of a room: every small poster is one size, every strip poster another */
 html.v2 :is(.slip .ttl .co,.tn-main .co,.ttl .season-cover .co){width:40px!important;height:60px!important;border-radius:7px;object-fit:cover}
@@ -6388,7 +6401,7 @@ async function dropInSlip(row, anchorSel) {
   remember(full.works);
   const node = document.createElement("div"); node.innerHTML = slipHTML(full);
   const slip = node.firstElementChild; if (!slip) return false;
-  slip.classList.add("landedNow", "warm"); slip.dataset.revealed = "1";
+  slip.classList.add("landedNow", "warm"); slip.dataset.revealed = "1"; alive.leap(row.user_id);
   anchor.after(slip); wireSlips(slip, [full]);
   setTimeout(() => slip.classList.remove("warm"), 2600);
   return true;
@@ -8764,7 +8777,7 @@ function openWeekSheet(R, es) { const { ws } = wkWorks(es);
     <div class="stack"><button class="btn quiet" id="wkClose">Close</button></div>`);
   $("#wkClose").onclick = closeSheet; $$("[data-wkw]").forEach(b => b.onclick = () => openWork(b.dataset.wkw)); }
 function couchHTML(R) { if (!R || R.members.length < 2) return "";
-  return `<div class="couchrow" id="couchRow">${R.members.map(m => `<button class="cz${m.id === me.id || hereNow.some(p => p.id === m.id) ? "" : " zz"}" data-cz="${esc(m.id)}" type="button" aria-label="${esc(m.id === me.id ? "you" : m.handle)}">${avatar(m)}</button>`).join("")}${R.members.length < 6 ? `<button class="czadd" data-czadd type="button" aria-label="Invite someone">+</button>` : ""}<button class="czn" id="couchN" type="button"></button></div>`; }
+  return `<div class="couchrow" id="couchRow">${R.members.map((m, i) => `<button class="cz${m.id === me.id || hereNow.some(p => p.id === m.id) ? "" : " zz"}" style="--zd:${(i * .7) % 3.2}s" data-cz="${esc(m.id)}" type="button" aria-label="${esc(m.id === me.id ? "you" : m.handle)}">${avatar(m)}</button>`).join("")}${R.members.length < 6 ? `<button class="czadd" data-czadd type="button" aria-label="Invite someone">+</button>` : ""}<button class="czn" id="couchN" type="button"></button></div>`; }
 function paintCouch() { const row = $("#couchRow"); if (!row) return; let n = 0; const again = row.dataset.painted === "1"; row.dataset.painted = "1";
   $$("[data-cz]", row).forEach(b => { const on = b.dataset.cz === me.id || hereNow.some(p => p.id === b.dataset.cz); if (on && b.dataset.cz !== me.id) n++;
     /* 73: somebody arriving wakes up and stretches */
@@ -8775,6 +8788,77 @@ function paintCouch() { const row = $("#couchRow"); if (!row) return; let n = 0;
     t.innerHTML = `<span class="czc">${all}</span> in here${n ? ` \u00b7 ${n} now` : ""}`; rollOnce($(".czc", t), all, "couch:" + (R?.id || ""));
     t.onclick = () => openCouch(); }
   const add = $("[data-czadd]", row); if (add) add.onclick = () => { const R2 = activeRoom(); if (R2) openInvite(R2); }; }
+/* the mascots, alive. In the new look they don't only breathe in place: one at a time they
+   hop, spin, wiggle or turn to look at whoever's beside them; eyes wander; a tap makes one
+   jump; somebody logging makes theirs leap; they trail a fast scroll; and now and then your
+   own walks along the bottom of the screen, stops to look at you, and walks off. Only what's
+   on screen moves, nothing moves in the background, and reduce motion stills all of it. */
+const alive = (() => { const none = { leap() {} };
+  if (!V2 || REDUCED || !Element.prototype.animate) return none;
+  const pick = a => a[Math.floor(Math.random() * a.length)];
+  const onScreen = el => { const r = el.getBoundingClientRect(); return r.width > 0 && r.bottom > 70 && r.top < innerHeight - 90 && r.right > 0 && r.left < innerWidth; };
+  const sheetOn = () => $("#sheet")?.classList.contains("on");
+  const live = () => { const root = sheetOn() ? $("#sheetBody") : $("main > section.on"); if (!root) return [];
+    return [...root.querySelectorAll(".av")].filter(a => !a.closest(".zz, .tilting") && onScreen(a)).slice(0, 40); };
+  const busy = new WeakSet();
+  const play = (el, frames, ms, ease = "cubic-bezier(.3,1.3,.5,1)") => { if (!el || busy.has(el)) return null; busy.add(el);
+    const an = el.animate(frames, { duration:ms, easing:ease, composite:"add" }); const done = () => busy.delete(el); an.onfinish = done; an.oncancel = done; return an; };
+  const HOP = [{ translate:"0 0", scale:"1 1" }, { translate:"0 1px", scale:"1.14 .84", offset:.14 }, { translate:"0 -12px", scale:".9 1.12", offset:.45 },
+    { translate:"0 0", scale:"1.1 .88", offset:.78 }, { translate:"0 0", scale:"1 1" }];
+  const eyesTo = (a, dx, dy, hold = 1300) => { const g = a.querySelector(".eyes"); if (!g || g.style.translate) return;
+    g.style.transition = "translate .25s cubic-bezier(.3,1.4,.5,1)"; g.style.translate = `${dx}px ${dy}px`;
+    setTimeout(() => { g.style.transition = "translate .5s ease"; g.style.translate = ""; }, hold); };
+  /* the mascot beside this one in its row, if it has one */
+  const beside = a => { const row = a.closest(".couchrow, .storyrow, .faces, .nowrows"); if (!row) return null;
+    const all = [...row.querySelectorAll(".av")].filter(onScreen), i = all.indexOf(a); return all[i + (Math.random() < .5 ? -1 : 1)] || all[i - 1] || all[i + 1] || null; };
+  const M = {
+    hop:a => play(a, HOP, 620),
+    twohop:a => play(a, [...HOP.slice(0, 4), { translate:"0 -7px", scale:".95 1.06", offset:.88 }, { translate:"0 0", scale:"1 1" }], 900),
+    spin:a => play(a, [{ rotate:"0deg", translate:"0 0" }, { rotate:"180deg", translate:"0 -9px", offset:.5 }, { rotate:"360deg", translate:"0 0" }], 720, "cubic-bezier(.45,0,.3,1)"),
+    wiggle:a => play(a, [{ rotate:"0deg" }, { rotate:"-13deg" }, { rotate:"11deg" }, { rotate:"-6deg" }, { rotate:"0deg" }], 640, "ease-in-out"),
+    lean:a => play(a, [{ rotate:"0deg" }, { rotate:"9deg", offset:.25 }, { rotate:"9deg", offset:.75 }, { rotate:"0deg" }], 1500, "ease-in-out"),
+    /* two neighbours turn to each other */
+    look:a => { const b = beside(a); if (!b) { eyesTo(a, pick([-4, 4]), pick([-2, 0, 1])); return; }
+      const ra = a.getBoundingClientRect(), rb = b.getBoundingClientRect(), d = rb.left > ra.left ? 4 : -4;
+      eyesTo(a, d, 0, 1600); setTimeout(() => eyesTo(b, -d, 0, 1300), 250); if (Math.random() < .4) setTimeout(() => M.hop(b), 700); } };
+  const STAGE = ["hop", "hop", "twohop", "wiggle", "spin", "lean", "look", "look", "look"];
+  const tick = () => { setTimeout(tick, 1500 + Math.random() * 2300);
+    if (document.hidden) return; const avs = live(); if (!avs.length) return;
+    const stage = avs.filter(a => a.closest(".couchrow, .storyrow"));
+    if (stage.length && Math.random() < .7) M[pick(STAGE)](pick(stage));
+    else { const a = pick(avs); if (Math.random() < .7) eyesTo(a, pick([-4, -3, 3, 4]), pick([-2, -1, 0, 1])); else M[pick(["hop", "wiggle"])](a); } };
+  setTimeout(tick, 2500);
+  /* a tap makes one jump, whatever else the tap does */
+  document.addEventListener("pointerdown", e => { const a = e.target.closest?.(".av"); if (a && a.closest("main, #sheet, #walker")) M.hop(a); }, { capture:true, passive:true });
+  /* they trail a fast scroll a little, then spring back to their places */
+  let lastY = scrollY, lag = 0, raf = 0; const root = document.documentElement;
+  const settle = () => { raf = 0; lag *= .8; if (Math.abs(lag) < .15) { lag = 0; root.style.removeProperty("--lag"); return; }
+    root.style.setProperty("--lag", lag.toFixed(2) + "px"); raf = requestAnimationFrame(settle); };
+  addEventListener("scroll", () => { const dy = scrollY - lastY; lastY = scrollY; if (Math.abs(dy) > 120) return;
+    lag = Math.max(-8, Math.min(8, lag + dy * .3)); if (!raf) raf = requestAnimationFrame(settle); }, { passive:true });
+  /* your own mascot goes for a walk now and then, along the top of the bar at the bottom */
+  const walkOnce = () => {
+    if (document.hidden || !me || sheetOn() || $("#walker") || !["doors", "people", "shelf", "archive", "clubs"].includes(root.dataset.tab)) return;
+    const base = root.classList.contains("hasnow") && $("#nowBar") ? $("#nowBar") : $("#nav"); const b = base?.getBoundingClientRect(); if (!b?.width) return;
+    const w = document.createElement("div"); w.id = "walker"; w.setAttribute("aria-hidden", "true"); w.innerHTML = avatar(me, "", { bare:true });
+    w.style.top = (b.top - 33) + "px"; document.body.append(w); const a = $(".av", w);
+    const ltr = Math.random() < .5, from = ltr ? -44 : innerWidth + 10, to = ltr ? innerWidth + 10 : -44, mid = innerWidth * (.3 + Math.random() * .4) - 17;
+    const flip = ltr ? "" : " scaleX(-1)";
+    const waddle = a.animate([{ rotate:"-7deg", translate:"0 0" }, { rotate:"0deg", translate:"0 -3px" }, { rotate:"7deg", translate:"0 0" }, { rotate:"0deg", translate:"0 -3px" }, { rotate:"-7deg", translate:"0 0" }],
+      { duration:520, iterations:Infinity });
+    const leg = (x0, x1, ms) => w.animate([{ transform:`translateX(${x0}px)${flip}` }, { transform:`translateX(${x1}px)${flip}` }], { duration:ms, easing:"linear", fill:"forwards" }).finished;
+    const gone = () => { waddle.cancel(); w.remove(); };
+    w.onclick = () => { M.spin(a); buzz(5); };
+    leg(from, mid, Math.abs(mid - from) * 9).then(() => { waddle.pause(); a.style.rotate = "0deg";
+      /* stops, turns to you, hops, carries on */
+      setTimeout(() => M.hop(a), 350);
+      return new Promise(r => setTimeout(r, 1500)); })
+      .then(() => { if (!w.isConnected) return; a.style.rotate = ""; waddle.play(); return leg(mid, to, Math.abs(to - mid) * 9); })
+      .then(gone, gone); };
+  const walk = () => { setTimeout(walk, 50000 + Math.random() * 50000); walkOnce(); };
+  setTimeout(walk, 25000 + Math.random() * 20000);
+  /* somebody's log just landed: their mascot leaps, wherever it's on screen */
+  return { walkOnce, leap(uid) { if (!uid) return; setTimeout(() => $$(`.av[data-u="${CSS.escape(String(uid))}"]`).filter(onScreen).slice(0, 3).forEach(a => M.twohop(a)), 250); } }; })();
 /* 90: a number rolls up the first time it's on screen (once a session per thing) */
 const rolled = new Set();
 function rollOnce(el, n, key) { if (!el) return;
@@ -17452,7 +17536,7 @@ async function saveText(name, text, type) {
 const downloadJSON = (obj, name) => saveText(name, JSON.stringify(obj, null, 1), "application/json");
 
 /* a small hook so the card renderers can be exercised by the test harness */
-window.__rooms = { stackSets, renderWaiting, soonReset:() => { upcoming = null; }, prefs:() => P, blank, kindBlank, playMatch, coach, logoCheer, logoHere, openYearStory, storyYear, openWelcome, openOnboarding, openImport, pullRefresh, openFind, setFollow, isFollowing, get follows(){return follows}, openNotes, noteList, noteRow, markNotesSeen, noteCount, newHands, noteSeen, get unseen(){return unseen}, nowVerb, openAdd, RINGS, MARK_RING, ringFromMarks, ringCache, myRing, spanOf, reelIndexNow, memories, dueReview, memForget, MEM_MIN, MEM_DAYS, whoseWord, wordPending, HAND_FLOOR, loadHand, handTo, answerHand, reachable, cameFrom, openHand, get handIn(){return handIn}, get handOut(){return handOut}, get handAll(){return handAll}, reelTo, markReel, REEL, reelCopies, get reelAt(){return reelAt}, facesFor, faceEl, faceMap, FACE_IMG, paintLog, wireLog, openWholeLog, openLog, likeLine, knownName, AV_SHAPES, AV_EYES, AV_COLS, avSVG, avFor, get me(){return me}, get entries(){return myEntries}, get works(){return works}, get rooms(){return rooms},
+window.__rooms = { alive, stackSets, renderWaiting, soonReset:() => { upcoming = null; }, prefs:() => P, blank, kindBlank, playMatch, coach, logoCheer, logoHere, openYearStory, storyYear, openWelcome, openOnboarding, openImport, pullRefresh, openFind, setFollow, isFollowing, get follows(){return follows}, openNotes, noteList, noteRow, markNotesSeen, noteCount, newHands, noteSeen, get unseen(){return unseen}, nowVerb, openAdd, RINGS, MARK_RING, ringFromMarks, ringCache, myRing, spanOf, reelIndexNow, memories, dueReview, memForget, MEM_MIN, MEM_DAYS, whoseWord, wordPending, HAND_FLOOR, loadHand, handTo, answerHand, reachable, cameFrom, openHand, get handIn(){return handIn}, get handOut(){return handOut}, get handAll(){return handAll}, reelTo, markReel, REEL, reelCopies, get reelAt(){return reelAt}, facesFor, faceEl, faceMap, FACE_IMG, paintLog, wireLog, openWholeLog, openLog, likeLine, knownName, AV_SHAPES, AV_EYES, AV_COLS, avSVG, avFor, get me(){return me}, get entries(){return myEntries}, get works(){return works}, get rooms(){return rooms},
   CUTS, openCuts, spanData, tasteOf, reviewData, yearOf, roomPalmares, tagStats, agreement, activeRoom, q, sb: () => sb, remember,
   joinRoomChannel, leaveRoomChannel, paintHere, onLiveEntry, paintDay, get hereNow(){return hereNow},
   say, oops, markLive, takeInvite, dropInvite, inviteLink, useInvite, exportEverything,
