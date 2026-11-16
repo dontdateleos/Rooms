@@ -1521,6 +1521,61 @@ html.v2 .card .h mark.lmk{rotate:1.5deg}
 /* every poster keeps the poster shape, loaded or not */
 html.v2 main :is(img.co,span.co,div.co){aspect-ratio:2/3;object-fit:cover}
 html.v2 .cfail{display:block!important;background:linear-gradient(160deg,color-mix(in srgb,var(--ink) 22%,var(--card)),color-mix(in srgb,var(--ink) 6%,var(--card)))!important;box-shadow:inset 0 0 0 1px var(--line);border-radius:8px}
+/* 45: a title's page opens on its poster, big */
+html.v2 .whero{height:400px;top:-40px}
+html.v2 .whero.bd{height:330px;opacity:.95}
+html.v2[data-theme="dark"] .whero.bd,html.v2 .whero.bd{opacity:.9}
+html.v2 .whero::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 35%,var(--cream) 96%);z-index:1}
+html.v2 .whead{padding-top:90px}
+html.v2 .whead .co{width:128px;height:190px}
+/* 48: the poster's colour runs through its page */
+html.v2 #sheetBody[style*="--pc"] .whero{background-color:var(--pc)}
+html.v2 #sheetBody[style*="--pc"] :is(.btn:not(.quiet):not(.ghost),.chip.on){background:var(--pc);color:#151320;border-color:var(--pc)}
+html.v2 #sheetBody[style*="--pc"] .whead h3{text-shadow:0 2px 18px color-mix(in srgb,var(--pc) 40%,transparent)}
+/* 49: the now playing bar */
+#nowBar{position:fixed;left:max(12px,env(safe-area-inset-left,0px));right:max(12px,env(safe-area-inset-right,0px));z-index:7;display:flex;align-items:center;gap:10px;padding:8px 8px 8px 10px;
+  border-radius:16px;background:color-mix(in srgb,var(--card) 92%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 10px 28px rgba(0,0,0,.4),0 0 0 1px var(--line);animation:nbIn .3s cubic-bezier(.2,1.2,.4,1)}
+@keyframes nbIn{from{opacity:0;translate:0 12px}}
+#nowBar .nb-open{flex:1;min-width:0;display:flex;align-items:center;gap:10px;border:0;background:none;padding:0;color:var(--ink);font:inherit;text-align:left;cursor:pointer}
+#nowBar .co{width:30px!important;height:45px!important;border-radius:5px;object-fit:cover;flex:none}
+#nowBar .nb-t{min-width:0;display:grid;gap:3px}#nowBar .nb-t b{font:800 14px/1.15 var(--head);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#nowBar .nb-t small{font-size:11.5px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#nowBar .nb-p{display:block;height:3px;border-radius:2px;background:var(--line);overflow:hidden}#nowBar .nb-p i{display:block;height:100%;background:var(--sky);border-radius:2px}
+#nowBar .nb-done{flex:none;border:0;border-radius:12px;padding:9px 13px;background:var(--ink);color:var(--cream);font:800 13px var(--head);cursor:pointer}
+html.v2.hasnow main{padding-bottom:70px}
+#sheet.on ~ #nowBar,html.svopen #nowBar{display:none}
+/* 50: inside a room, its colour is on everything */
+html.v2[data-tab="doors"] main :is(.btn:not(.quiet):not(.ghost),.tn-log,.hero-go:not(.ghost),.b1-go){background:var(--room);color:var(--onAccent);border-color:var(--room)}
+html.v2[data-tab="doors"] main .stars i:not(.off){background:var(--room)}
+html.v2[data-tab="doors"] main .stars i.half{background:linear-gradient(90deg,var(--room) 50%,color-mix(in srgb,var(--ink) 22%,transparent) 50%)}
+/* 51: stickers wobble in */
+@keyframes stickIn{0%{transform:scale(.4) rotate(-12deg);opacity:0}60%{transform:scale(1.08) rotate(4deg);opacity:1}80%{transform:scale(.97) rotate(-2deg)}100%{transform:none}}
+.msticker{animation:stickIn .7s cubic-bezier(.3,1.4,.5,1) both}
+.msticker:nth-of-type(2n){animation-delay:.08s}
+@media (prefers-reduced-motion:reduce){.msticker{animation:none}}
+/* 52: the year band */
+#yearBand{display:grid;gap:6px;width:100%;margin:8px 0 12px;padding:0;border:0;background:none;color:var(--mute);font:inherit;text-align:left;cursor:pointer}
+#yearBand .yb-l{font-size:12.5px}#yearBand .yb-l b{color:var(--ink)}
+#yearBand .yb{display:flex;height:30px;border-radius:8px;overflow:hidden;box-shadow:0 0 0 1px var(--line)}
+#yearBand .yb i{flex:1;min-width:1px}
+/* 54: a paint splat behind the page titles */
+html.v2 .pagetitle,html.v2 [data-pagetitle]{position:relative;isolation:isolate}
+html.v2 .pagetitle::before,html.v2 [data-pagetitle]::before{content:"";position:absolute;left:-22px;top:-18px;width:190px;height:104px;z-index:-1;pointer-events:none;
+  background:var(--tint,var(--pink));opacity:.26;rotate:-8deg;-webkit-mask:var(--splat1,var(--splat0)) center/100% 100% no-repeat;mask:var(--splat1,var(--splat0)) center/100% 100% no-repeat}
+/* 55: Diary's months, big */
+html.v2 .dmonth span{font:900 22px/1.1 var(--head);color:var(--ink);letter-spacing:-.01em}
+html.v2 .dmonth span::first-line{background:none}
+html.v2 .dgrid{grid-template-columns:repeat(4,1fr)}
+/* 62: the sleepy mascot */
+html.v2 :is(.caughtup,.caught).sleepyup{display:grid;justify-items:center;gap:4px;text-align:center;padding:22px 0 14px;border:0}
+.sleepyup b{font:900 17px var(--head);color:var(--ink)}.sleepyup small{color:var(--mute);font-size:12.5px;max-width:30ch}
+.sleepy{position:relative;width:64px;height:58px;margin-bottom:4px}
+.sleepy i{position:absolute;left:4px;bottom:0;width:56px;height:52px;border-radius:20px 20px 14px 14px;background:var(--lilac)}
+.sleepy i::after{content:"";position:absolute;left:17px;top:24px;width:8px;height:3px;border-radius:2px;background:#151320;box-shadow:14px 0 0 #151320}
+.sleepy em{position:absolute;right:-8px;top:-2px;font:900 15px var(--head);font-style:normal;color:var(--mute);animation:zz 2.4s ease-in-out infinite}
+.sleepy em + em{right:-18px;top:-16px;font-size:11px;animation-delay:1.2s}
+@keyframes zz{0%{opacity:0;translate:0 6px}40%{opacity:1}100%{opacity:0;translate:6px -8px}}
+@media (prefers-reduced-motion:reduce){.sleepy em{animation:none}}
 /* 22, and the rest of a room: every small poster is one size, every strip poster another */
 html.v2 :is(.slip .ttl .co,.tn-main .co,.ttl .season-cover .co){width:40px!important;height:60px!important;border-radius:7px;object-fit:cover}
 html.v2 .slip:not(.feature) .season-cover{width:40px;height:60px}
@@ -6840,7 +6895,7 @@ function riseIn(sec) { if (!sec || REDUCED) return;
       const r = el.getBoundingClientRect(); return r.height > 0 && r.bottom > 60 && r.top < innerHeight; }).slice(0, 7);
   blocks.forEach((el, i) => el.animate([{ opacity:0, transform:"translateY(14px)" }, { opacity:1, transform:"none" }],
     { duration:320, delay:i * 45, easing:"cubic-bezier(.2,.8,.2,1)", fill:"backwards" })); }
-function switchTab(n, how = {}) { document.documentElement.dataset.tab = n; shelfEdit = false; $("#editDock")?.remove(); if (n !== "doors") hidePill();
+function switchTab(n, how = {}) { document.documentElement.dataset.tab = n; if (V2) setTimeout(paintNowBar, 0); shelfEdit = false; $("#editDock")?.remove(); if (n !== "doors") hidePill();
   if (n === "library") n = LIB.includes(P.libSide) ? P.libSide : "shelf";
   if (LIB.includes(n) && P.libSide !== n) { P.libSide = n; saveP(); }
   const cur = currentTab(); if (cur) tabScroll[cur] = scrollY;
@@ -7052,7 +7107,7 @@ markLive();
 const currentTab = () => $$("main section").find(s => s.classList.contains("on"))?.id.replace("tab-","");
 /* what changed shows everywhere: the tab you're on redraws now, and the ones beside it
    are marked stale so a swipe draws them fresh instead of showing how they were */
-const refresh = () => { const t = currentTab(); staleAll(); RENDER[t]?.(); drawnAt[t] = Date.now(); };
+const refresh = () => { const t = currentTab(); staleAll(); RENDER[t]?.(); drawnAt[t] = Date.now(); paintNowBar(); };
 function staleAll() { for (const k in drawnAt) drawnAt[k] = 0; }
 /* ---------- pulling the page down ----------
    refresh() only redraws what is already in memory, which is the wrong thing to do when
@@ -8222,7 +8277,8 @@ function roomMood(es) { const dot = $("#pager .tdot"); if (!dot) return;
 /* ---------- you're all caught up ----------
    The line between what's new and what you've already seen. The tick draws itself and the
    little guy nods the first time you scroll down to it; under it the feed is a touch quieter. */
-const caughtUpHTML = () => `<div class="caughtup" role="separator" aria-label="You're all caught up"><span class="cl"></span>
+const SLEEPY = `<span class="sleepy" aria-hidden="true"><i></i><em>z</em><em>z</em></span>`;
+const caughtUpHTML = () => V2 ? `<div class="caughtup sleepyup" role="separator" aria-label="You're all caught up">${SLEEPY}<b>You're all caught up</b><small>Earlier</small></div>` : `<div class="caughtup" role="separator" aria-label="You're all caught up"><span class="cl"></span>
   <span class="cm"><svg class="ctick" viewBox="0 0 26 26" aria-hidden="true"><circle cx="13" cy="13" r="11"/><path d="M8 13.5l3.4 3.4L18.5 9.6"/></svg>
   <b>You're all caught up</b><small>Earlier</small></span><span class="cl"></span></div>`;
 function wireCaughtUp(root) { const el = $(".caughtup", root); if (!el) return;
@@ -8643,6 +8699,47 @@ function couchHTML(R) { if (!R || R.members.length < 2) return "";
 function paintCouch() { const row = $("#couchRow"); if (!row) return; let n = 0;
   $$("[data-cz]", row).forEach(b => { const on = b.dataset.cz === me.id || hereNow.some(p => p.id === b.dataset.cz); if (on && b.dataset.cz !== me.id) n++; b.classList.toggle("zz", !on); });
   const t = $("#couchN", row); if (t) t.textContent = n ? `${n} here now` : ""; }
+/* the colour of a poster: drawn tiny, averaged over its brighter, more colourful pixels, and
+   kept on this phone so each poster is only ever worked out once */
+const PCOL_KEY = "rooms.pcol";
+let pcolMap = null;
+const pcolCache = () => { if (!pcolMap) { try { pcolMap = JSON.parse(localStorage.getItem(PCOL_KEY) || "{}"); } catch { pcolMap = {}; } } return pcolMap; };
+const pcolSave = () => { try { const m = pcolCache(), ks = Object.keys(m); if (ks.length > 900) ks.slice(0, ks.length - 900).forEach(k => delete m[k]); localStorage.setItem(PCOL_KEY, JSON.stringify(m)); } catch {} };
+async function posterColour(src) { if (!src) return null; const m = pcolCache(); if (src in m) return m[src];
+  const im = await imgLoad(src); if (!im) return null;
+  try { const c = document.createElement("canvas"); c.width = 12; c.height = 18; const x = c.getContext("2d"); x.drawImage(im, 0, 0, 12, 18);
+    const d = x.getImageData(0, 0, 12, 18).data; let r = 0, g = 0, b = 0, n = 0;
+    for (let i = 0; i < d.length; i += 4) { const R = d[i], G = d[i + 1], B = d[i + 2], mx = Math.max(R, G, B), mn = Math.min(R, G, B);
+      const w = (mx - mn) / 255 + (mx > 60 ? .25 : 0); r += R * w; g += G * w; b += B * w; n += w; }
+    if (!n) return null;
+    /* lift it so it reads as a colour on the dark ground, not a murky brown */
+    let [R, G, B] = [r / n, g / n, b / n].map(Math.round); const mx = Math.max(R, G, B) || 1, k = Math.min(2.2, 225 / mx);
+    [R, G, B] = [R, G, B].map(v => Math.min(255, Math.round(v * k)));
+    const col = `rgb(${R}, ${G}, ${B})`; m[src] = col; pcolSave(); return col; } catch { m[src] = null; return null; } }
+/* 49: what you're on, in a bar above the bottom bar */
+function paintNowBar() { if (!V2) return; let bar = $("#nowBar");
+  const n = (myNow || []).filter(x => (x.works || works[x.work_id]) && !isPart(x.work_id)).sort((a, b) => String(b.updated_at || b.started_on || "").localeCompare(String(a.updated_at || a.started_on || "")))[0];
+  if (!n || !me) { bar?.remove(); document.documentElement.classList.remove("hasnow"); return; }
+  const w = n.works || works[n.work_id], line = (() => { try { return nowLine(n); } catch { return ""; } })(), pr = (() => { try { return progressOf(n, w); } catch { return null; } })();
+  if (!bar) { bar = document.createElement("div"); bar.id = "nowBar"; document.body.append(bar); }
+  bar.innerHTML = `<button class="nb-open" type="button" data-nbw="${esc(w.id)}">${cover(w)}<span class="nb-t"><b>${esc(w.title)}</b>${pr != null ? `<i class="nb-p"><i style="width:${Math.round(Math.max(4, Math.min(100, pr * 100)))}%"></i></i>` : ""}<small>${esc(nowVerb(w.kind))}${line ? ` · ${line}` : ""}</small></span></button><button class="nb-done" type="button" data-nbdone="${esc(w.id)}">Done it</button>`;
+  $("[data-nbw]", bar).onclick = () => openWork(w.id); $("[data-nbdone]", bar).onclick = () => openLog(w);
+  const nav = $("#nav"); bar.style.bottom = ((nav?.offsetHeight || 72) + 8) + "px"; document.documentElement.classList.add("hasnow"); }
+/* 52: your year in colour, at the top of Queue: a thin stripe for each thing you finished,
+   in its poster's colour where it's known (its medium's until then) */
+let bandBusy = false;
+function paintYearBand() { if (!V2) return; const bar = $("#libBar"); if (!bar) return; let el = $("#yearBand");
+  const y = String(new Date().getFullYear()), es = myEntries.filter(e => String(e.rated_on || "").startsWith(y) && !isPart(e.work_id)).sort((a, b) => String(a.rated_on).localeCompare(String(b.rated_on)));
+  if (!es.length) { el?.remove(); return; }
+  if (!el) { el = document.createElement("button"); el.id = "yearBand"; el.type = "button"; bar.querySelector(".pagetitle")?.after(el);
+    el.onclick = () => $("#libBar [data-lib='archive']")?.click(); }
+  const m = pcolCache(), todo = [];
+  el.innerHTML = `<span class="yb-l"><b>Your ${y}</b> · ${es.length} ${es.length === 1 ? "thing" : "things"}</span><span class="yb">${es.map(e => { const w = works[e.work_id] || e.works || {}, src = myCoverOf(w) || w.cover;
+    if (src && !(src in m) && todo.length < 24) todo.push(src);
+    return `<i style="background:${(src && m[src]) || K(w.kind || kindOf(e.work_id)).colour}"></i>`; }).join("")}</span>`;
+  /* the colours it doesn't know yet, a few at a time, then once more with them in */
+  if (todo.length && !bandBusy) { bandBusy = true;
+    (async () => { for (const src of todo) await posterColour(src).catch(() => null); bandBusy = false; if ($("#yearBand")) paintYearBand(); })(); } }
 /* re-starring: your mind changes after a log, so tapping your own stars on a log asks
    again, in place, without the whole log sheet. Only the score changes. */
 async function restar(e) { const w = works[e.work_id] || e.works || {}; let v = e.score;
@@ -9172,7 +9269,7 @@ async function renderPeople() {
     <div id="pplFol">${!ids.length
       ? blank("var(--lilac)", "✦", "Your people go here", "Follow someone whose taste interests you, or bring friends into a room, and what they log comes first here.", [])
       : `<div id="folTop"></div>${shown.map(e => slipHTML(e)).join("")}
-        ${shown.length ? `<div class="caught"><span class="ctick" aria-hidden="true">✓</span><b>You're all caught up</b><small>That's your people. Here's what everyone else is finishing, most liked first.</small></div>`
+        ${shown.length ? `<div class="caught${V2 ? " sleepyup" : ""}">${V2 ? SLEEPY : `<span class="ctick" aria-hidden="true">✓</span>`}<b>You're all caught up</b><small>That's your people. Here's what everyone else is finishing, most liked first.</small></div>`
           : `<p class="sub" style="text-align:center;margin:18px 0">Nobody you follow has logged anything yet.</p>`}`}</div>
     <div id="pplBest">${bestSaidHTML(all)}</div><div id="pplAll"></div>`;
   paintStoryRow(); paintDaily(null, $("#pplDaily"), { everyone:true });
@@ -9525,7 +9622,9 @@ function paintCabHero() { const el = $("#cabHero"); if (!el) return;
       fan:tops, btn:big && big[1] >= 2 ? { id:"cabHeroGo", label:"Sharpen", aria:`Sharpen your ${big[0] === "tv" ? "shows" : K(big[0]).plural.toLowerCase()}` } : null });
     const go = $("#cabHeroGo", el); if (go) go.onclick = () => $(`[data-sharpen="${big[0]}"]`)?.click(); }
   wireHero(el); }
-function renderCabinet() {
+/* the new look opens Diary as covers; choosing the list (or covers) is remembered */
+const diaryGrid = () => P.diaryGrid ?? V2;
+function renderCabinet() { paintYearBand();
   const body = $("#archiveBody"); if (!body) return;
   if (!cabRanked() && P.cabView !== "diary") P.cabView = "diary";
   const counts = cabinetCounts(), kinds = CAB_ORDER.filter(k => counts[k]);
@@ -9537,7 +9636,7 @@ function renderCabinet() {
   body.innerHTML = `${pagerHTML(places, P.cabKind || "", { id:"cabPager", mode:"chips", allLabel:"All" })}<div id="cabHero"></div>
     ${logCount() ? `<div class="cabbar">
         <p class="cabcount" id="cabCount">${cabRanked() ? "Your order, best first" : "Newest first"}</p>
-        ${P.cabView === "diary" ? `<button class="cabfind ${P.diaryGrid ? "on" : ""}" id="cabGridBtn" aria-label="Show it as covers" aria-pressed="${!!P.diaryGrid}">${GRID}</button>` : ""}
+        ${P.cabView === "diary" ? `<button class="cabfind ${diaryGrid() ? "on" : ""}" id="cabGridBtn" aria-label="Show it as covers" aria-pressed="${diaryGrid()}">${GRID}</button>` : ""}
         <button class="cabfind ${cabQ ? "on" : ""}" id="cabFindBtn" aria-label="Search what you've finished" aria-expanded="${cabQ ? "true" : "false"}">${LENS}</button>
         <button class="cabfind ${cabFiltered() ? "on" : ""}" id="cabSortBtn" aria-label="Sort and filter">${SLIDERS}</button>
         <p class="sub" id="cabSub" hidden></p>
@@ -9775,9 +9874,9 @@ function paintDiary(el) {
     const m = d.toLocaleDateString(undefined, { month:"long", year:"numeric" });
     if (m !== month) { if (month) html += `</div></div>`; month = m;
       const n = rows.filter(x => { const y = new Date(String(x.rated_on || x.created_at).slice(0, 10) + "T12:00:00"); return y.getMonth() === d.getMonth() && y.getFullYear() === d.getFullYear(); }).length;
-      html += `<div class="dsec"><div class="dmonth"><span>${esc(m)}</span><em>${n}</em></div><div class="${P.diaryGrid ? "dgrid" : "card dlist"}">`; }
+      html += `<div class="dsec"><div class="dmonth"><span>${esc(m)}</span><em>${n}</em></div><div class="${diaryGrid() ? "dgrid" : "card dlist"}">`; }
     const again = firsts[e.work_id] && firsts[e.work_id] !== e.id;
-    if (P.diaryGrid) { html += `<button class="dtile" data-work="${esc(w.id)}" type="button" aria-label="${esc(w.title)}, ${e.score / 2} stars, ${esc(d.toLocaleDateString(undefined, { day:"numeric", month:"long" }))}">
+    if (diaryGrid()) { html += `<button class="dtile" data-work="${esc(w.id)}" type="button" aria-label="${esc(w.title)}, ${e.score / 2} stars, ${esc(d.toLocaleDateString(undefined, { day:"numeric", month:"long" }))}">
       <span class="dtco" style="--kc:${K(w.kind).colour}">${w.cover ? cover(w) : `<span class="dtt">${esc(w.title)}</span>`}${again ? `<i class="dtag" aria-hidden="true">\u21bb</i>` : ""}</span>${stars(e.score, "sm")}</button>`; continue; }
     html += `<button class="drow" data-work="${esc(w.id)}" type="button">
       <span class="dday"><b>${d.getDate()}</b><small>${esc(d.toLocaleDateString(undefined, { weekday:"short" }))}</small></span>
@@ -9795,8 +9894,8 @@ function wireCabinet() {
     else if (k === "rank") { P.cabSortWas = cabSort(); P.cabSort = "rank"; P.cabView = ""; }
     else { P.cabView = ""; unrank(); }
     saveP(); buzz(5); renderCabinet(); });
-  const gb = $("#cabGridBtn"); if (gb) gb.onclick = () => { P.diaryGrid = !P.diaryGrid; saveP(); buzz(4);
-    gb.classList.toggle("on", P.diaryGrid); gb.setAttribute("aria-pressed", String(P.diaryGrid)); const t = $("#cabTrays"); if (t) paintDiary(t); };
+  const gb = $("#cabGridBtn"); if (gb) gb.onclick = () => { P.diaryGrid = !diaryGrid(); saveP(); buzz(4);
+    gb.classList.toggle("on", diaryGrid()); gb.setAttribute("aria-pressed", String(diaryGrid())); const t = $("#cabTrays"); if (t) paintDiary(t); };
   const sb2 = $("#cabSortBtn"); if (sb2) sb2.onclick = async () => { const types = facetTypes();
     const v = await openAsk(`<h3>Sort and filter</h3>
       ${cabViewNow() === "" ? `<div class="lbl">Sort</div><div class="seg wrap">${Object.entries(CAB_SORTS).filter(([k]) => k !== "rank").map(([k, l]) =>
@@ -9884,7 +9983,7 @@ async function paintTvWeek() { const el = $("#tvWeek"); if (!el) return; const e
   if (!DEMO && !sb.__local && P.epAlerts !== false) { const rows = eps.map(x => x.gap >= 0 ? x : x.up && x.up.air && dayNo(x.up.air) >= dayNo(today()) ? { ...x.up, w:x.w } : null).filter(Boolean)
       .map(x => ({ user_id:me.id, work_id:x.w.id, air_date:x.air, label:`S${x.s} E${x.e}`, title:String(x.w.title).slice(0, 80) }));
     if (rows.length) q(sb.from("episode_alerts").upsert(rows, { onConflict:"user_id,work_id" })).catch(() => {}); } }
-function renderShelf() {
+function renderShelf() { paintYearBand();
   const L = activeList();
   /* The shelf holds what you mean to get to; what you're in the middle of belongs with it
      and need never have been put there, so it joins the grid rather than sitting under it
@@ -14254,6 +14353,7 @@ const ICON_MARK = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3.5h1
 const ICON_PLAY = `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M10 8.5l5.5 3.5-5.5 3.5z"/></svg>`;
 const ICON_MORE = `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5.5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="18.5" cy="12" r="1.6"/></svg>`;
 async function openWork(id, back = null) { let w = works[id]; if (!w) { try { const rows = await q(sb.from("works").select("*").eq("id", id).limit(1)); w = remember(rows[0]); } catch {} } if (!w) return;
+  if (V2 && w.cover) posterColour(myCoverOf(w) || w.cover).then(c => { const sb2 = $("#sheetBody"); if (c && sb2 && $(".whead", sb2)) sb2.style.setProperty("--pc", c); }).catch(() => {});
   const cfg = K(w.kind);
   /* the top of a title's page is lit by its own poster, blurred, the way a streaming app
      sets a title in its own colour; with no poster, its medium's colour does it */
