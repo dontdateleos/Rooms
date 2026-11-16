@@ -1,0 +1,84 @@
+{
+  "list": {
+    "id": null,
+    "title": "Before Pattinson's Bond",
+    "note": "Robert Pattinson is the next James Bond, in Denis Villeneuve's Bond 26. Five films that show why he's ready for 007."
+  },
+  "items": [
+    {
+      "w": {
+        "id": "film:577922",
+        "kind": "film",
+        "title": "Tenet",
+        "year": "2020",
+        "cover": "https://image.tmdb.org/t/p/w342/rrKH3VhHssGTCfPuaEQkxvEoElv.jpg"
+      },
+      "why": "He's already done the tux, the spy work and the one-liners",
+      "card": "Tenet",
+      "when": null,
+      "where": null
+    },
+    {
+      "w": {
+        "id": "film:414906",
+        "kind": "film",
+        "title": "The Batman",
+        "year": "2022",
+        "cover": "https://image.tmdb.org/t/p/w342/74xTEgt7R36Fpooo50r9T25onhq.jpg"
+      },
+      "why": "Proof he can carry a legendary character",
+      "card": "The Batman",
+      "when": null,
+      "where": null
+    },
+    {
+      "w": {
+        "id": "film:429200",
+        "kind": "film",
+        "title": "Good Time",
+        "year": "2017",
+        "cover": "https://image.tmdb.org/t/p/w342/yE1c9hj5Hf8a9KplAdRdhADqUro.jpg"
+      },
+      "why": "One night on the run. Pure nerve",
+      "card": "Good Time",
+      "when": null,
+      "where": null
+    },
+    {
+      "w": {
+        "id": "film:376865",
+        "kind": "film",
+        "title": "High Life",
+        "year": "2018",
+        "cover": "https://image.tmdb.org/t/p/w342/wElOvH7H6sLElsTOLu1MY6oWRUx.jpg"
+      },
+      "why": "The film that made Danny Boyle say he should be Bond",
+      "card": "High Life",
+      "when": null,
+      "where": null
+    },
+    {
+      "w": {
+        "id": "film:503919",
+        "kind": "film",
+        "title": "The Lighthouse",
+        "year": "2019",
+        "cover": "https://image.tmdb.org/t/p/w342/dwXmOYJVM1VIkkSXHY5zYSaLJLC.jpg"
+      },
+      "why": "Range. So much range",
+      "card": "The Lighthouse",
+      "when": null,
+      "where": null
+    }
+  ],
+  "post": {
+    "slug": "before-pattinson-bond",
+    "before": "Pattinson's Bond",
+    "highlight": "Bond",
+    "sub": "Robert Pattinson is 007. Denis Villeneuve directs. Here's the case for him.",
+    "kinds": [
+      "film"
+    ],
+    "col": "#FFD27A"
+  }
+}
