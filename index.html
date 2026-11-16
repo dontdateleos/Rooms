@@ -1468,8 +1468,59 @@ html.v2 nav button[data-tab]:not(.on){font-size:0;gap:0}
 .tapsay.out{transition:opacity .35s,translate .35s;opacity:0;translate:0 -4px}
 @keyframes tapIn{from{opacity:0;translate:0 6px;scale:.96}}
 @media (prefers-reduced-motion:reduce){.tapsay{animation:none}}
+/* 35: this week's posters, fanned */
+.wkfan{display:flex;align-items:flex-end;gap:0;margin:12px 0 0;padding:4px 0 2px 4px;border:0;background:none;cursor:pointer;color:var(--mute)}
+.wkfan > span{margin-left:-14px;rotate:calc((var(--i) - 2.5) * 2.4deg);transition:transform .2s}.wkfan > span:first-child{margin-left:0}
+.wkfan .co{width:44px!important;height:66px!important;border-radius:7px;object-fit:cover;box-shadow:0 6px 14px -4px rgba(0,0,0,.5);display:block}
+.wkfan em{font-style:normal;font-size:12.5px;font-weight:700;margin-left:14px;align-self:center}
+.wkfan:active > span{transform:translateY(-3px)}
+.wkgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:14px}
+.wkgrid button{border:0;background:none;padding:0;text-align:left;color:var(--ink);font:inherit;cursor:pointer;min-width:0}
+.wkgrid .co{width:100%!important;height:auto!important;aspect-ratio:2/3;border-radius:9px;object-fit:cover;display:block}
+.wkgrid b{display:block;font:800 13px/1.2 var(--head);margin-top:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* 36: the couch */
+.couchrow{display:flex;align-items:flex-end;gap:4px;margin:14px -16px 0;padding:6px 16px 0;background:linear-gradient(180deg,transparent,color-mix(in srgb,var(--room) 16%,transparent));border-radius:0 0 14px 14px}
+.couchrow .cz{border:0;background:none;padding:0;cursor:pointer;line-height:0;transition:transform .2s}
+.couchrow .cz .av svg{width:32px;height:32px}
+.couchrow .cz.zz{opacity:.6}.couchrow .cz.zz .eyes{transform:scaleY(.18);transform-box:fill-box;transform-origin:50% 60%}
+.couchrow .cz:active{transform:translateY(-4px)}
+.couchrow small{margin-left:auto;font-size:12.5px;color:var(--mute);padding-bottom:6px}
+/* 37: last week's pick behind the room's title */
+html.v2[data-tab="doors"] body::after{content:"";position:absolute;left:0;right:0;top:0;height:400px;background:var(--pickbg,none) center 30%/cover no-repeat;filter:blur(28px) saturate(1.3);opacity:.6;
+  -webkit-mask-image:linear-gradient(#000 25%,transparent);mask-image:linear-gradient(#000 25%,transparent);z-index:-1;pointer-events:none}
+/* 38: a log's medium, down its side */
+html.v2 .slip{padding-left:14px;background:linear-gradient(90deg,color-mix(in srgb,var(--kc,var(--film)) 13%,transparent),transparent 60%);box-shadow:inset 3px 0 0 var(--kc,var(--film))}
+/* 39: the newest log, big */
+html.v2 .slip.feature .ttl{align-items:flex-end;gap:14px}
+html.v2 .slip.feature .ttl .season-cover{width:110px;height:165px}
+html.v2 .slip.feature .ttl .co{width:110px!important;height:165px!important;border-radius:12px}
+html.v2 .slip.feature .ttl b{font-size:22px;line-height:1.1}
+/* 40: gold stars */
+html.v2 .stars i{background:var(--butter)}
+html.v2 .stars i.half{background:linear-gradient(90deg,var(--butter) 50%,color-mix(in srgb,var(--ink) 22%,transparent) 50%)}
+html.v2 .stars i.off{background:color-mix(in srgb,var(--ink) 22%,transparent)}
+/* 41: a paint splat behind whoever logged it */
+html.v2 .slip .who{isolation:isolate}
+html.v2 .slip .who .av{position:relative;overflow:visible}
+html.v2 .slip .who .av::before{content:"";position:absolute;inset:-7px;z-index:-1;background:color-mix(in srgb,var(--kc,var(--pink)) 55%,transparent);
+  -webkit-mask:var(--splat2,var(--splat0)) center/100% 100% no-repeat;mask:var(--splat2,var(--splat0)) center/100% 100% no-repeat;rotate:12deg}
+/* 42: moments as stickers */
+.msticker{display:flex;align-items:center;gap:10px;margin:14px auto;width:fit-content;max-width:88%;border:0;cursor:pointer;text-align:left;font:inherit;
+  background:var(--mc,var(--film));color:var(--onAccent);padding:9px 14px 9px 9px;border-radius:14px;rotate:var(--mr,-2deg);box-shadow:0 10px 20px -8px rgba(0,0,0,.45)}
+.msticker .co{width:28px!important;height:42px!important;border-radius:5px;object-fit:cover;flex:none}
+.msticker b{display:block;font:800 14px/1.2 var(--head)}.msticker small{display:block;font-size:12px;font-weight:600;opacity:.8}
+/* 43: section names, highlighted like the page titles */
+html.v2 main section .lbl{font:900 17px/1.25 var(--head);color:var(--ink);letter-spacing:-.01em}
+html.v2 mark.lmk{background:var(--tint,var(--pink));color:var(--onAccent);padding:0 .16em .05em;border-radius:5px;display:inline-block;rotate:-2deg;margin-right:.1em}
+html.v2 .card .h mark.lmk{rotate:1.5deg}
+/* 44: a mascot peeking over an empty section */
+.blank1{position:relative;margin-top:24px!important}
+.b1-peek{position:absolute;left:18px;top:-19px;width:30px;height:20px;border-radius:11px 11px 0 0;background:var(--c);overflow:hidden}
+.b1-peek::after{content:"";position:absolute;left:10px;top:7px;width:3px;height:7px;border-radius:2px;background:#151320;box-shadow:7px 0 0 #151320}
+.blank1::before{display:none}
 /* 22, and the rest of a room: every small poster is one size, every strip poster another */
 html.v2 :is(.slip .ttl .co,.tn-main .co,.ttl .season-cover .co){width:40px!important;height:60px!important;border-radius:7px;object-fit:cover}
+html.v2 .slip:not(.feature) .season-cover{width:40px;height:60px}
 html.v2 :is(.ll-w .co,.rstrip .co,.aska .co,.al-co .co,.swm .co){width:54px!important;height:81px!important;border-radius:8px;object-fit:cover}
 html.v2 .ll-w{width:54px}
 html.v2 .roomcard .roomline{display:block}
@@ -6099,6 +6150,7 @@ const STATE_WORD = { finished:"just finished something", watching:"watching now"
 let hereQuiet = "";
 function paintHere() {
   logoHere(hereNow.filter(p => p.id !== me?.id).length);
+  if (V2) paintCouch();
   const el = $("#hereRow"); if (!el) return;
   const others = hereNow.filter(p => p.id !== me.id);
   const seen = new Set([...el.querySelectorAll(".face")].map(f => f.dataset.who));
@@ -6767,6 +6819,12 @@ if (V2) { let foldT = 0;
   document.addEventListener("click", e => { const h = e.target.closest?.("main .card.foldable > .h"); if (!h || e.target.closest("button,a,input,[data-w],[role=button]")) return;
     const c = h.parentElement, k = c.dataset.fk, on = c.classList.toggle("folded"); buzz(3);
     P.folded ||= {}; if (on) P.folded[k] = 1; else delete P.folded[k]; saveP(); }); }
+if (V2) { let mkT = 0;
+  const markFirst = el => { el.dataset.mk = "1"; const t = el.firstChild; if (!t || t.nodeType !== 3) return;
+    const m = t.textContent.match(/^(\s*)(\S+)/); if (!m) return; const mk = document.createElement("mark"); mk.className = "lmk"; mk.textContent = m[2];
+    t.textContent = t.textContent.slice(m[0].length); el.insertBefore(mk, t); if (m[1]) el.insertBefore(document.createTextNode(m[1]), mk); };
+  const applyMarks = () => { mkT = 0; $$("main section .lbl:not([data-mk]), main .card:not(.promptcard):not(.hero):not(.settle) > .h > span:first-child:not([data-mk])").forEach(markFirst); };
+  new MutationObserver(() => { if (!mkT) mkT = requestAnimationFrame(applyMarks); }).observe(document.querySelector("main"), { childList:true, subtree:true }); }
 /* A tab opening: the blocks you can see rise a few pixels into place, a beat apart —
    the same straight-up movement as scrolling to them. One page, nothing sliding sideways. */
 function riseIn(sec) { if (!sec || REDUCED) return;
@@ -7740,7 +7798,7 @@ function emptyDoor(colour, mark) {
   </svg>`; }
 function blank(colour, mark, title, body, actions = []) {
   /* one line with its one button; any other buttons stay (hidden) so whatever wires them still finds them */
-  if (V2) return `<div class="blank1" style="--c:${colour}"><span class="b1-t"><b>${title}</b><small>${body}</small></span>${actions.map(([id, label], i) =>
+  if (V2) return `<div class="blank1" style="--c:${colour}"><span class="b1-peek" aria-hidden="true"></span><span class="b1-t"><b>${title}</b><small>${body}</small></span>${actions.map(([id, label], i) =>
     `<button class="b1-go" id="${id}"${i ? " hidden" : ""}>${label}</button>`).join("")}</div>`;
   return `<div class="blank">${emptyDoor(colour, mark)}<h3>${title}</h3><p>${body}</p>
     ${actions.length ? `<div class="stack">${actions.map(([id,label,cls]) => `<button class="btn ${cls||"soft"}" id="${id}">${label}</button>`).join("")}</div>` : ""}</div>`; }
@@ -7876,7 +7934,8 @@ async function roomWeeks(R) { if (!R) return;
   rows.forEach(e => remember(e.works));
   const wk = weekStreak(R, rows), slot = $("#wkSlot");
   if (slot) slot.innerHTML = wk >= 2 ? ` · <span class="wstreak" title="Weeks in a row that ${R.members.length <= 4 ? "all of you" : "most of you"} logged something">${wk}-week streak</span>` : "";
-  if (V2) { const st = $(".roomcard .rstreak"), line = recapLineHTML(R, rows);
+  if (V2) { const st = $(".roomcard .rstreak"), line = recapLineHTML(R, rows), pk = recapData(R, rows)?.tw?.cover;
+    if (pk) document.body.style.setProperty("--pickbg", `url("${String(pk).replace(/"/g, "")}")`); else document.body.style.removeProperty("--pickbg");
     if (st && line) { st.innerHTML = line; const sh = $("#recapShare", st); if (sh) sh.onclick = () => shareRoomWeek(R, sh); }
     return; }
   const rs = $("#recapSlot"); if (rs) { rs.innerHTML = recapHTML(R, rows); wireRecap(rs, R); } }
@@ -7916,6 +7975,12 @@ function roomStreak(entries, R = null) {
   if (people.size < 2) return "";
   return `<small class="room-streak" title="${sharedDays ? `${sharedDays} ${sharedDays===1?"day":"days"} more than one of you logged` : ""}"><b class="rnum" data-roll="wk:${R?.id || ""}">${people.size}</b> logged this week<span id="wkSlot"></span></small>`;
 }
+/* the new look: a moment is a small tilted sticker in the talk, in its poster's colour */
+function momentSticker(m) { if (!m) return ""; const w = works[m.workId] || {};
+  const names = m.kind === "handover" ? [] : m.people.map(e => e.user_id === me.id ? "you" : esc(e.profiles?.handle || "someone"));
+  const [t, sm] = m.kind === "handover" ? [`You logged ${esc(w.title || "a recommendation")}`, `from ${esc(m.hand.sender_p?.handle || "someone")}`]
+    : [`${esc(w.title || "A title")} crossed paths`, `${names.length === 2 ? names.join(" and ") : `${names.slice(0, 2).join(", ")} and ${names.length - 2} more`} this week`];
+  return `<button class="msticker" type="button" data-cw="${esc(m.workId)}" style="--mc:var(--${w.kind || "film"});--mr:${avHash(m.workId) % 2 ? 2 : -2}deg">${cover(w)}<span><b>${t}</b><small>${sm}</small></span></button>`; }
 function roomMomentsHTML(moments, fresh = new Set()) {
   /* a moment is news once: after you've seen it, the feed below says the same thing */
   moments = moments.filter(m => fresh.has(`${m.kind}:${m.workId}:${m.at}`)); if (!moments.length) return "";
@@ -8540,7 +8605,7 @@ function likeLine(e) {
 
 function slipHTML(e, opts = {}) { const w = remember(e.works) || works[e.work_id] || {}; const mine = e.user_id === me.id;
   const same = (e.reactions||[]).some(r => r.user_id === me.id), n = (e.reactions||[]).length;
-  return `<div class="slip" data-slip="${e.id}" style="animation-delay:-${(avHash(e.id) % 65) / 10}s">
+  return `<div class="slip${opts.feature ? " feature" : ""}" data-slip="${e.id}" style="animation-delay:-${(avHash(e.id) % 65) / 10}s;--kc:var(--${w.kind || "film"})">
     <div class="who" data-prof="${esc(e.user_id)}" style="cursor:pointer">${avatar(e.profiles)} <b>${esc(mine ? "you" : e.profiles?.handle)}</b>${mine ? `<button class="restar" type="button" data-restar="${e.id}" aria-label="Change your stars">${stars(e.score, "sm")}</button>` : stars(e.score, "sm")}<span class="when">${whenE(e)}</span></div>
     ${opts.here ? (dnfOf(e) ? `<div class="here-dnf">${dnfLine(e)}</div>` : "") : `<div class="ttl" data-work="${esc(e.work_id)}"><span class="season-cover">${cover(w)}</span><div><b>${esc(w.title)}</b><small>${esc(w.year||"")}${w.creator ? ` \u00b7 ${esc(String(w.creator).split(",")[0])}` : ""}${dnfOf(e) ? ` ${dnfLine(e)}` : ""}</small></div></div>`}
     ${e.note?`<div class="q${String(e.note).length > 210 ? " clip" : ""}">“${noteHTML(e.note)}”</div>${String(e.note).length > 210 ? `<button class="more" data-more="${e.id}">More</button>` : ""}`:""}
@@ -8555,6 +8620,22 @@ async function mineMenu(e) {
   const v = await openAsk(`<h3>${esc(works[e.work_id]?.title || e.works?.title || "Your entry")}</h3><div class="stack menu"><button class="btn quiet" data-mm="star">Change the stars</button><button class="btn quiet" data-mm="edit">Edit the log</button><button class="btn quiet" data-mm="del" style="color:var(--bad)">Delete it</button><button class="btn quiet" data-mm="">Not now</button></div>`,
     done => $$("[data-mm]", $("#askBox")).forEach(x => x.onclick = () => done(x.dataset.mm || null)));
   if (v === "star") restar(e); else if (v === "edit") openLog(works[e.work_id] || e.works, e); else if (v === "del") deleteReview(e); }
+/* the new look's room header: this week's posters in a small fan, and the room on its couch
+   (awake if they're here now, asleep if not) */
+const wkWorks = es => { const wk = weekStart(new Date()), ids = [...new Set(es.filter(e => !isPart(e.work_id) && weekOf(e) === wk).map(e => e.work_id))];
+  return { ids, ws:ids.map(id => works[id] || es.find(e => e.work_id === id)?.works).filter(Boolean) }; };
+function wkFanHTML(es) { const { ids, ws } = wkWorks(es); if (!ws.length) return "";
+  return `<button class="wkfan" id="wkFan" type="button" aria-label="Everything the room logged this week">${ws.slice(0, 6).map((w, i) => `<span style="--i:${i}">${cover(w)}</span>`).join("")}<em>${ids.length} this week ›</em></button>`; }
+function openWeekSheet(R, es) { const { ws } = wkWorks(es);
+  openSheet(`<h3>This week in ${esc(R.name)}</h3><p class="sub">Everything the room has logged since Monday.</p>
+    <div class="wkgrid">${ws.map(w => `<button type="button" data-wkw="${esc(w.id)}">${cover(w)}<b>${esc(w.title || "")}</b></button>`).join("")}</div>
+    <div class="stack"><button class="btn quiet" id="wkClose">Close</button></div>`);
+  $("#wkClose").onclick = closeSheet; $$("[data-wkw]").forEach(b => b.onclick = () => openWork(b.dataset.wkw)); }
+function couchHTML(R) { if (!R || R.members.length < 2) return "";
+  return `<div class="couchrow" id="couchRow">${R.members.map(m => `<button class="cz${m.id === me.id || hereNow.some(p => p.id === m.id) ? "" : " zz"}" data-cz="${esc(m.id)}" type="button" aria-label="${esc(m.id === me.id ? "you" : m.handle)}">${avatar(m)}</button>`).join("")}<small id="couchN"></small></div>`; }
+function paintCouch() { const row = $("#couchRow"); if (!row) return; let n = 0;
+  $$("[data-cz]", row).forEach(b => { const on = b.dataset.cz === me.id || hereNow.some(p => p.id === b.dataset.cz); if (on && b.dataset.cz !== me.id) n++; b.classList.toggle("zz", !on); });
+  const t = $("#couchN", row); if (t) t.textContent = n ? `${n} here now` : ""; }
 /* re-starring: your mind changes after a log, so tapping your own stars on a log asks
    again, in place, without the whole log sheet. Only the score changes. */
 async function restar(e) { const w = works[e.work_id] || e.works || {}; let v = e.score;
@@ -8772,6 +8853,7 @@ async function renderRoomFeed(fb, R) {
   const secs = [["talk", "Talk"], ["play", "Play"], ["charts", "Charts"], ...(hasYear ? [["year", "Year"]] : [])];
   fb.innerHTML = `<div class="card game promptcard roomcard hero slim${fanIn("room:" + R.id)}" style="--room:var(--${roomColour(R)})"><div class="roomline"><div class="rl-l"><span class="rstreak">${roomStreak(es, R)}</span><small class="herenote" id="hereNote" aria-live="polite" hidden></small></div>
       <span class="rl-r"><button class="herechip" id="hereRow"><b>${R.members.length} in here</b></button><button class="iconbtn sm" id="roomMenu" aria-label="Room options"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button></span></div>
+      ${V2 ? wkFanHTML(es) + couchHTML(R) : ""}
       <div class="hero-body room-body"><p class="nowline" id="roomNow"></p>${(() => {
         const ws = [...new Set(es.filter(e => !isPart(e.work_id)).map(e => e.work_id))].map(id => works[id]).filter(w => w?.cover).slice(0, 4);
         return ws.length ? fanHTML(ws) : ""; })()}</div></div>
@@ -8788,7 +8870,7 @@ async function renderRoomFeed(fb, R) {
     <div data-rsec="talk"${sec === "talk" ? "" : " hidden"}>
     <div id="recapSlot"></div>${tonightCard()}
     <div id="roomAsks"></div>
-    ${roomMomentsHTML(moments, freshMoments)}
+    ${V2 ? "" : roomMomentsHTML(moments, freshMoments)}
     <div class="tagrow" id="talkTop" style="margin:18px 0 8px"><span class="lbl" style="margin:0">What the room said</span><span class="tfilters" aria-label="Room activity filter"${V2 ? " hidden" : ""}>${[["all","All"],["reviews","Reviews"],["activity","Activity"]].map(([k,l]) => `<button data-rfilter="${k}" class="${roomFilter===k?"on":""}">${l}</button>`).join("")}</span></div>${(() => { if (!roomEntries.length && !(roomFilter === "activity" && moments.length)) return blank("var(--pink)","“",roomFilter === "reviews" ? "No reviews yet" : roomFilter === "activity" ? "No activity yet" : "Nothing said yet",roomFilter === "reviews" ? "Reviews with a note or reaction will appear here." : roomFilter === "activity" ? "Room activity without a written review will appear here." : "Log something and it lands here for the room to see.",[["talkAdd","Log something"]]);
       const since = feedSince || lastSeen(); let shown = false, caught = false;
       /* A log with nothing said about it is a fact, not a conversation, and a card each
@@ -8798,11 +8880,14 @@ async function renderRoomFeed(fb, R) {
       for (const e of roomEntries) { const last = runs[runs.length - 1];
         if (plain(e) && last?.plain && last.es[0].user_id === e.user_id) last.es.push(e);
         else runs.push({ plain:plain(e), es:[e] }); }
-      return runs.map(run => { const e = run.es[0], isNew = e.user_id !== me.id && String(e.created_at) > since; let head = "";
+      let featured = false; const stickers = V2 ? moments.slice(0, 2) : [];
+      return runs.map((run, ri) => { const e = run.es[0], isNew = e.user_id !== me.id && String(e.created_at) > since; let head = "";
         if (isNew && !shown) { shown = true; head = `<div class="newline">New since you were here</div>`; }
         /* where the new ends: a line you can tick off, and everything under it is older */
         else if (String(e.created_at) <= since && shown && !caught) { caught = true; head = caughtUpHTML(); }
-        return head + (run.plain ? logLineHTML(run.es) : slipHTML(e, { talk:true })); }).join(""); })()}
+        const feature = V2 && !run.plain && !featured; if (feature) featured = true;
+        const sticker = V2 && (ri === 1 || ri === 4) ? momentSticker(stickers.shift()) : "";
+        return head + (run.plain ? logLineHTML(run.es) : slipHTML(e, { talk:true, feature })) + sticker; }).join(""); })()}
     ${pick ? `<div class="result"><small>Tonight's pick</small><b>${esc(pick.title)}</b><div class="stack" style="margin-top:10px"><button class="btn" id="pickLog">${K(pick.kind).verb} it</button></div></div>` : ""}
     </div>
     <div data-rsec="play"${sec === "play" ? "" : " hidden"}><div id="roomGames">${skeleton(2)}</div></div>
@@ -8886,6 +8971,8 @@ async function renderRoomFeed(fb, R) {
       openCuts("roomyear", { room:R, pal, year:String(new Date().getFullYear()) }, "Share the room's year");
   };
   $$("[data-cw]", fb).forEach(x => x.onclick = () => openWork(x.dataset.cw));
+  if (V2) { const wf = $("#wkFan", fb); if (wf) wf.onclick = () => openWeekSheet(R, es);
+    $$("[data-cz]", fb).forEach(b => b.onclick = () => b.dataset.cz === me.id ? openProfile(me.id) : peekPerson(b.dataset.cz, b)); paintCouch(); }
   $$(".card [data-prof]", fb).forEach(x => x.onclick = () => openProfile(x.dataset.prof));
   $$('[data-rfilter]', fb).forEach(b => b.onclick = () => { P.roomFilter = b.dataset.rfilter; saveP(); renderDoors(); });
   const pl = $("#pickLog"); if (pl) pl.onclick = () => openLog(works[P.picked]);
