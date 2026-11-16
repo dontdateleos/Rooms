@@ -49,19 +49,21 @@ PRIVATE BY DESIGN
 No ads and no tracking. Your rooms are yours. Report and block are always one tap away, and you can download everything or close your account from Settings.
 
 ## What's new in this version
-(This was 1.0.2's, which is live. Update below before submitting 1.0.3.)
+(For 1.0.3. Not submitted yet: only with an OK.)
 
-A new look: the new Rooms logo, four rooms with someone peeking up in each, and a launch screen that lights them up one by one.
+Rooms has a new look. Every page has its own colour, and a title opens on its poster, big, in that poster's colour. If you'd rather have the old one, Settings has a Classic look switch for now.
 
-Your Feed picks up where you left off, or tells you you're all caught up. Bubbles you've watched move to the back, and everyone now sits on their own splash of paint.
+Your year in colour: a stripe for everything you finish this year, across the top of Queue. Slide along it to see what each one was, or share it as a picture.
 
-Most anticipated: Out soon now shows the biggest films, shows, books and games on the way, not just whatever's next.
+What you're on sits in a bar at the bottom, everywhere. Tap Done it, or swipe it up, to log it.
 
-Smoother scrolling: cards fan out as you scroll, the top and bottom bars blur what's underneath, and the mascot pulls down to refresh.
+In a room, everyone sits on a couch, awake when they're here. Last week's pick is the line under the room's name.
 
-Room Service: our monthly newsletter with the top five of each from everyone's logs. Sign up in Settings.
+Change your mind: re-rank a room's list and change your stars on anything you've logged.
 
-Also: bolder page titles and a lot of small fixes.
+Simpler everywhere: Play is two cards, Charts is one list and one argument, and Diary opens as a wall of posters by month.
+
+Also: lots of small animations, clearer stars in light mode, and fewer capital letters.
 
 ## Screenshots
 `store/screenshots/iphone-6.9-1.jpg` to `-8.jpg`, 1320×2868: drop all eight into the **6.9" Display**

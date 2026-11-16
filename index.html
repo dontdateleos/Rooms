@@ -1408,7 +1408,11 @@ svg .comet{transform-box:fill-box;transform-origin:center;animation:cometTurn 4.
 @keyframes pullLamp{0%,40%{opacity:1}60%,100%{opacity:.3}}
 /* ---------- the new look, on trial (html.v2) ---------- */
 /* 2: each page's colour is a wash behind its title; the cards stay as they are */
-html.v2 body{background-image:linear-gradient(180deg,color-mix(in srgb,var(--tint,transparent) 34%,transparent),transparent 440px);background-repeat:no-repeat;background-size:100% 440px}
+/* 88: the page's colour fades from one page to the next: --tintx follows --tint, and being
+   a registered colour it can be eased */
+@property --tintx{syntax:"<color>";inherits:true;initial-value:transparent}
+html.v2 body{--tintx:var(--tint,transparent);transition:--tintx .6s ease;background-image:linear-gradient(180deg,color-mix(in srgb,var(--tintx) 34%,transparent),transparent 440px);background-repeat:no-repeat;background-size:100% 440px}
+@media (prefers-reduced-motion:reduce){html.v2 body{transition:none}}
 html.v2[data-tab="doors"] body{--tint:var(--room,var(--pink))}html.v2[data-tab="people"] body{--tint:var(--butter)}
 html.v2:is([data-tab="shelf"],[data-tab="archive"]) body{--tint:var(--mint)}html.v2[data-tab="clubs"] body{--tint:var(--lilac)}
 html.v2 .roomwash{display:none}
@@ -1468,7 +1472,7 @@ html.v2 nav button[data-tab]:not(.on){font-size:0;gap:0}
 @keyframes tapIn{from{opacity:0;translate:0 6px;scale:.96}}
 @media (prefers-reduced-motion:reduce){.tapsay{animation:none}}
 /* 35: this week's posters, fanned */
-.wkfan{display:flex;align-items:flex-end;gap:0;margin:12px 0 0;padding:4px 0 2px 4px;border:0;background:none;cursor:pointer;color:var(--mute)}
+.wkfan{display:flex;align-items:flex-end;gap:0;margin:12px 0 0;padding:4px 0 2px 4px;border:0;background:none;cursor:pointer;color:var(--mute);font:inherit}
 .wkfan > span{margin-left:-14px;rotate:calc((var(--i) - 2.5) * 2.4deg);transition:transform .2s}.wkfan > span:first-child{margin-left:0}
 .wkfan .co{width:44px!important;height:66px!important;border-radius:7px;object-fit:cover;box-shadow:0 6px 14px -4px rgba(0,0,0,.5);display:block}
 .wkfan em{font-style:normal;font-size:12.5px;font-weight:700;margin-left:14px;align-self:center}
@@ -1494,9 +1498,10 @@ html.v2 .slip.feature .ttl{align-items:flex-end;gap:14px}
 html.v2 .slip.feature .ttl .season-cover{width:110px;height:165px}
 html.v2 .slip.feature .ttl .co{width:110px!important;height:165px!important;border-radius:12px}
 html.v2 .slip.feature .ttl b{font-size:22px;line-height:1.1}
-/* 40: gold stars */
-html.v2 .stars i{background:var(--butter)}
-html.v2 .stars i.half{background:linear-gradient(90deg,var(--butter) 50%,color-mix(in srgb,var(--ink) 22%,transparent) 50%)}
+/* 40: gold stars; on a light ground a deeper gold, or they wash out on cream (78) */
+html.v2{--gold:var(--butter)}html.v2[data-theme="light"]{--gold:#DDA20A}
+html.v2 .stars i{background:var(--gold)}
+html.v2 .stars i.half{background:linear-gradient(90deg,var(--gold) 50%,color-mix(in srgb,var(--ink) 22%,transparent) 50%)}
 html.v2 .stars i.off{background:color-mix(in srgb,var(--ink) 22%,transparent)}
 /* 41: a paint splat behind whoever logged it */
 html.v2 .slip .who{isolation:isolate}
@@ -1553,8 +1558,17 @@ html.v2[data-tab="doors"] main .stars i.half{background:linear-gradient(90deg,va
 .msticker:nth-of-type(2n){animation-delay:.08s}
 @media (prefers-reduced-motion:reduce){.msticker{animation:none}}
 /* 52: the year band */
-#yearBand{display:grid;gap:6px;width:100%;margin:8px 0 12px;padding:0;border:0;background:none;color:var(--mute);font:inherit;text-align:left;cursor:pointer}
-#yearBand .yb-l{font-size:12.5px}#yearBand .yb-l b{color:var(--ink)}
+#yearBand{position:relative;display:grid;gap:6px;width:100%;margin:8px 0 12px;color:var(--mute)}
+#yearBand .yb-l{display:flex;align-items:baseline;gap:10px;font-size:12.5px}
+#yearBand .yb-l button{border:0;background:none;padding:0;font:inherit;color:inherit;cursor:pointer;text-align:left}
+#yearBand .yb-l b{color:var(--ink)}#yearBand .yb-share{margin-left:auto;font-weight:700;color:var(--ink)!important;text-decoration:underline;text-underline-offset:3px}
+#yearBand .yb{cursor:pointer;touch-action:none}
+#yearBand .yb i{transition:transform .1s}#yearBand .yb i.on{transform:scaleY(1.3);position:relative;z-index:1;box-shadow:0 0 0 2px var(--cream)}
+/* 79: touch a stripe and it says what it was */
+#yearBand .yb-tip{position:absolute;bottom:40px;left:0;transform:translateX(-50%);padding:6px 10px;border-radius:10px;background:var(--ink);color:var(--cream);font:800 12.5px var(--head);white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .12s;z-index:3}
+#yearBand .yb-tip.on{opacity:1}
+/* 84: a new year (or a new account) starts as an empty band waiting to fill */
+#yearBand .yb.empty{box-shadow:none;border:2px dashed var(--line);align-items:center;padding:0 10px;font-size:12.5px;color:var(--mute);cursor:default}
 #yearBand .yb{display:flex;height:30px;border-radius:8px;overflow:hidden;box-shadow:0 0 0 1px var(--line)}
 #yearBand .yb i{flex:1;min-width:1px}
 /* 54: a paint splat behind the page titles */
@@ -1590,7 +1604,7 @@ html.v2 #wNumbers > div{display:inline-flex;flex:none;width:auto;min-width:0;fle
 html.v2 #wNumbers > div + div::after{content:"\00b7";margin:0 6px;color:var(--mute)}
 html.v2 #wNumbers b{display:inline;font:600 13.5px/1.4 var(--body,inherit);letter-spacing:0;color:var(--ink);background:none;box-shadow:none}
 html.v2 #wNumbers span{display:inline;margin:0;font-size:13.5px;font-weight:500;color:var(--mute);opacity:1!important}
-html.v2 #wNumbers > div:first-child :is(b,span){color:var(--butter);font-weight:800}
+html.v2 #wNumbers > div:first-child :is(b,span){color:var(--gold);font-weight:800}
 /* 70: posters deal in like cards, the first time you open a page in a while */
 @keyframes dealIn{from{transform:translate(calc((1.5 - var(--dc,0)) * 28px),46px) rotate(calc((var(--dc,0) - 1.5) * 6deg));opacity:0}}
 html.v2 .dealt{animation:dealIn .5s cubic-bezier(.2,1.2,.4,1) both;animation-delay:calc(var(--di,0) * 55ms - var(--dt,0ms))}
@@ -1611,6 +1625,16 @@ html.v2.tabgo :is(.pagetitle,[data-pagetitle])::before{animation:splatIn .5s cub
 html.v2.tabgo #yearBand .yb{animation:ybSweep 1s cubic-bezier(.3,.7,.3,1) both}
 /* 77: a held poster lifts and tilts toward your finger */
 html.v2 .tilting{position:relative;z-index:5;transition:transform .12s ease-out,box-shadow .12s;box-shadow:0 22px 34px -12px rgba(0,0,0,.6)!important;will-change:transform}
+/* 82: Diary's month stays at the top while you're in it */
+html.v2 .dsec .dmonth{position:sticky;top:var(--hdrh,64px);z-index:3;margin:10px -16px 8px;padding:8px 18px;background:var(--cream)}
+/* 83: an empty seat on the couch */
+.couchrow .czadd{width:32px;height:32px;margin-left:2px;border:2px dashed color-mix(in srgb,var(--ink) 40%,transparent);border-radius:12px 12px 9px 9px;background:none;color:color-mix(in srgb,var(--ink) 55%,transparent);display:grid;place-items:center;font:900 16px var(--head);cursor:pointer;padding:0;line-height:1}
+/* 89: posters still loading shimmer in their medium's colour */
+@keyframes coShim{to{background-position:-200% 0}}
+html.v2 :is(main,#sheet) img.co:not(.ok){background-color:color-mix(in srgb,var(--kc,var(--lilac)) 22%,var(--card));background-image:linear-gradient(100deg,transparent 30%,color-mix(in srgb,var(--kc,var(--lilac)) 45%,transparent) 50%,transparent 70%);background-size:200% 100%;animation:coShim 1.4s linear infinite}
+/* 91: the bar with what you're on lifts as you swipe it up */
+#nowBar{touch-action:none}#nowBar.dragging{transition:none}#nowBar.going{transition:transform .25s ease-in,opacity .25s;opacity:0}
+@media (prefers-reduced-motion:reduce){html.v2 img.co:not(.ok){animation:none}}
 @media (prefers-reduced-motion:reduce){html.v2 :is(.dealt,.couchrow .cz.wake,.slip .stars i,#yearBand .yb,#yearBand .yb i.new){animation:none!important}html.v2 :is(.pagetitle,[data-pagetitle])::before{animation:none!important}}
 /* 22, and the rest of a room: every small poster is one size, every strip poster another */
 html.v2 :is(.slip .ttl .co,.tn-main .co,.ttl .season-cover .co){width:40px!important;height:60px!important;border-radius:7px;object-fit:cover}
@@ -4407,9 +4431,10 @@ const proxy = () => (P.workerUrl || WORKER).replace(/\/+$/, "");
 const P = Object.assign({ workerUrl:"", tmdbKey:"", activeList:null, activeRoom:null, picked:null, kinds:["film","tv","book","game"], shelfFilter:"", pickTag:"", pickFrom:"shelf", bestGenre:{}, howLong:"", spinN:20, feedPicked:false, weekSeen:"", view:"shelf", seen:"", cardSkin:"", feed:"room", theme:"dark", chart:"month", cabSort:"recent", cabKind:"" },
   JSON.parse(localStorage.getItem("rooms.prefs") || "{}"));
 const saveP = () => localStorage.setItem("rooms.prefs", JSON.stringify(P));
-/* the new look, on trial: ?v2 in the address, or Settings → Try the new look. Everything
-   it changes hangs off html.v2 (and V2 where the markup differs), so it switches off clean */
-const V2 = /[?&]v2\b/.test(location.search) || !!P.newLook;
+/* the new look is the standard from 1.0.3. Settings → Classic look (or ?v1) brings back the
+   old one for now. Everything it changes hangs off html.v2 (and V2 where the markup
+   differs), so the classic look switches off clean, and can be deleted once nobody uses it */
+const V2 = /[?&]v2\b/.test(location.search) || !(/[?&]v1\b/.test(location.search) || P.classicLook);
 document.documentElement.classList.toggle("v2", V2);
 async function tmdb(path, params = {}) {
   const direct = !proxy(); if (direct && !P.tmdbKey) throw new Error("needs a TMDB key or the worker");
@@ -7434,6 +7459,11 @@ function landCover() { const t = coverTap; coverTap = null;
     const x = b.left - m.e - a.left, y = b.top - m.f - a.top;
     const an = f.animate([{ transform:"none" }, { transform:`translate(${x}px,${y}px) scale(${b.width / a.width},${b.height / a.height})` }],
       { duration:380, easing:"cubic-bezier(.2,.9,.25,1)", fill:"forwards" });
+    /* 85: in the new look the page's colour opens out of the poster as well */
+    const hero = V2 && $("#sheetBody .whero");
+    if (hero) { const h = hero.getBoundingClientRect(), t0 = a.top - (h.top - m.f), l0 = a.left - (h.left - m.e);
+      hero.animate([{ clipPath:`inset(${t0}px ${h.width - l0 - a.width}px ${h.height - t0 - a.height}px ${l0}px round 10px)` }, { clipPath:"inset(0px 0px 0px 0px round 0px)" }],
+        { duration:460, easing:"cubic-bezier(.2,.9,.25,1)" }); }
     an.onfinish = done; setTimeout(done, 700); }); }
 /* press and release. Down is quick and small, up has a little give, like something
    sprung. A touch that turns into a scroll lets go without a sound. */
@@ -8734,14 +8764,23 @@ function openWeekSheet(R, es) { const { ws } = wkWorks(es);
     <div class="stack"><button class="btn quiet" id="wkClose">Close</button></div>`);
   $("#wkClose").onclick = closeSheet; $$("[data-wkw]").forEach(b => b.onclick = () => openWork(b.dataset.wkw)); }
 function couchHTML(R) { if (!R || R.members.length < 2) return "";
-  return `<div class="couchrow" id="couchRow">${R.members.map(m => `<button class="cz${m.id === me.id || hereNow.some(p => p.id === m.id) ? "" : " zz"}" data-cz="${esc(m.id)}" type="button" aria-label="${esc(m.id === me.id ? "you" : m.handle)}">${avatar(m)}</button>`).join("")}<button class="czn" id="couchN" type="button"></button></div>`; }
+  return `<div class="couchrow" id="couchRow">${R.members.map(m => `<button class="cz${m.id === me.id || hereNow.some(p => p.id === m.id) ? "" : " zz"}" data-cz="${esc(m.id)}" type="button" aria-label="${esc(m.id === me.id ? "you" : m.handle)}">${avatar(m)}</button>`).join("")}${R.members.length < 6 ? `<button class="czadd" data-czadd type="button" aria-label="Invite someone">+</button>` : ""}<button class="czn" id="couchN" type="button"></button></div>`; }
 function paintCouch() { const row = $("#couchRow"); if (!row) return; let n = 0; const again = row.dataset.painted === "1"; row.dataset.painted = "1";
   $$("[data-cz]", row).forEach(b => { const on = b.dataset.cz === me.id || hereNow.some(p => p.id === b.dataset.cz); if (on && b.dataset.cz !== me.id) n++;
     /* 73: somebody arriving wakes up and stretches */
     if (on && again && b.classList.contains("zz") && !REDUCED) { b.classList.remove("wake"); void b.offsetWidth; b.classList.add("wake"); setTimeout(() => b.classList.remove("wake"), 700); }
     b.classList.toggle("zz", !on); });
   const t = $("#couchN", row), R = activeRoom();
-  if (t) { t.textContent = `${R?.members.length || row.querySelectorAll("[data-cz]").length} in here${n ? ` \u00b7 ${n} now` : ""}`; t.onclick = () => openCouch(); } }
+  if (t) { const all = R?.members.length || row.querySelectorAll("[data-cz]").length;
+    t.innerHTML = `<span class="czc">${all}</span> in here${n ? ` \u00b7 ${n} now` : ""}`; rollOnce($(".czc", t), all, "couch:" + (R?.id || ""));
+    t.onclick = () => openCouch(); }
+  const add = $("[data-czadd]", row); if (add) add.onclick = () => { const R2 = activeRoom(); if (R2) openInvite(R2); }; }
+/* 90: a number rolls up the first time it's on screen (once a session per thing) */
+const rolled = new Set();
+function rollOnce(el, n, key) { if (!el) return;
+  const seen = el.offsetParent && !el.closest("main > section:not(.on)");
+  if (!V2 || REDUCED || rolled.has(key) || !seen || !(n > 1)) { el.textContent = n; return; }
+  rolled.add(key); el.textContent = "0"; countUp(el, n, "", 700); }
 /* 70: a page's posters deal in like cards, the first time you open it in a while (and
    only when it's actually on screen) */
 const dealtAt = {};
@@ -8787,31 +8826,93 @@ function paintNowBar() { if (!V2) return; let bar = $("#nowBar");
   const n = (myNow || []).filter(x => (x.works || works[x.work_id]) && !isPart(x.work_id)).sort((a, b) => String(b.updated_at || b.started_on || "").localeCompare(String(a.updated_at || a.started_on || "")))[0];
   if (!n || !me) { bar?.remove(); document.documentElement.classList.remove("hasnow"); return; }
   const w = n.works || works[n.work_id], line = (() => { try { return nowLine(n); } catch { return ""; } })(), pr = (() => { try { return progressOf(n, w); } catch { return null; } })();
-  if (!bar) { bar = document.createElement("div"); bar.id = "nowBar"; document.body.append(bar); }
+  if (!bar) { bar = document.createElement("div"); bar.id = "nowBar"; document.body.append(bar); swipeNowBar(bar); }
+  bar.dataset.w = w.id;
   bar.innerHTML = `<button class="nb-open" type="button" data-nbw="${esc(w.id)}">${cover(w)}<span class="nb-t"><b>${esc(w.title)}</b>${pr != null ? `<i class="nb-p"><i style="width:${Math.round(Math.max(4, Math.min(100, pr * 100)))}%"></i></i>` : ""}<small>${esc(nowVerb(w.kind))}${line ? ` · ${line}` : ""}</small></span></button><button class="nb-done" type="button" data-nbdone="${esc(w.id)}">Done it</button>`;
   $("[data-nbw]", bar).onclick = () => openWork(w.id); $("[data-nbdone]", bar).onclick = () => openLog(w);
   const nav = $("#nav"); bar.style.bottom = ((nav?.offsetHeight || 72) + 8) + "px"; document.documentElement.classList.add("hasnow"); }
+/* 91: the bar lifts as you swipe it up, and far enough opens the log */
+function swipeNowBar(bar) { let y0 = null, dy = 0, moved = false;
+  bar.addEventListener("pointerdown", e => { if (e.pointerType === "mouse") return; y0 = e.clientY; dy = 0; moved = false; });
+  bar.addEventListener("pointermove", e => { if (y0 == null) return; dy = Math.min(0, e.clientY - y0); if (dy < -6) { moved = true; bar.classList.add("dragging"); bar.style.transform = `translateY(${dy * .6}px)`; } });
+  const end = () => { if (y0 == null) return; y0 = null; bar.classList.remove("dragging");
+    const w = works[bar.dataset.w];
+    if (moved && dy < -50 && w) { if (!REDUCED) { bar.classList.add("going"); bar.style.transform = "translateY(-60px)"; } buzz(8);
+      setTimeout(() => { bar.classList.remove("going"); bar.style.transform = ""; }, 600); openLog(w); }
+    else bar.style.transform = ""; };
+  bar.addEventListener("pointerup", end); bar.addEventListener("pointercancel", end);
+  /* a swipe is not a tap */
+  bar.addEventListener("click", e => { if (moved) { e.stopPropagation(); e.preventDefault(); moved = false; } }, true); }
 /* 52: your year in colour, at the top of Queue: a thin stripe for each thing you finished,
    in its poster's colour where it's known (its medium's until then) */
 let bandBusy = false, bandN = null, bandFresh = 0;
 function paintYearBand() { if (!V2) return; const bar = $("#libBar"); if (!bar) return; let el = $("#yearBand");
   const y = String(new Date().getFullYear()), es = myEntries.filter(e => String(e.rated_on || "").startsWith(y) && !isPart(e.work_id)).sort((a, b) => String(a.rated_on).localeCompare(String(b.rated_on)));
-  if (!es.length) { el?.remove(); return; }
+  if (!me) { el?.remove(); return; }
   /* the stripe row stays put between paints, so drawing itself in (76) isn't restarted
      every time a colour comes in */
-  if (!el) { el = document.createElement("button"); el.id = "yearBand"; el.type = "button"; el.innerHTML = `<span class="yb-l"></span><span class="yb"></span>`;
-    bar.querySelector(".pagetitle")?.after(el); el.onclick = () => $("#libBar [data-lib='archive']")?.click(); }
+  if (!el) { el = document.createElement("div"); el.id = "yearBand";
+    el.innerHTML = `<span class="yb-l"><button class="yb-go" type="button"></button><button class="yb-share" type="button" hidden>Share</button></span><span class="yb" role="img"></span><span class="yb-tip" aria-hidden="true"></span>`;
+    bar.querySelector(".pagetitle")?.after(el);
+    $(".yb-go", el).onclick = () => $("#libBar [data-lib='archive']")?.click();
+    $(".yb-share", el).onclick = () => shareYear();
+    wireYearScrub(el); }
+  /* 84: before the year's first thing, the band waits, dashed, to be filled */
+  if (!es.length) { $(".yb-go", el).innerHTML = `<b>Your ${y}</b> \u00b7 nothing yet`; $(".yb-share", el).hidden = true;
+    const yb = $(".yb", el); yb.className = "yb empty"; yb.textContent = "Starts with the first thing you finish"; yb.setAttribute("aria-label", yb.textContent); bandN = 0; return; }
+  $(".yb", el).className = "yb";
   /* 72: something just finished pops onto the end, the next time the band is in view */
   if (bandN != null && es.length > bandN) bandFresh = Math.min(3, bandFresh + es.length - bandN); bandN = es.length;
   const inView = !!el.offsetParent, fresh = inView && !REDUCED ? bandFresh : 0; if (inView) bandFresh = 0;
   const m = pcolCache(), todo = [];
-  $(".yb-l", el).innerHTML = `<b>Your ${y}</b> \u00b7 ${es.length} ${es.length === 1 ? "thing" : "things"}`;
+  $(".yb-go", el).innerHTML = `<b>Your ${y}</b> \u00b7 <span class="ybn">${es.length}</span> ${es.length === 1 ? "thing" : "things"} \u203a`;
+  rollOnce($(".ybn", el), es.length, "year:" + y); $(".yb-share", el).hidden = es.length < 3;
+  $(".yb", el).setAttribute("aria-label", `${es.length} things finished in ${y}, one stripe each`);
   $(".yb", el).innerHTML = es.map((e, i) => { const w = works[e.work_id] || e.works || {}, src = myCoverOf(w) || w.cover;
     if (src && !(src in m) && todo.length < 24) todo.push(src);
-    return `<i${i >= es.length - fresh ? ` class="new"` : ""} style="background:${(src && m[src]) || K(w.kind || kindOf(e.work_id)).colour}"></i>`; }).join("");
+    return `<i${i >= es.length - fresh ? ` class="new"` : ""} data-w="${esc(e.work_id)}" data-d="${esc(String(e.rated_on || ""))}" style="background:${(src && m[src]) || K(w.kind || kindOf(e.work_id)).colour}"></i>`; }).join("");
   /* the colours it doesn't know yet, a few at a time, then once more with them in */
   if (todo.length && !bandBusy) { bandBusy = true;
     (async () => { for (const src of todo) await posterColour(src).catch(() => null); bandBusy = false; if ($("#yearBand")) paintYearBand(); })(); } }
+/* 79: touch your year and slide along it: the stripe under your finger says what it was
+   and when, and letting go on one opens it */
+function wireYearScrub(el) { const yb = $(".yb", el), tip = $(".yb-tip", el); let cur = null, down = false;
+  const at = cx => { const ss = $$("i", yb); if (!ss.length) return null; const r = yb.getBoundingClientRect();
+    const s = ss[Math.max(0, Math.min(ss.length - 1, Math.floor((cx - r.left) / r.width * ss.length)))];
+    if (s !== cur) { cur?.classList.remove("on"); s.classList.add("on"); cur = s; if (down) buzz(3);
+      const w = works[s.dataset.w] || {}, d = s.dataset.d ? new Date(s.dataset.d.slice(0, 10) + "T12:00:00") : null;
+      tip.textContent = `${w.title || "Something"}${d ? ` \u00b7 ${d.getDate()} ${MON[d.getMonth()]}` : ""}`; }
+    const er = el.getBoundingClientRect(), sr = s.getBoundingClientRect(), half = tip.offsetWidth / 2;
+    tip.style.left = Math.max(half, Math.min(er.width - half, sr.left - er.left + sr.width / 2)) + "px"; tip.classList.add("on"); return s; };
+  const off = () => { down = false; tip.classList.remove("on"); cur?.classList.remove("on"); cur = null; };
+  yb.addEventListener("pointerdown", e => { if (yb.classList.contains("empty")) return; down = true; try { yb.setPointerCapture(e.pointerId); } catch {} at(e.clientX); });
+  yb.addEventListener("pointermove", e => { if (down) at(e.clientX); });
+  yb.addEventListener("pointerup", e => { if (!down) return; const s = at(e.clientX), id = s?.dataset.w; off(); if (id) openWork(id); });
+  yb.addEventListener("pointercancel", off); }
+/* 80: your year as a picture: the stripes, the count and your three best, story-sized */
+async function shareYear() { const y = String(new Date().getFullYear());
+  const es = myEntries.filter(e => String(e.rated_on || "").startsWith(y) && !isPart(e.work_id) && !e.private).sort((a, b) => String(a.rated_on).localeCompare(String(b.rated_on)));
+  if (!es.length) return; say("Making your picture\u2026");
+  try { await ready(); const W = 1080, H = 1920, M = 90, c = document.createElement("canvas"); c.width = W; c.height = H; const x = c.getContext("2d");
+    x.fillStyle = "#141320"; x.fillRect(0, 0, W, H);
+    x.fillStyle = "#FFF7EC"; x.font = "900 150px Outfit, sans-serif"; x.fillText("My", M, 250);
+    const yw = x.measureText(y).width; x.save(); x.translate(M + yw / 2, 440); x.rotate(-.035);
+    x.fillStyle = "#9EF0C9"; x.beginPath(); x.roundRect(-yw / 2 - 22, -118, yw + 44, 160, 26); x.fill(); x.fillStyle = "#151320"; x.fillText(y, -yw / 2, 0); x.restore();
+    x.fillStyle = "#B9B3CC"; x.font = "700 48px Inter, sans-serif"; x.fillText(`${es.length} ${es.length === 1 ? "thing" : "things"} finished`, M, 590);
+    const m = pcolCache(), bw = W - M * 2, by = 660, bh = 300; x.save(); x.beginPath(); x.roundRect(M, by, bw, bh, 30); x.clip();
+    es.forEach((e, i) => { const w = works[e.work_id] || e.works || {}, src = myCoverOf(w) || w.cover;
+      x.fillStyle = (src && m[src]) || K(w.kind || kindOf(e.work_id)).colour; x.fillRect(M + bw * i / es.length, by, Math.ceil(bw / es.length) + 1, bh); }); x.restore();
+    const best = []; es.slice().sort((a, b) => b.score - a.score || String(b.rated_on).localeCompare(String(a.rated_on))).forEach(e => { const w = works[e.work_id] || e.works;
+      if (w && (myCoverOf(w) || w.cover) && !best.some(b => b.id === w.id) && best.length < 3) best.push(w); });
+    if (best.length) { x.fillStyle = "#B9B3CC"; x.font = "700 40px Inter, sans-serif"; x.fillText(best.length === 1 ? "The best one" : `The best ${best.length === 2 ? "two" : "three"}`, M, 1080);
+      const gap = 30, pw = (bw - gap * 2) / 3, ph = pw * 1.5;
+      for (const [i, w] of best.entries()) { const im = await imgLoad(myCoverOf(w) || w.cover), px = M + i * (pw + gap), py = 1120;
+        x.save(); x.beginPath(); x.roundRect(px, py, pw, ph, 22); x.clip();
+        if (im) x.drawImage(im, px, py, pw, ph); else { x.fillStyle = K(w.kind).colour; x.fillRect(px, py, pw, ph); } x.restore();
+        x.fillStyle = "#FFF7EC"; x.font = "800 34px Outfit, sans-serif"; x.fillText(fitText(x, w.title, pw), px, py + ph + 52); } }
+    cardMark(x, M, H - 150, 52); x.fillStyle = "#FFF7EC"; x.font = "900 54px Outfit, sans-serif"; x.fillText("rooms", M + 84, H - 106);
+    await cardOut(c, `rooms-${y}.png`); }
+  catch (err) { oops(err, "Couldn't make that picture"); } }
 /* re-starring: your mind changes after a log, so tapping your own stars on a log asks
    again, in place, without the whole log sheet. Only the score changes. */
 async function restar(e) { const w = works[e.work_id] || e.works || {}; let v = e.score;
@@ -9044,7 +9145,7 @@ async function renderRoomFeed(fb, R) {
          meant the freshness bookkeeping above (which runs on every render, filter or no)
          marked a moment seen before it was ever shown. */""}
     <div data-rsec="talk"${sec === "talk" ? "" : " hidden"}>
-    <div id="recapSlot"></div>${tonightCard()}
+    <div id="recapSlot"></div>${V2 ? "" : tonightCard()}
     <div id="roomAsks"></div>
     ${V2 ? "" : roomMomentsHTML(moments, freshMoments)}
     <div class="tagrow" id="talkTop" style="margin:18px 0 8px"><span class="lbl" style="margin:0">What the room said</span><span class="tfilters" aria-label="Room activity filter"${V2 ? " hidden" : ""}>${[["all","All"],["reviews","Reviews"],["activity","Activity"]].map(([k,l]) => `<button data-rfilter="${k}" class="${roomFilter===k?"on":""}">${l}</button>`).join("")}</span></div>${(() => { if (!roomEntries.length && !(roomFilter === "activity" && moments.length)) return blank("var(--pink)","“",roomFilter === "reviews" ? "No reviews yet" : roomFilter === "activity" ? "No activity yet" : "Nothing said yet",roomFilter === "reviews" ? "Reviews with a note or reaction will appear here." : roomFilter === "activity" ? "Room activity without a written review will appear here." : "Log something and it lands here for the room to see.",[["talkAdd","Log something"]]);
@@ -9956,6 +10057,8 @@ function paintDiary(el) {
   html += `</div></div>`;
   if (rows.length > show.length) html += `<div class="stack"><button class="btn quiet" id="diaryMore">Show more · ${rows.length - show.length} earlier</button></div>`;
   el.innerHTML = html;
+  if (V2) { const h = $("header"); if (h) document.documentElement.style.setProperty("--hdrh", Math.round(h.getBoundingClientRect().bottom) + "px");
+    $$(".dmonth em", el).slice(0, 2).forEach((m, i) => rollOnce(m, +m.textContent, "dmonth:" + i + ":" + (P.cabKind || ""))); }
   if (diaryGrid()) dealPosters(el, "diary", ".dtile");
   $$(".drow, .dtile", el).forEach(r => r.onclick = () => openWork(r.dataset.work));
   const more = $("#diaryMore"); if (more) more.onclick = () => { diaryShown += 200; paintDiary(el); }; }
@@ -10730,7 +10833,8 @@ async function paintRoomNow(R) {
      Pachinko · mo is watching The Leftovers". Anything moved in the last 45 minutes has a
      small live dot, and each part opens the title. */
   if (V2) { el.classList.add("nowrows");
-    el.innerHTML = pick.map(r => { const w = r.works || works[r.work_id]; if (!w) return "";
+    /* yours is in the bar along the bottom, with Done it; the room's list is everyone else */
+    el.innerHTML = pick.filter(r => r.user_id !== me.id).map(r => { const w = r.works || works[r.work_id]; if (!w) return "";
       const who = r.user_id === me.id ? "you" : (r.profiles?.handle || ""), up = (() => { try { return nowLine(r); } catch { return ""; } })();
       return `<span class="nowrow" data-w="${esc(r.work_id)}" role="button" tabindex="0">${cover(w)}<span class="t"><b>${esc(w.title)}</b><small><em>${esc(who)}</em> · ${esc(lc(nowVerb(w.kind)))}${up ? ` · ${up}` : ""}</small></span>${avatar(r.profiles || { id:r.user_id })}</span>`; }).join("");
     $$("[data-w]", el).forEach(x => x.onclick = () => openWork(x.dataset.w)); return; }
@@ -17090,7 +17194,7 @@ async function openYou() { let top = { items:[] }; try { top = await ensureMyTop
     ${isFounder() ? `<div class="lbl" style="margin-top:10px">Founder</div><div class="stack"><button class="btn quiet" id="fTrends">Last week on Rooms</button><button class="btn quiet" id="fRS">Room Service</button><button class="btn quiet" id="fList">Copy the newsletter list</button></div>` : ""}
     <div class="lbl" style="margin-top:10px">How the app looks</div><div class="chips">${[["","Auto"],["light","Light"],["dark","Dark"]].map(([k,l]) => `<button class="chip ${(P.theme||"")===k?"on":""}" data-th="${k}">${l}</button>`).join("")}</div>
     <p class="sub" style="margin-top:4px">Auto follows your phone. The ground still warms and dims across the day either way.</p>
-    <div class="lbl">The mascots</div><div class="chips"><button class="chip ${P.tilt ? "on" : ""}" id="tiltSw">Eyes follow your tilt</button><button class="chip ${P.newLook ? "on" : ""}" id="newLookSw">Try the new look</button></div>
+    <div class="lbl">The mascots</div><div class="chips"><button class="chip ${P.tilt ? "on" : ""}" id="tiltSw">Eyes follow your tilt</button><button class="chip ${P.classicLook ? "on" : ""}" id="classicSw">Classic look</button></div>
     <p class="sub" style="margin-top:4px">Tilt your phone and every mascot looks the way it leans.</p>
     <div class="lbl">Cards</div><div class="chips">${[["","Auto"],["day","Day"],["night","Night"]].map(([k,l]) => `<button class="chip ${(P.cardTheme||"")===k?"on":""}" data-ct="${k}">${l}</button>`).join("")}</div>
     <p class="sub" style="margin-top:4px">Auto goes dark in the evening. The medium tints the light either way.</p>
@@ -17166,7 +17270,7 @@ async function openYou() { let top = { items:[] }; try { top = await ensureMyTop
     $$("[data-ave]").forEach(b => b.onclick = () => { av.eyes = b.dataset.ave; paintAv(); });
     $$("[data-avc]").forEach(b => b.onclick = () => { av.col = +b.dataset.avc; paintAv(); }); };
   paintAv();
-  $("#newLookSw").onclick = () => { P.newLook = !P.newLook; saveP(); location.reload(); };
+  $("#classicSw").onclick = () => { P.classicLook = !P.classicLook; saveP(); location.reload(); };
   $("#tiltSw").onclick = async () => { const b = $("#tiltSw");
     if (P.tilt) { P.tilt = false; saveP(); tiltOff(); b.classList.remove("on"); return; }
     if (await tiltOn(true)) { P.tilt = true; saveP(); b.classList.add("on"); } else say("Your phone didn't allow it"); };

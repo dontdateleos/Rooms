@@ -41,7 +41,9 @@ const BASE = (process.env.BASE || "http://127.0.0.1:8934").replace(/\/$/, "");
 
     await step("rooms", async () => { await tap("nav button", "Rooms"); await wait(1500);
       await expect("#feedPick", "the room title"); await expect(".roomsecs", "the room sections");
-      for (const sec of ["Play", "Charts", "Year", "Talk"]) { await tap("[data-rsecbtn]", sec); await wait(900); }
+      /* Year only shows while the awards are on (December and January) */
+      for (const sec of ["Play", "Charts", "Year", "Talk"]) { if (sec === "Year" && !(await page.locator("[data-rsecbtn]", { hasText:/^\s*Year/ }).count())) continue;
+        await tap("[data-rsecbtn]", sec); await wait(900); }
       await expect("#roomGames .card", "the games"); });
     await step("feed", async () => { await tap("nav button", "Feed"); await wait(1500);
       await expect("#storyRow .sbub.fresh", "a ring with something new"); await expect("#pplFol .slip", "the people you follow");
@@ -55,11 +57,11 @@ const BASE = (process.env.BASE || "http://127.0.0.1:8934").replace(/\/$/, "");
     await step("room picker", async () => { await tap("nav button", "Rooms"); await wait(1200); await tap("#feedPick"); await wait(500); await expect("[data-fp]", "rooms to pick"); await closeSheet(); });
     await step("room menu", async () => { await tap("#roomMenu"); await wait(500); await expect("#roomSeats", "the members"); await closeSheet(); });
     await step("bell", async () => { await tap("#bellBtn"); await wait(500); await expect("#noteBody", "the bell's list"); await closeSheet(); });
-    await step("diary and ranked", async () => { await tap("nav button", "Queue"); await wait(700); await tap("#libBar [data-lib='archive']"); await wait(900); await expect(".drow", "the diary");
-      await tap('#cabPager [data-place]:nth-child(2)'); await wait(900); await expect(".drow", "the diary for one medium");
+    await step("diary and ranked", async () => { await tap("nav button", "Queue"); await wait(700); await tap("#libBar [data-lib='archive']"); await wait(900); await expect(".drow, .dtile", "the diary");
+      await tap('#cabPager [data-place]:nth-child(2)'); await wait(900); await expect(".drow, .dtile", "the diary for one medium");
       await tap('#cabPager [data-place]'); await wait(700);
       await tap("#libBar [data-lib='ranked']"); await wait(900); await expect(".archcard", "your rankings");
-      await tap("#libBar [data-lib='archive']"); await wait(700); await expect(".drow", "back to the diary"); });
+      await tap("#libBar [data-lib='archive']"); await wait(700); await expect(".drow, .dtile", "back to the diary"); });
     await step("play: five clues and party games", async () => { await tap("nav button", "Rooms"); await wait(1200);
       await tap('[data-rsecbtn="play"]'); await wait(2500); await expect('#playHub [data-ph="clues"]', "the Play hub"); await expect(".pg", "a party game");
       await tap('#playHub [data-ph="clues"]'); await wait(1200); await expect(".clu-list li.on", "the first clue"); await closeSheet();
@@ -75,8 +77,14 @@ const BASE = (process.env.BASE || "http://127.0.0.1:8934").replace(/\/$/, "");
       /* Library comes back to the side you left it on */
       await tap("nav button", "Queue"); await wait(900); await expect("#tab-archive.on", "the archive, where Library was left");
       await tap("#libBar [data-lib='shelf']"); await wait(900); await expect("#shelfGrid .cell", "shelf posters"); });
-    await step("tonight", async () => { await tap("nav button", "Rooms"); await wait(1200); await expect("#tonight", "the tonight card");
-      await tap("#tonightSpin"); await wait(700); if (!(await page.$("#sheet.on"))) throw new Error("Can't decide? didn't open the wheel"); await closeSheet(); });
+    /* the classic look has a Tonight card in the room; the new look has the bar along the
+       bottom, and the wheel lives on Queue's Up next */
+    await step("tonight", async () => { await tap("nav button", "Rooms"); await wait(1200);
+      if (await page.$("html.v2")) { await expect("#nowBar .nb-done", "what you're on, in the bar");
+        await tap("nav button", "Queue"); await wait(900); await tap("#spinOpen"); }
+      else { await expect("#tonight", "the tonight card"); await tap("#tonightSpin"); }
+      await wait(700); if (!(await page.$("#sheet.on"))) throw new Error("Can't decide? didn't open the wheel"); await closeSheet();
+      await tap("nav button", "Rooms"); await wait(1200); });
     await step("swipe between tabs", async () => {
       /* a real drag: down, a run of moves, up — the page follows the finger, so a
          start and an end with nothing between would never get going */
