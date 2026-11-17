@@ -1642,6 +1642,11 @@ html.v2 :is(main,#sheet) img.co:not(.ok){background-color:color-mix(in srgb,var(
 #nowBar{touch-action:none}#nowBar.dragging{transition:none}#nowBar.going{transition:transform .25s ease-in,opacity .25s;opacity:0}
 @media (prefers-reduced-motion:reduce){html.v2 img.co:not(.ok){animation:none}}
 html.v2 .av{transform-origin:50% 88%}
+/* each mascot breathes, slow and soft, at its own pace (the ones asleep on the couch have
+   their own slower breath) */
+@keyframes avBreath{0%,100%{scale:1 1}50%{scale:.985 1.03}}
+html.v2 .av:not(#meAv){animation:avBreath calc(3.2s + var(--id,0s)) ease-in-out infinite;animation-delay:calc(var(--bd,0s) * -1)}
+@media (prefers-reduced-motion:reduce){html.v2 .av:not(#meAv){animation:none}}
 /* the ones asleep on the couch breathe slowly, and a z drifts up off them */
 .couchrow .cz{position:relative}
 @keyframes czSleep{0%,100%{scale:1 1}50%{scale:1.04 .95}}
@@ -8870,9 +8875,10 @@ function paintCouch() { const row = $("#couchRow"); if (!row) return; let n = 0;
    the round, see --yaw above) to one side, maybe up or down, maybe a second and third place,
    holds each a moment, and then settles back to facing you. In between it blinks, sometimes
    twice. On the couch and the story row they also turn to whoever's beside them, who may
-   look back. Tap the screen and the ones nearby turn to where you tapped. Somebody logging
-   makes theirs leap. While you scroll they keep still, and ones that scroll into view
-   take a while before they do anything, so nothing moves in step. Only what's on screen
+   look back, or chat (turn to each other and take turns bobbing). Each breathes softly
+   (CSS). Tap the screen and the ones nearby turn to where you tapped. Scrolling, they glance
+   the way the page is going and back when it stops; nothing else starts while you scroll.
+   Somebody logging makes theirs leap and the rest turn to look. Only what's on screen
    moves, nothing runs in the background, and reduce motion stills all of it. */
 const alive = (() => { const none = { leap() {} };
   if (!V2 || REDUCED || !Element.prototype.animate) return none;
@@ -8904,7 +8910,14 @@ const alive = (() => { const none = { leap() {} };
     const d = b.getBoundingClientRect().left > a.getBoundingClientRect().left ? 1 : -1, hold = rnd(1100, 1900);
     const t = run(a, [[d * .95, 0, 0, hold]]); if (Math.random() < .65) setTimeout(() => run(b, [[-d * .95, 0, 0, hold - 300]]), rnd(250, 500)); return t; };
   const QUIET = [blink, blink, lookAround, lookAround, lookAround, cock, upDown];
-  const STAGE = [...QUIET, other, other];
+  /* two neighbours turn to each other and take turns bobbing, like they're talking */
+  const BOB = [{ translate:"0 0" }, { translate:"0 -4px" }, { translate:"0 0" }, { translate:"0 -3px" }, { translate:"0 0" }];
+  const chat = a => { const b = beside(a); if (!b || b.closest(".zz")) return lookAround(a);
+    const d = b.getBoundingClientRect().left > a.getBoundingClientRect().left ? 1 : -1, n = pick([3, 4, 5]), hold = 400 + n * 650;
+    run(a, [[d * .9, 0, 0, hold]]); run(b, [[-d * .9, 0, 0, hold - 150]]); next.set(b, performance.now() + hold + rnd(2000, 4000));
+    for (let k = 0; k < n; k++) setTimeout(() => (k % 2 ? b : a).animate(BOB, { duration:520, easing:"ease-in-out", composite:"add" }), 380 + k * 650);
+    return hold + 600; };
+  const STAGE = [...QUIET, other, chat, chat];
   const next = new WeakMap(); let pool = [], poolAt = 0;
   const gather = () => { const root = sheetOn() ? $("#sheetBody") : $("main > section.on");
     pool = root ? [...root.querySelectorAll(".av")].filter(a => !a.closest(".zz, .tilting") && onScreen(a)).slice(0, 40) : []; poolAt = performance.now(); };
@@ -8913,6 +8926,13 @@ const alive = (() => { const none = { leap() {} };
     for (const a of pool) { const t = next.get(a); if (t === undefined) { next.set(a, now + rnd(1500, 7000)); continue; } if (now < t) continue;
       const took = pick(a.closest(".couchrow, .storyrow") ? STAGE : QUIET)(a) || 0;
       next.set(a, now + took + rnd(1200, 4500)); } }, 180);
+  /* they react to the page: as you scroll they glance the way it's going, and look back
+     at you when it stops */
+  let scrollDir = 0, lastY = scrollY, settleT = 0;
+  addEventListener("scroll", () => { const dy = scrollY - lastY; lastY = scrollY; if (Math.abs(dy) < 2) return; const d = dy > 0 ? 1 : -1;
+    if (d !== scrollDir) { scrollDir = d; gather();
+      pool.slice(0, 16).forEach(a => setTimeout(() => { plan.set(a, (plan.get(a) || 0) + 1); face(a, rnd(-.2, .2), d * rnd(.6, .85), 0); }, rnd(0, 220))); }
+    clearTimeout(settleT); settleT = setTimeout(() => { scrollDir = 0; const was = pool; gather(); new Set([...was, ...pool]).forEach(a => setTimeout(() => face(a), rnd(0, 300))); }, 380); }, { passive:true });
   /* a tap (not the start of a scroll) and the mascots near it turn to look, then back */
   let downAt = null;
   document.addEventListener("pointerdown", e => { downAt = e.pointerType === "mouse" && e.button !== 0 ? null : { x:e.clientX, y:e.clientY, t:performance.now(), target:e.target }; }, { capture:true, passive:true });
@@ -8922,8 +8942,12 @@ const alive = (() => { const none = { leap() {} };
   /* somebody's log just landed: their mascot leaps, wherever it's on screen */
   const LEAP = [{ translate:"0 0", scale:"1 1" }, { translate:"0 1px", scale:"1.14 .84", offset:.14 }, { translate:"0 -12px", scale:".9 1.12", offset:.4 },
     { translate:"0 0", scale:"1.1 .88", offset:.7 }, { translate:"0 -6px", scale:".96 1.05", offset:.85 }, { translate:"0 0", scale:"1 1" }];
-  return { face, leap(uid) { if (!uid) return; setTimeout(() => $$(`.av[data-u="${CSS.escape(String(uid))}"]`).filter(onScreen).slice(0, 3)
-    .forEach(a => a.animate(LEAP, { duration:900, easing:"cubic-bezier(.3,1.3,.5,1)", composite:"add" })), 250); } }; })();
+  /* somebody's log just landed: their mascot leaps, and the others turn to look at it */
+  return { face, leap(uid) { if (!uid) return; setTimeout(() => { const them = $$(`.av[data-u="${CSS.escape(String(uid))}"]`).filter(onScreen).slice(0, 3);
+    them.forEach(a => a.animate(LEAP, { duration:900, easing:"cubic-bezier(.3,1.3,.5,1)", composite:"add" })); if (!them.length) return;
+    const t = them[0].getBoundingClientRect(); gather();
+    pool.filter(a => !them.includes(a)).slice(0, 16).forEach(a => { const r = a.getBoundingClientRect();
+      setTimeout(() => run(a, [[clamp((t.left - r.left) / 110), clamp((t.top - r.top) / 150) * .85, 0, rnd(1300, 1800)]]), rnd(120, 450)); }); }, 250); } }; })();
 /* 90: a number rolls up the first time it's on screen (once a session per thing) */
 const rolled = new Set();
 function rollOnce(el, n, key) { if (!el) return;
