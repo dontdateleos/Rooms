@@ -1431,7 +1431,7 @@ html.v2 .nowrow:first-child{border-top:0}
 html.v2 .nowrow .t{flex:1;min-width:0;display:grid}
 html.v2 .nowrow .t b{font:800 15.5px/1.2 var(--head);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 html.v2 .nowrow .t small em{font-style:normal;color:var(--ink)}
-html.v2 .nowrow .av svg{width:26px;height:26px}
+html.v2 .nowrow .av svg{width:32px;height:32px}
 /* 4: the slim title at the top carries the room's line */
 /* 8: folding */
 html.v2 .card.foldable > .h{cursor:pointer}
@@ -1506,6 +1506,9 @@ html.v2 .stars i.off{background:color-mix(in srgb,var(--ink) 22%,transparent)}
 /* 41: a paint splat behind whoever logged it */
 html.v2 .slip .who{isolation:isolate}
 html.v2 .slip .who .av{position:relative;overflow:visible}
+/* the mascots a size up in the feeds, so you can see them look about */
+html.v2 .slip .who .av{width:40px;height:40px}html.v2 .slip .who .av svg{width:40px;height:40px}
+html.v2 #tab-doors .slip .who .av,html.v2 #tab-doors .slip .who .av svg{width:36px;height:36px}
 html.v2 .slip .who .av::before{content:"";position:absolute;inset:-7px;z-index:-1;background:color-mix(in srgb,var(--kc,var(--pink)) 55%,transparent);
   -webkit-mask:var(--splat2,var(--splat0)) center/100% 100% no-repeat;mask:var(--splat2,var(--splat0)) center/100% 100% no-repeat;rotate:12deg}
 /* 42: moments as stickers */
@@ -4394,11 +4397,12 @@ function markSVG(o, cls = "") { const shape = AV_SHAPES[o.shape] ? o.shape : "cu
 const markFig = (shape, col, eyes, x = 0, y = 0, w = 100) => markSVG({ shape, col, eyes }).replace("<svg ", `<svg x="${x}" y="${y}" width="${w}" height="${w}" `);
 /* every other character and mark the app draws (the Rooms mark, the little faces in
    toasts and while things load, the room and place marks, the end of the feed, the season's
-   ghost and objects, empty doors, the sleepy and peeking mascots) gets the same look as the
+   ghost and objects, empty doors, the sleepy and peeking mascots; not the launch screen,
+   which keeps its original look) gets the same look as the
    mascots: each solid piece of it a shine from the top left falling away into shade, and a
    soft shadow on the ground. Done once each, when it's first on screen (it has to be laid
    out to be measured). Small details, eyes and outlines are left alone. */
-const MARK3D = "svg.mark, svg.pmk, #splash .spm svg, svg.pgmark, .endguy svg, .season-ghost svg, svg.season-object, .season-object svg, svg.emptydoor, svg.mk3, .b1-peek svg, .sleepy svg";
+const MARK3D = "svg.mark, svg.pmk, svg.pgmark, .endguy svg, .season-ghost svg, svg.season-object, .season-object svg, svg.emptydoor, svg.mk3, .b1-peek svg, .sleepy svg";
 const SHADE_SKIP = /^(none|#151320|#fff|#ffffff|transparent)$/i;
 function mark3d(svg) { if (!V2 || svg.dataset.m3 || svg.closest(".av") || svg.querySelector(".avb")) return; av3dDefs();
   const vb = svg.viewBox?.baseVal; if (!vb || !vb.width) return;
