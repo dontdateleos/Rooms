@@ -4369,6 +4369,29 @@ function avSVG(a) { av3dDefs();
   return `<svg viewBox="0 0 100 100" data-shape="${a.shape}" aria-hidden="true">${round ? `<ellipse class="avgr" cx="50" cy="93" rx="26" ry="4" fill="#000" opacity=".22"/>` : ""}<g class="avb" transform="rotate(${a.tilt||0} 50 54)">${round ? `<g clip-path="url(#avc-${a.shape})">${body}</g>` : body}
     ${round ? `<g clip-path="url(#avc-${a.shape})"><rect class="avsh" x="-25" y="-25" width="150" height="150" fill="url(#avSheen) none"/></g>` : ""}<g class="eyes" fill="${ink}">${eyes}</g></g>${
       a.founder ? COMET : (a.ring || "")}</svg>`; }
+/* THE RULE FOR MARKS. Every character or mark the app draws (the faces in toasts, while
+   things load and in the tour, the sleepy and peeking mascots, the end of the feed, the room
+   and place marks, a face's mood) is made only from what the profile picker offers: one of
+   its shapes (AV_SHAPES), one of its eye styles (AV_EYES) and one of its colours (AV_COLS).
+   No custom bodies, eyes, brows, cheeks or arms. So every mark is a mascot somebody could
+   have picked for themselves, and every mark's eyes match everyone's. markSVG is the only
+   way to draw one: a shape or eyes it doesn't know become the default ones, and any other
+   colour (a hex, a var(--tone)) snaps to the nearest picker colour. The Rooms logo is the
+   one exception: it's the brand. */
+const AV_TONE = { apricot:0, coral:1, pink:2, butter:3, mint:4, sky:5, lilac:6, grey:7, ink:8 };
+function avColIndex(c) { if (typeof c === "number") return Math.max(0, Math.min(AV_COLS.length - 1, c)); const s = String(c || "").trim().toLowerCase();
+  if (s in AV_TONE) return AV_TONE[s]; const v = s.match(/var\(--([a-z]+)/); if (v && v[1] in AV_TONE) return AV_TONE[v[1]];
+  const i = AV_COLS.findIndex(x => x.toLowerCase() === s); if (i >= 0) return i;
+  const rgb = h => { const m = /^#?([0-9a-f]{6})$/i.exec(h); if (!m) return null; const n = parseInt(m[1], 16); return [n >> 16, (n >> 8) & 255, n & 255]; };
+  const t = rgb(s); if (!t) return AV_TONE.pink; let best = 0, bd = Infinity;
+  AV_COLS.forEach((x, k) => { const q = rgb(x), d = (q[0] - t[0]) ** 2 + (q[1] - t[1]) ** 2 + (q[2] - t[2]) ** 2; if (d < bd) { bd = d; best = k; } }); return best; }
+/* a face's mood, in the picker's eyes: content, starry, unimpressed, small */
+const MOOD_AV_EYES = { ok:"pair", happy:"sleepy", love:"shine", meh:"tilt", sad:"dots" };
+function markSVG(o, cls = "") { const shape = AV_SHAPES[o.shape] ? o.shape : "cube", eyes = AV_EYES[o.eyes] ? o.eyes : MOOD_AV_EYES[o.eyes] || "pair";
+  const svg = avSVG({ shape, col:avColIndex(o.col), eyes, tilt:o.tilt || 0 });
+  return cls ? svg.replace("<svg ", `<svg class="${cls}" `) : svg; }
+/* a mascot placed inside a bigger mark: x, y and size in that mark's 100 box */
+const markFig = (shape, col, eyes, x = 0, y = 0, w = 100) => markSVG({ shape, col, eyes }).replace("<svg ", `<svg x="${x}" y="${y}" width="${w}" height="${w}" `);
 /* every other character and mark the app draws (the Rooms mark, the little faces in
    toasts and while things load, the room and place marks, the end of the feed, the season's
    ghost and objects, empty doors, the sleepy and peeking mascots) gets the same look as the
@@ -4377,7 +4400,7 @@ function avSVG(a) { av3dDefs();
    out to be measured). Small details, eyes and outlines are left alone. */
 const MARK3D = "svg.mark, svg.pmk, #splash .spm svg, svg.pgmark, .endguy svg, .season-ghost svg, svg.season-object, .season-object svg, svg.emptydoor, svg.mk3, .b1-peek svg, .sleepy svg";
 const SHADE_SKIP = /^(none|#151320|#fff|#ffffff|transparent)$/i;
-function mark3d(svg) { if (!V2 || svg.dataset.m3 || svg.closest(".av")) return; av3dDefs();
+function mark3d(svg) { if (!V2 || svg.dataset.m3 || svg.closest(".av") || svg.querySelector(".avb")) return; av3dDefs();
   const vb = svg.viewBox?.baseVal; if (!vb || !vb.width) return;
   const parts = [...svg.querySelectorAll("path,rect,circle,ellipse,polygon")].filter(el => !el.closest(".eyes, defs, clipPath, mask") && !el.classList.contains("m3sh")
     && !SHADE_SKIP.test((el.getAttribute("fill") || el.closest("[fill]")?.getAttribute("fill") || "").trim()));
@@ -4406,14 +4429,8 @@ const avatar = (p, cls = "", o = {}) => { const who = String(p?.id || p?.handle 
    Every face in the app has had one expression. These are the others it can pull: drawn
    in the same 100-unit box as the capsule eyes, in the eyes' own colour, so any shape and
    any colour can wear them. */
-const MOOD_EYES = {
-  /* no brows on any face: sad is the eyes gone small and dropped, looking at the floor */
-  sad:   () => `<rect x="39" y="58" width="8" height="9" rx="4"/><rect x="55" y="58" width="8" height="9" rx="4"/>`,
-  meh:   () => `<rect x="37" y="54" width="11" height="5" rx="2.5"/><rect x="54" y="54" width="11" height="5" rx="2.5"/>`,
-  happy: c => `<path d="M37 59 q5.5 -10 11 0 M54 59 q5.5 -10 11 0" stroke="${c}" stroke-width="5.5" stroke-linecap="round" fill="none"/>`,
-  love:  c => `<path d="M37 59 q5.5 -10 11 0 M54 59 q5.5 -10 11 0" stroke="${c}" stroke-width="5.5" stroke-linecap="round" fill="none"/>
-    <circle cx="33" cy="68" r="5" fill="#FF7FA8" fill-opacity=".75"/><circle cx="69" cy="68" r="5" fill="#FF7FA8" fill-opacity=".75"/>`,
-};
+/* a mood is one of the picker's eye styles (see the rule for marks) */
+const MOOD_EYES = Object.fromEntries(Object.entries(MOOD_AV_EYES).filter(([m]) => m !== "ok").map(([m, e]) => [m, () => AV_EYES[e]]));
 const moodOf = v => !(v > 0) ? "ok" : v <= 2 ? "sad" : v <= 5 ? "meh" : v <= 7 ? "ok" : v <= 9 ? "happy" : "love";
 /* ---------- where the little guys are allowed ----------
    The faces react and feel things only in a few chosen places, so it stays a
@@ -4439,8 +4456,7 @@ function faceMood(el, m) {
       swap(); g._shut = false; g.animate([{ transform:"scaleY(.08)" }, { transform:"scaleY(1)" }], { duration:120, easing:"cubic-bezier(.3,1.6,.5,1)" }); }; }
   return true; }
 /* a tiny face for a status: the toast's tick and bang became a little guy pleased or worried */
-const tinyFace = (m, col) => `<svg class="mk3" viewBox="0 0 100 100" aria-hidden="true"><rect x="12" y="16" width="76" height="74" rx="32" fill="${col}"/>
-  <g class="eyes" fill="#151320">${m === "ok" ? `<rect x="38" y="44" width="8" height="18" rx="4"/><rect x="55" y="43" width="8" height="19" rx="4"/>` : MOOD_EYES[m]("#151320")}</g></svg>`;
+const tinyFace = (m, col) => markSVG({ shape:"cube", col, eyes:m });
 /* little hearts thrown up out of something, for a like or a five-star face */
 function heartBurst(el, n = 5) {
   if (REDUCED || !el) return; const r = el.getBoundingClientRect(); if (!r.width) return;
@@ -5114,7 +5130,7 @@ function say(msg, kind = "") {
   if (V2 && tapSay(msg, kind)) { el.className = "toast"; return; }
   el.textContent = msg; el.className = "toast on " + kind; el.style.translate = "";
   if (kind === "good" || kind === "bad") { const i = document.createElement("i"); i.className = "ti face-" + kind; i.setAttribute("aria-hidden", "true");
-    i.innerHTML = tinyFace(kind === "good" ? "happy" : "sad", "#FFF7EC"); el.prepend(i); }
+    i.innerHTML = tinyFace(kind === "good" ? "happy" : "sad", kind === "good" ? "mint" : "coral"); el.prepend(i); }
   toastT = setTimeout(() => { el.className = "toast"; }, kind === "bad" ? 5200 : 3000);
 }
 /* the new look says a short thing beside the button you just pressed, rather than in a
@@ -6504,8 +6520,7 @@ function endLine(fb, es, limit) {
   const d = String(last.rated_on || "").slice(0, 10);
   const col = ["#F5A3C7", "#FFB36B", "#B9A6FF", "#8FD3FF"][es.length % 4];
   fb.insertAdjacentHTML("beforeend",
-    `<div class="endline"><span class="endguy" aria-hidden="true"><svg viewBox="0 0 44 34"><g class="gb"><rect class="arm" x="30" y="17" width="9" height="5.5" rx="2.75" fill="${col}"/><rect x="8" y="5" width="26" height="36" rx="10" fill="${col}"/>
-      <g class="ge" fill="#151320"><rect x="15" y="13" width="3.6" height="8" rx="1.8"/><rect x="22.6" y="13.6" width="3.6" height="8.6" rx="1.8"/></g></g></svg></span>That's everything${d ? " since " + esc(stampDate(d)) : ""}</div>`);
+    `<div class="endline"><span class="endguy" aria-hidden="true">${markSVG({ shape:"pill", col, eyes:"pair" })}</span>That's everything${d ? " since " + esc(stampDate(d)) : ""}</div>`);
   /* he only comes up to say so once you've actually got to the bottom */
   const guy = fb.lastElementChild?.querySelector(".endguy");
   if (guy && "IntersectionObserver" in window && !REDUCED) { const io = new IntersectionObserver(xs => { if (!xs.some(x => x.isIntersecting)) return;
@@ -8009,7 +8024,7 @@ function emptyDoor(colour, mark) {
   </svg>`; }
 function blank(colour, mark, title, body, actions = []) {
   /* one line with its one button; any other buttons stay (hidden) so whatever wires them still finds them */
-  if (V2) return `<div class="blank1" style="--c:${colour}"><span class="b1-peek" aria-hidden="true"><svg viewBox="0 0 100 100">${AV_SHAPES.arch({ base:"currentColor", light:"rgba(255,255,255,.34)", dark:"rgba(21,19,32,.22)" })}<g class="eyes" fill="#151320"><rect x="36" y="44" width="8" height="18" rx="4"/><rect x="54" y="43" width="8" height="19" rx="4"/></g></svg></span><span class="b1-t"><b>${title}</b><small>${body}</small></span>${actions.map(([id, label], i) =>
+  if (V2) return `<div class="blank1" style="--c:${colour}"><span class="b1-peek" aria-hidden="true">${markSVG({ shape:"arch", col:colour, eyes:"pair" })}</span><span class="b1-t"><b>${title}</b><small>${body}</small></span>${actions.map(([id, label], i) =>
     `<button class="b1-go" id="${id}"${i ? " hidden" : ""}>${label}</button>`).join("")}</div>`;
   return `<div class="blank">${emptyDoor(colour, mark)}<h3>${title}</h3><p>${body}</p>
     ${actions.length ? `<div class="stack">${actions.map(([id,label,cls]) => `<button class="btn ${cls||"soft"}" id="${id}">${label}</button>`).join("")}</div>` : ""}</div>`; }
@@ -8378,32 +8393,22 @@ document.addEventListener("keydown", e => { if ((e.key === "Enter" || e.key === 
 const TONE_HEX = { pink:"#F5A3C7", butter:"#FFE86A", mint:"#9EF0C9", sky:"#8FD3FF", lilac:"#B9A6FF", apricot:"#FFB36B" };
 const KIND_TONE = { film:"apricot", tv:"pink", book:"butter", game:"mint" };
 const MK_EYES = (x1, y1, x2, y2, h = 20) => `<g class="eyes" fill="#151320"><rect x="${x1}" y="${y1}" width="7" height="${h}" rx="3.5"/><rect x="${x2}" y="${y2}" width="7" height="${h + 2}" rx="3.5"/></g>`;
+/* the room and place marks: mascots from the picker (see the rule for marks), one shape
+   each, and two or three of them where the place is people */
 const PLACE_MARKS = {
-  room: c => `<rect x="6" y="30" width="54" height="52" rx="14" fill="${avShade(c, -.18)}"/><rect x="36" y="22" width="58" height="60" rx="15" fill="${c}"/><path d="M51 22h28a15 15 0 0 1 15 15H36a15 15 0 0 1 15-15z" fill="${avShade(c, .3)}"/>${MK_EYES(54, 46, 70, 44)}`,
-  people: c => `<rect x="8" y="30" width="38" height="56" rx="19" fill="${avShade(c, -.2)}"/><g fill="#151320" opacity=".8"><rect x="19" y="50" width="5" height="13" rx="2.5"/><rect x="29" y="49" width="5" height="14" rx="2.5"/></g>
-    <rect x="40" y="16" width="48" height="72" rx="24" fill="${c}"/><path d="M64 16a24 24 0 0 1 24 24H40a24 24 0 0 1 24-24z" fill="${avShade(c, .3)}"/>${MK_EYES(55, 44, 69, 42)}`,
-  /* Everyone: a huddle, the one at the front biggest — Following is two of you, this is more */
-  crowd: c => `<rect x="4" y="40" width="30" height="46" rx="15" fill="${avShade(c, -.2)}"/><rect x="66" y="40" width="30" height="46" rx="15" fill="${avShade(c, -.2)}"/>
-    <g fill="#151320" opacity=".75"><rect x="12" y="56" width="4" height="10" rx="2"/><rect x="20" y="55" width="4" height="11" rx="2"/><rect x="76" y="56" width="4" height="10" rx="2"/><rect x="84" y="55" width="4" height="11" rx="2"/></g>
-    <rect x="26" y="20" width="48" height="68" rx="24" fill="${c}"/><path d="M50 20a24 24 0 0 1 24 24H26a24 24 0 0 1 24-24z" fill="${avShade(c, .3)}"/>${MK_EYES(40, 46, 54, 44)}`,
-  globe: c => `<circle cx="50" cy="54" r="34" fill="${c}"/><path d="M16 54a34 34 0 0 1 68 0c0-13-15-21-34-21S16 41 16 54z" fill="${avShade(c, .3)}"/>
-    <ellipse cx="50" cy="60" rx="46" ry="10" fill="none" stroke="${avShade(c, -.2)}" stroke-width="6" transform="rotate(-12 50 60)"/>${MK_EYES(39, 44, 54, 42)}`,
-  archive: c => `${AV_SHAPES.box({ base:c, light:avShade(c, .3), dark:avShade(c, -.18) })}${MK_EYES(36, 50, 50, 54, 18)}`,
-  film: c => `<rect x="12" y="40" width="76" height="48" rx="11" fill="${c}"/><rect x="74" y="40" width="14" height="48" rx="7" fill="${avShade(c, -.22)}"/>
-    <g transform="rotate(-14 14 38)"><rect x="12" y="24" width="76" height="16" rx="5" fill="${avShade(c, .3)}"/><path d="M26 24l-8 16h10l8-16zM46 24l-8 16h10l8-16zM66 24l-8 16h10l8-16z" fill="${avShade(c, -.22)}"/></g>${MK_EYES(38, 54, 53, 52, 18)}`,
-  tv: c => `<path d="M50 30L34 12M50 30l16-18" stroke="${avShade(c, -.2)}" stroke-width="5" stroke-linecap="round"/><circle cx="34" cy="12" r="5" fill="${avShade(c, .3)}"/><circle cx="66" cy="12" r="5" fill="${avShade(c, .3)}"/>
-    <rect x="10" y="30" width="80" height="56" rx="18" fill="${c}"/><rect x="20" y="38" width="60" height="40" rx="11" fill="${avShade(c, .3)}"/>${MK_EYES(40, 48, 54, 46)}`,
-  book: c => `<rect x="22" y="12" width="58" height="78" rx="9" fill="${c}"/><rect x="22" y="12" width="15" height="78" rx="7" fill="${avShade(c, -.2)}"/><rect x="72" y="18" width="8" height="66" rx="3" fill="${avShade(c, .35)}"/>${MK_EYES(46, 40, 60, 38)}`,
-  game: c => `<circle cx="24" cy="70" r="16" fill="${avShade(c, -.2)}"/><circle cx="76" cy="70" r="16" fill="${avShade(c, -.2)}"/><rect x="8" y="32" width="84" height="44" rx="22" fill="${c}"/>
-    <path d="M30 32h40a22 22 0 0 1 22 22H8a22 22 0 0 1 22-22z" fill="${avShade(c, .3)}"/><path d="M22 48v12M16 54h12" stroke="#151320" stroke-width="4" stroke-linecap="round"/><circle cx="78" cy="52" r="3.5" fill="#151320"/>${MK_EYES(43, 44, 55, 43, 18)}`,
-  ghost: c => `<path d="M18 46a32 32 0 0 1 64 0v30q-8 10-16 0t-16 0t-16 0t-16 0z" fill="${c}"/><path d="M50 14a32 32 0 0 1 32 32H18a32 32 0 0 1 32-32z" fill="${avShade(c, .25)}"/><path d="M82 46v30q-8 10-16 0V46a14 14 0 0 0-8-13 32 32 0 0 1 24 13z" fill="${avShade(c, -.18)}"/>${MK_EYES(40, 44, 55, 42)}`,
-  shelf: c => `<rect x="12" y="10" width="76" height="82" rx="14" fill="${c}"/><path d="M26 10h48a14 14 0 0 1 14 14H12a14 14 0 0 1 14-14z" fill="${avShade(c, .3)}"/>
-    <rect x="12" y="56" width="76" height="7" fill="${avShade(c, -.2)}"/><rect x="22" y="66" width="9" height="20" rx="2" fill="${avShade(c, -.12)}"/><rect x="34" y="70" width="9" height="16" rx="2" fill="${avShade(c, .25)}"/>
-    <rect x="46" y="67" width="9" height="19" rx="2" fill="${avShade(c, -.25)}"/>${MK_EYES(40, 26, 54, 25, 18)}`,
-  moon: c => `<path d="M62 10a40 40 0 1 0 28 64A34 34 0 0 1 62 10z" fill="${c}"/><path d="M62 10a40 40 0 0 0-50 32c10-14 30-22 50-18-4-6-4-10 0-14z" fill="${avShade(c, .3)}"/>
-    <circle cx="74" cy="22" r="4" fill="${avShade(c, .35)}"/>${MK_EYES(19, 46, 31, 44, 18)}`,
-  clubs: c => `<rect x="6" y="40" width="26" height="46" rx="13" fill="${avShade(c, -.2)}"/><rect x="68" y="36" width="26" height="50" rx="13" fill="${avShade(c, -.2)}"/><g fill="#151320" opacity=".75"><rect x="13" y="56" width="4" height="10" rx="2"/><rect x="21" y="55" width="4" height="11" rx="2"/><rect x="75" y="52" width="4" height="10" rx="2"/><rect x="83" y="51" width="4" height="11" rx="2"/></g>
-    <rect x="30" y="18" width="40" height="70" rx="20" fill="${c}"/><path d="M50 18a20 20 0 0 1 20 20H30a20 20 0 0 1 20-20z" fill="${avShade(c, .3)}"/>${MK_EYES(41, 44, 53, 42, 18)}`
+  room:    c => markFig("cube", c, "pair"),
+  people:  c => markFig("pill", c, "short", -2, 16, 66) + markFig("pill", c, "pair", 34, 4, 72),
+  crowd:   c => markFig("pill", c, "short", -6, 30, 54) + markFig("pill", c, "short", 52, 30, 54) + markFig("pill", c, "pair", 17, 6, 70),
+  globe:   c => markFig("ball", c, "wide"),
+  archive: c => markFig("box", c, "pair"),
+  film:    c => markFig("can", c, "pair"),
+  tv:      c => markFig("cube", c, "wide"),
+  book:    c => markFig("step", c, "tall"),
+  game:    c => markFig("clover", c, "dots"),
+  ghost:   c => markFig("ghost", c, "pair"),
+  shelf:   c => markFig("bun", c, "short"),
+  moon:    c => markFig("ball", c, "sleepy"),
+  clubs:   c => markFig("cloud", c, "bold")
 };
 const placeMark = p => `<svg class="pgmark" viewBox="0 0 100 100" aria-hidden="true">${(PLACE_MARKS[p.mk] || PLACE_MARKS.room)(TONE_HEX[p.tone] || TONE_HEX.pink)}</svg>`;
 /* a place: where it goes, what it's called, its tone and its mark */
@@ -8426,7 +8431,7 @@ function roomMood(es) { const dot = $("#pager .tdot"); if (!dot) return;
 /* ---------- you're all caught up ----------
    The line between what's new and what you've already seen. The tick draws itself and the
    little guy nods the first time you scroll down to it; under it the feed is a touch quieter. */
-const SLEEPY = V2 ? `<span class="sleepy" aria-hidden="true"><svg viewBox="0 0 100 100" style="color:var(--lilac)">${AV_SHAPES.bun({ base:"currentColor", light:"rgba(255,255,255,.34)", dark:"rgba(21,19,32,.22)" })}<g class="eyes" fill="#151320"><rect x="32" y="58" width="13" height="4.5" rx="2.25"/><rect x="55" y="58" width="13" height="4.5" rx="2.25"/></g></svg><em>z</em><em>z</em></span>`
+const SLEEPY = V2 ? `<span class="sleepy" aria-hidden="true">${markSVG({ shape:"bun", col:"lilac", eyes:"sleepy" })}<em>z</em><em>z</em></span>`
   : `<span class="sleepy" aria-hidden="true"><i></i><em>z</em><em>z</em></span>`;
 const caughtUpHTML = () => V2 ? `<div class="caughtup sleepyup" role="separator" aria-label="You're all caught up">${SLEEPY}<b>You're all caught up</b><small>Earlier</small></div>` : `<div class="caughtup" role="separator" aria-label="You're all caught up"><span class="cl"></span>
   <span class="cm"><svg class="ctick" viewBox="0 0 26 26" aria-hidden="true"><circle cx="13" cy="13" r="11"/><path d="M8 13.5l3.4 3.4L18.5 9.6"/></svg>
