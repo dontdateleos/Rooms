@@ -1521,6 +1521,9 @@ html.v2 .card .h mark.lmk{rotate:1.5deg}
 .blank1{position:relative;margin-top:24px!important}
 .b1-peek{position:absolute;left:18px;top:-19px;width:30px;height:20px;border-radius:11px 11px 0 0;background:var(--c);overflow:hidden}
 .b1-peek::after{content:"";position:absolute;left:10px;top:7px;width:3px;height:7px;border-radius:2px;background:#151320;box-shadow:7px 0 0 #151320}
+html.v2 .b1-peek{width:36px;height:22px;top:-21px;background:none;border-radius:0;color:var(--c)}html.v2 .b1-peek::after{display:none}
+html.v2 .b1-peek svg{position:absolute;left:0;top:0;width:36px;height:36px;overflow:visible}
+html.v2 .sleepy svg{position:absolute;left:2px;bottom:-4px;width:60px;height:60px;overflow:visible}
 .blank1::before{display:none}
 /* every poster keeps the poster shape, loaded or not */
 html.v2 main :is(img.co,span.co,div.co){aspect-ratio:2/3;object-fit:cover}
@@ -1635,8 +1638,6 @@ html.v2 :is(main,#sheet) img.co:not(.ok){background-color:color-mix(in srgb,var(
 /* 91: the bar with what you're on lifts as you swipe it up */
 #nowBar{touch-action:none}#nowBar.dragging{transition:none}#nowBar.going{transition:transform .25s ease-in,opacity .25s;opacity:0}
 @media (prefers-reduced-motion:reduce){html.v2 img.co:not(.ok){animation:none}}
-/* the mascots, alive: they trail a little behind a fast scroll and spring back */
-html.v2 main .av:not(#meAv){translate:0 var(--lag,0px)}
 html.v2 .av{transform-origin:50% 88%}
 /* the ones asleep on the couch breathe slowly, and a z drifts up off them */
 .couchrow .cz{position:relative}
@@ -1668,7 +1669,7 @@ html.v2 .av .avl{transform-box:fill-box;transform-origin:50% 100%;scale:1 calc(1
 html.v2 .av .eyes{translate:calc(var(--yaw) * 11px) calc(var(--pitch) * 9px);scale:calc(1 - var(--ay) * .34) calc(1 - var(--ap) * .3)}
 html.v2 .av .avsh{translate:calc(var(--yaw) * -15px) calc(var(--pitch) * -12px)}
 html.v2 .av svg{overflow:visible}
-@media (prefers-reduced-motion:reduce){html.v2 main .av{translate:none}html.v2 .couchrow .cz.zz .av,html.v2 .couchrow .cz.zz::after{animation:none}}
+@media (prefers-reduced-motion:reduce){html.v2 .couchrow .cz.zz .av,html.v2 .couchrow .cz.zz::after{animation:none}}
 @media (prefers-reduced-motion:reduce){html.v2 :is(.dealt,.couchrow .cz.wake,.slip .stars i,#yearBand .yb,#yearBand .yb i.new){animation:none!important}html.v2 :is(.pagetitle,[data-pagetitle])::before{animation:none!important}}
 /* 22, and the rest of a room: every small poster is one size, every strip poster another */
 html.v2 :is(.slip .ttl .co,.tn-main .co,.ttl .season-cover .co){width:40px!important;height:60px!important;border-radius:7px;object-fit:cover}
@@ -4353,6 +4354,8 @@ let av3d = false;
 function av3dDefs() { if (av3d || !V2 || !document.body) return; av3d = true;
   const flat = k => AV_SHAPES[k]({ base:"#000", light:"#000", dark:"#000" }).replace(/<\/?g[^>]*>/g, "");
   document.body.insertAdjacentHTML("afterbegin", `<svg width="0" height="0" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true" focusable="false"><defs>
+    <radialGradient id="avSheenB" cx=".36" cy=".3" r=".7"><stop offset="0" stop-color="#fff" stop-opacity=".7"/><stop offset=".12" stop-color="#fff" stop-opacity=".28"/>
+      <stop offset=".42" stop-color="#fff" stop-opacity="0"/><stop offset=".72" stop-color="#000" stop-opacity=".1"/><stop offset="1" stop-color="#000" stop-opacity=".38"/></radialGradient>
     <radialGradient id="avSheen" gradientUnits="userSpaceOnUse" cx="36" cy="30" r="66"><stop offset="0" stop-color="#fff" stop-opacity=".7"/><stop offset=".12" stop-color="#fff" stop-opacity=".28"/>
       <stop offset=".42" stop-color="#fff" stop-opacity="0"/><stop offset=".72" stop-color="#000" stop-opacity=".1"/><stop offset="1" stop-color="#000" stop-opacity=".38"/></radialGradient>
     ${Object.keys(AV_SHAPES).map(k => `<clipPath id="avc-${k}" clipPathUnits="userSpaceOnUse">${flat(k)}</clipPath>`).join("")}</defs></svg>`); }
@@ -4366,6 +4369,29 @@ function avSVG(a) { av3dDefs();
   return `<svg viewBox="0 0 100 100" data-shape="${a.shape}" aria-hidden="true">${round ? `<ellipse class="avgr" cx="50" cy="93" rx="26" ry="4" fill="#000" opacity=".22"/>` : ""}<g class="avb" transform="rotate(${a.tilt||0} 50 54)">${round ? `<g clip-path="url(#avc-${a.shape})">${body}</g>` : body}
     ${round ? `<g clip-path="url(#avc-${a.shape})"><rect class="avsh" x="-25" y="-25" width="150" height="150" fill="url(#avSheen) none"/></g>` : ""}<g class="eyes" fill="${ink}">${eyes}</g></g>${
       a.founder ? COMET : (a.ring || "")}</svg>`; }
+/* every other character and mark the app draws (the Rooms mark, the little faces in
+   toasts and while things load, the room and place marks, the end of the feed, the season's
+   ghost and objects, empty doors, the sleepy and peeking mascots) gets the same look as the
+   mascots: each solid piece of it a shine from the top left falling away into shade, and a
+   soft shadow on the ground. Done once each, when it's first on screen (it has to be laid
+   out to be measured). Small details, eyes and outlines are left alone. */
+const MARK3D = "svg.mark, svg.pmk, #splash .spm svg, svg.pgmark, .endguy svg, .season-ghost svg, svg.season-object, .season-object svg, svg.emptydoor, svg.mk3, .b1-peek svg, .sleepy svg";
+const SHADE_SKIP = /^(none|#151320|#fff|#ffffff|transparent)$/i;
+function mark3d(svg) { if (!V2 || svg.dataset.m3 || svg.closest(".av")) return; av3dDefs();
+  const vb = svg.viewBox?.baseVal; if (!vb || !vb.width) return;
+  const parts = [...svg.querySelectorAll("path,rect,circle,ellipse,polygon")].filter(el => !el.closest(".eyes, defs, clipPath, mask") && !el.classList.contains("m3sh")
+    && !SHADE_SKIP.test((el.getAttribute("fill") || el.closest("[fill]")?.getAttribute("fill") || "").trim()));
+  const area = el => { try { const b = el.getBBox(); return b.width * b.height; } catch { return 0; } };
+  const areas = parts.map(area), max = Math.max(0, ...areas); if (!max) return;      /* not laid out yet: try again when it is */
+  svg.dataset.m3 = "1";
+  parts.forEach((el, i) => { if (areas[i] < max * .16) return;
+    const c = el.cloneNode(false); c.removeAttribute("id"); c.removeAttribute("stroke"); c.removeAttribute("opacity");
+    c.setAttribute("class", `${el.getAttribute("class") || ""} m3sh`.trim()); c.setAttribute("style", "fill:url(#avSheenB);stroke:none"); c.setAttribute("pointer-events", "none");
+    el.after(c); });
+  if (!svg.matches(".logo svg, .pmk, #splash svg")) { const g = document.createElementNS("http://www.w3.org/2000/svg", "ellipse");
+    g.setAttribute("class", "m3gr"); g.setAttribute("cx", vb.x + vb.width / 2); g.setAttribute("cy", vb.y + vb.height * .955);
+    g.setAttribute("rx", vb.width * .28); g.setAttribute("ry", vb.height * .04); g.setAttribute("fill", "#000"); g.setAttribute("opacity", ".2");
+    svg.insertBefore(g, svg.firstChild); svg.style.overflow = "visible"; } }
 /* a face is new until you've seen it this session; the seed keeps two people
    who share a shape from blinking in lockstep */
 const metFaces = new Set();
@@ -4413,7 +4439,7 @@ function faceMood(el, m) {
       swap(); g._shut = false; g.animate([{ transform:"scaleY(.08)" }, { transform:"scaleY(1)" }], { duration:120, easing:"cubic-bezier(.3,1.6,.5,1)" }); }; }
   return true; }
 /* a tiny face for a status: the toast's tick and bang became a little guy pleased or worried */
-const tinyFace = (m, col) => `<svg viewBox="0 0 100 100" aria-hidden="true"><rect x="12" y="16" width="76" height="74" rx="32" fill="${col}"/>
+const tinyFace = (m, col) => `<svg class="mk3" viewBox="0 0 100 100" aria-hidden="true"><rect x="12" y="16" width="76" height="74" rx="32" fill="${col}"/>
   <g class="eyes" fill="#151320">${m === "ok" ? `<rect x="38" y="44" width="8" height="18" rx="4"/><rect x="55" y="43" width="8" height="19" rx="4"/>` : MOOD_EYES[m]("#151320")}</g></svg>`;
 /* little hearts thrown up out of something, for a like or a five-star face */
 function heartBurst(el, n = 5) {
@@ -4482,6 +4508,14 @@ const saveP = () => localStorage.setItem("rooms.prefs", JSON.stringify(P));
    differs), so the classic look switches off clean, and can be deleted once nobody uses it */
 const V2 = /[?&]v2\b/.test(location.search) || !(/[?&]v1\b/.test(location.search) || P.classicLook);
 document.documentElement.classList.toggle("v2", V2);
+/* the marks in 3D (see mark3d): each is shaded the first time it's on screen */
+const markObs = V2 && "IntersectionObserver" in window ? new IntersectionObserver(es => es.forEach(en => { if (!en.isIntersecting) return;
+  mark3d(en.target); if (en.target.dataset.m3) markObs.unobserve(en.target); })) : null;
+const markWatch = root => { if (!markObs || !root.querySelectorAll) return;
+  for (const el of [...(root.matches?.(MARK3D) ? [root] : []), ...root.querySelectorAll(MARK3D)]) if (!el.dataset.m3w) { el.dataset.m3w = "1"; markObs.observe(el); } };
+if (markObs) { const go = () => { markWatch(document.body); new MutationObserver(ms => { for (const m of ms) for (const n of m.addedNodes) if (n.nodeType === 1) markWatch(n); })
+  .observe(document.body, { childList:true, subtree:true }); }; document.body ? go() : addEventListener("DOMContentLoaded", go); }
+
 async function tmdb(path, params = {}) {
   const direct = !proxy(); if (direct && !P.tmdbKey) throw new Error("needs a TMDB key or the worker");
   const u = new URL((direct ? "https://api.themoviedb.org" : proxy()) + "/3/" + path);
@@ -7975,7 +8009,7 @@ function emptyDoor(colour, mark) {
   </svg>`; }
 function blank(colour, mark, title, body, actions = []) {
   /* one line with its one button; any other buttons stay (hidden) so whatever wires them still finds them */
-  if (V2) return `<div class="blank1" style="--c:${colour}"><span class="b1-peek" aria-hidden="true"></span><span class="b1-t"><b>${title}</b><small>${body}</small></span>${actions.map(([id, label], i) =>
+  if (V2) return `<div class="blank1" style="--c:${colour}"><span class="b1-peek" aria-hidden="true"><svg viewBox="0 0 100 100">${AV_SHAPES.arch({ base:"currentColor", light:"rgba(255,255,255,.34)", dark:"rgba(21,19,32,.22)" })}<g class="eyes" fill="#151320"><rect x="36" y="44" width="8" height="18" rx="4"/><rect x="54" y="43" width="8" height="19" rx="4"/></g></svg></span><span class="b1-t"><b>${title}</b><small>${body}</small></span>${actions.map(([id, label], i) =>
     `<button class="b1-go" id="${id}"${i ? " hidden" : ""}>${label}</button>`).join("")}</div>`;
   return `<div class="blank">${emptyDoor(colour, mark)}<h3>${title}</h3><p>${body}</p>
     ${actions.length ? `<div class="stack">${actions.map(([id,label,cls]) => `<button class="btn ${cls||"soft"}" id="${id}">${label}</button>`).join("")}</div>` : ""}</div>`; }
@@ -8392,7 +8426,8 @@ function roomMood(es) { const dot = $("#pager .tdot"); if (!dot) return;
 /* ---------- you're all caught up ----------
    The line between what's new and what you've already seen. The tick draws itself and the
    little guy nods the first time you scroll down to it; under it the feed is a touch quieter. */
-const SLEEPY = `<span class="sleepy" aria-hidden="true"><i></i><em>z</em><em>z</em></span>`;
+const SLEEPY = V2 ? `<span class="sleepy" aria-hidden="true"><svg viewBox="0 0 100 100" style="color:var(--lilac)">${AV_SHAPES.bun({ base:"currentColor", light:"rgba(255,255,255,.34)", dark:"rgba(21,19,32,.22)" })}<g class="eyes" fill="#151320"><rect x="32" y="58" width="13" height="4.5" rx="2.25"/><rect x="55" y="58" width="13" height="4.5" rx="2.25"/></g></svg><em>z</em><em>z</em></span>`
+  : `<span class="sleepy" aria-hidden="true"><i></i><em>z</em><em>z</em></span>`;
 const caughtUpHTML = () => V2 ? `<div class="caughtup sleepyup" role="separator" aria-label="You're all caught up">${SLEEPY}<b>You're all caught up</b><small>Earlier</small></div>` : `<div class="caughtup" role="separator" aria-label="You're all caught up"><span class="cl"></span>
   <span class="cm"><svg class="ctick" viewBox="0 0 26 26" aria-hidden="true"><circle cx="13" cy="13" r="11"/><path d="M8 13.5l3.4 3.4L18.5 9.6"/></svg>
   <b>You're all caught up</b><small>Earlier</small></span><span class="cl"></span></div>`;
@@ -8826,9 +8861,10 @@ function paintCouch() { const row = $("#couchRow"); if (!row) return; let n = 0;
    the round, see --yaw above) to one side, maybe up or down, maybe a second and third place,
    holds each a moment, and then settles back to facing you. In between it blinks, sometimes
    twice. On the couch and the story row they also turn to whoever's beside them, who may
-   look back. Touch the screen and the ones nearby turn to your finger. Somebody logging
-   makes theirs leap, and they trail a fast scroll a little. Only what's on screen moves,
-   nothing runs in the background, and reduce motion stills all of it. */
+   look back. Tap the screen and the ones nearby turn to where you tapped. Somebody logging
+   makes theirs leap. While you scroll they keep still, and ones that scroll into view
+   take a while before they do anything, so nothing moves in step. Only what's on screen
+   moves, nothing runs in the background, and reduce motion stills all of it. */
 const alive = (() => { const none = { leap() {} };
   if (!V2 || REDUCED || !Element.prototype.animate) return none;
   const pick = a => a[Math.floor(Math.random() * a.length)], rnd = (a, b) => a + Math.random() * (b - a), clamp = v => Math.max(-1, Math.min(1, v));
@@ -8863,20 +8899,17 @@ const alive = (() => { const none = { leap() {} };
   const next = new WeakMap(); let pool = [], poolAt = 0;
   const gather = () => { const root = sheetOn() ? $("#sheetBody") : $("main > section.on");
     pool = root ? [...root.querySelectorAll(".av")].filter(a => !a.closest(".zz, .tilting") && onScreen(a)).slice(0, 40) : []; poolAt = performance.now(); };
-  setInterval(() => { if (document.hidden) return; const now = performance.now(); if (now - poolAt > 900) gather();
-    for (const a of pool) { const t = next.get(a); if (t === undefined) { next.set(a, now + rnd(300, 4000)); continue; } if (now < t) continue;
+  let scrolledAt = 0; addEventListener("scroll", () => { scrolledAt = performance.now(); }, { passive:true });
+  setInterval(() => { if (document.hidden) return; const now = performance.now(); if (now - scrolledAt < 700) return; if (now - poolAt > 900) gather();
+    for (const a of pool) { const t = next.get(a); if (t === undefined) { next.set(a, now + rnd(1500, 7000)); continue; } if (now < t) continue;
       const took = pick(a.closest(".couchrow, .storyrow") ? STAGE : QUIET)(a) || 0;
       next.set(a, now + took + rnd(1200, 4500)); } }, 180);
-  /* touch the screen and the mascots near your finger turn to look at it, then back */
-  document.addEventListener("pointerdown", e => { if (e.pointerType === "mouse" && e.button !== 0) return; const x = e.clientX, y = e.clientY;
-    for (const a of pool) { if (a.contains(e.target)) continue; const r = a.getBoundingClientRect(), dx = x - (r.left + r.width / 2), dy = y - (r.top + r.height / 2);
-      if (Math.hypot(dx, dy) > 300) continue; run(a, [[clamp(dx / 110), clamp(dy / 150) * .85, 0, rnd(1100, 1500)]]); } }, { capture:true, passive:true });
-  /* they trail a fast scroll a little, then spring back to their places */
-  let lastY = scrollY, lag = 0, raf = 0; const root = document.documentElement;
-  const settle = () => { raf = 0; lag *= .8; if (Math.abs(lag) < .15) { lag = 0; root.style.removeProperty("--lag"); return; }
-    root.style.setProperty("--lag", lag.toFixed(2) + "px"); raf = requestAnimationFrame(settle); };
-  addEventListener("scroll", () => { const dy = scrollY - lastY; lastY = scrollY; if (Math.abs(dy) > 120) return;
-    lag = Math.max(-8, Math.min(8, lag + dy * .3)); if (!raf) raf = requestAnimationFrame(settle); }, { passive:true });
+  /* a tap (not the start of a scroll) and the mascots near it turn to look, then back */
+  let downAt = null;
+  document.addEventListener("pointerdown", e => { downAt = e.pointerType === "mouse" && e.button !== 0 ? null : { x:e.clientX, y:e.clientY, t:performance.now(), target:e.target }; }, { capture:true, passive:true });
+  document.addEventListener("pointerup", e => { const d = downAt; downAt = null; if (!d || performance.now() - d.t > 450 || Math.hypot(e.clientX - d.x, e.clientY - d.y) > 10) return;
+    for (const a of pool) { if (a.contains(d.target)) continue; const r = a.getBoundingClientRect(), dx = d.x - (r.left + r.width / 2), dy = d.y - (r.top + r.height / 2);
+      if (Math.hypot(dx, dy) > 260) continue; setTimeout(() => run(a, [[clamp(dx / 110), clamp(dy / 150) * .85, 0, rnd(1000, 1400)]]), rnd(0, 220)); } }, { capture:true, passive:true });
   /* somebody's log just landed: their mascot leaps, wherever it's on screen */
   const LEAP = [{ translate:"0 0", scale:"1 1" }, { translate:"0 1px", scale:"1.14 .84", offset:.14 }, { translate:"0 -12px", scale:".9 1.12", offset:.4 },
     { translate:"0 0", scale:"1.1 .88", offset:.7 }, { translate:"0 -6px", scale:".96 1.05", offset:.85 }, { translate:"0 0", scale:"1 1" }];
@@ -17559,7 +17592,7 @@ async function saveText(name, text, type) {
 const downloadJSON = (obj, name) => saveText(name, JSON.stringify(obj, null, 1), "application/json");
 
 /* a small hook so the card renderers can be exercised by the test harness */
-window.__rooms = { alive, stackSets, renderWaiting, soonReset:() => { upcoming = null; }, prefs:() => P, blank, kindBlank, playMatch, coach, logoCheer, logoHere, openYearStory, storyYear, openWelcome, openOnboarding, openImport, pullRefresh, openFind, setFollow, isFollowing, get follows(){return follows}, openNotes, noteList, noteRow, markNotesSeen, noteCount, newHands, noteSeen, get unseen(){return unseen}, nowVerb, openAdd, RINGS, MARK_RING, ringFromMarks, ringCache, myRing, spanOf, reelIndexNow, memories, dueReview, memForget, MEM_MIN, MEM_DAYS, whoseWord, wordPending, HAND_FLOOR, loadHand, handTo, answerHand, reachable, cameFrom, openHand, get handIn(){return handIn}, get handOut(){return handOut}, get handAll(){return handAll}, reelTo, markReel, REEL, reelCopies, get reelAt(){return reelAt}, facesFor, faceEl, faceMap, FACE_IMG, paintLog, wireLog, openWholeLog, openLog, likeLine, knownName, AV_SHAPES, AV_EYES, AV_COLS, avSVG, avFor, get me(){return me}, get entries(){return myEntries}, get works(){return works}, get rooms(){return rooms},
+window.__rooms = { alive, tinyFace, placeMark, emptyDoor, get SLEEPY(){return SLEEPY}, stackSets, renderWaiting, soonReset:() => { upcoming = null; }, prefs:() => P, blank, kindBlank, playMatch, coach, logoCheer, logoHere, openYearStory, storyYear, openWelcome, openOnboarding, openImport, pullRefresh, openFind, setFollow, isFollowing, get follows(){return follows}, openNotes, noteList, noteRow, markNotesSeen, noteCount, newHands, noteSeen, get unseen(){return unseen}, nowVerb, openAdd, RINGS, MARK_RING, ringFromMarks, ringCache, myRing, spanOf, reelIndexNow, memories, dueReview, memForget, MEM_MIN, MEM_DAYS, whoseWord, wordPending, HAND_FLOOR, loadHand, handTo, answerHand, reachable, cameFrom, openHand, get handIn(){return handIn}, get handOut(){return handOut}, get handAll(){return handAll}, reelTo, markReel, REEL, reelCopies, get reelAt(){return reelAt}, facesFor, faceEl, faceMap, FACE_IMG, paintLog, wireLog, openWholeLog, openLog, likeLine, knownName, AV_SHAPES, AV_EYES, AV_COLS, avSVG, avFor, get me(){return me}, get entries(){return myEntries}, get works(){return works}, get rooms(){return rooms},
   CUTS, openCuts, spanData, tasteOf, reviewData, yearOf, roomPalmares, tagStats, agreement, activeRoom, q, sb: () => sb, remember,
   joinRoomChannel, leaveRoomChannel, paintHere, onLiveEntry, paintDay, get hereNow(){return hereNow},
   say, oops, markLive, takeInvite, dropInvite, inviteLink, useInvite, exportEverything,
