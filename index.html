@@ -4247,12 +4247,14 @@ function avHash(s) { let h = 2166136261; for (const ch of String(s || "?")) { h 
    which is honest — better a ring that arrives late than one invented from what happens
    to be in memory. */
 const ringCache = {};
+/* how a mascot moves, picked alongside its shape, eyes and colour: Curious is the default */
+const AV_PERS = { calm:"Calm", "":"Curious", chatty:"Chatty" };
 function avFor(p) {
   const a = p?.avatar;
   const founder = !!p?.founder || founderIds.has(p?.id);
   const ring = ringCache[p?.id] || null;
   if (a && AV_SHAPES[a.shape] && AV_COLS[a.col] !== undefined)
-    return { shape:a.shape, col:a.col, eyes:AV_EYES[a.eyes] ? a.eyes : "pair", tilt:a.tilt ?? 0, founder, ring };
+    return { shape:a.shape, col:a.col, eyes:AV_EYES[a.eyes] ? a.eyes : "pair", tilt:a.tilt ?? 0, pers:AV_PERS[a.pers] ? a.pers : "", founder, ring };
   const h = avHash(p?.handle);
   return { shape:AV_DEFAULT[h % AV_DEFAULT.length], col:(h >> 3) % AV_COLS.length,
     eyes:AV_EYE_DEFAULT[(h >> 11) % AV_EYE_DEFAULT.length], tilt:((h >> 7) % 9) - 4, founder, ring }; }
@@ -4400,14 +4402,14 @@ function markSVG(o, cls = "") { const shape = AV_SHAPES[o.shape] ? o.shape : "cu
   return cls ? svg.replace("<svg ", `<svg class="${cls}" `) : svg; }
 /* a mascot placed inside a bigger mark: x, y and size in that mark's 100 box */
 const markFig = (shape, col, eyes, x = 0, y = 0, w = 100) => markSVG({ shape, col, eyes }).replace("<svg ", `<svg x="${x}" y="${y}" width="${w}" height="${w}" `);
-/* every other character and mark the app draws (the Rooms mark, the little faces in
-   toasts and while things load, the room and place marks, the end of the feed, the season's
-   ghost and objects, empty doors, the sleepy and peeking mascots; not the launch screen,
-   which keeps its original look) gets the same look as the
+/* every other character and mark the app draws (the little faces in toasts and while
+   things load, the room and place marks, the end of the feed, the season's ghost and
+   objects, empty doors, the sleepy and peeking mascots; never the Rooms logo, in the
+   header, the launch screen or pull to refresh, which keeps its own look) gets the same look as the
    mascots: each solid piece of it a shine from the top left falling away into shade, and a
    soft shadow on the ground. Done once each, when it's first on screen (it has to be laid
    out to be measured). Small details, eyes and outlines are left alone. */
-const MARK3D = "svg.mark, svg.pmk, svg.pgmark, .endguy svg, .season-ghost svg, svg.season-object, .season-object svg, svg.emptydoor, svg.mk3, .b1-peek svg, .sleepy svg";
+const MARK3D = "svg.pgmark, .endguy svg, .season-ghost svg, svg.season-object, .season-object svg, svg.emptydoor, svg.mk3, .b1-peek svg, .sleepy svg";
 const SHADE_SKIP = /^(none|#151320|#fff|#ffffff|transparent)$/i;
 function mark3d(svg) { if (!V2 || svg.dataset.m3 || svg.closest(".av") || svg.querySelector(".avb")) return; av3dDefs();
   const vb = svg.viewBox?.baseVal; if (!vb || !vb.width) return;
@@ -4432,7 +4434,8 @@ const avSeed = who => { let h = 0; for (let i = 0; i < who.length; i++) h = (h *
 const avatar = (p, cls = "", o = {}) => { const who = String(p?.id || p?.handle || "");
   const fresh = who && !metFaces.has(who); if (fresh) metFaces.add(who);
   const n = avSeed(who);
-  return `<span class="av ${cls}${fresh ? " new" : ""}"${p?.id ? ` data-u="${esc(p.id)}"` : ""} style="--bd:${(n % 61) / 10}s;--id:${(n % 37) / 10}s">${avSVG(o.bare ? { ...avFor(p), founder:false, ring:null } : avFor(p))}</span>`; };
+  const pers = avFor(p).pers;
+  return `<span class="av ${cls}${fresh ? " new" : ""}"${p?.id ? ` data-u="${esc(p.id)}"` : ""}${pers ? ` data-pers="${pers}"` : ""} style="--bd:${(n % 61) / 10}s;--id:${(n % 37) / 10}s">${avSVG(o.bare ? { ...avFor(p), founder:false, ring:null } : avFor(p))}</span>`; };
 
 /* ---------- faces that feel things ----------
    Every face in the app has had one expression. These are the others it can pull: drawn
@@ -7878,9 +7881,11 @@ async function openYearStory(year = storyYear() || String(new Date().getFullYear
 const TOUR = [
   { at:V2 ? '#couchRow' : '#hereRow .couch, #hereRow', title:"Your room", body:V2 ? "Everyone in the room sits on this couch, awake when they're here. Tap someone to see what they're on." : "Everyone in the room is in this chip. Tap it to see who's here and what they're watching, reading or playing.", col:"#F5A3C7", need:"doors" },
   { at:'#add', title:"Log something", body:"Finished a film, show, book or game? Tap + and drag across the stars. Then pick the one thing you loved most.", col:"#FFB36B" },
+  /* the new look only: what you're on, in the bar along the bottom */
+  { v2:true, at:'#nowBar', title:"What you're on", body:"Whatever you're watching, reading or playing sits here, on every page. Tap Done it, or swipe it up, when you finish.", col:"#FFE86A" },
   { at:'nav button[data-tab="doors"]', title:"Rooms", body:"What your friends log lands here. Hold a heart to answer with your mascot, or tap the bubble to reply.", col:"#F5A3C7" },
   { at:'nav button[data-tab="people"]', title:"Feed", body:"The people you follow, then everyone else. A ring means they've logged something in the last two days — tap it to see.", col:"#9EF0C9" },
-  { at:'nav button[data-tab="library"]', title:"Queue", body:"Up next is everything you mean to get to. Diary is everything you've finished, by date, and Ranked is your order of them.", col:"#B9A6FF" },
+  { at:'nav button[data-tab="library"]', title:"Queue", body:V2 ? "Up next is everything you mean to get to. Across the top is your year, a stripe for each thing you finish: touch one to see what it was." : "Up next is everything you mean to get to. Diary is everything you've finished, by date, and Ranked is your order of them.", col:"#B9A6FF" },
   { at:'nav button[data-tab="clubs"]', title:"Stacks", body:"Lists of films, shows, books and games that anyone can make and find. Start one of your own.", col:"#B9A6FF" },
   { at:'#meBtn', title:"You", body:"Your taste, your year and your settings are behind your name. That's the whole tour.", col:"#8FD3FF", last:true },
 ];
@@ -7889,7 +7894,7 @@ function maybeTour() { if (!P.tourDue || !me) return;
     P.tourDue = false; P.toured = 1; saveP(); startTour(); }, 700); }
 function startTour() {
   $("#tour")?.remove();
-  const steps = TOUR.filter(st => (!st.need || currentTab() === st.need) && $(st.at));
+  const steps = TOUR.filter(st => (!st.v2 || V2) && (!st.need || currentTab() === st.need) && $(st.at));
   if (!steps.length) return;
   const t = document.createElement("div"); t.id = "tour"; t.setAttribute("role", "dialog"); t.setAttribute("aria-label", "A quick look round");
   t.innerHTML = `<div class="tr-ring"></div><div class="tr-card" aria-live="polite"><span class="tr-guy"></span><div class="tr-t"><b></b><p></p></div>
@@ -8891,9 +8896,10 @@ const alive = (() => { const none = { leap() {} };
     st.setProperty("--yaw", y.toFixed(2)); st.setProperty("--pitch", p.toFixed(2)); st.setProperty("--roll", r.toFixed(2));
     st.setProperty("--ay", Math.abs(y).toFixed(2)); st.setProperty("--ap", Math.abs(p).toFixed(2)); };
   /* a run of places to look, [yaw, pitch, roll, hold], then back to facing you */
+  const movingTill = new WeakMap();
   const run = (a, steps) => { const id = (plan.get(a) || 0) + 1; plan.set(a, id); let t = 0;
     for (const [y, p, r, hold] of steps) { setTimeout(() => { if (plan.get(a) === id) face(a, y, p, r); }, t); t += hold; }
-    setTimeout(() => { if (plan.get(a) === id) face(a); }, t); return t + 600; };
+    setTimeout(() => { if (plan.get(a) === id) face(a); }, t); movingTill.set(a, performance.now() + t + 600); return t + 600; };
   const blink = a => { const e = a.querySelector(".eyes"); if (!e) return; const two = Math.random() < .22;
     e.animate(two ? [{ scale:"1 1" }, { scale:"1 .08", offset:.16 }, { scale:"1 1", offset:.38 }, { scale:"1 .08", offset:.58 }, { scale:"1 1" }]
       : [{ scale:"1 1" }, { scale:"1 .08", offset:.45 }, { scale:"1 1" }], { duration:two ? 430 : 180, composite:"add" }); return 600; };
@@ -8918,14 +8924,24 @@ const alive = (() => { const none = { leap() {} };
     for (let k = 0; k < n; k++) setTimeout(() => (k % 2 ? b : a).animate(BOB, { duration:520, easing:"ease-in-out", composite:"add" }), 380 + k * 650);
     return hold + 600; };
   const STAGE = [...QUIET, other, chat, chat];
+  /* each mascot's personality, from its owner's pick: how often it does something, and what */
+  const PERS = {
+    calm:   { every:2.2, quiet:[blink, blink, blink, blink, lookAround, cock], stage:[blink, blink, blink, lookAround, other] },
+    "":     { every:1,   quiet:QUIET, stage:STAGE },
+    chatty: { every:.7,  quiet:[blink, lookAround, lookAround, lookAround, cock, upDown], stage:[blink, lookAround, other, other, chat, chat, chat, chat] } };
+  /* never too many at once: a busy Feed on an older phone stays smooth. Blinks don't count */
+  const MAX_MOVING = (navigator.hardwareConcurrency || 6) <= 4 ? 3 : 5;
   const next = new WeakMap(); let pool = [], poolAt = 0;
   const gather = () => { const root = sheetOn() ? $("#sheetBody") : $("main > section.on");
     pool = root ? [...root.querySelectorAll(".av")].filter(a => !a.closest(".zz, .tilting") && onScreen(a)).slice(0, 40) : []; poolAt = performance.now(); };
   let scrolledAt = 0; addEventListener("scroll", () => { scrolledAt = performance.now(); }, { passive:true });
   setInterval(() => { if (document.hidden) return; const now = performance.now(); if (now - scrolledAt < 700) return; if (now - poolAt > 900) gather();
-    for (const a of pool) { const t = next.get(a); if (t === undefined) { next.set(a, now + rnd(1500, 7000)); continue; } if (now < t) continue;
-      const took = pick(a.closest(".couchrow, .storyrow") ? STAGE : QUIET)(a) || 0;
-      next.set(a, now + took + rnd(1200, 4500)); } }, 180);
+    let moving = pool.filter(a => (movingTill.get(a) || 0) > now).length;
+    for (const a of pool) { const per = PERS[a.dataset.pers || ""] || PERS[""], t = next.get(a);
+      if (t === undefined) { next.set(a, now + rnd(1500, 7000) * per.every); continue; } if (now < t) continue;
+      let act = pick(a.closest(".couchrow, .storyrow") ? per.stage : per.quiet); if (act !== blink && moving >= MAX_MOVING) act = blink;
+      const took = act(a) || 0; if (act !== blink) moving++;
+      next.set(a, now + took + rnd(1200, 4500) * per.every); } }, 180);
   /* they react to the page: as you scroll they glance the way it's going, and look back
      at you when it stops */
   let scrollDir = 0, lastY = scrollY, settleT = 0;
@@ -8944,10 +8960,19 @@ const alive = (() => { const none = { leap() {} };
     { translate:"0 0", scale:"1.1 .88", offset:.7 }, { translate:"0 -6px", scale:".96 1.05", offset:.85 }, { translate:"0 0", scale:"1 1" }];
   /* somebody's log just landed: their mascot leaps, and the others turn to look at it */
   return { face, leap(uid) { if (!uid) return; setTimeout(() => { const them = $$(`.av[data-u="${CSS.escape(String(uid))}"]`).filter(onScreen).slice(0, 3);
-    them.forEach(a => a.animate(LEAP, { duration:900, easing:"cubic-bezier(.3,1.3,.5,1)", composite:"add" })); if (!them.length) return;
+    if (them.length) feel(10); them.forEach(a => a.animate(LEAP, { duration:900, easing:"cubic-bezier(.3,1.3,.5,1)", composite:"add" })); if (!them.length) return;
     const t = them[0].getBoundingClientRect(); gather();
     pool.filter(a => !them.includes(a)).slice(0, 16).forEach(a => { const r = a.getBoundingClientRect();
       setTimeout(() => run(a, [[clamp((t.left - r.left) / 110), clamp((t.top - r.top) / 150) * .85, 0, rnd(1300, 1800)]]), rnd(120, 450)); }); }, 250); } }; })();
+/* you feel the new look's animations as well as see them, in the app: a light tap as each
+   star pops in, a firmer one as a stripe lands on your year, one as posters start dealing
+   in, one as a mascot on the couch wakes, one as a held poster lifts, and one as somebody's
+   mascot leaps. Taps closer together than this are dropped, so it never buzzes on and on. */
+let feltAt = 0;
+function feel(n) { if (!V2) return; const t = performance.now(); if (t - feltAt < 45) return; feltAt = t; buzz(n); }
+if (V2) document.addEventListener("animationstart", e => { const n = e.animationName;
+  if (n === "starPop") feel(3); else if (n === "ybNew") feel(14); else if (n === "czWake") feel(4);
+  else if (n === "dealIn" && getComputedStyle(e.target).getPropertyValue("--di").trim() === "0") feel(5); }, true);
 /* 90: a number rolls up the first time it's on screen (once a session per thing) */
 const rolled = new Set();
 function rollOnce(el, n, key) { if (!el) return;
@@ -8973,7 +8998,7 @@ if (V2 && !REDUCED) { let tEl = null, tHold = 0, sx = 0, sy = 0;
   const drop = () => { clearTimeout(tHold); tHold = 0; const t = tEl; tEl = null; if (t) { t.style.transform = ""; setTimeout(() => t.classList.remove("tilting"), 160); } };
   document.addEventListener("pointerdown", e => { drop(); if (e.pointerType === "mouse" || shelfEdit) return;
     const t = e.target.closest?.(POSTER); if (!t || !t.closest("main, #sheet") || t.closest(".editing, .grip, [draggable='true']")) return;
-    sx = e.clientX; sy = e.clientY; tHold = setTimeout(() => { tHold = 0; tEl = t; t.classList.add("tilting"); tiltTo(sx, sy); }, 220); }, { passive:true });
+    sx = e.clientX; sy = e.clientY; tHold = setTimeout(() => { tHold = 0; tEl = t; t.classList.add("tilting"); tiltTo(sx, sy); feel(6); }, 220); }, { passive:true });
   document.addEventListener("pointermove", e => { if (tHold && Math.hypot(e.clientX - sx, e.clientY - sy) > 8) drop(); else if (tEl) tiltTo(e.clientX, e.clientY); }, { passive:true });
   document.addEventListener("touchmove", e => { if (!tEl) return; e.preventDefault(); const p = e.touches[0]; if (p) tiltTo(p.clientX, p.clientY); }, { passive:false });
   ["pointerup", "pointercancel"].forEach(ev => document.addEventListener(ev, drop, { passive:true })); }
@@ -17350,6 +17375,7 @@ async function openYou() { let top = { items:[] }; try { top = await ensureMyTop
     <div class="picker" id="avShapes"></div>
     <div class="lbl">Eyes</div><div class="picker" id="avEyes"></div>
     <div class="lbl">Colour</div><div class="swatches" id="avCols"></div>
+    <div class="lbl">How it moves</div><div class="chips" id="avPers" role="group" aria-label="How your mascot moves"></div>
     <div class="stack"><button class="btn ghost" id="avReset">Back to the mascot my handle made</button></div>
     <div class="lbl">Your page's backdrop</div><button class="linkrow" id="yBackdrop"><span>${me.backdrop ? "Change the still behind your name" : "Put a still from a favourite behind your name"}</span><b>›</b></button>
     <div class="lbl">Handle</div><input id="yHandle" maxlength="24" autocapitalize="none" value="${esc(me.handle)}"><div class="lbl">A line under your name</div><input id="yBio" maxlength="80" placeholder="watches too much, sleeps too little" value="${esc(me.bio||"")}">
@@ -17431,7 +17457,8 @@ async function openYou() { let top = { items:[] }; try { top = await ensureMyTop
   /* the shape picker */
   let av = Object.assign({}, avFor(me));
   const paintAv = () => {
-    $("#avPreview").innerHTML = avSVG(av);
+    $("#avPreview").innerHTML = avSVG(av); if (av.pers) $("#avPreview").dataset.pers = av.pers; else delete $("#avPreview").dataset.pers;
+    $("#avPers").innerHTML = Object.entries(AV_PERS).map(([k, l]) => `<button class="chip ${k === (av.pers || "") ? "on" : ""}" type="button" data-avp="${k}" aria-pressed="${k === (av.pers || "")}">${l}</button>`).join("");
     $("#avNote").textContent = me.avatar ? "yours, chosen" : "made from your handle";
     $("#avShapes").innerHTML = AV_NAMES.map(n =>
       `<button class="${n === av.shape ? "on" : ""}" data-avs="${n}">${avSVG({ shape:n, col:av.col, eyes:av.eyes, tilt:0 })}</button>`).join("");
@@ -17441,7 +17468,8 @@ async function openYou() { let top = { items:[] }; try { top = await ensureMyTop
       `<button class="sw ${i === av.col ? "on" : ""}" data-avc="${i}" style="background:${c}"></button>`).join("");
     $$("[data-avs]").forEach(b => b.onclick = () => { av.shape = b.dataset.avs; paintAv(); });
     $$("[data-ave]").forEach(b => b.onclick = () => { av.eyes = b.dataset.ave; paintAv(); });
-    $$("[data-avc]").forEach(b => b.onclick = () => { av.col = +b.dataset.avc; paintAv(); }); };
+    $$("[data-avc]").forEach(b => b.onclick = () => { av.col = +b.dataset.avc; paintAv(); });
+    $$("[data-avp]").forEach(b => b.onclick = () => { av.pers = b.dataset.avp; buzz(4); paintAv(); }); };
   paintAv();
   $("#classicSw").onclick = () => { P.classicLook = !P.classicLook; saveP(); location.reload(); };
   $("#tiltSw").onclick = async () => { const b = $("#tiltSw");
@@ -17449,7 +17477,7 @@ async function openYou() { let top = { items:[] }; try { top = await ensureMyTop
     if (await tiltOn(true)) { P.tilt = true; saveP(); b.classList.add("on"); } else say("Your phone didn't allow it"); };
   $("#avShuffle").onclick = () => { av = { shape:AV_NAMES[Math.floor(Math.random()*AV_NAMES.length)],
     col:Math.floor(Math.random()*AV_COLS.length), eyes:AV_EYE_NAMES[Math.floor(Math.random()*AV_EYE_NAMES.length)],
-    tilt:Math.floor(Math.random()*9)-4 }; paintAv(); };
+    tilt:Math.floor(Math.random()*9)-4, pers:av.pers || "" }; paintAv(); };
   $("#yBackdrop").onclick = () => openBackdropPick();
   $("#avReset").onclick = async () => { me.avatar = null; av = Object.assign({}, avFor(me));
     try { if (sb.__local) { sb.__db.profile.avatar = null; sb.__save(); } else await q(sb.from("profiles").update({ avatar:null }).eq("id", me.id)); }
@@ -17625,7 +17653,7 @@ async function saveText(name, text, type) {
 const downloadJSON = (obj, name) => saveText(name, JSON.stringify(obj, null, 1), "application/json");
 
 /* a small hook so the card renderers can be exercised by the test harness */
-window.__rooms = { alive, tinyFace, placeMark, emptyDoor, get SLEEPY(){return SLEEPY}, stackSets, renderWaiting, soonReset:() => { upcoming = null; }, prefs:() => P, blank, kindBlank, playMatch, coach, logoCheer, logoHere, openYearStory, storyYear, openWelcome, openOnboarding, openImport, pullRefresh, openFind, setFollow, isFollowing, get follows(){return follows}, openNotes, noteList, noteRow, markNotesSeen, noteCount, newHands, noteSeen, get unseen(){return unseen}, nowVerb, openAdd, RINGS, MARK_RING, ringFromMarks, ringCache, myRing, spanOf, reelIndexNow, memories, dueReview, memForget, MEM_MIN, MEM_DAYS, whoseWord, wordPending, HAND_FLOOR, loadHand, handTo, answerHand, reachable, cameFrom, openHand, get handIn(){return handIn}, get handOut(){return handOut}, get handAll(){return handAll}, reelTo, markReel, REEL, reelCopies, get reelAt(){return reelAt}, facesFor, faceEl, faceMap, FACE_IMG, paintLog, wireLog, openWholeLog, openLog, likeLine, knownName, AV_SHAPES, AV_EYES, AV_COLS, avSVG, avFor, get me(){return me}, get entries(){return myEntries}, get works(){return works}, get rooms(){return rooms},
+window.__rooms = { alive, startTour, tinyFace, placeMark, emptyDoor, get SLEEPY(){return SLEEPY}, stackSets, renderWaiting, soonReset:() => { upcoming = null; }, prefs:() => P, blank, kindBlank, playMatch, coach, logoCheer, logoHere, openYearStory, storyYear, openWelcome, openOnboarding, openImport, pullRefresh, openFind, setFollow, isFollowing, get follows(){return follows}, openNotes, noteList, noteRow, markNotesSeen, noteCount, newHands, noteSeen, get unseen(){return unseen}, nowVerb, openAdd, RINGS, MARK_RING, ringFromMarks, ringCache, myRing, spanOf, reelIndexNow, memories, dueReview, memForget, MEM_MIN, MEM_DAYS, whoseWord, wordPending, HAND_FLOOR, loadHand, handTo, answerHand, reachable, cameFrom, openHand, get handIn(){return handIn}, get handOut(){return handOut}, get handAll(){return handAll}, reelTo, markReel, REEL, reelCopies, get reelAt(){return reelAt}, facesFor, faceEl, faceMap, FACE_IMG, paintLog, wireLog, openWholeLog, openLog, likeLine, knownName, AV_SHAPES, AV_EYES, AV_COLS, avSVG, avFor, get me(){return me}, get entries(){return myEntries}, get works(){return works}, get rooms(){return rooms},
   CUTS, openCuts, spanData, tasteOf, reviewData, yearOf, roomPalmares, tagStats, agreement, activeRoom, q, sb: () => sb, remember,
   joinRoomChannel, leaveRoomChannel, paintHere, onLiveEntry, paintDay, get hereNow(){return hereNow},
   say, oops, markLive, takeInvite, dropInvite, inviteLink, useInvite, exportEverything,
