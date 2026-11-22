@@ -1682,7 +1682,7 @@ html.v2 .pin .avb{transform-box:view-box;transform-origin:50% 92%;translate:calc
 html.v2 .pin .pf-f{opacity:clamp(0, calc(1 - (var(--ay) - .3) * 6), 1)}
 html.v2 .pin .pf-l{opacity:clamp(0, calc((-1 * var(--yaw) - .3) * 6), 1)}
 html.v2 .pin .pf-r{opacity:clamp(0, calc((var(--yaw) - .3) * 6), 1)}
-html.v2 #avShapes{grid-template-columns:repeat(3,1fr)}html.v2 :is(#avEyes,#avEyesL){display:none!important}
+html.v2 #avShapes{grid-template-columns:repeat(4,1fr)}html.v2 :is(#avEyes,#avEyesL){display:none!important}
 html.v2 .av svg{overflow:visible}
 @media (prefers-reduced-motion:reduce){html.v2 .couchrow .cz.zz .av,html.v2 .couchrow .cz.zz::after{animation:none}}
 @media (prefers-reduced-motion:reduce){html.v2 :is(.dealt,.couchrow .cz.wake,.slip .stars i,#yearBand .yb,#yearBand .yb i.new){animation:none!important}html.v2 :is(.pagetitle,[data-pagetitle])::before{animation:none!important}}
@@ -4254,15 +4254,20 @@ function avHash(s) { let h = 2166136261; for (const ch of String(s || "?")) { h 
    which is honest — better a ring that arrives late than one invented from what happens
    to be in memory. */
 const ringCache = {};
-/* THE PIÑATAS (the new look): six animals, each drawn from three angles (icons/pinatas,
-   cut from art/pinatas-sheet.png by tools/pinatas.cjs). Somebody's mascot is one of them,
-   tinted toward the colour they picked; a mascot from before (a shape) becomes the animal
-   its shape maps to, so nobody has to pick again. The classic look keeps the shapes. */
-const PINATAS = ["llama", "dog", "cat", "chicken", "cow", "bunny"];
-const PIN_NAMES = { llama:"Llama", dog:"Dog", cat:"Cat", chicken:"Chicken", cow:"Cow", bunny:"Bunny" };
-const SHAPE_PIN = { cube:"dog", box:"cow", ball:"cat", can:"chicken", cone:"llama", pill:"bunny", arch:"llama", ghost:"bunny",
-  step:"dog", drop:"chicken", tri:"llama", cloud:"cat", bun:"cow", blob:"dog", clover:"bunny" };
-const pinOf = a => PINATAS.includes(a?.animal) ? a.animal : SHAPE_PIN[a?.shape] || "dog";
+/* THE PIÑATAS (the new look): sixteen animals, each drawn facing you and three-quarters to
+   the left (icons/pinatas, cut from art/pinatas-16.png by tools/pinatas.cjs); facing right
+   is the left one mirrored. Somebody's mascot is one of them, tinted toward the colour they
+   picked. A mascot from before becomes an animal without anyone having to pick again: one
+   of the first six animals becomes the nearest of these, and a shape the animal it maps to.
+   The classic look keeps the shapes. */
+const PINATAS = ["horse", "donkey", "bull", "dog", "bear", "panda", "chicken", "pig", "crocodile", "goat", "ram", "parrot", "flamingo", "zebra", "giraffe", "unicorn"];
+const PIN_NAMES = { horse:"Horse", donkey:"Donkey", bull:"Bull", dog:"Dog", bear:"Bear", panda:"Panda", chicken:"Chicken", pig:"Pig",
+  crocodile:"Crocodile", goat:"Goat", ram:"Ram", parrot:"Parrot", flamingo:"Flamingo", zebra:"Zebra", giraffe:"Giraffe", unicorn:"Unicorn" };
+const OLD_PIN = { llama:"horse", cat:"bear", cow:"bull", bunny:"donkey" };
+const SHAPE_PIN = { cube:"dog", box:"bull", ball:"bear", can:"chicken", cone:"unicorn", pill:"pig", arch:"horse", ghost:"panda",
+  step:"goat", drop:"parrot", tri:"crocodile", cloud:"ram", bun:"donkey", blob:"flamingo", clover:"zebra" };
+const pinName = n => PINATAS.includes(n) ? n : OLD_PIN[n] || "";
+const pinOf = a => pinName(a?.animal) || SHAPE_PIN[a?.shape] || "dog";
 const pinSrc = (n, f) => `icons/pinatas/${n}-${f}.webp`;
 /* a tint pulls the animal toward the colour picked: its light and shade kept, its paper
    mostly that colour (a little of its own rainbow left showing), googly eyes still white.
@@ -4294,7 +4299,7 @@ const PIN_BADGE = {
 const pinBadgeSVG = k => PIN_BADGE[k] ? `<g class="pbadge" transform="translate(77 75)"><circle r="13" fill="#151320"/>${PIN_BADGE[k]}</g>` : "";
 function pinSVG(a) { pinDefs(); const n = pinOf(a), t = pinTint(a);
   return `<svg viewBox="0 0 100 100" data-shape="${n}" class="pin" aria-hidden="true"><ellipse class="avgr" cx="50" cy="94" rx="27" ry="4" fill="#000" opacity=".22"/><g class="avb"${t ? ` filter="${t}"` : ""}>${
-    ["f", "l", "r"].map(f => `<image class="pf pf-${f}" href="${pinSrc(n, f)}" x="0" y="0" width="100" height="100"/>`).join("")}</g>${a.founder ? COMET : (a.ring || "")}</svg>`; }
+    ["f", "l", "r"].map(f => `<image class="pf pf-${f}" href="${pinSrc(n, f === "r" ? "l" : f)}"${f === "r" ? ` transform="matrix(-1 0 0 1 100 0)"` : ""} x="0" y="0" width="100" height="100"/>`).join("")}</g>${a.founder ? COMET : (a.ring || "")}</svg>`; }
 /* the same animal, as a picture, for the share cards (an SVG that points at another image
    can't be drawn onto a canvas) */
 async function pinCanvas(a, size = 600) { const n = pinOf(a), im = await imgLoad(pinSrc(n, "f"), false); if (!im) return null;
@@ -4308,7 +4313,7 @@ function avFor(p) {
   const founder = !!p?.founder || founderIds.has(p?.id);
   const ring = ringCache[p?.id] || null;
   if (a && AV_SHAPES[a.shape] && AV_COLS[a.col] !== undefined)
-    return { shape:a.shape, col:a.col, eyes:AV_EYES[a.eyes] ? a.eyes : "pair", tilt:a.tilt ?? 0, pers:AV_PERS[a.pers] ? a.pers : "", animal:PINATAS.includes(a.animal) ? a.animal : "", founder, ring };
+    return { shape:a.shape, col:a.col, eyes:AV_EYES[a.eyes] ? a.eyes : "pair", tilt:a.tilt ?? 0, pers:AV_PERS[a.pers] ? a.pers : "", animal:pinName(a.animal), founder, ring };
   const h = avHash(p?.handle);
   return { shape:AV_DEFAULT[h % AV_DEFAULT.length], col:(h >> 3) % AV_COLS.length,
     eyes:AV_EYE_DEFAULT[(h >> 11) % AV_EYE_DEFAULT.length], tilt:((h >> 7) % 9) - 4, founder, ring, auto:true }; }
@@ -4594,7 +4599,7 @@ const saveP = () => localStorage.setItem("rooms.prefs", JSON.stringify(P));
    differs), so the classic look switches off clean, and can be deleted once nobody uses it */
 const V2 = /[?&]v2\b/.test(location.search) || !(/[?&]v1\b/.test(location.search) || P.classicLook);
 document.documentElement.classList.toggle("v2", V2);
-if (V2) PINATAS.forEach(n => ["f", "l", "r"].forEach(f => { const i = new Image(); i.src = pinSrc(n, f); }));
+if (V2) PINATAS.forEach(n => ["f", "l"].forEach(f => { const i = new Image(); i.src = pinSrc(n, f); }));
 /* the marks in 3D (see mark3d): each is shaded the first time it's on screen */
 const markObs = V2 && "IntersectionObserver" in window ? new IntersectionObserver(es => es.forEach(en => { if (!en.isIntersecting) return;
   mark3d(en.target); if (en.target.dataset.m3) markObs.unobserve(en.target); })) : null;

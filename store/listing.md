@@ -53,7 +53,7 @@ No ads and no tracking. Your rooms are yours. Report and block are always one ta
 
 Rooms has a new look. Every page has its own colour, and a title opens on its poster, big, in that poster's colour. If you'd rather have the old one, Settings has a Classic look switch for now.
 
-Everyone's a piñata now: a llama, dog, cat, chicken, cow or bunny, in your colour. They look around, chat on the couch, and turn to see what you've just logged. Pick yours, and whether it's calm, curious or chatty, under your name.
+Everyone's a piñata now: pick from sixteen, from a horse or a panda to a flamingo or a unicorn, in your colour. They look around, chat on the couch, and turn to see what you've just logged. Pick yours, and whether it's calm, curious or chatty, under your name.
 
 Your year in colour: a stripe for everything you finish this year, across the top of Queue. Slide along it to see what each one was, or share it as a picture.
 
