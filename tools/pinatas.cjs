@@ -55,13 +55,48 @@ const SIZE = 192, FOOT = .95, FIT = .92;
         const mx = Math.max(d[i], d[i + 1], d[i + 2]), mn = Math.min(d[i], d[i + 1], d[i + 2]);
         return gr[k] < 28 && l > 140 && d[i] === mx && d[i] - d[i + 2] >= 10 && mx - mn < 62; };
       const GR = 12;
-      while (q.length) { const k = q.pop(); if (bg[k]) continue; const ky = (k / w) | 0; if (!((tint(d, k * 4) <= LO && gr[k] < GR) || shade(k, ky))) continue; bg[k] = 1; const x = k % w, y = ky;
+      /* the cream itself, exactly: lets the fill through a gap too narrow to be smooth (between
+         two horns, say) */
+      const LBG = (BG[0] + BG[1] + BG[2]) / 3;
+      /* the sheet also has a faint glow round every piñata, the cream's tint but brighter:
+         that's background too (no piñata's white is both that tint and that bright) */
+      const glow = k => { const i = k * 4; return tint(d, i) <= LO + 6 && (d[i] + d[i + 1] + d[i + 2]) / 3 >= LBG - 2; };
+      /* trapped between parts it can be a little cooler again */
+      const cool = k => { const i = k * 4; return tint(d, i) <= LO + 16 && (d[i] + d[i + 1] + d[i + 2]) / 3 >= LBG + 2; };
+      const pure = k => glow(k) || Math.max(Math.abs(d[k * 4] - BG[0]), Math.abs(d[k * 4 + 1] - BG[1]), Math.abs(d[k * 4 + 2] - BG[2])) <= 4;
+      while (q.length) { const k = q.pop(); if (bg[k]) continue; const ky = (k / w) | 0; if (!((tint(d, k * 4) <= LO && gr[k] < GR) || pure(k) || shade(k, ky))) continue; bg[k] = 1; const x = k % w, y = ky;
         if (x > 0) q.push(k - 1); if (x < w - 1) q.push(k + 1); if (y > 0) q.push(k - w); if (y < h - 1) q.push(k + w); }
+      /* cream trapped between parts (between a giraffe's horns, say) never joins the edge: a
+         patch of the cream's own colour, bordered by colours well away from it, is background.
+         The panda's whitest white is that colour too, but it's bordered by more of the panda's
+         white, so it stays */
+      { const dist = k => Math.max(Math.abs(d[k * 4] - BG[0]), Math.abs(d[k * 4 + 1] - BG[1]), Math.abs(d[k * 4 + 2] - BG[2]));
+        const seen = new Uint8Array(w * h);
+        const like = k => dist(k) <= 8 || glow(k) || cool(k);
+        for (let k0 = 0; k0 < w * h; k0++) { if (bg[k0] || seen[k0] || !like(k0)) continue; const st = [k0], pc = [], rim = []; seen[k0] = 1; let near = 0;
+          while (st.length) { const k = st.pop(); pc.push(k); const x = k % w, y = (k / w) | 0;
+            for (const j of [x > 0 ? k - 1 : -1, x < w - 1 ? k + 1 : -1, y > 0 ? k - w : -1, y < h - 1 ? k + w : -1]) { if (j < 0 || seen[j]) continue;
+              if (!bg[j] && like(j)) { seen[j] = 1; st.push(j); } else if (!bg[j]) { if (dist(j) > 30) rim.push(j); else near++; } } }
+          if (rim.length <= near) continue;
+          /* a big pocket is a gap you can see through; a hairline one (between a horn and the
+             head) is painted over with the colour round it, or it'd show as a dark crack */
+          if (pc.length >= 30) pc.forEach(k => bg[k] = 1);
+          else { const m = c => { const v = rim.map(j => d[j * 4 + c]).sort((a, b) => a - b); return v[v.length >> 1]; }, col = [m(0), m(1), m(2)];
+            pc.forEach(k => { for (let c = 0; c < 3; c++) d[k * 4 + c] = col[c]; }); } } }
+      /* and the softened ends of those hairlines: a pale, cream-tinted pixel that's a line one
+         pixel wide, darker on both sides, is a crack, painted over the same way */
+      for (let pass = 0; pass < 2; pass++) { const fix = [];
+        const L = k => (d[k * 4] + d[k * 4 + 1] + d[k * 4 + 2]) / 3;
+        for (let y = 2; y < h - 2; y++) for (let x = 2; x < w - 2; x++) { const k = y * w + x; if (bg[k] || tint(d, k * 4) > LO + 14) continue;
+          for (const [dx, dy] of [[2, 0], [0, 2], [2, 2], [2, -2]]) { const a = k - dy * w - dx, b2 = k + dy * w + dx;
+            const a1 = k - (dy >> 1) * w - (dx >> 1), b1 = k + (dy >> 1) * w + (dx >> 1);
+            if (bg[a] || bg[b2] || L(a) > L(k) - 40 || L(b2) > L(k) - 40 || L(a1) > L(k) - 25 || L(b1) > L(k) - 25) continue; fix.push([k, a, b2]); break; } }
+        fix.forEach(([k, a, b2]) => { for (let c = 0; c < 3; c++) d[k * 4 + c] = (d[a * 4 + c] + d[b2 * 4 + c]) >> 1; }); }
       /* the fill stops a pixel short of each edge (that pixel's neighbours differ): take off
          the cream-coloured ring it leaves, or it shows as a light halo */
       for (let pass = 0; pass < 2; pass++) { const ring = [];
         for (let k = 0; k < w * h; k++) { if (bg[k]) continue; const x = k % w, y = (k / w) | 0;
-          if (((x > 0 && bg[k - 1]) || (x < w - 1 && bg[k + 1]) || (y > 0 && bg[k - w]) || (y < h - 1 && bg[k + w])) && (tint(d, k * 4) <= LO + 4 || shade(k, y))) ring.push(k); }
+          if (((x > 0 && bg[k - 1]) || (x < w - 1 && bg[k + 1]) || (y > 0 && bg[k - w]) || (y < h - 1 && bg[k + w])) && (tint(d, k * 4) <= LO + 4 || glow(k) || shade(k, y))) ring.push(k); }
         ring.forEach(k => bg[k] = 1); }
       /* the soft edge: next to the background, how unlike the cream says how solid */
       for (let k = 0; k < w * h; k++) { const i = k * 4; if (bg[k]) { d[i + 3] = 0; continue; }
@@ -104,13 +139,38 @@ const SIZE = 192, FOOT = .95, FIT = .92;
       const big = comps;
       const cv = document.createElement("canvas"); cv.width = w; cv.height = h; cv.getContext("2d").putImageData(id, 0, 0);
       /* a little fringe of each picture's neighbour can sit inside its box: mask by its own piece */
+      /* the outline, cleaned: whatever's mostly solid, less any specks and hairs a pixel or two
+         wide, less the outermost pixel (still tinged with the cream), then softened by a pixel
+         again, the soft edge coloured from just inside it */
+      const clean = (px, W, H) => { let m = new Uint8Array(W * H); for (let k = 0; k < W * H; k++) m[k] = px[k * 4 + 3] >= 128 ? 1 : 0;
+        const at = (a, x, y) => x >= 0 && y >= 0 && x < W && y < H ? a[y * W + x] : 0;
+        const morph = (a, grow) => { const o = new Uint8Array(W * H); for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { let v = grow ? 0 : 1;
+          for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const t = at(a, x + dx, y + dy); if (grow ? t : !t) { v = grow ? 1 : 0; } } o[y * W + x] = v; } return o; };
+        m = morph(morph(m, false), true); m = morph(m, false);
+        /* keep the main piece and anything a fiftieth its size */
+        const seen = new Uint8Array(W * H), pieces = [];
+        for (let k0 = 0; k0 < W * H; k0++) { if (!m[k0] || seen[k0]) continue; const st = [k0], pc = []; seen[k0] = 1;
+          while (st.length) { const k = st.pop(); pc.push(k); const x = k % W, y = (k / W) | 0;
+            for (const j of [x > 0 ? k - 1 : -1, x < W - 1 ? k + 1 : -1, y > 0 ? k - W : -1, y < H - 1 ? k + W : -1]) if (j >= 0 && m[j] && !seen[j]) { seen[j] = 1; st.push(j); } }
+          pieces.push(pc); }
+        const most = Math.max(0, ...pieces.map(q => q.length)); pieces.forEach(pc => { if (pc.length < most / 50) pc.forEach(k => m[k] = 0); });
+        const src = px.slice();
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { const k = y * W + x, i = k * 4; let n = 0;
+          for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) n += at(m, x + dx, y + dy);
+          if (!n) { px[i + 3] = 0; continue; }
+          px[i + 3] = m[k] ? Math.round(255 * Math.min(1, (n + 3) / 9)) : Math.round(255 * n / 18);
+          if (!m[k] || n < 9) { let r = 0, g = 0, b = 0, c = 0; /* the edge: the colour of the solid pixels next to it */
+            for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const xx = x + dx, yy = y + dy; if (!at(m, xx, yy)) continue;
+              const j = (yy * W + xx) * 4; if (m[k] && n < 9 && (dx || dy)) { let inner = 0; for (let ey = -1; ey <= 1; ey++) for (let ex = -1; ex <= 1; ex++) inner += at(m, xx + ex, yy + ey); if (inner < 9) continue; }
+              r += src[j]; g += src[j + 1]; b += src[j + 2]; c++; }
+            if (c) { px[i] = r / c; px[i + 1] = g / c; px[i + 2] = b / c; } } } };
       const pick = c => { const pw = c.R - c.L + 1, ph = c.B - c.T + 1, o = document.createElement("canvas"); o.width = pw; o.height = ph;
         const ox = o.getContext("2d"); ox.drawImage(cv, c.L, c.T, pw, ph, 0, 0, pw, ph); const od = ox.getImageData(0, 0, pw, ph);
         const near = (X, Y) => { for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const xx = c.L + X + dx, yy = c.T + Y + dy;
           if (xx >= 0 && yy >= 0 && xx < w && yy < h && lab[yy * w + xx] === c.n) return true; } return false; };
         for (let y = 0; y < ph; y++) for (let x = 0; x < pw; x++) { const l = lab[(c.T + y) * w + c.L + x];
           if ((l >= 0 && l !== c.n) || (l < 0 && !near(x, y))) od.data[(y * pw + x) * 4 + 3] = 0; }
-        ox.putImageData(od, 0, 0); return o; };
+        clean(od.data, pw, ph); ox.putImageData(od, 0, 0); return o; };
       const [L, F] = big, s = SIZE * FIT / Math.max(L.R - L.L + 1, L.B - L.T + 1, F.R - F.L + 1, F.B - F.T + 1);
       [["l", L], ["f", F]].forEach(([k, c], j) => { const o = document.createElement("canvas"); o.width = o.height = SIZE; const ox = o.getContext("2d"); ox.imageSmoothingQuality = "high";
         const pw = (c.R - c.L + 1) * s, ph = (c.B - c.T + 1) * s; ox.drawImage(pick(c), (SIZE - pw) / 2, SIZE * FOOT - ph, pw, ph);
