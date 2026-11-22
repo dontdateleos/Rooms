@@ -154,6 +154,16 @@ const SIZE = 192, FOOT = .95, FIT = .92;
             for (const j of [x > 0 ? k - 1 : -1, x < W - 1 ? k + 1 : -1, y > 0 ? k - W : -1, y < H - 1 ? k + W : -1]) if (j >= 0 && m[j] && !seen[j]) { seen[j] = 1; st.push(j); } }
           pieces.push(pc); }
         const most = Math.max(0, ...pieces.map(q => q.length)); pieces.forEach(pc => { if (pc.length < most / 50) pc.forEach(k => m[k] = 0); });
+        /* the flecks left on the outline: tiny pale patches touching the edge (a sliver of the
+           far eye, a speck of the cream's glow). Real eyes and white patches are far bigger */
+        { const pale = k => { const i = k * 4, mx = Math.max(px[i], px[i + 1], px[i + 2]), mn = Math.min(px[i], px[i + 1], px[i + 2]); return m[k] && (px[i] + px[i + 1] + px[i + 2]) / 3 > 190 && mx - mn < 45; };
+          const out = k => { const x = k % W, y = (k / W) | 0; return x === 0 || y === 0 || x === W - 1 || y === H - 1 || !m[k - 1] || !m[k + 1] || !m[k - W] || !m[k + W]; };
+          const seen = new Uint8Array(W * H), drop = [];
+          for (let k0 = 0; k0 < W * H; k0++) { if (seen[k0] || !pale(k0)) continue; const st = [k0], pc = []; seen[k0] = 1; let edge = 0;
+            while (st.length) { const k = st.pop(); pc.push(k); if (out(k)) edge++; const x = k % W, y = (k / W) | 0;
+              for (const j of [x > 0 ? k - 1 : -1, x < W - 1 ? k + 1 : -1, y > 0 ? k - W : -1, y < H - 1 ? k + W : -1]) if (j >= 0 && !seen[j] && pale(j)) { seen[j] = 1; st.push(j); } }
+            if (pc.length < 12 && edge * 2 >= pc.length) drop.push(...pc); }
+          drop.forEach(k => m[k] = 0); }
         const src = px.slice();
         for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { const k = y * W + x, i = k * 4; let n = 0;
           for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) n += at(m, x + dx, y + dy);
@@ -163,7 +173,21 @@ const SIZE = 192, FOOT = .95, FIT = .92;
             for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const xx = x + dx, yy = y + dy; if (!at(m, xx, yy)) continue;
               const j = (yy * W + xx) * 4; if (m[k] && n < 9 && (dx || dy)) { let inner = 0; for (let ey = -1; ey <= 1; ey++) for (let ex = -1; ex <= 1; ex++) inner += at(m, xx + ex, yy + ey); if (inner < 9) continue; }
               r += src[j]; g += src[j + 1]; b += src[j + 2]; c++; }
-            if (c) { px[i] = r / c; px[i + 1] = g / c; px[i + 2] = b / c; } } } };
+            if (c) { px[i] = r / c; px[i + 1] = g / c; px[i + 2] = b / c; } } }
+        /* the glow mixed with the colour beside it (a lilac rim on the donkey): in the outer two
+           pixels, anything much paler than the solid colour a few pixels in takes that colour */
+        const dep = new Uint8Array(W * H).fill(9), q2 = [];
+        for (let k = 0; k < W * H; k++) if (!m[k]) { dep[k] = 0; q2.push(k); }
+        for (let qi = 0; qi < q2.length; qi++) { const k = q2[qi], x = k % W, y = (k / W) | 0;
+          for (const j of [x > 0 ? k - 1 : -1, x < W - 1 ? k + 1 : -1, y > 0 ? k - W : -1, y < H - 1 ? k + W : -1]) if (j >= 0 && dep[j] > dep[k] + 1) { dep[j] = dep[k] + 1; if (dep[j] < 7) q2.push(j); } }
+        const lum = j => (src[j * 4] + src[j * 4 + 1] + src[j * 4 + 2]) / 3, fix = [];
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { const k = y * W + x, i = k * 4; if (!px[i + 3] || dep[k] > 2) continue;
+          const mx = Math.max(px[i], px[i + 1], px[i + 2]), mn = Math.min(px[i], px[i + 1], px[i + 2]); if (mx - mn > 70) continue;
+          const l = (px[i] + px[i + 1] + px[i + 2]) / 3, deep = [];
+          for (let dy = -5; dy <= 5; dy++) for (let dx = -5; dx <= 5; dx++) { const xx = x + dx, yy = y + dy; if (xx < 0 || yy < 0 || xx >= W || yy >= H) continue; const j = yy * W + xx; if (dep[j] >= 3 && dep[j] <= 6) deep.push(j); }
+          if (deep.length < 4) continue; deep.sort((a, b) => lum(a) - lum(b)); const ref = deep[deep.length >> 1];
+          if (l > lum(ref) + 45) fix.push([i, ref * 4]); }
+        fix.forEach(([i, j]) => { px[i] = src[j]; px[i + 1] = src[j + 1]; px[i + 2] = src[j + 2]; }); };
       const pick = c => { const pw = c.R - c.L + 1, ph = c.B - c.T + 1, o = document.createElement("canvas"); o.width = pw; o.height = ph;
         const ox = o.getContext("2d"); ox.drawImage(cv, c.L, c.T, pw, ph, 0, 0, pw, ph); const od = ox.getImageData(0, 0, pw, ph);
         const near = (X, Y) => { for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const xx = c.L + X + dx, yy = c.T + Y + dy;
