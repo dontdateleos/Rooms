@@ -1682,7 +1682,7 @@ html.v2 .pin .avb{transform-box:view-box;transform-origin:50% 92%;translate:calc
 html.v2 .pin .pf-f{opacity:clamp(0, calc(1 - (var(--ay) - .3) * 6), 1)}
 html.v2 .pin .pf-l{opacity:clamp(0, calc((-1 * var(--yaw) - .3) * 6), 1)}
 html.v2 .pin .pf-r{opacity:clamp(0, calc((var(--yaw) - .3) * 6), 1)}
-html.v2 #avShapes{grid-template-columns:repeat(4,1fr)}html.v2 :is(#avEyes,#avEyesL){display:none!important}
+html.v2 #avShapes{grid-template-columns:repeat(4,1fr)}html.v2 #avCols{grid-template-columns:repeat(6,1fr);gap:10px;padding:5px}html.v2 :is(#avEyes,#avEyesL){display:none!important}
 html.v2 .av svg{overflow:visible}
 @media (prefers-reduced-motion:reduce){html.v2 .couchrow .cz.zz .av,html.v2 .couchrow .cz.zz::after{animation:none}}
 @media (prefers-reduced-motion:reduce){html.v2 :is(.dealt,.couchrow .cz.wake,.slip .stars i,#yearBand .yb,#yearBand .yb i.new){animation:none!important}html.v2 :is(.pagetitle,[data-pagetitle])::before{animation:none!important}}
@@ -4268,24 +4268,30 @@ const SHAPE_PIN = { cube:"dog", box:"bull", ball:"bear", can:"chicken", cone:"un
   step:"goat", drop:"parrot", tri:"crocodile", cloud:"ram", bun:"donkey", blob:"flamingo", clover:"zebra" };
 const pinName = n => PINATAS.includes(n) ? n : OLD_PIN[n] || "";
 const pinOf = a => pinName(a?.animal) || SHAPE_PIN[a?.shape] || "dog";
-const pinSrc = (n, f) => `icons/pinatas/${n}-${f}.webp`;
-/* a tint pulls the animal toward the colour picked: its light and shade kept, its paper
-   mostly that colour (a little of its own rainbow left showing), googly eyes still white.
-   One filter per picker colour, shared by every mascot on the page. A mascot nobody picked
-   a colour for keeps the animal's own colours. */
-let pinDefsIn = false;
-function pinDefs() { if (pinDefsIn || !document.body) return; pinDefsIn = true;
-  const rgb = h => { const n = parseInt(h.slice(1), 16); return [n >> 16, (n >> 8) & 255, n & 255].map(v => v / 255); };
-  const ink = rgb("#151320");
-  document.body.insertAdjacentHTML("afterbegin", `<svg width="0" height="0" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true" focusable="false"><defs>${AV_COLS.map((hex, i) => {
-    /* light and shade run deep shade → darker colour → the colour → a pale tint of it */
-    const c = rgb(hex), ramp = [c.map((v, k) => v * .3 + ink[k] * .7), c.map(v => v * .72), c, c.map(v => v * .35 + .65)];
-    const fn = k => `<feFunc${"RGB"[k]} type="table" tableValues="${ramp.map(r => r[k].toFixed(3)).join(" ")}"/>`;
-    return `<filter id="pt-${i}" x="0" y="0" width="1" height="1" color-interpolation-filters="sRGB"><feColorMatrix type="saturate" values="0" in="SourceGraphic" result="g"/>
-      <feComponentTransfer in="g" result="d">${fn(0)}${fn(1)}${fn(2)}</feComponentTransfer>
-      <feComposite in="d" in2="SourceGraphic" operator="arithmetic" k2=".65" k3=".35" result="m"/><feColorMatrix type="saturate" values="1.4" in="m" result="m"/>
-      <feComposite in="m" in2="SourceGraphic" operator="in"/></filter>`; }).join("")}</defs></svg>`); }
-const pinTint = a => !a.auto && AV_COLS[a.col] !== undefined ? `url(#pt-${a.col})` : "";
+const pinSrc = (n, f, p = -1) => `icons/pinatas/${n}-${f}${p >= 0 ? "-" + p : ""}.webp`;
+/* THE PALETTES: what a piñata is painted in, head first, then the bands down its fringes.
+   Each animal is painted in each one ahead of time (icons/pinatas/<animal>-<f|l>-<n>.webp,
+   by tools/pinata-colours.cjs, which reads this list), its eyes and black left as they are.
+   A mascot nobody picked a palette for keeps the animal's own colours; one from before,
+   with only a colour picked, gets the palette nearest that colour (COL_PAL). `col` stays,
+   set to the colour nearest the palette, for everything else that uses a person's colour. */
+const PIN_PALS = [
+  { name:"Chilli", c:["#E8302A", "#F7DCC6", "#F04A32"], col:1 },
+  { name:"Tangerine", c:["#FF7A1A", "#FF9A4A", "#F9D2B4"], col:0 },
+  { name:"Sunset", c:["#FFA31A", "#FF2E93", "#8A2BE2"], col:2 },
+  { name:"Lime", c:["#4CD41E", "#A6E61A", "#FFD60A"], col:4 },
+  { name:"Fiesta", c:["#FF7A1A", "#FFC414", "#FF2BA6", "#8F2BE6", "#1E90FF"], col:3 },
+  { name:"Mint", c:["#7EE6C8", "#7EE6C8", "#B2F2DF"], col:4 },
+  { name:"Ocean", c:["#1E8CFF", "#FF8A1E", "#F7D9BF"], col:5 },
+  { name:"Ice", c:["#8CC8FF", "#4FA6F7", "#F7D9BF"], col:5 },
+  { name:"Lilac", c:["#D79BFF", "#B044F0", "#8E1FE0"], col:6 },
+  { name:"Cobalt", c:["#1435E0", "#FFC414", "#F7D9BF"], col:5 },
+  { name:"Midnight", c:["#1C2350", "#4B57A8", "#9AA3E6"], col:8 },
+  { name:"Bone", c:["#F4DCC4", "#8E8A8A", "#4A4A4A"], col:7 } ];
+const COL_PAL = [1, 0, 2, 4, 5, 7, 8, 11, 10];
+const pinPal = a => PIN_PALS[a?.pal] ? a.pal : !a?.auto && COL_PAL[a?.col] !== undefined ? COL_PAL[a.col] : -1;
+/* a palette as a swatch: its bands, top to bottom */
+const palSwatch = n => { const c = PIN_PALS[n].c, st = 100 / c.length; return `linear-gradient(180deg,${c.map((x, i) => `${x} ${(i * st).toFixed(1)}% ${((i + 1) * st).toFixed(1)}%`).join(",")})`; };
 /* a reaction or a mood, as a badge on the animal's shoulder (piñatas' googly eyes don't change) */
 const PIN_BADGE = {
   like:`<path d="M0 6C-9 0-8-8-3-8-1-8 0-6 0-5 0-6 1-8 3-8 8-8 9 0 0 6Z" fill="#FF7FA8"/>`,
@@ -4297,15 +4303,15 @@ const PIN_BADGE = {
   laugh:`<text y="4" text-anchor="middle" font-family="Outfit,sans-serif" font-weight="900" font-size="11" fill="#FFE86A">ha</text>`,
   wow:`<text y="5.5" text-anchor="middle" font-family="Outfit,sans-serif" font-weight="900" font-size="15" fill="#FFB36B">!</text>` };
 const pinBadgeSVG = k => PIN_BADGE[k] ? `<g class="pbadge" transform="translate(77 75)"><circle r="13" fill="#151320"/>${PIN_BADGE[k]}</g>` : "";
-function pinSVG(a) { pinDefs(); const n = pinOf(a), t = pinTint(a);
-  return `<svg viewBox="0 0 100 100" data-shape="${n}" class="pin" aria-hidden="true"><ellipse class="avgr" cx="50" cy="94" rx="27" ry="4" fill="#000" opacity=".22"/><g class="avb"${t ? ` filter="${t}"` : ""}>${
-    ["f", "l", "r"].map(f => `<image class="pf pf-${f}" href="${pinSrc(n, f === "r" ? "l" : f)}"${f === "r" ? ` transform="matrix(-1 0 0 1 100 0)"` : ""} x="0" y="0" width="100" height="100"/>`).join("")}</g>${a.founder ? COMET : (a.ring || "")}</svg>`; }
+function pinSVG(a) { const n = pinOf(a), pl = pinPal(a);
+  return `<svg viewBox="0 0 100 100" data-shape="${n}" class="pin" aria-hidden="true"><ellipse class="avgr" cx="50" cy="94" rx="27" ry="4" fill="#000" opacity=".22"/><g class="avb">${
+    ["f", "l", "r"].map(f => `<image class="pf pf-${f}" href="${pinSrc(n, f === "r" ? "l" : f, pl)}"${f === "r" ? ` transform="matrix(-1 0 0 1 100 0)"` : ""} x="0" y="0" width="100" height="100"/>`).join("")}</g>${a.founder ? COMET : (a.ring || "")}</svg>`; }
 /* the same animal, as a picture, for the share cards (an SVG that points at another image
    can't be drawn onto a canvas) */
-async function pinCanvas(a, size = 600) { const n = pinOf(a), im = await imgLoad(pinSrc(n, "f"), false); if (!im) return null;
+async function pinCanvas(a, size = 600) { const n = pinOf(a), im = await imgLoad(pinSrc(n, "f", pinPal(a)), false); if (!im) return null;
   const c = document.createElement("canvas"); c.width = c.height = size; const x = c.getContext("2d");
   x.fillStyle = "rgba(0,0,0,.22)"; x.beginPath(); x.ellipse(size / 2, size * .94, size * .27, size * .04, 0, 0, Math.PI * 2); x.fill();
-  const f = pinTint(a); if (f && "filter" in x) { pinDefs(); x.filter = f; } x.drawImage(im, 0, 0, size, size); return c; }
+  x.drawImage(im, 0, 0, size, size); return c; }
 /* how a mascot moves, picked alongside its shape, eyes and colour: Curious is the default */
 const AV_PERS = { calm:"Calm", "":"Curious", chatty:"Chatty" };
 function avFor(p) {
@@ -4313,7 +4319,7 @@ function avFor(p) {
   const founder = !!p?.founder || founderIds.has(p?.id);
   const ring = ringCache[p?.id] || null;
   if (a && AV_SHAPES[a.shape] && AV_COLS[a.col] !== undefined)
-    return { shape:a.shape, col:a.col, eyes:AV_EYES[a.eyes] ? a.eyes : "pair", tilt:a.tilt ?? 0, pers:AV_PERS[a.pers] ? a.pers : "", animal:pinName(a.animal), founder, ring };
+    return { shape:a.shape, col:a.col, eyes:AV_EYES[a.eyes] ? a.eyes : "pair", tilt:a.tilt ?? 0, pers:AV_PERS[a.pers] ? a.pers : "", animal:pinName(a.animal), pal:PIN_PALS[a.pal] ? a.pal : undefined, founder, ring };
   const h = avHash(p?.handle);
   return { shape:AV_DEFAULT[h % AV_DEFAULT.length], col:(h >> 3) % AV_COLS.length,
     eyes:AV_EYE_DEFAULT[(h >> 11) % AV_EYE_DEFAULT.length], tilt:((h >> 7) % 9) - 4, founder, ring, auto:true }; }
@@ -17524,17 +17530,20 @@ async function openYou() { let top = { items:[] }; try { top = await ensureMyTop
     $("#avPreview").innerHTML = avSVG(av); if (av.pers) $("#avPreview").dataset.pers = av.pers; else delete $("#avPreview").dataset.pers;
     $("#avPers").innerHTML = Object.entries(AV_PERS).map(([k, l]) => `<button class="chip ${k === (av.pers || "") ? "on" : ""}" type="button" data-avp="${k}" aria-pressed="${k === (av.pers || "")}">${l}</button>`).join("");
     $("#avNote").textContent = me.avatar ? "yours, chosen" : "made from your handle";
-    if (V2) { $("#avShapes").innerHTML = PINATAS.map(n => `<button class="${n === pinOf(av) ? "on" : ""}" type="button" data-avpin="${n}" aria-label="${PIN_NAMES[n]}" aria-pressed="${n === pinOf(av)}">${pinSVG({ animal:n, col:av.col })}</button>`).join("");
+    if (V2) { $("#avShapes").innerHTML = PINATAS.map(n => `<button class="${n === pinOf(av) ? "on" : ""}" type="button" data-avpin="${n}" aria-label="${PIN_NAMES[n]}" aria-pressed="${n === pinOf(av)}">${pinSVG({ animal:n, pal:pinPal(av) })}</button>`).join("");
       $$("[data-avpin]").forEach(b => b.onclick = () => { av.animal = b.dataset.avpin; buzz(4); paintAv(); }); }
     else $("#avShapes").innerHTML = AV_NAMES.map(n =>
       `<button class="${n === av.shape ? "on" : ""}" data-avs="${n}">${avSVG({ shape:n, col:av.col, eyes:av.eyes, tilt:0 })}</button>`).join("");
     $("#avEyes").innerHTML = AV_EYE_NAMES.map(n =>
       `<button class="${n === av.eyes ? "on" : ""}" data-ave="${n}">${avSVG({ shape:av.shape, col:av.col, eyes:n, tilt:0 })}</button>`).join("");
-    $("#avCols").innerHTML = AV_COLS.map((c,i) =>
+    $("#avCols").innerHTML = V2 ? PIN_PALS.map((p, i) =>
+      `<button class="sw ${i === pinPal(av) ? "on" : ""}" type="button" data-avpal="${i}" aria-label="${p.name}" aria-pressed="${i === pinPal(av)}" style="background:${palSwatch(i)}"></button>`).join("")
+      : AV_COLS.map((c,i) =>
       `<button class="sw ${i === av.col ? "on" : ""}" data-avc="${i}" style="background:${c}"></button>`).join("");
     $$("[data-avs]").forEach(b => b.onclick = () => { av.shape = b.dataset.avs; paintAv(); });
     $$("[data-ave]").forEach(b => b.onclick = () => { av.eyes = b.dataset.ave; paintAv(); });
-    $$("[data-avc]").forEach(b => b.onclick = () => { av.col = +b.dataset.avc; av.auto = false; paintAv(); });
+    $$("[data-avc]").forEach(b => b.onclick = () => { av.col = +b.dataset.avc; av.auto = false; delete av.pal; paintAv(); });
+    $$("[data-avpal]").forEach(b => b.onclick = () => { av.pal = +b.dataset.avpal; av.col = PIN_PALS[av.pal].col; av.auto = false; buzz(4); paintAv(); });
     $$("[data-avp]").forEach(b => b.onclick = () => { av.pers = b.dataset.avp; buzz(4); paintAv(); }); };
   paintAv();
   $("#classicSw").onclick = () => { P.classicLook = !P.classicLook; saveP(); location.reload(); };
@@ -17543,7 +17552,8 @@ async function openYou() { let top = { items:[] }; try { top = await ensureMyTop
     if (await tiltOn(true)) { P.tilt = true; saveP(); b.classList.add("on"); } else say("Your phone didn't allow it"); };
   $("#avShuffle").onclick = () => { av = { shape:AV_NAMES[Math.floor(Math.random()*AV_NAMES.length)],
     col:Math.floor(Math.random()*AV_COLS.length), eyes:AV_EYE_NAMES[Math.floor(Math.random()*AV_EYE_NAMES.length)],
-    tilt:Math.floor(Math.random()*9)-4, pers:av.pers || "", animal:V2 ? PINATAS[Math.floor(Math.random() * PINATAS.length)] : av.animal }; paintAv(); };
+    tilt:Math.floor(Math.random()*9)-4, pers:av.pers || "", animal:V2 ? PINATAS[Math.floor(Math.random() * PINATAS.length)] : av.animal };
+    if (V2) { av.pal = Math.floor(Math.random() * PIN_PALS.length); av.col = PIN_PALS[av.pal].col; } paintAv(); };
   $("#yBackdrop").onclick = () => openBackdropPick();
   $("#avReset").onclick = async () => { me.avatar = null; av = Object.assign({}, avFor(me));
     try { if (sb.__local) { sb.__db.profile.avatar = null; sb.__save(); } else await q(sb.from("profiles").update({ avatar:null }).eq("id", me.id)); }
